@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+out/
+.next/
+.astro/
+.turbo/
+.cache/
+
+# Prisma — cliente generado (regenerado en cada build, no se commitea)
+apps/api/src/generated/
+
+# Env
+# Convención del backend (apps/api):
+#   .env        → secretos locales, NUNCA committed
+#   .env.local  → defaults NO-secretos compartidos por el equipo, SÍ committed
+#   .env.example → plantilla committed
+.env
+.env.local
+.env.*.local
+!apps/api/.env.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Test/coverage
+coverage/
+.nyc_output/
+
+# Mobile (Ionic / Capacitor)
+ios/build/
+android/build/
+android/.gradle/
+android/app/build/

@@ -1,0 +1,22 @@
+{
+  "name": "core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Monorepo: NestJS API + Backoffice (React) + Web (Astro) + Mobile (Ionic)",
+  "scripts": {
+    "dev:api": "pnpm --filter @core/api start:dev",
+    "build:api": "pnpm --filter @core/api build"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/client",
+      "@prisma/engines"
+    ]
+  }
+}

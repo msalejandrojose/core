@@ -1,0 +1,18 @@
+// Prisma schema — https://pris.ly/d/prisma-schema
+//
+// Notas:
+// - Generador `prisma-client` (nuevo en Prisma 7, sin Rust engine). El cliente
+//   se emite a `src/generated/prisma/` para que `nest build` lo compile junto
+//   con el resto del código y sobreviva al `pnpm deploy` dentro de Docker.
+// - El `url` ya NO va aquí. Vive en `prisma.config.ts` (CLI) y en el
+//   constructor de `PrismaClient` vía driver adapter (runtime).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}

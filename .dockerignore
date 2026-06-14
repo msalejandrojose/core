@@ -1,0 +1,35 @@
+# Dependencies / build outputs
+**/node_modules
+**/dist
+**/build
+**/out
+**/.next
+**/.astro
+**/.turbo
+**/.cache
+**/coverage
+
+# Env files — credenciales nunca van en la imagen, se inyectan en runtime
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Git / OS
+.git
+.gitignore
+.gitattributes
+.github
+**/.DS_Store
+Thumbs.db
+
+# Editor
+.idea
+.vscode
+
+# Logs
+*.log
+**/*.log
+
+# Docker tooling no se necesita dentro del build context de la app
+docker/
+run.sh
