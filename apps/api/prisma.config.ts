@@ -15,5 +15,8 @@ export default defineConfig({
   },
   datasource: {
     url: process.env['DATABASE_URL'],
+    // Solo se usa con `prisma migrate dev` (no en deploy ni en runtime).
+    // El user de la conexión normal no tiene CREATE DATABASE en MySQL local.
+    shadowDatabaseUrl: process.env['SHADOW_DATABASE_URL'],
   },
 });

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { DiscoveryModule } from '@nestjs/core';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
+import { IamModule } from './modules/iam/iam.module';
 
 @Module({
   imports: [
@@ -12,7 +14,11 @@ import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
       // las variables vendrán inyectadas por el proveedor cloud.
       envFilePath: ['.env', '.env.local'],
     }),
+    // Necesario para el script `sync:sections`, que recorre los handlers
+    // buscando metadatos `@RequiresPermission`. Pesa cero en runtime.
+    DiscoveryModule,
     PrismaModule,
+    IamModule,
   ],
 })
 export class AppModule {}

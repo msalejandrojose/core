@@ -1,9 +1,26 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { DomainErrorFilter } from './shared/filters/domain-error.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Validación global. `whitelist` quita propiedades no declaradas en el DTO.
+  // `forbidNonWhitelisted` devuelve 400 si llegan. `transform` aplica
+  // conversiones (string → number, etc.).
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
+
+  // Mapea DomainError subclasses a respuestas HTTP estructuradas.
+  app.useGlobalFilters(new DomainErrorFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Core API')
