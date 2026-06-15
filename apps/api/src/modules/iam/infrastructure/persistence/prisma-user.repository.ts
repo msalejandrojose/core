@@ -1,0 +1,150 @@
+import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../../../generated/prisma/client';
+import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
+import { Filter, type FindSpec, Limit, Order } from '../../../../shared/query';
+import {
+  filterToPrismaWhere,
+  specToPrismaArgs,
+} from '../../../../shared/query/prisma/from-spec';
+import { PaginatedResult } from '../../../../shared/types/paginated-result';
+import { User } from '../../domain/entities/user.entity';
+import {
+  ListUsersOptions,
+  UpdateTokensPatch,
+  UpdateUserPatch,
+  UserRepositoryPort,
+} from '../../application/ports/user-repository.port';
+import { UserMapper } from './user.mapper';
+
+@Injectable()
+export class PrismaUserRepository implements UserRepositoryPort {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findById(id: string): Promise<User | null> {
+    const row = await this.prisma.user.findUnique({ where: { id } });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    const row = await this.prisma.user.findUnique({ where: { email } });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
+  async findByEmailVerificationToken(token: string): Promise<User | null> {
+    const row = await this.prisma.user.findFirst({
+      where: { emailVerificationToken: token },
+    });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
+  async findByPasswordResetToken(token: string): Promise<User | null> {
+    const row = await this.prisma.user.findFirst({
+      where: { passwordResetToken: token },
+    });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
+  // ── getRows / getRow / getCount / getDistinctValues ────────────────────
+
+  async getRows(spec: FindSpec<User> = {}): Promise<PaginatedResult<User>> {
+    const { where, orderBy, take, skip } = specToPrismaArgs(spec);
+    const [rows, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where: where as Prisma.UserWhereInput,
+        orderBy: orderBy as Prisma.UserOrderByWithRelationInput[],
+        take,
+        skip,
+      }),
+      this.prisma.user.count({ where: where as Prisma.UserWhereInput }),
+    ]);
+    return { items: rows.map(UserMapper.toDomain), total };
+  }
+
+  async getRow(spec: FindSpec<User>): Promise<User | null> {
+    const { where, orderBy } = specToPrismaArgs(spec);
+    const row = await this.prisma.user.findFirst({
+      where: where as Prisma.UserWhereInput,
+      orderBy: orderBy as Prisma.UserOrderByWithRelationInput[],
+    });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
+  async getCount(filter?: Filter<User>): Promise<number> {
+    const where = filterToPrismaWhere(filter);
+    return this.prisma.user.count({ where: where as Prisma.UserWhereInput });
+  }
+
+  async getDistinctValues<K extends keyof User>(
+    field: K,
+    filter?: Filter<User>,
+  ): Promise<User[K][]> {
+    const where = filterToPrismaWhere(filter);
+    const rows = await this.prisma.user.findMany({
+      where: where as Prisma.UserWhereInput,
+      distinct: [field as Prisma.UserScalarFieldEnum],
+      select: { [field as string]: true } as Prisma.UserSelect,
+    });
+    return rows.map((r) => (r as Record<string, unknown>)[field as string]) as User[K][];
+  }
+
+  // ── Compat shim: findMany(ListUsersOptions) ────────────────────────────
+  // Cuando todos los consumidores estén migrados a getRows, se borra.
+
+  async findMany(opts: ListUsersOptions): Promise<PaginatedResult<User>> {
+    const filter = new Filter<User>();
+    if (opts.userType !== undefined) filter.addEqualValue('userType', opts.userType);
+    if (opts.isActive !== undefined) filter.addEqualValue('isActive', opts.isActive);
+    if (opts.emailContains) filter.addLike('email', `%${opts.emailContains}%`);
+
+    const sort = (opts.sort ?? 'createdAt') as keyof User;
+    return this.getRows({
+      filter,
+      order: new Order<User>().add(sort, opts.order),
+      limit: Limit.page(opts.page, opts.limit),
+    });
+  }
+
+  // ── Mutaciones ─────────────────────────────────────────────────────────
+
+  async create(user: User): Promise<User> {
+    const row = await this.prisma.user.create({
+      data: UserMapper.toPersistenceCreate(user),
+    });
+    return UserMapper.toDomain(row);
+  }
+
+  async update(id: string, patch: UpdateUserPatch): Promise<User> {
+    const row = await this.prisma.user.update({
+      where: { id },
+      data: {
+        firstName: patch.firstName,
+        lastName: patch.lastName,
+        isActive: patch.isActive,
+      },
+    });
+    return UserMapper.toDomain(row);
+  }
+
+  async updateTokens(id: string, patch: UpdateTokensPatch): Promise<User> {
+    const row = await this.prisma.user.update({
+      where: { id },
+      data: {
+        emailVerificationToken: patch.emailVerificationToken,
+        emailVerificationExpiresAt: patch.emailVerificationExpiresAt,
+        passwordResetToken: patch.passwordResetToken,
+        passwordResetExpiresAt: patch.passwordResetExpiresAt,
+        isActive: patch.isActive,
+        passwordHash: patch.passwordHash,
+      },
+    });
+    return UserMapper.toDomain(row);
+  }
+
+  async deactivate(id: string): Promise<User> {
+    const row = await this.prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    return UserMapper.toDomain(row);
+  }
+}

@@ -65,6 +65,14 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
+  // Email verification
+  emailVerificationToken     String?   @map("email_verification_token") @db.VarChar(128)
+  emailVerificationExpiresAt DateTime? @map("email_verification_expires_at")
+
+  // Password reset
+  passwordResetToken         String?   @map("password_reset_token") @db.VarChar(128)
+  passwordResetExpiresAt     DateTime? @map("password_reset_expires_at")
+
   // Relaciones
   userRoles                   UserUserRole[]                @relation("UserRoles")
   assignedRolesByUser         UserUserRole[]                @relation("AssignedBy")

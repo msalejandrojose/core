@@ -24,19 +24,26 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:format": "prisma format"
+    "prisma:format": "prisma format",
+    "seed": "pnpm build && node dist/seeds/seed-iam.js",
+    "sync:sections": "pnpm build && node dist/seeds/sync-api-sections.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.4",
     "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "argon2": "^0.44.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "mariadb": "^3.5.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "resend": "^4.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
