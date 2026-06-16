@@ -14,6 +14,9 @@ out/
 # Prisma — cliente generado (regenerado en cada build, no se commitea)
 apps/api/src/generated/
 
+# Storage module — ficheros subidos en local (driver LOCAL), nunca se commitean
+apps/api/.storage/
+
 # Env
 # Convención del backend (apps/api):
 #   .env        → secretos locales, NUNCA committed
