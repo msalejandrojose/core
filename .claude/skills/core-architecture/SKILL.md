@@ -273,7 +273,65 @@ Para mantener coherencia, antes de implementar verifica:
 - [ ] Si tocas el schema de Prisma, ¿corriste `prisma:migrate` y verificaste que `prisma generate` produce el cliente sin errores?
 - [ ] Si tocas el Dockerfile o las deps, ¿hiciste `docker build` para confirmar que sigue construyéndose?
 
-## 9. Si esta skill se queda desactualizada
+## 9. Convención de paginación y response envelope
+
+### Recursos individuales — sin envelope
+
+`GET /users/:id`, `POST /auth/login`, etc. devuelven el DTO plano directamente. Sin envolver. Tipado con `@ApiOkResponse({ type: UserResponseDto })`.
+
+### Listados — cursor (default)
+
+Todos los listados nuevos usan paginación por cursor. Infraestructura en `shared/pagination/`.
+
+**Shape de respuesta:**
+```json
+GET /v1/users?limit=20
+{
+  "data": [ { "id": "...", "email": "..." } ],
+  "meta": { "limit": 20, "nextCursor": "eyJ...", "hasMore": true }
+}
+```
+- `nextCursor` es `null` cuando `hasMore === false`.
+- Primera página: omite `cursor`. Siguientes: `?cursor=<nextCursor>`.
+- Cursor inválido/manipulado → `400 INVALID_CURSOR` (el `DomainErrorFilter` lo captura).
+
+**Query DTO:** extiende `CursorPaginationQueryDto` (campos: `limit`, `cursor`). Añade los filtros propios del recurso.
+
+**Controller:**
+```typescript
+@Get()
+@ApiCursorPaginatedResponse(UserResponseDto)
+async list(@Query() q: ListUsersQueryDto): Promise<CursorPaginatedResponseDto<UserResponseDto>> {
+  const page = await this.listUsers.executeWithCursor({ limit: q.limit, cursor: q.cursor });
+  return CursorPaginatedResponseDto.of(page.items.map(UserResponseDto.fromUser), page.nextCursor, q.limit);
+}
+```
+
+**Repository port:** devuelve `CursorPage<T>` (`{ items: T[]; nextCursor: string | null }`).
+
+**Prisma:** ordena `createdAt DESC, id ASC`. Fetch `limit + 1` para detectar `hasMore`. El cursor codifica `{ id, createdAt }` en base64url (codec en `shared/pagination/cursor.codec.ts`).
+
+### Listados — offset (opt-in)
+
+Solo si el endpoint necesita jump-to-page (tablas de backoffice con número de página). Documentar explícitamente que es offset. Infraestructura en `shared/http/dto/`.
+
+**Shape de respuesta:**
+```json
+{ "data": [...], "meta": { "page": 2, "limit": 20, "total": 437, "totalPages": 22 } }
+```
+
+**Query DTO:** extiende `PaginationQueryDto` (campos: `page`, `limit`, `sort`, `order`).
+**Controller:** usa `PaginatedResponseDto.of(items, total, page, limit)` y `@ApiPaginatedResponse(ItemDto)`.
+
+### Regla del meta
+
+El `meta` lo construye el **controller**, no el use-case. Los use-cases devuelven `CursorPage<T>` o `PaginatedResult<T>` (datos sin forma HTTP).
+
+### Errores de paginación
+
+`INVALID_CURSOR` (400 warn) está en `error-catalog.ts`. Se lanza automáticamente desde `cursor.codec.ts` cuando el cursor es inválido o ha sido manipulado.
+
+## 10. Si esta skill se queda desactualizada
 
 Este archivo es un *snapshot vivo*. Si encuentras que la realidad del código diverge:
 

@@ -105,6 +105,13 @@ export const ERROR_CATALOG = {
     defaultMessage: 'La jerarquía especificada no es válida.',
   },
 
+  // Paginación
+  INVALID_CURSOR: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'El cursor de paginación es inválido o ha sido modificado.',
+  },
+
   // Mailer
   MAIL_PROVIDER_UNAVAILABLE: {
     httpStatus: 502,

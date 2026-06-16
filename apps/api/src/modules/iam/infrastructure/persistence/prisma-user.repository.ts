@@ -7,9 +7,11 @@ import {
   specToPrismaArgs,
 } from '../../../../shared/query/prisma/from-spec';
 import { PaginatedResult } from '../../../../shared/types/paginated-result';
+import { CursorCodec, CursorPage } from '../../../../shared/pagination';
 import { User } from '../../domain/entities/user.entity';
 import {
   ListUsersOptions,
+  ListWithCursorOptions,
   UpdateTokensPatch,
   UpdateUserPatch,
   UserRepositoryPort,
@@ -102,6 +104,43 @@ export class PrismaUserRepository implements UserRepositoryPort {
       order: new Order<User>().add(sort, opts.order),
       limit: Limit.page(opts.page, opts.limit),
     });
+  }
+
+  // ── Paginación por cursor ──────────────────────────────────────────────
+  // Ordena por createdAt DESC, id ASC para estabilidad. El cursor codifica
+  // el último elemento visto; la siguiente página empieza justo después.
+
+  async listWithCursor(opts: ListWithCursorOptions): Promise<CursorPage<User>> {
+    let cursorWhere: Prisma.UserWhereInput = {};
+
+    if (opts.cursor) {
+      const decoded = CursorCodec.decode(opts.cursor); // lanza InvalidCursorError si inválido
+      const cursorDate = new Date(decoded.createdAt);
+      cursorWhere = {
+        OR: [
+          { createdAt: { lt: cursorDate } },
+          { createdAt: cursorDate, id: { gt: decoded.id } },
+        ],
+      };
+    }
+
+    const rows = await this.prisma.user.findMany({
+      where: cursorWhere,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      take: opts.limit + 1,
+    });
+
+    const hasMore = rows.length > opts.limit;
+    const items = hasMore ? rows.slice(0, opts.limit) : rows;
+    const lastItem = hasMore ? items[items.length - 1] : null;
+    const nextCursor = lastItem
+      ? CursorCodec.encode({
+          id: lastItem.id,
+          createdAt: lastItem.createdAt.toISOString(),
+        })
+      : null;
+
+    return { items: items.map(UserMapper.toDomain), nextCursor };
   }
 
   // ── Mutaciones ─────────────────────────────────────────────────────────

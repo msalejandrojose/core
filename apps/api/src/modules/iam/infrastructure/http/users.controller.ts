@@ -18,8 +18,10 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { ApiPaginatedResponse } from '../../../../shared/http/decorators/api-paginated-response.decorator';
-import { PaginatedResponseDto } from '../../../../shared/http/dto/paginated-response.dto';
+import {
+  ApiCursorPaginatedResponse,
+  CursorPaginatedResponseDto,
+} from '../../../../shared/pagination';
 import { CreateUserUseCase } from '../../application/use-cases/create-user.use-case';
 import { DeactivateUserUseCase } from '../../application/use-cases/deactivate-user.use-case';
 import { GetUserUseCase } from '../../application/use-cases/get-user.use-case';
@@ -44,24 +46,21 @@ export class UsersController {
 
   @Get()
   @RequiresPermission('iam.users', 'READ')
-  @ApiOperation({ summary: 'Listar usuarios (paginado).' })
-  @ApiPaginatedResponse(UserResponseDto)
+  @ApiOperation({ summary: 'Listar usuarios (cursor paginado, createdAt DESC).' })
+  @ApiCursorPaginatedResponse(UserResponseDto)
   async list(
     @Query() query: ListUsersQueryDto,
-  ): Promise<PaginatedResponseDto<UserResponseDto>> {
-    const { items, total } = await this.listUsers.execute({
-      page: query.page,
-      pageSize: query.limit,
-      sort: query.sort,
-      order: query.order,
+  ): Promise<CursorPaginatedResponseDto<UserResponseDto>> {
+    const page = await this.listUsers.executeWithCursor({
+      limit: query.limit,
+      cursor: query.cursor,
       userType: query.userType,
       isActive: query.isActive,
       emailContains: query.emailContains,
     });
-    return PaginatedResponseDto.of(
-      items.map(UserResponseDto.fromUser),
-      total,
-      query.page,
+    return CursorPaginatedResponseDto.of(
+      page.items.map(UserResponseDto.fromUser),
+      page.nextCursor,
       query.limit,
     );
   }

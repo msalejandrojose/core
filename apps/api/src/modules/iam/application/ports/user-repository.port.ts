@@ -1,6 +1,12 @@
 import { PaginatedResult } from '../../../../shared/types/paginated-result';
+import { CursorPage } from '../../../../shared/pagination';
 import type { Filter, FindSpec } from '../../../../shared/query';
 import { User, UserType } from '../../domain/entities/user.entity';
+
+export interface ListWithCursorOptions {
+  limit: number;
+  cursor?: string;
+}
 
 export const USER_REPOSITORY = Symbol('IAM_USER_REPOSITORY');
 
@@ -52,6 +58,9 @@ export interface UserRepositoryPort {
     field: K,
     filter?: Filter<User>,
   ): Promise<User[K][]>;
+
+  // ── Paginación por cursor ──────────────────────────────────────────────
+  listWithCursor(opts: ListWithCursorOptions): Promise<CursorPage<User>>;
 
   /** @deprecated mantener mientras migra `ListUsersUseCase` y consumidores. */
   findMany(opts: ListUsersOptions): Promise<PaginatedResult<User>>;
