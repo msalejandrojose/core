@@ -1,9 +1,7 @@
-import { DomainError } from './domain-error';
+import { DomainError } from '../../../../shared/errors/domain-error';
 
 export class UserNotFoundError extends DomainError {
-  readonly code = 'USER_NOT_FOUND';
-
-  constructor(identifier: string) {
-    super(`Usuario "${identifier}" no encontrado.`);
+  constructor(userId: string) {
+    super('USER_NOT_FOUND', `Usuario ${userId} no encontrado.`, { userId });
   }
 }

@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { DiscoveryModule } from '@nestjs/core';
+import { APP_FILTER, DiscoveryModule } from '@nestjs/core';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { IamModule } from './modules/iam/iam.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { ErrorLogModule } from './infrastructure/error-log/error-log.module';
+import { AppExceptionFilter } from './shared/filters/app-exception.filter';
 
 @Module({
   imports: [
@@ -21,6 +23,13 @@ import { StorageModule } from './modules/storage/storage.module';
     PrismaModule,
     IamModule,
     StorageModule,
+    ErrorLogModule,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: AppExceptionFilter,
+    },
   ],
 })
 export class AppModule {}
