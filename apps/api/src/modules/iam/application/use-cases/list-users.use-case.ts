@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { CursorPage } from '../../../../shared/pagination';
 import {
   Filter,
   Limit,
@@ -16,6 +17,14 @@ export interface ListUsersInput {
   pageSize: number;
   sort?: string;
   order: 'asc' | 'desc';
+  userType?: UserType;
+  isActive?: boolean;
+  emailContains?: string;
+}
+
+export interface ListUsersCursorInput {
+  limit: number;
+  cursor?: string;
   userType?: UserType;
   isActive?: boolean;
   emailContains?: string;
@@ -53,5 +62,12 @@ export class ListUsersUseCase {
     const limit = Limit.page(input.page, input.pageSize);
 
     return this.users.getRows({ filter, order, limit });
+  }
+
+  async executeWithCursor(input: ListUsersCursorInput): Promise<CursorPage<User>> {
+    return this.users.listWithCursor({
+      limit: input.limit,
+      cursor: input.cursor,
+    });
   }
 }

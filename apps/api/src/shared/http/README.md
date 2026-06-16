@@ -19,10 +19,16 @@ reemplazar el recurso entero (raro, p.ej. config blobs).
 
 ## Listados (`GET /recurso`)
 
-- Query hereda de `PaginationQueryDto` (page, limit, sort, order).
-- Filtros propios del recurso se añaden a esa query class.
-- Respuesta: `PaginatedResponseDto<TResponseDto>` con `{ data, meta }`.
-- Decora con `@ApiPaginatedResponse(TResponseDto)` para Swagger.
+**Por defecto: cursor.** Extiende `CursorPaginationQueryDto` (limit, cursor).
+Respuesta: `CursorPaginatedResponseDto<TResponseDto>` con `{ data, meta: { limit, nextCursor, hasMore } }`.
+Decora con `@ApiCursorPaginatedResponse(TResponseDto)` para Swagger.
+Todo en `shared/pagination/`.
+
+**Opt-in: offset.** Solo si el endpoint necesita jump-to-page.
+Extiende `PaginationQueryDto` (page, limit, sort, order).
+Respuesta: `PaginatedResponseDto<TResponseDto>` con `{ data, meta: { page, limit, total, totalPages } }`.
+Decora con `@ApiPaginatedResponse(TResponseDto)` para Swagger.
+Todo en `shared/http/dto/`.
 
 ## Crear (`POST /recurso`)
 

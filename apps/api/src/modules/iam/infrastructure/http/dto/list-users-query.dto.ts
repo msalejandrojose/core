@@ -1,12 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
-import { PaginationQueryDto } from '../../../../../shared/http/dto/pagination-query.dto';
+import { CursorPaginationQueryDto } from '../../../../../shared/pagination';
 import { type UserType } from '../../../domain/entities/user.entity';
 
 const USER_TYPES: UserType[] = ['BACKOFFICE', 'APP'];
 
-export class ListUsersQueryDto extends PaginationQueryDto {
+export class ListUsersQueryDto extends CursorPaginationQueryDto {
   @ApiPropertyOptional({ enum: USER_TYPES })
   @IsOptional()
   @IsIn(USER_TYPES)
@@ -14,7 +14,6 @@ export class ListUsersQueryDto extends PaginationQueryDto {
 
   @ApiPropertyOptional({ description: 'Filtra por activos/inactivos.' })
   @IsOptional()
-  // class-transformer convierte el string ?isActive=true → boolean
   @Transform(({ value }) => {
     if (value === 'true') return true;
     if (value === 'false') return false;

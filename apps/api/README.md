@@ -91,6 +91,75 @@ La API centraliza el manejo de errores en `src/shared/`:
 
 > Nota: al momento de escribir esto, los proyectos en `apps/backoffice`, `apps/web` y `apps/mobile` no tienen código aún, por lo que el consumo de este contrato desde el frontend queda pendiente de implementación cuando esas apps existan.
 
+## Convenciones HTTP
+
+### Recursos individuales (sin envelope)
+
+`GET /users/:id`, `POST /auth/login`, etc. devuelven el DTO plano directamente:
+
+```json
+{ "id": "...", "email": "...", "firstName": "..." }
+```
+
+### Listados — cursor (default)
+
+Todos los listados usan paginación por cursor con ordenación `createdAt DESC`.
+El cursor es opaco (base64url), estable bajo inserciones concurrentes.
+
+```
+GET /v1/users?limit=20
+200 OK
+{
+  "data": [ { "id": "...", "email": "...", ... } ],
+  "meta": {
+    "limit": 20,
+    "nextCursor": "eyJpZCI6Ii4uLiIsImNyZWF0ZWRBdCI6Ii4uLiJ9",
+    "hasMore": true
+  }
+}
+```
+
+- `nextCursor` es `null` cuando `hasMore === false`.
+- Para la primera página: omite el parámetro `cursor`.
+- Para la siguiente: `?cursor=<nextCursor de la respuesta anterior>`.
+- Cursor inválido → `400 INVALID_CURSOR`.
+
+**Query params comunes:**
+
+| Param    | Tipo     | Default | Notas                          |
+|----------|----------|---------|--------------------------------|
+| `limit`  | `number` | `20`    | Min `1`, max `100`             |
+| `cursor` | `string` | —       | Opaco base64url; omitir para primera página |
+
+### Listados — offset (opt-in)
+
+Solo endpoints que necesiten jump-to-page (backoffice con tabla). Usa
+`PaginationQueryDto` (`page`, `limit`, `sort`, `order`) y `PaginatedResponseDto<T>`.
+
+```
+GET /v1/audit-log?page=2&limit=20
+200 OK
+{
+  "data": [ ... ],
+  "meta": { "page": 2, "limit": 20, "total": 437, "totalPages": 22 }
+}
+```
+
+### Errores
+
+Todos los errores tienen la misma forma independientemente del tipo de listado:
+
+```json
+{ "errorId": "...", "code": "INVALID_CURSOR", "message": "...", "level": "warn", "timestamp": "...", "path": "..." }
+```
+
+### Implementación en NestJS
+
+- **Cursor:** usa `CursorPaginationQueryDto`, `CursorPaginatedResponseDto<T>` y `@ApiCursorPaginatedResponse(ItemDto)` de `shared/pagination/`.
+- **Offset:** usa `PaginationQueryDto`, `PaginatedResponseDto<T>` y `@ApiPaginatedResponse(ItemDto)` de `shared/http/`.
+- El `meta` lo construye el controller, no el use-case (es detalle HTTP).
+- Los use-cases y repositorios devuelven `CursorPage<T>` (cursor) o `PaginatedResult<T>` (offset).
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
