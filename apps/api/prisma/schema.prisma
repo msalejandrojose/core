@@ -46,6 +46,21 @@ enum PermissionLevel {
   ADMIN
 }
 
+/// Backend de almacenamiento físico donde vive el binario de un `StoredFile`.
+enum StorageDriver {
+  LOCAL
+  S3
+  GCS
+}
+
+/// Ciclo de vida de un `StoredFile`. `PENDING` se usa en el flujo de subida
+/// directa (signed upload URL) hasta que `POST /files/:id/confirm` verifica
+/// que el binario llegó al backend de storage.
+enum StoredFileStatus {
+  PENDING
+  READY
+}
+
 // ---------------------------------------------------------------------------
 // Modelos
 // ---------------------------------------------------------------------------
@@ -77,6 +92,7 @@ model User {
   userRoles                   UserUserRole[]                @relation("UserRoles")
   assignedRolesByUser         UserUserRole[]                @relation("AssignedBy")
   userApiSectionPermissions   UserApiSectionPermission[]
+  storedFiles                 StoredFile[]
 
   @@map("user")
 }
@@ -179,4 +195,27 @@ model UserApiSectionPermission {
 
   @@id([userId, apiSectionId])
   @@map("user_api_section_permission")
+}
+
+/// Metadata de un fichero subido a través del módulo storage. El binario vive
+/// en disco local (dev) o en un bucket (pre/pro) según `driver`; esta tabla
+/// nunca guarda el contenido, solo dónde encontrarlo (`storageKey`).
+/// Borrado lógico vía `deletedAt`; el purgado físico es un job aparte.
+model StoredFile {
+  id           String           @id @default(uuid()) @db.Char(36)
+  ownerUserId  String?          @map("owner_user_id") @db.Char(36)
+  originalName String          @map("original_name") @db.VarChar(255)
+  mimeType     String           @map("mime_type") @db.VarChar(127)
+  sizeBytes    Int              @map("size_bytes")
+  driver       StorageDriver
+  status       StoredFileStatus @default(READY)
+  storageKey   String           @map("storage_key") @db.VarChar(512)
+  deletedAt    DateTime?        @map("deleted_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  // Relaciones
+  owner User? @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+
+  @@map("stored_file")
 }
