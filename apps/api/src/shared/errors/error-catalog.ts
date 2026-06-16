@@ -1,0 +1,123 @@
+// Catálogo centralizado de códigos de error de la API.
+//
+// Cada código tiene asociado un `httpStatus`, un `level` (severidad) y un
+// `defaultMessage` en español. El `level` decide cómo se trata el error en
+// los logs de Docker, en la tabla `ErrorLog` y en el frontend (ver
+// `AppExceptionFilter` y el README de `apps/api`).
+//
+// Para añadir un código nuevo: agrega una entrada aquí con el formato
+// `DOMINIO_SUBDOMINIO_CAUSA` y úsalo desde `AppException` o desde una
+// subclase de `DomainError`. No hace falta tocar nada más — el filtro
+// global resuelve `httpStatus`/`level`/`message` automáticamente a partir
+// de esta tabla.
+
+export type ErrorLevel = 'info' | 'warn' | 'error' | 'critical';
+
+export interface ErrorCatalogEntry {
+  readonly httpStatus: number;
+  readonly level: ErrorLevel;
+  readonly defaultMessage: string;
+  readonly i18nKey?: string;
+}
+
+export const ERROR_CATALOG = {
+  // Genéricos / fallback del filtro global
+  INTERNAL_UNEXPECTED: {
+    httpStatus: 500,
+    level: 'critical',
+    defaultMessage: 'Ha ocurrido un error inesperado.',
+  },
+  VALIDATION_FAILED: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'Los datos enviados no son válidos.',
+  },
+
+  // Auth / IAM
+  INVALID_CREDENTIALS: {
+    httpStatus: 401,
+    level: 'warn',
+    defaultMessage: 'Credenciales inválidas.',
+  },
+  INVALID_TOKEN: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'El token es inválido o ha expirado.',
+  },
+  EMAIL_NOT_VERIFIED: {
+    httpStatus: 403,
+    level: 'warn',
+    defaultMessage: 'El email no ha sido verificado aún.',
+  },
+  FORBIDDEN: {
+    httpStatus: 403,
+    level: 'warn',
+    defaultMessage: 'No tienes permisos para realizar esta acción.',
+  },
+  USER_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un usuario con ese email.',
+  },
+  USER_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Usuario no encontrado.',
+  },
+  ROLE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Rol no encontrado.',
+  },
+  ROLE_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un rol con ese código.',
+  },
+  ROLE_IN_USE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'El rol está en uso y no se puede eliminar.',
+  },
+  ROLE_SCOPE_MISMATCH: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'El ámbito del rol no coincide con el del usuario.',
+  },
+  API_SECTION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Sección de la API no encontrada.',
+  },
+  API_SECTION_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe una sección con ese código.',
+  },
+  API_SECTION_IN_USE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'La sección está en uso y no se puede eliminar.',
+  },
+  INVALID_HIERARCHY: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La jerarquía especificada no es válida.',
+  },
+
+  // Mailer
+  MAIL_PROVIDER_UNAVAILABLE: {
+    httpStatus: 502,
+    level: 'error',
+    defaultMessage: 'No se pudo enviar el correo. Inténtalo más tarde.',
+  },
+} as const satisfies Record<string, ErrorCatalogEntry>;
+
+export type ErrorCode = keyof typeof ERROR_CATALOG;
+
+export function getErrorCatalogEntry(code: string): ErrorCatalogEntry {
+  return (
+    (ERROR_CATALOG as Record<string, ErrorCatalogEntry>)[code] ??
+    ERROR_CATALOG.INTERNAL_UNEXPECTED
+  );
+}

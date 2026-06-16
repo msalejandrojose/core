@@ -57,6 +57,40 @@ $ pnpm run test:e2e
 $ pnpm run test:cov
 ```
 
+## Sistema de excepciones y códigos de error
+
+La API centraliza el manejo de errores en `src/shared/`:
+
+- **`shared/errors/error-catalog.ts`**: catálogo único de códigos de error. Cada entrada define `code` (formato `DOMINIO_SUBDOMINIO_CAUSA`, p.ej. `USER_NOT_FOUND`), `httpStatus`, `level` (`info | warn | error | critical`), `defaultMessage` y opcionalmente `i18nKey`.
+- **`shared/errors/domain-error.ts`**: clase base `DomainError` (sin dependencias de Nest/HTTP) para errores lanzados desde la capa `domain/` de cada módulo. Recibe un `code` del catálogo, un mensaje y un `context` opcional.
+- **`shared/exceptions/app.exception.ts`**: clase `AppException extends HttpException`, pensada para lanzarse desde `application/`/`infrastructure/`. Resuelve automáticamente `httpStatus`, `level` y `message` a partir del catálogo y genera un `errorId` (UUID) único por instancia.
+- **`shared/filters/app-exception.filter.ts`**: filtro global (`APP_FILTER`, registrado en `AppModule`) que captura `AppException`, `DomainError`, cualquier otra `HttpException` (p.ej. `ValidationPipe`) y errores no controlados (normalizados a `INTERNAL_UNEXPECTED` / `critical`).
+
+### Qué hace el filtro global
+
+1. Responde al cliente con un JSON estandarizado: `{ errorId, code, message, level, timestamp, path }`.
+2. Loggea en stdout un JSON estructurado (vía Pino, ver `infrastructure/logger/structured-logger.ts`) con `errorId`, `code`, `level`, `httpStatus`, `path`, `method`, `userId` y, solo para `error`/`critical`, el `stack`. Visible con `docker compose logs api`.
+3. Persiste de forma asíncrona (no bloqueante) un registro en la tabla `ErrorLog` vía `ErrorLogService`, para todo error con `level` distinto de `info`.
+
+### Cómo agregar un nuevo código de error
+
+1. Agregar la entrada al `ERROR_CATALOG` en `shared/errors/error-catalog.ts` con su `code`, `httpStatus`, `level` y `defaultMessage`.
+2. Lanzarlo:
+   - Desde `domain/`: crear (o reutilizar) una subclase de `DomainError`, p.ej. `throw new UserNotFoundError(userId)`.
+   - Desde `application/`/`infrastructure/`: `throw new AppException('USER_NOT_FOUND', { context: { userId } })`.
+3. No es necesario tocar el filtro global: resuelve cualquier código nuevo automáticamente a partir del catálogo.
+
+### Niveles y su significado (contrato para el frontend)
+
+| Level      | Uso esperado en frontend                  |
+|------------|--------------------------------------------|
+| `info`     | No se persiste en `ErrorLog`; feedback liviano (toast informativo). |
+| `warn`     | Errores esperables (validación, recursos no encontrados, conflictos). Toast/notificación. |
+| `error`    | Errores inesperados recuperables. Modal de error. |
+| `critical` | Errores graves (caída de infraestructura, etc.). Pantalla completa de error. |
+
+> Nota: al momento de escribir esto, los proyectos en `apps/backoffice`, `apps/web` y `apps/mobile` no tienen código aún, por lo que el consumo de este contrato desde el frontend queda pendiente de implementación cuando esas apps existan.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
