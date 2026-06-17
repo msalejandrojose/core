@@ -29,6 +29,8 @@ apps/api/.storage/
 .env.local
 .env.*.local
 !apps/api/.env.local
+# Backoffice (Vite): .env lleva solo NO-secretos y SÍ se commitea; .env.local (secretos) queda ignorado.
+!apps/backoffice/.env
 
 # Logs
 *.log

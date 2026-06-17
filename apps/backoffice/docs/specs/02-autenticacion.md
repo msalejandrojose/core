@@ -14,6 +14,20 @@ protección de rutas y manejo del 401 global.
 - `@core/api-client` operativo (TASK-24).
 - API corriendo con `POST /auth/login` disponible.
 
+## Notas de implementación (desviaciones del draft)
+
+Al implementar se ajustó el draft al contrato real del API y a lo establecido en BO-01:
+
+1. **La respuesta de `/auth/login` es `{ accessToken, user }`** (no `{ token }`). El
+   `LoginResponseDto` del API expone `accessToken`; `use-login` usa `data.accessToken`.
+2. **`user` es el `UserResponseDto`**: `firstName`/`lastName` son `string | null` (no
+   opcionales) y trae además `isActive`, `lastLoginAt`, `createdAt`.
+3. **`client.ts` reutiliza `createApiClient` de `@core/api-client`** (patrón de BO-01) en lugar
+   de instanciar `openapi-fetch` a mano. La inyección del token vive en el wrapper; el backoffice
+   solo añade el interceptor de 401 (logout + `queryClient.clear()` + hard redirect a `/login`).
+4. **Mientras no exista el schema generado** (TASK-24, requiere API+DB), el type-check se apoya en
+   el placeholder gitignored de `@core/api-client` que modela `/auth/login` y `/auth/me`.
+
 ## Flujo de autenticación
 
 ```

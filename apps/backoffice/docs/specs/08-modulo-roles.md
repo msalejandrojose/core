@@ -13,6 +13,22 @@ y hacer create/update/delete. Sigue exactamente los mismos patrones de BO-06.
 - BO-04 (DataTable), BO-05 (CRUD base) y BO-06 (Usuarios) completados.
 - `@core/api-client` con todos los endpoints de roles disponibles.
 
+## Notas de implementación (desviaciones del draft)
+
+Implementado contra el contrato real del API:
+
+1. **Listado offset** (`/roles?page=&limit=&sort=&order=&scope=&codeContains=`) → se usa el modo
+   `offset` del DataTable. Búsqueda por `codeContains` (no `search`). (A diferencia de Usuarios,
+   que es cursor.)
+2. **Permisos**: `GET /roles/:roleId/permissions` devuelve `{ apiSectionId, level }[]` (no
+   `apiSectionCode`/`apiSectionName`/`permissionLevel`). Para mostrar code/name se cruza con
+   `GET /api-sections`. Setear = `PUT /roles/:roleId/permissions/:sectionId` con body `{ level }`
+   (la sección va en la **ruta**, no en el body). Revocar = `DELETE` mismo path.
+3. **Panel de permisos**: elegir un nivel hace grant (PUT); elegir `NONE` hace **revoke** (DELETE)
+   → la fila vuelve a "sin permiso". (No se expone el `NONE` como bloqueo explícito en v1.)
+4. **`code` admite `[a-z0-9_-]`** (2-64), no solo `[a-z0-9_]`; es inmutable (readonly en edición).
+5. `useDeleteRole` acepta `onSuccess` para redirigir a `/roles` desde el detalle.
+
 ## API endpoints usados
 
 | Método | Endpoint | Uso |

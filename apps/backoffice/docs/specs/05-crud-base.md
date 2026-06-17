@@ -11,6 +11,11 @@ de notificaciones toast con `sonner`.
 
 Estos componentes son el andamiaje que usan BO-06 (Usuarios) y BO-08 (Roles).
 
+> **Notas de implementación:** (1) `FieldWrapper` tipa el render-prop como
+> `ControllerRenderProps<T, FieldPath<T>>` en vez de `any`. (2) El botón destructivo de
+> `ConfirmDialog` usa el token `bg-destructive` del tema (no `bg-red-600` hardcoded). (3) El
+> ejemplo `CreateUserDialog` es solo referencia para BO-06; no se crea en esta tarea.
+
 ## Prerrequisitos
 
 - BO-01: `react-hook-form`, `zod`, `@hookform/resolvers`, `sonner` instalados.

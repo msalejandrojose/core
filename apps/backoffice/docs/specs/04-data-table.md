@@ -32,6 +32,11 @@ src/components/data-table/
 └── types.ts                  # tipos compartidos
 ```
 
+> **Nota de implementación:** `DataTableColumnHeader.tsx` (cabecera con sort) **no** se creó en
+> BO-04: la ordenación por columna está fuera de scope (ver final del documento) y el draft no
+> aporta su implementación. Se añadirá en el listado que lo necesite. Los estilos usan tokens del
+> tema en lugar de `zinc` hardcoded.
+
 ## Tipos — `types.ts`
 
 ```ts

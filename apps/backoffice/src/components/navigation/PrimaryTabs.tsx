@@ -1,0 +1,45 @@
+import { Link } from 'react-router-dom';
+import { firstRoute, sortByOrder } from '@/features/sections/nav';
+import type { SectionTreeNode } from '@/features/sections/types';
+import { resolveIcon } from '@/lib/icons';
+import { cn } from '@/lib/utils';
+
+/**
+ * Pestañas de navegación principal en el header. Cada tab es una sección de
+ * primer nivel; las de tipo grupo (sin ruta propia) navegan a su primera hija.
+ * El indicador activo es un subrayado alineado con el borde inferior del header.
+ */
+export function PrimaryTabs({
+  tree,
+  activeId,
+}: {
+  tree: SectionTreeNode[];
+  activeId?: string;
+}) {
+  return (
+    <nav className="flex h-14 items-center gap-1">
+      {sortByOrder(tree).map((node) => {
+        const Icon = resolveIcon(node.icon);
+        const to = firstRoute(node) ?? '#';
+        const active = node.id === activeId;
+
+        return (
+          <Link
+            key={node.id}
+            to={to}
+            className={cn(
+              'relative flex h-full items-center gap-2 px-3 text-sm font-medium transition-colors',
+              'after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors',
+              active
+                ? 'text-foreground after:bg-foreground'
+                : 'text-muted-foreground hover:text-foreground after:bg-transparent',
+            )}
+          >
+            <Icon size={16} />
+            {node.name}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}

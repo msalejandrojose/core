@@ -24,6 +24,12 @@ pnpm --filter @core/backoffice dlx shadcn@latest add \
   avatar dropdown-menu separator tooltip scroll-area badge
 ```
 
+> **Nota de implementación:** en BO-03 solo se instalaron `avatar` y `dropdown-menu` (los
+> únicos que usa este shell). `separator`, `tooltip`, `scroll-area` y `badge` se añadirán
+> cuando una tarea los necesite (p. ej. la data-table de BO-04). Además, el sidebar/topbar usan
+> los tokens del tema (`bg-card`, `bg-primary`, `text-muted-foreground`, `hover:bg-accent`…) en
+> lugar de colores `zinc` hardcoded, para mantener coherencia con shadcn y soportar dark mode.
+
 ## Estructura visual
 
 ```

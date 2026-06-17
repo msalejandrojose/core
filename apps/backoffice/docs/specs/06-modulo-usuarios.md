@@ -13,6 +13,21 @@ create/update/deactivate usando los patrones establecidos en BO-04 y BO-05.
 - BO-01 a BO-05 completados.
 - `@core/api-client` generado con los endpoints de IAM disponibles.
 
+## Notas de implementación (desviaciones del draft)
+
+El draft asumía un API offset (`page`/`search`/`PATCH …/deactivate`); el API real difiere y se
+implementó contra él:
+
+1. **Listado cursor-paginado**, no offset. `GET /users?limit=&cursor=&emailContains=&userType=&isActive=`
+   devuelve `{ data, meta: { limit, nextCursor, hasMore } }` — sin `total` ni nº de página.
+2. **Por eso se extendió el `DataTable` (BO-04) con un modo `cursor`** (prev/next mediante una pila
+   de cursores que mantiene `UsersPage`). El modo `offset` original sigue disponible.
+3. **Búsqueda por `emailContains`** (no `search`); solo filtra por email.
+4. **Desactivar = `DELETE /users/:id`** (204), no `PATCH /users/:id/deactivate`.
+5. **Crear exige `userType`** (`BACKOFFICE`|`APP`): el `CreateUserDialog` incluye un selector.
+6. `use-update-user` envía `firstName`/`lastName` como `null` para borrarlos (el API lo admite).
+7. Fechas con `toLocaleDateString('es-ES')` en vez de añadir `date-fns`.
+
 ## API endpoints usados
 
 | Método | Endpoint | Uso |
