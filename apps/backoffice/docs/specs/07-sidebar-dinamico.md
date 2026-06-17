@@ -1,13 +1,26 @@
-# Spec BO-07: Sidebar dinámico con @core/sections
+# Spec BO-07: Navegación dinámica con @core/sections
 
 > **Estado:** draft  
 > **Prioridad:** Media | **Categoría:** Backoffice
 
 ## Objetivo
 
-Reemplazar el sidebar hardcoded de BO-03 por uno dinámico que consume el árbol
-de secciones de `GET /sections/tree?scope=BACKOFFICE`. La navegación disponible
-se adapta a los permisos del usuario autenticado.
+Reemplazar el sidebar hardcoded de BO-03 por una navegación dinámica que consume el árbol
+de secciones. La navegación disponible se adapta a los permisos del usuario autenticado.
+
+## Notas de implementación (desviaciones del draft)
+
+1. **Diseño: pestañas en el header, no sidebar lateral.** A petición de producto, la navegación
+   principal son pestañas horizontales dentro del header (look moderno) y las **secciones hijas**
+   de la pestaña activa aparecen en una subnavegación justo debajo. Sustituye al `DynamicSidebar`
+   lateral que proponía el draft. Componentes: `components/navigation/AppHeader`, `PrimaryTabs`,
+   `SectionSubnav`, `UserMenu`. Se eliminan `Sidebar.tsx` y `Topbar.tsx` de BO-03.
+2. **El backend `GET /sections/tree` y el package `@core/sections` aún no existen** (TASK-38
+   pendiente; lo que hay en el API es `api-sections`, el catálogo de permisos IAM, que es otro
+   concepto). Por eso `use-section-tree` devuelve hoy un **árbol local tipado** (`SectionTreeNode`,
+   en `features/sections/`) con la forma exacta del futuro endpoint. El cambio a datos remotos es
+   una sola sustitución del `queryFn` (documentada en el hook). El tipo se moverá a `@core/sections`
+   cuando ese módulo exista.
 
 ## Prerrequisitos
 
