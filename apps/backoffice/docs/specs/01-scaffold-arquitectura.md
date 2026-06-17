@@ -72,7 +72,8 @@ apps/backoffice/
 ├── tsconfig.app.json
 ├── tsconfig.node.json
 ├── components.json                  # shadcn config
-├── .env.local                       # VITE_API_URL=http://localhost:3000 (committed)
+├── .env                             # VITE_API_URL — solo NO-secretos (committed)
+├── .env.local                       # secretos / overrides locales (gitignored)
 ├── .env.example                     # plantilla
 ├── src/
 │   ├── main.tsx                     # ReactDOM.createRoot + providers
@@ -168,7 +169,17 @@ export function cn(...inputs: ClassValue[]) {
 }
 ```
 
-### `.env.local` (committed)
+### Convención de entorno (Vite)
+
+A diferencia del backend (`apps/api`, donde `.env` son los secretos), aquí se sigue la
+convención de Vite:
+
+- **`.env`** (committed): solo valores NO-secretos (URLs, endpoints). Requiere la excepción
+  `!apps/backoffice/.env` en el `.gitignore` raíz.
+- **`.env.local`** (gitignored): secretos y overrides locales. Nunca se commitea.
+- **`.env.example`** (committed): plantilla que documenta las claves.
+
+### `.env` (committed)
 
 ```
 VITE_API_URL=http://localhost:3000
