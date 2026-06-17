@@ -1,8 +1,13 @@
-# Core DS — recetas de componentes
+# Core DS — recetas de componentes (app mobile)
 
-Patrones extraídos de las capturas, escritos para el stack del repo: **React + Tailwind v4 +
-shadcn/ui + lucide-react + `cn()`**. Parte de aquí antes de inventar componentes. Las clases asumen los
-tokens de `tokens.css` ya cargados (`bg-background`, `bg-card`, `text-muted-foreground`, etc.).
+Patrones extraídos de las capturas de la app de Claude iOS. Escritos en **React + clases Tailwind** por
+ser el formato más portable; las clases asumen los tokens de `tokens.css` cargados (`bg-background`,
+`bg-card`, `text-muted-foreground`, etc.). Parte de aquí antes de inventar componentes.
+
+> **En `apps/mobile` (Ionic + React):** puedes (a) envolver/usar componentes de Ionic
+> (`IonList`/`IonItem`, `IonSegment`, `IonFab`, `IonModal`, `IonToggle`…) aplicando solo los tokens de
+> color/radio, o (b) componer con Tailwind como aquí. En ambos casos respeta áreas táctiles ≥44px,
+> safe-areas y la háptica (ver SKILL.md §1b). El lenguaje visual manda sobre los defaults del componente.
 
 ---
 

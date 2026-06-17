@@ -1,28 +1,34 @@
 ---
 name: core-design-system
 description: >
-  Referencia y herramienta de pensamiento para el diseño / design system de las apps del monorepo
-  `core` (backoffice React, web Astro, mobile Ionic). Define el "norte" estético — un lenguaje
-  visual cálido, editorial y minimalista inspirado en la app de Claude (fondos greige cálidos,
-  acento terracota/clay, tarjetas redondeadas, filas tipo ajustes iOS, iconografía de línea) — más
-  los tokens concretos (color en oklch para Tailwind v4 + shadcn/ui, tipografía, espaciado, radios,
-  elevación) y recetas de componentes. Úsala SIEMPRE que el usuario quiera pensar, definir, discutir,
-  extender o auditar el diseño visual, la identidad, los colores, la tipografía, los tokens, el tema
-  claro/oscuro o cualquier componente de UI de estas apps. Dispara con generosidad: "pensar el diseño",
-  "qué colores usamos", "cómo debería verse esta pantalla", "monta los tokens", "esto se ve genérico",
-  "hazlo más cálido", "design system", "tema oscuro", etc.
+  Referencia y herramienta de pensamiento para el diseño / design system de la **app mobile** del
+  monorepo `core` (`apps/mobile`, Ionic + React PWA + iOS/Android). Define el "norte" estético — un
+  lenguaje visual cálido, editorial, minimalista y nativo-móvil inspirado en la app de Claude iOS
+  (fondos greige cálidos, acento terracota/clay, tarjetas redondeadas, filas tipo ajustes iOS,
+  iconografía de línea) — más los tokens concretos (color en oklch, tipografía, espaciado, radios,
+  elevación, áreas táctiles) y recetas de componentes. Úsala SIEMPRE que el usuario quiera pensar,
+  definir, discutir, extender o auditar el diseño visual, la identidad, los colores, la tipografía,
+  los tokens, el tema claro/oscuro, una pantalla o cualquier componente de UI de la app mobile.
+  Dispara con generosidad: "pensar el diseño de la app", "cómo se ve la pantalla de ajustes",
+  "qué colores usamos", "monta los tokens", "esto se ve genérico", "hazlo más cálido", "design
+  system mobile", "tema oscuro", etc. (Para el backoffice React o la web Astro la paleta sirve de
+  base, pero esta skill está pensada y escrita para mobile.)
 ---
 
-# Core — Design System
+# Core — Design System (app mobile)
 
-Esta skill es la **fuente de verdad del lenguaje visual** de las apps del monorepo `core`. No es
-solo una paleta: es el criterio para decidir si una pantalla "se siente Core" o se siente a plantilla
-genérica de Tailwind. Si algo aquí choca con lo que ya hay en el código, **manda el código** —
-actualiza este archivo y avísale al usuario.
+Esta skill es la **fuente de verdad del lenguaje visual de la app mobile** (`apps/mobile`, Ionic +
+React PWA con build a iOS/Android). No es solo una paleta: es el criterio para decidir si una pantalla
+"se siente Core" o se siente a plantilla genérica. Si algo aquí choca con lo que ya hay en el código,
+**manda el código** — actualiza este archivo y avísale al usuario.
 
-> Estado: **draft / en exploración**. El usuario está "pensando" el diseño. Usa esto como punto de
-> partida y propón evoluciones; no lo trates como inamovible. Cuando se confirme una decisión,
+> Estado: **draft / en exploración**. `apps/mobile` todavía está vacío (`.gitkeep`); esto es el brief
+> de diseño con el que arrancaremos ese módulo. El usuario está "pensando" el diseño. Usa esto como
+> punto de partida y propón evoluciones; no lo trates como inamovible. Cuando se confirme una decisión,
 > escríbela aquí.
+>
+> La paleta y el norte también valen como base para `apps/backoffice` (React) y `apps/web` (Astro),
+> pero los detalles de aplicación y los patrones de esta skill están escritos para **mobile**.
 
 ## 0. De dónde sale esto
 
@@ -55,6 +61,26 @@ Cinco palabras: **cálido, editorial, tranquilo, táctil, sin ruido.**
 - ❌ Radios pequeños (4–8px) en tarjetas. → `rounded-2xl` (16px) para tarjetas, full para pills.
 - ❌ Texto secundario en negro puro o gris frío. → `muted-foreground` greige.
 - ❌ Densidad alta tipo dashboard. → Aire. Padding generoso, pocas cosas por fila.
+
+## 1b. Reglas nativo-móvil (específicas de mobile)
+
+Las capturas son de una app iOS y ese es el listón: tiene que sentirse nativa, no una web metida en
+un WebView.
+
+- **Áreas táctiles ≥ 44×44px** (objetivo iOS HIG). Las filas y botones de las recetas ya lo cumplen;
+  no encojas el padding por "caber más".
+- **Safe areas.** Respeta los insets del notch/Dynamic Island y el home indicator: usa
+  `env(safe-area-inset-*)` (Ionic expone `--ion-safe-area-*`). Headers y FABs nunca pegados al borde físico.
+- **Acciones al alcance del pulgar.** Lo primario va abajo: FAB y barra de pestañas en la zona inferior;
+  navegación y títulos arriba. Igual que en las capturas (FAB "Nueva conversación" abajo).
+- **Sheets / bottom sheets** para acciones contextuales y formularios cortos, en vez de páginas nuevas
+  cuando sea posible. Radios grandes arriba (`rounded-t-3xl`), handle opcional.
+- **Háptica.** Hay un ajuste "Respuesta háptica" en las capturas: confirma acciones importantes con un
+  tap háptico ligero (Capacitor Haptics). Es parte del lenguaje táctil del producto.
+- **Gestos.** Swipe-back nativo, pull-to-refresh, swipe en filas para acciones. No reinventes la
+  navegación; apóyate en los componentes de Ionic.
+- **Transiciones nativas** por plataforma (iOS push/modal, Android material). Deja que Ionic las gestione.
+- **Rendimiento percibido.** Skeletons sobre superficie `card`, nunca spinners a pantalla completa.
 
 ## 2. Paleta de color
 
@@ -165,32 +191,49 @@ Prohibido `shadow-lg`/`shadow-xl` de Tailwind directos: son demasiado azules y d
 
 ## 7. Iconografía
 
-- **Estilo línea / outline, monocromo, stroke ~1.5–2px.** Coincide con `lucide-react`, que ya está en
-  el backoffice (`iconLibrary: lucide` en `components.json`). **Usa lucide.**
+- **Estilo línea / outline, monocromo, stroke ~1.5–2px.** En mobile usa **`ionicons`** (viene con
+  Ionic) o **`lucide-react`** (el mismo set que el backoffice). Elige uno y sé consistente; ambos casan
+  con el look de línea de las capturas.
 - Tamaño en fila: 20–22px. Color: `foreground` al ~80% o `muted-foreground` según jerarquía.
 - Iconos de avatar/categoría pueden ir dentro de un cuadrado redondeado con tinte suave (clay/purple
   al ~12% de opacidad de fondo + icono al color pleno) — ver fila de tipo en la captura de lista.
 
 ## 8. Componentes (patrones)
 
-Recetas concretas (JSX + Tailwind para el stack shadcn del repo) en **`references/patterns.md`**:
-filas de ajustes agrupadas, segmented control tipo pill, FAB, selector de tema (Claro/Oscuro/Sistema),
-tarjetas de lista, toggle, header de pantalla. Cuando montes UI nueva, **parte de esas recetas** antes
-de inventar.
+Recetas concretas en **`references/patterns.md`**: filas de ajustes agrupadas, segmented control tipo
+pill, FAB, selector de tema (Claro/Oscuro/Sistema), tarjetas de lista, toggle, header de pantalla.
+Cuando montes UI nueva, **parte de esas recetas** antes de inventar.
 
-## 9. Cómo aplicar esto al código (Tailwind v4 + shadcn)
+> Las recetas están escritas con clases Tailwind por ser el formato más portable y porque el repo ya lo
+> usa. En `apps/mobile` (Ionic) tienes dos caminos válidos: (a) usar los componentes de Ionic
+> (`IonList`/`IonItem`, `IonSegment`, `IonFab`, `IonModal`…) y aplicar **solo** los tokens de color/radio
+> de esta skill; o (b) componer con Tailwind como en el backoffice. El que elijas, **el lenguaje visual
+> (color, radio, espaciado, áreas táctiles) manda sobre los defaults del componente**.
 
-El backoffice (`apps/backoffice`) usa shadcn/ui "new-york" con tokens oklch en
-`src/index.css` y `baseColor: zinc`. Para adoptar este DS:
+## 9. Cómo aplicar esto al código (Ionic + React)
 
-1. **Sustituye el bloque `:root` y `.dark`** de `apps/backoffice/src/index.css` por el de
-   `references/tokens.css` (mismos nombres de variable shadcn → cero cambios en componentes).
-2. Sube `--radius` a `1rem`.
-3. Añade las fuentes (serif display + sans UI) y mapea `--font-serif` / `--font-sans` en `@theme`.
-4. **No** toques `components.json` salvo para confirmar `iconLibrary: lucide`.
-5. Verifica contraste AA del texto sobre superficies (el `foreground` near-black sobre greige pasa de sobra).
+`apps/mobile` está planeado como **Ionic + React PWA** (build a iOS/Android vía Capacitor) y hoy está
+vacío. Al arrancar el módulo, el lenguaje visual se cablea así:
 
-> **Importante:** esta skill es de *pensamiento/diseño*. **No** reescribas `index.css` ni toques el
+1. **Variables de tema.** Define en el CSS global de la app los tokens de `references/tokens.css` (oklch,
+   light + `.dark` cálido) y **mapéalos a las variables de Ionic** para que sus componentes hereden el
+   look. Equivalencias clave:
+   - `--ion-background-color` ← `background`
+   - `--ion-text-color` ← `foreground`
+   - `--ion-color-primary` ← `primary` (clay) · `--ion-color-danger` ← `destructive` (brick)
+   - superficies de tarjeta/fila ← `card`; `--ion-border-color` ← `border` (hairline)
+   - Para el dark de Ionic usa la estrategia de clase/`prefers-color-scheme` con el bloque `.dark`.
+2. **Radio base `1rem`** y radios de §5 en tarjetas/sheets.
+3. **Fuentes:** serif display (Fraunces/Lora) para wordmark/títulos grandes + sans UI (Inter o
+   `system-ui`, que en iOS da SF y mantiene el look nativo de las capturas).
+4. **Iconos:** un único set (ionicons o lucide), stroke fino (§7).
+5. **Capacitor:** Haptics para la respuesta háptica, y `StatusBar`/`SafeArea` para insets (§1b).
+6. Verifica contraste AA del texto sobre superficies (el `foreground` near-black sobre greige pasa de sobra).
+
+> Si en lugar de PWA/Ionic se decide otro stack (p. ej. Expo/React Native), **el norte (§1–1b) y la
+> paleta (§2) no cambian**; solo cambia cómo se cablean los tokens. Actualiza esta sección si pasa.
+
+> **Importante:** esta skill es de *pensamiento/diseño*. **No** scaffoldees `apps/mobile` ni toques el
 > código de las apps a menos que el usuario lo pida explícitamente. Por defecto, propón y razona.
 
 ## 10. Proceso para evolucionar el DS
