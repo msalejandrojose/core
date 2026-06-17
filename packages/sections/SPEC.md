@@ -291,10 +291,11 @@ model RoleSectionAccess {
   access      SectionAccessType
   createdAt   DateTime          @default(now()) @map("created_at")
 
-  userRole UserRole @relation(fields: [userRoleId], references: [id], onDelete: Cascade)
-  section  Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  userRole    UserRole            @relation(fields: [userRoleId], references: [id], onDelete: Cascade)
+  section     Section             @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@id([userRoleId, sectionId])
+  @@index([sectionId])
   @@map("role_section_access")
 }
 
@@ -304,15 +305,84 @@ model UserSectionAccess {
   access    SectionAccessType
   createdAt DateTime          @default(now()) @map("created_at")
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  section     Section             @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@id([userId, sectionId])
+  @@index([sectionId])
   @@map("user_section_access")
 }
 ```
 
 ## Seed inicial
+Además, añadir las relaciones inversas en los modelos existentes (`User` y `UserRole` del schema actual):
+
+```prisma
+model User {
+  // … campos existentes …
+  sectionAccess     UserSectionAccess[]
+}
+
+model UserRole {
+  // … campos existentes …
+  sectionAccess     RoleSectionAccess[]
+}
+```
+
+Decisiones:
+
+- **`code` único por `scope`**, no globalmente. Permite `("BACKOFFICE", "settings")` y `("APP", "settings")` distintos.
+- **`defaultAccess` en la propia `Section`** y no como tabla aparte porque es una decisión de diseño de la sección, no de un asignador.
+- **`RoleSectionAccess` y `UserSectionAccess`** replican el patrón ya consolidado de `RoleApiSectionPermission` / `UserApiSectionPermission` del módulo IAM (consistencia para quien lee el schema). La diferencia: aquí no hay nivel (`READ/WRITE/…`), solo `GRANT/DENY` porque la unidad de UI no tiene granularidad de operación.
+- **JSON columns** para `icon`/`route`/`badge`/`visibleWhen`/`meta`: estos campos cambian de forma con el tiempo (nuevos `IconRef.kind`, etc.), no compensa modelar columnas. La validación la hace el módulo en application.
+- **Soft-delete vía `isActive`** porque secciones huérfanas en el front (`route` cacheada) deben fallar suave.
+- **`@@index([scope, parentSectionId, order])`** porque el endpoint `/tree` ordena por eso siempre.
+- **`@@index([sectionId])`** en las dos tablas de acceso para responder rápido al `GET /api/sections/:id/access`.
+
+---
+
+## 8. Módulo backend (`apps/api/src/modules/sections/`)
+
+Estructura hexagonal estándar (ver core-architecture skill §2.2). Específico:
+
+```
+modules/sections/
+├── domain/
+│   ├── entities/
+│   │   ├── section.entity.ts                       # objeto puro TS
+│   │   └── section-access.entity.ts                # value-object para grants
+│   └── errors/{circular-hierarchy,duplicate-code,scope-mismatch}.error.ts
+├── application/
+│   ├── ports/
+│   │   ├── section-repository.port.ts
+│   │   └── section-access-repository.port.ts
+│   ├── use-cases/
+│   │   ├── list-sections.use-case.ts
+│   │   ├── create-section.use-case.ts
+│   │   ├── update-section.use-case.ts
+│   │   ├── delete-section.use-case.ts
+│   │   ├── move-section.use-case.ts
+│   │   ├── get-section-tree.use-case.ts            # filtrado por permisos del usuario
+│   │   ├── set-role-section-access.use-case.ts
+│   │   ├── set-user-section-access.use-case.ts
+│   │   ├── revoke-role-section-access.use-case.ts
+│   │   └── revoke-user-section-access.use-case.ts
+│   └── services/
+│       └── section-access-resolver.ts              # implementa el algoritmo de §5.2
+├── infrastructure/
+│   ├── persistence/
+│   │   ├── prisma-section.repository.ts
+│   │   └── prisma-section-access.repository.ts
+│   ├── mappers/section.mapper.ts
+│   └── http/
+│       ├── dto/{create,update,move,tree-query,set-access}.dto.ts
+│       └── sections.controller.ts
+└── sections.module.ts
+```
+
+`SectionAccessResolver` es **puro** (recibe la lista de `RoleSectionAccess` y `UserSectionAccess` que aplican al usuario y devuelve el árbol filtrado). No depende del módulo IAM más allá de pedirle "qué roles tiene este usuario" — esa parte se inyecta como puerto.
+
+### Reglas de validación (domain)
 
 `apps/api/prisma/seeds/sections.seed.ts`
 

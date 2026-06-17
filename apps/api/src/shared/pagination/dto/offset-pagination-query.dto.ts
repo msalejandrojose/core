@@ -1,8 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
 
-export class CursorPaginationQueryDto {
+/**
+ * Query params para endpoints con paginación por offset. Solo se usa en
+ * los listados que necesiten `jump-to-page` (p. ej. tablas de admin con
+ * paginador clásico). Mutuamente excluyente con `cursor`.
+ */
+export class OffsetPaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Tamaño de página. Min 1, Max 100.',
     minimum: 1,
@@ -18,12 +23,16 @@ export class CursorPaginationQueryDto {
   limit?: number = 20;
 
   @ApiPropertyOptional({
-    description: 'Cursor opaco (base64url) devuelto en la página anterior.',
-    type: String,
+    description: 'Número de página (1-based).',
+    minimum: 1,
+    default: 1,
+    type: Number,
   })
   @IsOptional()
-  @IsString()
-  cursor?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
 
   @ApiPropertyOptional({
     description: 'Ordenación, formato `field:asc` o `field:desc`.',
