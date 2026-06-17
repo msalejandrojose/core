@@ -1,0 +1,134 @@
+/* ============================================================================
+ * Core Design System — token kit (Tailwind v4 + shadcn/ui)
+ * ----------------------------------------------------------------------------
+ * Drop-in para apps/backoffice/src/index.css. Mantiene los MISMOS nombres de
+ * variable que shadcn/ui, así que sustituir los bloques :root y .dark no rompe
+ * ningún componente existente. Paleta greige cálida + acento clay, muestreada
+ * de la app de Claude. Valores en oklch.
+ *
+ * Uso: reemplaza los bloques :root y .dark de index.css por estos. El bloque
+ * `@theme inline` que ya tiene el backoffice no necesita cambios (mapea estas
+ * variables a clases de color). Sube --radius a 1rem como aquí.
+ * ========================================================================== */
+
+:root {
+  --radius: 1rem; /* tarjetas redondeadas; el backoffice trae 0.625rem */
+
+  /* Superficies cálidas (greige) */
+  --background: oklch(0.952 0.004 91.4);   /* #F0EFEC fondo app */
+  --foreground: oklch(0.284 0.005 106.7);  /* #2A2A27 near-black cálido */
+  --card: oklch(0.982 0.003 106.4);        /* #F9F9F7 superficie elevada */
+  --card-foreground: oklch(0.284 0.005 106.7);
+  --popover: oklch(0.982 0.003 106.4);
+  --popover-foreground: oklch(0.284 0.005 106.7);
+
+  /* Marca = clay/terracota */
+  --primary: oklch(0.610 0.114 41.7);          /* #BC6A4A */
+  --primary-foreground: oklch(0.985 0.002 106);/* texto sobre clay */
+
+  /* Secundario / inset */
+  --secondary: oklch(0.937 0.008 91.5);        /* #ECEAE4 campos inset */
+  --secondary-foreground: oklch(0.284 0.005 106.7);
+  --muted: oklch(0.937 0.008 91.5);
+  --muted-foreground: oklch(0.674 0.015 88.7); /* #9A968C cabeceras/captions */
+  --accent: oklch(0.924 0.007 97.4);           /* #E7E6E1 fila de ajustes / hover */
+  --accent-foreground: oklch(0.284 0.005 106.7);
+
+  /* Funcionales */
+  --destructive: oklch(0.514 0.128 28.4);      /* #A4453B brick */
+  --border: oklch(0.913 0.010 87.5);           /* #E5E2DB hairline */
+  --input: oklch(0.913 0.010 87.5);
+  --ring: oklch(0.610 0.114 41.7);             /* foco = clay */
+
+  /* Charts: clay + análogos cálidos + el azul/púrpura funcionales */
+  --chart-1: oklch(0.610 0.114 41.7);  /* clay */
+  --chart-2: oklch(0.536 0.152 258.4); /* blue */
+  --chart-3: oklch(0.569 0.174 284.4); /* purple */
+  --chart-4: oklch(0.674 0.015 88.7);  /* greige */
+  --chart-5: oklch(0.514 0.128 28.4);  /* brick */
+
+  /* Sidebar (backoffice) */
+  --sidebar: oklch(0.982 0.003 106.4);
+  --sidebar-foreground: oklch(0.284 0.005 106.7);
+  --sidebar-primary: oklch(0.610 0.114 41.7);
+  --sidebar-primary-foreground: oklch(0.985 0.002 106);
+  --sidebar-accent: oklch(0.924 0.007 97.4);
+  --sidebar-accent-foreground: oklch(0.284 0.005 106.7);
+  --sidebar-border: oklch(0.913 0.010 87.5);
+  --sidebar-ring: oklch(0.610 0.114 41.7);
+
+  /* Extras Core (no son shadcn estándar; mapéalos en @theme si los usas) */
+  --info: oklch(0.536 0.152 258.4);    /* blue funcional: toggles, "Sistema" */
+  --brand-purple: oklch(0.569 0.174 284.4);
+  --primary-pressed: oklch(0.546 0.116 40.4); /* #A85638 clay deep */
+}
+
+.dark {
+  /* Oscuro CÁLIDO (no zinc azulado) */
+  --background: oklch(0.222 0.004 84.6);   /* #1C1B19 */
+  --foreground: oklch(0.958 0.007 97.4);   /* #F2F1EC */
+  --card: oklch(0.265 0.004 84.6);         /* #262523 */
+  --card-foreground: oklch(0.958 0.007 97.4);
+  --popover: oklch(0.265 0.004 84.6);
+  --popover-foreground: oklch(0.958 0.007 97.4);
+
+  --primary: oklch(0.690 0.103 46.8);      /* clay on dark #D08763 */
+  --primary-foreground: oklch(0.222 0.004 84.6);
+
+  --secondary: oklch(0.301 0.005 91.6);    /* #2F2E2B inset */
+  --secondary-foreground: oklch(0.958 0.007 97.4);
+  --muted: oklch(0.301 0.005 91.6);
+  --muted-foreground: oklch(0.696 0.015 88.7); /* #A19D93 */
+  --accent: oklch(0.333 0.012 93.8);
+  --accent-foreground: oklch(0.958 0.007 97.4);
+
+  --destructive: oklch(0.669 0.131 32.9);  /* brick on dark #D9745F */
+  --border: oklch(0.333 0.012 93.8);       /* #38362F */
+  --input: oklch(0.333 0.012 93.8);
+  --ring: oklch(0.690 0.103 46.8);
+
+  --chart-1: oklch(0.690 0.103 46.8);
+  --chart-2: oklch(0.701 0.119 257.9);
+  --chart-3: oklch(0.701 0.140 284);
+  --chart-4: oklch(0.696 0.015 88.7);
+  --chart-5: oklch(0.669 0.131 32.9);
+
+  --sidebar: oklch(0.265 0.004 84.6);
+  --sidebar-foreground: oklch(0.958 0.007 97.4);
+  --sidebar-primary: oklch(0.690 0.103 46.8);
+  --sidebar-primary-foreground: oklch(0.222 0.004 84.6);
+  --sidebar-accent: oklch(0.333 0.012 93.8);
+  --sidebar-accent-foreground: oklch(0.958 0.007 97.4);
+  --sidebar-border: oklch(0.333 0.012 93.8);
+  --sidebar-ring: oklch(0.690 0.103 46.8);
+
+  --info: oklch(0.701 0.119 257.9);        /* blue on dark #6FA0E8 */
+  --brand-purple: oklch(0.701 0.140 284);
+  --primary-pressed: oklch(0.620 0.110 44);
+}
+
+/* ----------------------------------------------------------------------------
+ * Fuentes (opcional). Carga Fraunces (display serif) + Inter (UI sans) y
+ * descomenta. Si no, system-ui ya da SF en iOS y mantiene el look de las capturas.
+ * En Tailwind v4 estos tokens habilitan font-serif / font-sans.
+ * ------------------------------------------------------------------------- */
+/*
+@theme inline {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-serif: "Fraunces", "Lora", Georgia, serif;
+  --color-info: var(--info);
+  --color-brand-purple: var(--brand-purple);
+}
+*/
+
+/* ----------------------------------------------------------------------------
+ * Elevación (utilidades). Casi plano: la jerarquía la da superficie + radio.
+ * ------------------------------------------------------------------------- */
+@layer utilities {
+  .shadow-card {
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.04), 0 1px 1px oklch(0 0 0 / 0.03);
+  }
+  .shadow-floating {
+    box-shadow: 0 8px 24px oklch(0 0 0 / 0.10), 0 2px 6px oklch(0 0 0 / 0.06);
+  }
+}
