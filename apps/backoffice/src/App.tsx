@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { RoleDetailPage } from '@/features/roles/RoleDetailPage';
+import { RolesPage } from '@/features/roles/RolesPage';
 import { UserDetailPage } from '@/features/users/UserDetailPage';
 import { UsersPage } from '@/features/users/UsersPage';
 import { AppLayout } from '@/layouts/AppLayout';
@@ -22,7 +24,8 @@ export default function App() {
             <Route path="/dashboard" element={<div>Dashboard</div>} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/users/:id" element={<UserDetailPage />} />
-            {/* Resto de rutas en BO-08… */}
+            <Route path="/roles" element={<RolesPage />} />
+            <Route path="/roles/:id" element={<RoleDetailPage />} />
           </Route>
         </Route>
 
