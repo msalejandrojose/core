@@ -1,0 +1,15 @@
+/* Estilos globales mínimos. Phase 2 (BO-01/TASK-42) añade Tailwind v4. */
+:root {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: #fafafa;
+  color: #111;
+}
