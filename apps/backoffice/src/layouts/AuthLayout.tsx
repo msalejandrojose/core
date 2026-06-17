@@ -1,8 +1,8 @@
 import { Outlet } from 'react-router-dom';
 
 /**
- * Layout de rutas públicas (login). Centra el contenido en la pantalla.
- * BO-03 puede ampliarlo (branding, ilustración lateral, etc.).
+ * Layout de rutas públicas (login). Fondo neutro con el contenido centrado,
+ * sin sidebar ni topbar.
  */
 export function AuthLayout() {
   return (
