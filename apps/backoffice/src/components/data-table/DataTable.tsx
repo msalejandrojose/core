@@ -18,15 +18,13 @@ import {
 import { DataTableEmptyState } from './DataTableEmptyState';
 import { DataTablePagination } from './DataTablePagination';
 import { DataTableSkeleton } from './DataTableSkeleton';
-import type { DataTablePaginationProps } from './types';
+import type { DataTablePaginationConfig } from './types';
 
 interface DataTableProps<T> {
   data: T[];
   columns: ColumnDef<T>[];
   isLoading?: boolean;
-  pagination: DataTablePaginationProps['pagination'];
-  onPageChange: DataTablePaginationProps['onPageChange'];
-  onLimitChange?: DataTablePaginationProps['onLimitChange'];
+  pagination: DataTablePaginationConfig;
   onSearch?: (value: string) => void;
   searchPlaceholder?: string;
   emptyMessage?: string;
@@ -38,8 +36,6 @@ export function DataTable<T>({
   columns,
   isLoading,
   pagination,
-  onPageChange,
-  onLimitChange,
   onSearch,
   searchPlaceholder = 'Buscar…',
   emptyMessage = 'Sin resultados',
@@ -59,7 +55,7 @@ export function DataTable<T>({
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true, // la paginación la gestiona el servidor
     manualSorting: true,
-    rowCount: pagination.total,
+    rowCount: pagination.mode === 'offset' ? pagination.pagination.total : undefined,
   });
 
   return (
@@ -127,11 +123,7 @@ export function DataTable<T>({
       </div>
 
       {/* Paginación */}
-      <DataTablePagination
-        pagination={pagination}
-        onPageChange={onPageChange}
-        onLimitChange={onLimitChange}
-      />
+      <DataTablePagination {...pagination} />
     </div>
   );
 }

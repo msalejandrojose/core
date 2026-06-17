@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { UserDetailPage } from '@/features/users/UserDetailPage';
+import { UsersPage } from '@/features/users/UsersPage';
 import { AppLayout } from '@/layouts/AppLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
 
@@ -18,7 +20,9 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<div>Dashboard</div>} />
-            {/* Resto de rutas en BO-06, BO-08… */}
+            <Route path="/users" element={<UsersPage />} />
+            <Route path="/users/:id" element={<UserDetailPage />} />
+            {/* Resto de rutas en BO-08… */}
           </Route>
         </Route>
 
