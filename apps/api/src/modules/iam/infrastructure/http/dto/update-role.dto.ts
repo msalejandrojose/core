@@ -21,7 +21,7 @@ export class UpdateRoleDto {
   @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional({ maxLength: 500, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 500, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsString()
@@ -33,7 +33,11 @@ export class UpdateRoleDto {
   @IsIn(ROLE_SCOPES)
   scope?: RoleScope;
 
-  @ApiPropertyOptional({ nullable: true, description: 'null = quitar parent.' })
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'null = quitar parent.',
+  })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsUUID()

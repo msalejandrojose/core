@@ -15,14 +15,14 @@ import {
 // password (flujo aparte con verificación de la actual).
 export class UpdateUserDto {
   // `null` está permitido explícitamente para "borrar" el nombre.
-  @ApiPropertyOptional({ maxLength: 100, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 100, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsString()
   @MaxLength(100)
   firstName?: string | null;
 
-  @ApiPropertyOptional({ maxLength: 100, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 100, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsString()

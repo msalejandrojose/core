@@ -17,14 +17,18 @@ export class UpdateApiSectionDto {
   @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional({ maxLength: 500, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 500, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsString()
   @MaxLength(500)
   description?: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'null = sacar el parent.' })
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'null = sacar el parent.',
+  })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsUUID()

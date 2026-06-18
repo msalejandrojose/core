@@ -11,10 +11,10 @@ export class UserResponseDto {
   @ApiProperty()
   email!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   firstName!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   lastName!: string | null;
 
   @ApiProperty({ enum: ['BACKOFFICE', 'APP'] as const })
@@ -23,7 +23,7 @@ export class UserResponseDto {
   @ApiProperty()
   isActive!: boolean;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   lastLoginAt!: Date | null;
 
   @ApiProperty()
