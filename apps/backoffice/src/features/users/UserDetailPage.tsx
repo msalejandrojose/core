@@ -11,14 +11,13 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { DeactivateUserDialog } from './components/DeactivateUserDialog';
 import { EditUserForm } from './components/EditUserForm';
+import { UserRolesCard } from './components/UserRolesCard';
 import { useUser } from './hooks/use-user';
-import { useUserRoles } from './hooks/use-user-roles';
 
 export function UserDetailPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { data: user, isLoading } = useUser(id);
-  const { data: roles } = useUserRoles(id);
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -52,19 +51,7 @@ export function UserDetailPage() {
               <CardTitle>Roles</CardTitle>
             </CardHeader>
             <CardContent>
-              {roles && roles.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {roles.map((r) => (
-                    <Badge key={r.id} variant="outline">
-                      {r.name}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  Sin roles asignados
-                </p>
-              )}
+              <UserRolesCard userId={user.id} />
             </CardContent>
           </Card>
 
