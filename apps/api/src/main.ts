@@ -2,7 +2,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { DomainErrorFilter } from './shared/filters/domain-error.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,8 +18,8 @@ async function bootstrap() {
     }),
   );
 
-  // Mapea DomainError subclasses a respuestas HTTP estructuradas.
-  app.useGlobalFilters(new DomainErrorFilter());
+  // El filtro global de excepciones (`AppExceptionFilter`) se registra vía
+  // `APP_FILTER` en `app.module.ts` para que reciba `ErrorLogService` por DI.
 
   const config = new DocumentBuilder()
     .setTitle('Core API')
