@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { MoreHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { DataTableColumnHeader } from '@/components/data-table/DataTableColumnHeader';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,9 @@ const SCOPE_VARIANT: Record<RoleScope, 'default' | 'secondary' | 'outline'> = {
 export const columns: ColumnDef<RoleRow>[] = [
   {
     accessorKey: 'code',
-    header: 'Código',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Código" />
+    ),
     cell: ({ row }) => (
       <Link
         to={`/roles/${row.original.id}`}
@@ -32,10 +35,16 @@ export const columns: ColumnDef<RoleRow>[] = [
       </Link>
     ),
   },
-  { accessorKey: 'name', header: 'Nombre' },
+  {
+    accessorKey: 'name',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Nombre" />
+    ),
+  },
   {
     accessorKey: 'scope',
     header: 'Scope',
+    enableSorting: false,
     cell: ({ row }) => (
       <Badge variant={SCOPE_VARIANT[row.original.scope] ?? 'outline'}>
         {row.original.scope}
@@ -45,6 +54,7 @@ export const columns: ColumnDef<RoleRow>[] = [
   {
     accessorKey: 'description',
     header: 'Descripción',
+    enableSorting: false,
     cell: ({ row }) => (
       <span className="text-muted-foreground">
         {row.original.description ?? '—'}
@@ -53,6 +63,7 @@ export const columns: ColumnDef<RoleRow>[] = [
   },
   {
     id: 'actions',
+    enableSorting: false,
     cell: ({ row }) => <RoleRowActions id={row.original.id} />,
   },
 ];
