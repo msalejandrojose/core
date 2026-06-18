@@ -1,5 +1,7 @@
 import {
   type ColumnDef,
+  type OnChangeFn,
+  type SortingState,
   flexRender,
   getCoreRowModel,
   useReactTable,
@@ -29,6 +31,9 @@ interface DataTableProps<T> {
   searchPlaceholder?: string;
   emptyMessage?: string;
   toolbar?: ReactNode; // botón "Crear", filtros extra, etc.
+  /** Estado de orden controlado (server-side). Si se omite, no hay orden. */
+  sorting?: SortingState;
+  onSortingChange?: OnChangeFn<SortingState>;
 }
 
 export function DataTable<T>({
@@ -40,6 +45,8 @@ export function DataTable<T>({
   searchPlaceholder = 'Buscar…',
   emptyMessage = 'Sin resultados',
   toolbar,
+  sorting,
+  onSortingChange,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState('');
 
@@ -54,7 +61,9 @@ export function DataTable<T>({
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true, // la paginación la gestiona el servidor
-    manualSorting: true,
+    manualSorting: true, // el orden lo aplica el servidor
+    state: { sorting: sorting ?? [] },
+    onSortingChange,
     rowCount: pagination.mode === 'offset' ? pagination.pagination.total : undefined,
   });
 

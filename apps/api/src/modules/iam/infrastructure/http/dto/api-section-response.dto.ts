@@ -11,10 +11,10 @@ export class ApiSectionResponseDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   description!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   parentSectionId!: string | null;
 
   @ApiProperty()

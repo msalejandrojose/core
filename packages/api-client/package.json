@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "generate": "openapi-typescript $API_URL/docs-json -o src/generated/schema.d.ts"
+    "generate": "openapi-typescript $API_URL/docs-json --default-non-nullable false -o src/generated/schema.d.ts"
   },
   "dependencies": {
     "openapi-fetch": "^0.13.0"

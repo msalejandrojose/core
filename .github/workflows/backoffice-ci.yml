@@ -1,0 +1,58 @@
+name: Backoffice CI
+
+# Lint + type-check + build del backoffice en cada PR/push que toque el front,
+# la API o el api-client. El schema tipado de `@core/api-client` se genera en
+# el propio pipeline desde el OpenAPI de la API (sin Docker ni base de datos),
+# por lo que el type-check corre siempre contra el contrato real.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'apps/backoffice/**'
+      - 'packages/api-client/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/backoffice-ci.yml'
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'apps/backoffice/**'
+      - 'packages/api-client/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/backoffice-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build API
+        # `prebuild` ejecuta `prisma generate`; necesario para compilar la API.
+        run: pnpm build:api
+
+      - name: Generate OpenAPI spec (offline, sin DB)
+        run: node apps/api/dist/generate-openapi.js "$GITHUB_WORKSPACE/openapi.json"
+
+      - name: Generate api-client schema (BO-29)
+        run: >-
+          pnpm --filter @core/api-client exec openapi-typescript
+          "$GITHUB_WORKSPACE/openapi.json"
+          --default-non-nullable false
+          -o "$GITHUB_WORKSPACE/packages/api-client/src/generated/schema.d.ts"
+
+      - name: Lint backoffice
+        run: pnpm --filter @core/backoffice lint
+
+      - name: Type-check + build backoffice
+        run: pnpm build:backoffice

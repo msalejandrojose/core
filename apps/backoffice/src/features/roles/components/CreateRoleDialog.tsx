@@ -17,7 +17,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreateRole } from '../hooks/use-create-role';
+import { useRoles } from '../hooks/use-roles';
 import { ROLE_SCOPES } from '../types';
+
+// Valor centinela del selector para "sin rol padre": Radix Select no admite
+// items con value vacío, así que usamos esta clave y la mapeamos a undefined.
+const NO_PARENT = '__none__';
 
 const schema = z.object({
   code: z
@@ -28,6 +33,7 @@ const schema = z.object({
   name: z.string().min(1, 'Obligatorio').max(100),
   scope: z.enum(['BACKOFFICE', 'APP', 'SHARED']),
   description: z.string().max(500).optional(),
+  parentRoleId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -37,6 +43,7 @@ const DEFAULTS: FormValues = {
   name: '',
   scope: 'BACKOFFICE',
   description: '',
+  parentRoleId: NO_PARENT,
 };
 
 export function CreateRoleDialog() {
@@ -48,6 +55,8 @@ export function CreateRoleDialog() {
   const { mutate, isPending } = useCreateRole({
     onSuccess: () => handleOpenChange(false),
   });
+  const { data: rolesData } = useRoles({ page: 1, limit: 100 });
+  const parentOptions = rolesData?.data ?? [];
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
@@ -60,6 +69,10 @@ export function CreateRoleDialog() {
       name: v.name,
       scope: v.scope,
       description: v.description || undefined,
+      parentRoleId:
+        v.parentRoleId && v.parentRoleId !== NO_PARENT
+          ? v.parentRoleId
+          : undefined,
     }),
   );
 
@@ -97,6 +110,27 @@ export function CreateRoleDialog() {
                   {ROLE_SCOPES.map((s) => (
                     <SelectItem key={s} value={s}>
                       {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </FieldWrapper>
+          <FieldWrapper
+            control={form.control}
+            name="parentRoleId"
+            label="Rol padre"
+          >
+            {(field) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_PARENT}>Sin rol padre</SelectItem>
+                  {parentOptions.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

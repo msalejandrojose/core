@@ -1,3 +1,4 @@
+import type { SortingState } from '@tanstack/react-table';
 import { useState } from 'react';
 import { DataTable } from '@/components/data-table/DataTable';
 import { columns } from './columns';
@@ -9,11 +10,15 @@ export function RolesPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [search, setSearch] = useState('');
+  const [sorting, setSorting] = useState<SortingState>([]);
 
+  const sort = sorting[0];
   const { data, isLoading } = useRoles({
     page,
     limit,
     codeContains: search.trim() || undefined,
+    sort: sort?.id,
+    order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
   });
 
   const rows: RoleRow[] = data?.data ?? [];
@@ -26,6 +31,11 @@ export function RolesPage() {
         data={rows}
         columns={columns}
         isLoading={isLoading}
+        sorting={sorting}
+        onSortingChange={(updater) => {
+          setSorting(updater);
+          setPage(1);
+        }}
         pagination={{
           mode: 'offset',
           pagination: meta,

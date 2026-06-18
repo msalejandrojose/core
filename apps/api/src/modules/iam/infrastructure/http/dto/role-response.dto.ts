@@ -11,13 +11,13 @@ export class RoleResponseDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   description!: string | null;
 
   @ApiProperty({ enum: ['BACKOFFICE', 'APP', 'SHARED'] as const })
   scope!: RoleScope;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   parentRoleId!: string | null;
 
   @ApiProperty()

@@ -7,6 +7,8 @@ export interface UseRolesParams {
   limit: number;
   codeContains?: string;
   scope?: RoleScope;
+  sort?: string;
+  order?: 'asc' | 'desc';
 }
 
 /** Listado de roles (offset-paginado). */

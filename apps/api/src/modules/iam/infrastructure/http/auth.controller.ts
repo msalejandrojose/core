@@ -13,6 +13,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
 import { GetCurrentUserUseCase } from '../../application/use-cases/get-current-user.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
@@ -30,6 +31,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RequestResetDto } from './dto/request-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -41,6 +43,7 @@ export class AuthController {
     private readonly verifyEmail: VerifyEmailUseCase,
     private readonly requestPasswordReset: RequestPasswordResetUseCase,
     private readonly resetPassword: ResetPasswordUseCase,
+    private readonly changePassword: ChangePasswordUseCase,
   ) {}
 
   @Post('register')
@@ -100,6 +103,27 @@ export class AuthController {
   @ApiOkResponse({ schema: { example: { message: 'Contraseña actualizada correctamente.' } } })
   async resetPasswordAction(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
     await this.resetPassword.execute({ token: dto.token, password: dto.password });
+    return { message: 'Contraseña actualizada correctamente.' };
+  }
+
+  @Post('change-password')
+  @Auth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cambia la contraseña del usuario autenticado.',
+  })
+  @ApiOkResponse({
+    schema: { example: { message: 'Contraseña actualizada correctamente.' } },
+  })
+  async changePasswordAction(
+    @CurrentUser() current: AccessTokenPayload,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    await this.changePassword.execute({
+      userId: current.sub,
+      currentPassword: dto.currentPassword,
+      newPassword: dto.newPassword,
+    });
     return { message: 'Contraseña actualizada correctamente.' };
   }
 }

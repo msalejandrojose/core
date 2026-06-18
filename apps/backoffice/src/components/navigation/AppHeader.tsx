@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSectionTree } from '@/features/sections/hooks/use-section-tree';
 import { findActiveTop } from '@/features/sections/nav';
+import { Breadcrumbs } from './Breadcrumbs';
 import { PrimaryTabs } from './PrimaryTabs';
 import { SectionSubnav } from './SectionSubnav';
 import { UserMenu } from './UserMenu';
@@ -32,11 +34,13 @@ export function AppHeader() {
         ) : (
           <PrimaryTabs tree={sections} activeId={activeTop?.id} />
         )}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
           <UserMenu />
         </div>
       </div>
       {activeTop && <SectionSubnav section={activeTop} />}
+      <Breadcrumbs />
     </header>
   );
 }

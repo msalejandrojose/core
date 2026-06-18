@@ -14,13 +14,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useRoles } from '../hooks/use-roles';
 import { useUpdateRole } from '../hooks/use-update-role';
 import { ROLE_SCOPES, type RoleScope } from '../types';
+
+// Centinela para "sin rol padre" (Radix Select no admite value vacío).
+const NO_PARENT = '__none__';
 
 const schema = z.object({
   name: z.string().min(1, 'Obligatorio').max(100),
   scope: z.enum(['BACKOFFICE', 'APP', 'SHARED']),
   description: z.string().max(500),
+  parentRoleId: z.string(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -32,17 +37,23 @@ interface EditRoleFormProps {
     name: string;
     scope: RoleScope;
     description: string | null;
+    parentRoleId: string | null;
   };
 }
 
 export function EditRoleForm({ role }: EditRoleFormProps) {
   const { mutate, isPending } = useUpdateRole(role.id);
+  const { data: rolesData } = useRoles({ page: 1, limit: 100 });
+  // Excluye el propio rol para evitar el ciclo trivial (A → A); ciclos más
+  // profundos los rechaza la API.
+  const parentOptions = (rolesData?.data ?? []).filter((r) => r.id !== role.id);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: role.name,
       scope: role.scope,
       description: role.description ?? '',
+      parentRoleId: role.parentRoleId ?? NO_PARENT,
     },
   });
 
@@ -51,6 +62,8 @@ export function EditRoleForm({ role }: EditRoleFormProps) {
       name: v.name,
       scope: v.scope,
       description: v.description || null,
+      // NO_PARENT → null limpia el padre; el API admite null explícito.
+      parentRoleId: v.parentRoleId === NO_PARENT ? null : v.parentRoleId,
     }),
   );
 
@@ -74,6 +87,27 @@ export function EditRoleForm({ role }: EditRoleFormProps) {
                 {ROLE_SCOPES.map((s) => (
                   <SelectItem key={s} value={s}>
                     {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </FieldWrapper>
+        <FieldWrapper
+          control={form.control}
+          name="parentRoleId"
+          label="Rol padre"
+        >
+          {(field) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_PARENT}>Sin rol padre</SelectItem>
+                {parentOptions.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.name}
                   </SelectItem>
                 ))}
               </SelectContent>

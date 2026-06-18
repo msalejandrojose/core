@@ -1,4 +1,5 @@
 import { LogOut, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -14,6 +15,7 @@ export function UserMenu() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const initials =
     [user?.firstName?.[0], user?.lastName?.[0]]
@@ -39,14 +41,14 @@ export function UserMenu() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem onClick={() => navigate('/profile')}>
           <User size={14} className="mr-2" />
-          Perfil
+          {t('userMenu.profile')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={handleLogout}>
           <LogOut size={14} className="mr-2" />
-          Cerrar sesión
+          {t('userMenu.logout')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
