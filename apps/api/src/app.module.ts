@@ -5,6 +5,7 @@ import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { IamModule } from './modules/iam/iam.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { BlogModule } from './modules/blog/blog.module';
+import { WorkflowsModule } from './modules/workflows/workflows.module';
 import { ErrorLogModule } from './infrastructure/error-log/error-log.module';
 import { AppExceptionFilter } from './shared/filters/app-exception.filter';
 
@@ -25,6 +26,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     IamModule,
     StorageModule,
     BlogModule,
+    WorkflowsModule,
     ErrorLogModule,
   ],
   providers: [

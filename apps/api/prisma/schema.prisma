@@ -78,6 +78,45 @@ enum PostStatus {
   ARCHIVED // retirado del público sin borrarlo
 }
 
+/// Cómo se dispara un workflow.
+enum WorkflowTriggerKind {
+  EVENT
+  CRON
+  MANUAL
+}
+
+/// Estado de una instancia viva (run) de un workflow.
+enum WorkflowRunStatus {
+  RUNNING // hay un step en curso o listo para avanzar
+  WAITING // tiene PendingActions abiertas (delay / wait_for_event)
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+/// Estado de la ejecución de un step concreto dentro de un run.
+enum WorkflowStepStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+}
+
+/// Tipo de trabajo diferido que procesa el scheduler (iteración posterior).
+enum PendingActionKind {
+  DELAY // se consume cuando runAt <= now
+  WAIT_EVENT // se consume cuando llega un Event matching
+  RETRY // reintento programado de un step que falló
+  PENDING_START // un trigger se disparó pero maxConcurrentRuns está lleno
+}
+
+enum PendingActionStatus {
+  PENDING
+  CONSUMED
+  CANCELED
+}
+
 // ---------------------------------------------------------------------------
 // Modelos
 // ---------------------------------------------------------------------------
@@ -349,4 +388,151 @@ model PostTagOnPost {
   @@id([postId, tagId])
   @@index([tagId])
   @@map("post_tag_on_post")
+}
+
+// ---------------------------------------------------------------------------
+// Motor de eventos y workflows (módulo `workflows`)
+// ---------------------------------------------------------------------------
+
+/// Hecho ocurrido en el sistema, inmutable y auditable. Reentra al motor por
+/// `RegisterEventUseCase`. `sourceUserId` es una FK suave (sin `@relation`).
+model WorkflowEvent {
+  id             String   @id @default(uuid()) @db.Char(36)
+  type           String   @db.VarChar(120) // "user.signed_up"
+  payload        Json
+  sourceUserId   String?  @map("source_user_id") @db.Char(36)
+  correlationId  String?  @map("correlation_id") @db.Char(36)
+  idempotencyKey String?  @map("idempotency_key") @db.VarChar(120)
+  occurredAt     DateTime @default(now()) @map("occurred_at")
+
+  triggeredRuns WorkflowRun[]   @relation("WorkflowRunTrigger")
+  consumedBy    PendingAction[] @relation("PendingActionConsumedEvent")
+
+  @@unique([idempotencyKey]) // sparse: NULL permitido
+  @@index([type, occurredAt])
+  @@index([sourceUserId])
+  @@index([correlationId])
+  @@map("workflow_event")
+}
+
+/// Blueprint de un workflow + su DSL (JSON). Identificado por `key` + `version`.
+/// Una sola versión activa por `key`.
+model WorkflowDefinition {
+  id          String    @id @default(uuid()) @db.Char(36)
+  key         String    @db.VarChar(120)
+  version     Int
+  name        String    @db.VarChar(200)
+  description String?   @db.Text
+  dsl         Json // ver spec §4
+  isActive    Boolean   @default(false) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  publishedAt DateTime? @map("published_at")
+
+  triggers       WorkflowTrigger[]
+  runs           WorkflowRun[]
+  pendingActions PendingAction[]
+
+  @@unique([key, version])
+  @@index([key, isActive])
+  @@map("workflow_definition")
+}
+
+/// Cómo se dispara una definición: por evento, cron o manual.
+model WorkflowTrigger {
+  id           String              @id @default(uuid()) @db.Char(36)
+  definitionId String              @map("definition_id") @db.Char(36)
+  kind         WorkflowTriggerKind
+
+  // kind = EVENT
+  eventType       String? @map("event_type") @db.VarChar(120)
+  matchExpression Json?   @map("match_expression") // mini DSL spec §4.3
+
+  // kind = CRON
+  cronExpression String?   @map("cron_expression") @db.VarChar(60) // 5 campos UTC
+  cronPayload    Json?     @map("cron_payload")
+  nextFireAt     DateTime? @map("next_fire_at")
+
+  definition WorkflowDefinition @relation(fields: [definitionId], references: [id], onDelete: Restrict)
+
+  @@index([kind, eventType])
+  @@index([kind, nextFireAt])
+  @@index([definitionId])
+  @@map("workflow_trigger")
+}
+
+/// Instancia viva de un workflow, con estado, contexto y cursor de step.
+/// Todo el estado vive aquí para sobrevivir a reinicios.
+model WorkflowRun {
+  id             String            @id @default(uuid()) @db.Char(36)
+  definitionId   String            @map("definition_id") @db.Char(36) // congelado (versión incluida)
+  triggerEventId String?           @map("trigger_event_id") @db.Char(36)
+  status         WorkflowRunStatus @default(RUNNING)
+  context        Json              @default("{}")
+  currentStepKey String?           @map("current_step_key") @db.VarChar(120)
+  isDryRun       Boolean           @default(false) @map("is_dry_run")
+  startedAt      DateTime          @default(now()) @map("started_at")
+  finishedAt     DateTime?         @map("finished_at")
+  lastError      String?           @map("last_error") @db.Text
+
+  // Lock optimista del worker (iteración posterior):
+  lockedBy    String?   @map("locked_by") @db.VarChar(80)
+  lockedUntil DateTime? @map("locked_until")
+
+  definition     WorkflowDefinition      @relation(fields: [definitionId], references: [id], onDelete: Restrict)
+  triggerEvent   WorkflowEvent?          @relation("WorkflowRunTrigger", fields: [triggerEventId], references: [id])
+  steps          WorkflowStepExecution[]
+  pendingActions PendingAction[]
+
+  @@index([status])
+  @@index([definitionId, status])
+  @@index([lockedUntil])
+  @@map("workflow_run")
+}
+
+/// Registro auditado de un step ejecutado dentro de un run.
+model WorkflowStepExecution {
+  id         String             @id @default(uuid()) @db.Char(36)
+  runId      String             @map("run_id") @db.Char(36)
+  stepKey    String             @map("step_key") @db.VarChar(120)
+  actionKey  String             @map("action_key") @db.VarChar(120)
+  status     WorkflowStepStatus @default(PENDING)
+  attempt    Int                @default(1)
+  input      Json?
+  output     Json?
+  error      String?            @db.Text
+  startedAt  DateTime           @default(now()) @map("started_at")
+  finishedAt DateTime?          @map("finished_at")
+
+  run WorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, startedAt])
+  @@map("workflow_step_execution")
+}
+
+/// Trabajo diferido (delay / wait_for_event / retry / arranque encolado). Lo
+/// procesa el scheduler (iteración posterior). Se modela ya para no migrar luego.
+model PendingAction {
+  id              String              @id @default(uuid()) @db.Char(36)
+  runId           String?             @map("run_id") @db.Char(36) // NULL si kind = PENDING_START
+  definitionId    String?             @map("definition_id") @db.Char(36) // SET si kind = PENDING_START
+  triggerEventId  String?             @map("trigger_event_id") @db.Char(36)
+  stepKey         String?             @map("step_key") @db.VarChar(120)
+  kind            PendingActionKind
+  status          PendingActionStatus @default(PENDING)
+  runAt           DateTime?           @map("run_at")
+  eventType       String?             @map("event_type") @db.VarChar(120)
+  matchExpression Json?               @map("match_expression")
+  consumedEventId String?             @map("consumed_event_id") @db.Char(36)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  consumedAt      DateTime?           @map("consumed_at")
+
+  run           WorkflowRun?        @relation(fields: [runId], references: [id], onDelete: Cascade)
+  definition    WorkflowDefinition? @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  consumedEvent WorkflowEvent?      @relation("PendingActionConsumedEvent", fields: [consumedEventId], references: [id])
+
+  @@index([status, runAt])
+  @@index([status, eventType])
+  @@index([status, kind, definitionId, createdAt])
+  @@index([runId])
+  @@map("workflow_pending_action")
 }
