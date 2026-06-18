@@ -1,6 +1,7 @@
 import type { SortingState } from '@tanstack/react-table';
 import { useState } from 'react';
 import { DataTable } from '@/components/data-table/DataTable';
+import { PageHeader } from '@/components/PageHeader';
 import { columns } from './columns';
 import { CreateRoleDialog } from './components/CreateRoleDialog';
 import { useRoles } from './hooks/use-roles';
@@ -26,7 +27,11 @@ export function RolesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Roles</h1>
+      <PageHeader
+        title="Roles"
+        description="Define roles y sus permisos sobre las secciones de la API."
+        actions={<CreateRoleDialog />}
+      />
       <DataTable
         data={rows}
         columns={columns}
@@ -51,7 +56,6 @@ export function RolesPage() {
         }}
         searchPlaceholder="Buscar por código…"
         emptyMessage="No hay roles"
-        toolbar={<CreateRoleDialog />}
       />
     </div>
   );
