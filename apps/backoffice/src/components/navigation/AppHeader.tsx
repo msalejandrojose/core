@@ -20,10 +20,17 @@ export function AppHeader() {
   const activeTop = findActiveTop(sections, pathname);
 
   return (
-    <header className="bg-card sticky top-0 z-30">
+    <header className="bg-card/80 supports-[backdrop-filter]:bg-card/65 sticky top-0 z-30 backdrop-blur">
       <div className="flex h-14 items-center gap-6 border-b px-6">
-        <Link to="/" className="font-semibold tracking-tight whitespace-nowrap">
-          Core BO
+        <Link
+          to="/"
+          className="flex items-center gap-2 whitespace-nowrap"
+          aria-label="Core Backoffice — inicio"
+        >
+          <span className="bg-primary size-2.5 rounded-full" />
+          <span className="font-semibold tracking-tight">
+            Core <span className="text-muted-foreground font-normal">BO</span>
+          </span>
         </Link>
         {isLoading ? (
           <div className="flex flex-1 items-center gap-4">
