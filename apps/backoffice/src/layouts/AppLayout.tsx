@@ -7,10 +7,12 @@ import { AppHeader } from '@/components/navigation/AppHeader';
  */
 export function AppLayout() {
   return (
-    <div className="bg-muted/40 flex min-h-svh flex-col">
+    <div className="bg-muted/30 flex min-h-svh flex-col">
       <AppHeader />
-      <main className="flex-1 p-6">
-        <Outlet />
+      <main className="flex-1 px-6 py-8 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

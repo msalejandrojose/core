@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DangerZone } from '@/components/DangerZone';
 import { DeleteRoleDialog } from './components/DeleteRoleDialog';
 import { EditRoleForm } from './components/EditRoleForm';
 import { RolePermissionsPanel } from './components/RolePermissionsPanel';
@@ -51,14 +52,10 @@ export function RoleDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-destructive/30">
-            <CardHeader>
-              <CardTitle className="text-destructive">Zona de peligro</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DeleteRoleDialog id={role.id} />
-            </CardContent>
-          </Card>
+          <DangerZone
+            description="Eliminar el rol quita sus permisos a los usuarios que lo tengan. No se puede deshacer."
+            action={<DeleteRoleDialog id={role.id} />}
+          />
         </>
       )}
     </div>

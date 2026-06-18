@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@core/api-client": "workspace:*",
+    "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource-variable/geist-mono": "^5.2.8",
     "@hookform/resolvers": "^5.4.0",
     "@radix-ui/react-alert-dialog": "^1.1.17",
     "@radix-ui/react-avatar": "^1.2.0",

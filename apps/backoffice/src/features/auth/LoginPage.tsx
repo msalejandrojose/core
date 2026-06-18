@@ -22,18 +22,40 @@ const schema = z.object({
 type LoginForm = z.infer<typeof schema>;
 
 export function LoginPage() {
-  const { mutate, isPending } = useLogin();
+  const { mutate, isPending, isError } = useLogin();
   const form = useForm<LoginForm>({
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
   });
 
   return (
-    <div className="w-full max-w-sm space-y-6 rounded-xl border bg-card p-8 shadow-sm">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Core Backoffice</h1>
-        <p className="text-muted-foreground text-sm">Inicia sesión para continuar</p>
+    <div className="bg-card w-full max-w-sm space-y-6 rounded-xl border p-8 shadow-sm">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="bg-primary size-2.5 rounded-full" />
+          <span className="text-sm font-medium tracking-tight">
+            Core <span className="text-muted-foreground">Backoffice</span>
+          </span>
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Inicia sesión
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Introduce tus credenciales para continuar.
+          </p>
+        </div>
       </div>
+
+      {isError && (
+        <div
+          role="alert"
+          className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm"
+        >
+          Email o contraseña incorrectos. Inténtalo de nuevo.
+        </div>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit((v) => mutate(v))} className="space-y-4">
           <FormField

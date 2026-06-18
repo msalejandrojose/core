@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DataTable } from '@/components/data-table/DataTable';
+import { PageHeader } from '@/components/PageHeader';
 import { columns } from './columns';
 import { CreateApiSectionDialog } from './components/CreateApiSectionDialog';
 import { useApiSectionsList } from './hooks/use-api-sections-list';
@@ -21,7 +22,11 @@ export function ApiSectionsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Secciones</h1>
+      <PageHeader
+        title="Secciones"
+        description="Catálogo de ApiSections sobre el que se conceden permisos."
+        actions={<CreateApiSectionDialog />}
+      />
       <DataTable
         data={rows}
         columns={columns}
@@ -41,7 +46,6 @@ export function ApiSectionsPage() {
         }}
         searchPlaceholder="Buscar por código…"
         emptyMessage="No hay secciones"
-        toolbar={<CreateApiSectionDialog />}
       />
     </div>
   );

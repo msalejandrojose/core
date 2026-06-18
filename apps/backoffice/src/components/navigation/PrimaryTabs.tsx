@@ -30,10 +30,10 @@ export function PrimaryTabs({
             key={node.id}
             to={to}
             className={cn(
-              'relative flex h-full shrink-0 items-center gap-2 px-3 text-sm font-medium transition-colors',
-              'after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors',
+              'relative flex h-full shrink-0 items-center gap-2 px-3 text-sm font-medium transition-colors duration-(--duration-base)',
+              'after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors after:duration-(--duration-base)',
               active
-                ? 'text-foreground after:bg-foreground'
+                ? 'text-foreground after:bg-primary'
                 : 'text-muted-foreground hover:text-foreground after:bg-transparent',
             )}
           >

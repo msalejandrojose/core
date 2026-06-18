@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DangerZone } from '@/components/DangerZone';
 import { DeleteApiSectionDialog } from './components/DeleteApiSectionDialog';
 import { EditApiSectionForm } from './components/EditApiSectionForm';
 import { useApiSection } from './hooks/use-api-section';
@@ -39,14 +40,10 @@ export function ApiSectionDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-destructive/30">
-            <CardHeader>
-              <CardTitle className="text-destructive">Zona de peligro</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DeleteApiSectionDialog id={section.id} />
-            </CardContent>
-          </Card>
+          <DangerZone
+            description="Solo se puede eliminar si ningún rol o usuario tiene permisos sobre ella. No se puede deshacer."
+            action={<DeleteApiSectionDialog id={section.id} />}
+          />
         </>
       )}
     </div>

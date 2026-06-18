@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DataTable } from '@/components/data-table/DataTable';
+import { PageHeader } from '@/components/PageHeader';
 import {
   Select,
   SelectContent,
@@ -38,7 +39,11 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Usuarios</h1>
+      <PageHeader
+        title="Usuarios"
+        description="Gestiona las cuentas, sus roles y permisos."
+        actions={<CreateUserDialog />}
+      />
       <DataTable
         data={rows}
         columns={columns}
@@ -99,7 +104,6 @@ export function UsersPage() {
                 <SelectItem value="inactive">Inactivos</SelectItem>
               </SelectContent>
             </Select>
-            <CreateUserDialog />
           </>
         }
       />
