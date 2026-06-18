@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useSectionLabel } from '@/i18n/use-section-label';
 import { sortByOrder } from '@/features/sections/nav';
 import type { SectionTreeNode } from '@/features/sections/types';
 import { resolveIcon } from '@/lib/icons';
@@ -9,6 +10,7 @@ import { cn } from '@/lib/utils';
  * secundaria bajo las pestañas. No se renderiza si la sección no tiene hijas.
  */
 export function SectionSubnav({ section }: { section: SectionTreeNode }) {
+  const sectionLabel = useSectionLabel();
   const children = sortByOrder(section.children).filter((child) => child.route);
   if (children.length === 0) return null;
 
@@ -31,7 +33,7 @@ export function SectionSubnav({ section }: { section: SectionTreeNode }) {
               }
             >
               <Icon size={14} />
-              {child.name}
+              {sectionLabel(child.code, child.name)}
             </NavLink>
           );
         })}

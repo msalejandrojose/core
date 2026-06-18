@@ -6,6 +6,7 @@ import App from './App';
 import { queryClient } from './api/query-client';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './components/theme/ThemeProvider';
+import './i18n';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(

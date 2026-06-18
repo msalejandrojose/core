@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useSectionLabel } from '@/i18n/use-section-label';
 import { firstRoute, sortByOrder } from '@/features/sections/nav';
 import type { SectionTreeNode } from '@/features/sections/types';
 import { resolveIcon } from '@/lib/icons';
@@ -16,6 +17,7 @@ export function PrimaryTabs({
   tree: SectionTreeNode[];
   activeId?: string;
 }) {
+  const sectionLabel = useSectionLabel();
   return (
     <nav className="flex h-14 min-w-0 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {sortByOrder(tree).map((node) => {
@@ -36,7 +38,7 @@ export function PrimaryTabs({
             )}
           >
             <Icon size={16} />
-            {node.name}
+            {sectionLabel(node.code, node.name)}
           </Link>
         );
       })}

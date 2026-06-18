@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useSectionLabel } from '@/i18n/use-section-label';
 import { useSectionTree } from '@/features/sections/hooks/use-section-tree';
 import {
   findActiveTop,
@@ -21,17 +22,20 @@ interface Crumb {
 export function Breadcrumbs() {
   const { pathname } = useLocation();
   const { data: tree } = useSectionTree();
+  const sectionLabel = useSectionLabel();
   const sections = tree ?? [];
   const top = findActiveTop(sections, pathname);
   if (!top) return null;
 
-  const crumbs: Crumb[] = [{ label: top.name, to: firstRoute(top) }];
+  const crumbs: Crumb[] = [
+    { label: sectionLabel(top.code, top.name), to: firstRoute(top) },
+  ];
 
   const child = sortByOrder(top.children).find((c) =>
     routeMatches(pathname, c.route),
   );
   if (child) {
-    crumbs.push({ label: child.name, to: child.route });
+    crumbs.push({ label: sectionLabel(child.code, child.name), to: child.route });
   }
 
   // ¿Ruta de detalle? (un segmento extra tras la ruta del listado.)
