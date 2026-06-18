@@ -70,6 +70,14 @@ enum ErrorLevel {
   critical
 }
 
+/// Ciclo de vida editorial de un post del blog.
+enum PostStatus {
+  DRAFT // borrador, no visible en el listado público
+  SCHEDULED // programado: se publicará cuando publishedAt <= now()
+  PUBLISHED // visible públicamente
+  ARCHIVED // retirado del público sin borrarlo
+}
+
 // ---------------------------------------------------------------------------
 // Modelos
 // ---------------------------------------------------------------------------
@@ -98,10 +106,11 @@ model User {
   passwordResetExpiresAt DateTime? @map("password_reset_expires_at")
 
   // Relaciones
-  userRoles                   UserUserRole[]                @relation("UserRoles")
-  assignedRolesByUser         UserUserRole[]                @relation("AssignedBy")
-  userApiSectionPermissions   UserApiSectionPermission[]
-  storedFiles                 StoredFile[]
+  userRoles                 UserUserRole[]             @relation("UserRoles")
+  assignedRolesByUser       UserUserRole[]             @relation("AssignedBy")
+  userApiSectionPermissions UserApiSectionPermission[]
+  storedFiles               StoredFile[]
+  posts                     Post[]
 
   @@map("user")
 }
@@ -252,4 +261,92 @@ model ErrorLog {
   @@index([createdAt])
   @@index([userId])
   @@map("error_log")
+}
+
+// ---------------------------------------------------------------------------
+// Blog de noticias (módulo `blog`)
+// ---------------------------------------------------------------------------
+
+/// Artículo del blog de noticias. Es la entidad central; su cuerpo vive en
+/// `content` (Markdown/HTML renderizado por el front). La portada referencia
+/// un `StoredFile` del módulo storage por id (FK suave, sin `@relation`).
+model Post {
+  id           String     @id @default(uuid()) @db.Char(36)
+  slug         String     @unique @db.VarChar(180) // identificador legible para la URL pública
+  title        String     @db.VarChar(200)
+  excerpt      String?    @db.VarChar(320) // resumen/dek para listados y SEO
+  content      String     @db.LongText // cuerpo del artículo (Markdown/HTML)
+  status       PostStatus @default(DRAFT)
+  publishedAt  DateTime?  @map("published_at") // fecha de publicación (o de programación)
+  coverImageId String?    @map("cover_image_id") @db.Char(36) // FK suave a StoredFile (módulo storage)
+  authorId     String?    @map("author_id") @db.Char(36)
+
+  // SEO
+  metaTitle       String? @map("meta_title") @db.VarChar(200)
+  metaDescription String? @map("meta_description") @db.VarChar(320)
+
+  // Métricas
+  viewCount Int @default(0) @map("view_count")
+
+  categoryId String? @map("category_id") @db.Char(36)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  author   User?           @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  category PostCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags     PostTagOnPost[]
+
+  @@index([status, publishedAt]) // listado público ordenado por fecha
+  @@index([categoryId])
+  @@index([authorId])
+  @@map("post")
+}
+
+/// Categoría jerárquica del blog (self-FK opcional para subcategorías).
+/// Un post tiene 0..1 categoría.
+model PostCategory {
+  id          String   @id @default(uuid()) @db.Char(36)
+  slug        String   @unique @db.VarChar(140)
+  name        String   @db.VarChar(140)
+  description String?  @db.Text
+  parentId    String?  @map("parent_id") @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Self-relación para subcategorías
+  parent   PostCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children PostCategory[] @relation("CategoryHierarchy")
+
+  posts Post[]
+
+  @@map("post_category")
+}
+
+/// Etiqueta transversal del blog. Un post tiene 0..N etiquetas.
+model PostTag {
+  id        String   @id @default(uuid()) @db.Char(36)
+  slug      String   @unique @db.VarChar(140)
+  name      String   @db.VarChar(140)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  postTags PostTagOnPost[]
+
+  @@map("post_tag")
+}
+
+/// Pivot N-N explícito entre Post y PostTag. Se deja explícito (en vez de la
+/// N-N implícita de Prisma) para poder añadir metadatos al vínculo y controlar
+/// el nombre de la tabla.
+model PostTagOnPost {
+  postId String @map("post_id") @db.Char(36)
+  tagId  String @map("tag_id") @db.Char(36)
+
+  post Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  PostTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+  @@map("post_tag_on_post")
 }

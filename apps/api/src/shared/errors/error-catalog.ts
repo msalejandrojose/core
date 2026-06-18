@@ -112,6 +112,33 @@ export const ERROR_CATALOG = {
     defaultMessage: 'El cursor de paginación es inválido o ha sido modificado.',
   },
 
+  // Blog
+  POST_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Post no encontrado.',
+  },
+  SLUG_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un elemento con ese slug.',
+  },
+  CATEGORY_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Categoría no encontrada.',
+  },
+  TAG_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Etiqueta no encontrada.',
+  },
+  INVALID_POST_TRANSITION: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La transición de estado del post no está permitida.',
+  },
+
   // Mailer
   MAIL_PROVIDER_UNAVAILABLE: {
     httpStatus: 502,
