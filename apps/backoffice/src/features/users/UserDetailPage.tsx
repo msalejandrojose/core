@@ -11,6 +11,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { DeactivateUserDialog } from './components/DeactivateUserDialog';
 import { EditUserForm } from './components/EditUserForm';
+import { ReactivateUserButton } from './components/ReactivateUserButton';
 import { UserRolesCard } from './components/UserRolesCard';
 import { useUser } from './hooks/use-user';
 
@@ -55,7 +56,7 @@ export function UserDetailPage() {
             </CardContent>
           </Card>
 
-          {user.isActive && (
+          {user.isActive ? (
             <Card className="border-destructive/30">
               <CardHeader>
                 <CardTitle className="text-destructive">
@@ -64,6 +65,19 @@ export function UserDetailPage() {
               </CardHeader>
               <CardContent>
                 <DeactivateUserDialog id={user.id} />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Reactivar usuario</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-muted-foreground text-sm">
+                  El usuario está desactivado y no puede iniciar sesión.
+                  Reactívalo para devolverle el acceso.
+                </p>
+                <ReactivateUserButton id={user.id} />
               </CardContent>
             </Card>
           )}

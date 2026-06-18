@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useDeactivateUser } from './hooks/use-deactivate-user';
+import { useUpdateUser } from './hooks/use-update-user';
 
 export interface UserRow {
   id: string;
@@ -73,6 +74,7 @@ export const columns: ColumnDef<UserRow>[] = [
 
 function UserRowActions({ id, isActive }: { id: string; isActive: boolean }) {
   const { mutate: deactivate, isPending } = useDeactivateUser(id);
+  const { mutate: updateUser, isPending: isReactivating } = useUpdateUser(id);
 
   return (
     <DropdownMenu>
@@ -101,6 +103,14 @@ function UserRowActions({ id, isActive }: { id: string; isActive: boolean }) {
             isPending={isPending}
             destructiveLabel="Desactivar"
           />
+        )}
+        {!isActive && (
+          <DropdownMenuItem
+            disabled={isReactivating}
+            onSelect={() => updateUser({ isActive: true })}
+          >
+            Reactivar
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
