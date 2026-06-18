@@ -3,6 +3,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSectionTree } from '@/features/sections/hooks/use-section-tree';
 import { findActiveTop } from '@/features/sections/nav';
+import { Breadcrumbs } from './Breadcrumbs';
 import { PrimaryTabs } from './PrimaryTabs';
 import { SectionSubnav } from './SectionSubnav';
 import { UserMenu } from './UserMenu';
@@ -39,6 +40,7 @@ export function AppHeader() {
         </div>
       </div>
       {activeTop && <SectionSubnav section={activeTop} />}
+      <Breadcrumbs />
     </header>
   );
 }
