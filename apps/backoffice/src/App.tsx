@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { ApiSectionDetailPage } from '@/features/api-sections/ApiSectionDetailPage';
+import { ApiSectionsPage } from '@/features/api-sections/ApiSectionsPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RoleDetailPage } from '@/features/roles/RoleDetailPage';
 import { RolesPage } from '@/features/roles/RolesPage';
@@ -26,6 +28,8 @@ export default function App() {
             <Route path="/users/:id" element={<UserDetailPage />} />
             <Route path="/roles" element={<RolesPage />} />
             <Route path="/roles/:id" element={<RoleDetailPage />} />
+            <Route path="/sections" element={<ApiSectionsPage />} />
+            <Route path="/sections/:id" element={<ApiSectionDetailPage />} />
           </Route>
         </Route>
 
