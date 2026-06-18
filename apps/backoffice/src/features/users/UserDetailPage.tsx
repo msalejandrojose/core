@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DeactivateUserDialog } from './components/DeactivateUserDialog';
 import { EditUserForm } from './components/EditUserForm';
 import { ReactivateUserButton } from './components/ReactivateUserButton';
+import { UserPermissionsPanel } from './components/UserPermissionsPanel';
 import { UserRolesCard } from './components/UserRolesCard';
 import { useUser } from './hooks/use-user';
 
@@ -53,6 +54,20 @@ export function UserDetailPage() {
             </CardHeader>
             <CardContent>
               <UserRolesCard userId={user.id} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Permisos directos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-muted-foreground text-sm">
+                Overrides por sección que se aplican sobre los permisos
+                heredados de los roles. Elige <code>NONE</code> para quitar el
+                override y volver a heredar de los roles.
+              </p>
+              <UserPermissionsPanel userId={user.id} />
             </CardContent>
           </Card>
 
