@@ -39,7 +39,7 @@ export function UserMenu() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem onClick={() => navigate('/profile')}>
           <User size={14} className="mr-2" />
           Perfil
         </DropdownMenuItem>

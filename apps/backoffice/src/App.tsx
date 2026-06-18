@@ -6,6 +6,7 @@ import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
+import { ProfilePage } from '@/features/profile/ProfilePage';
 import { RoleDetailPage } from '@/features/roles/RoleDetailPage';
 import { RolesPage } from '@/features/roles/RolesPage';
 import { UserDetailPage } from '@/features/users/UserDetailPage';
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/roles/:id" element={<RoleDetailPage />} />
             <Route path="/sections" element={<ApiSectionsPage />} />
             <Route path="/sections/:id" element={<ApiSectionDetailPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>
 

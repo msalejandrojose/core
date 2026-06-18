@@ -11,6 +11,7 @@ import { SendVerificationEmailUseCase } from './application/use-cases/send-verif
 import { VerifyEmailUseCase } from './application/use-cases/verify-email.use-case';
 import { RequestPasswordResetUseCase } from './application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
+import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case';
 // ===== Users CRUD =====
 import { CreateUserUseCase } from './application/use-cases/create-user.use-case';
 import { DeactivateUserUseCase } from './application/use-cases/deactivate-user.use-case';
@@ -104,6 +105,7 @@ import { MailerModule } from '../mailer/mailer.module';
     VerifyEmailUseCase,
     RequestPasswordResetUseCase,
     ResetPasswordUseCase,
+    ChangePasswordUseCase,
 
     // Users use cases
     ListUsersUseCase,
