@@ -1,15 +1,6 @@
-/**
- * Error base para todo el dominio. Cualquier excepción que represente una
- * violación de reglas de negocio extiende de esta clase. El filter global
- * `DomainErrorFilter` mapea `code` a un `HttpStatus` y serializa la
- * respuesta como `{ statusCode, code, message }`.
- */
-export abstract class DomainError extends Error {
-  readonly code: string;
-
-  constructor(code: string, message: string) {
-    super(message);
-    this.code = code;
-    this.name = new.target.name;
-  }
-}
+// Los errores de dominio de IAM extienden el `DomainError` COMPARTIDO
+// (`src/shared/errors/domain-error.ts`) para que el filtro global
+// `AppExceptionFilter` los reconozca vía `instanceof` y los traduzca a partir
+// del catálogo de errores. Se mantiene este archivo como punto de import
+// estable para el módulo (acepta `code`, `message` y `context` opcional).
+export { DomainError } from '../../../../shared/errors/domain-error';

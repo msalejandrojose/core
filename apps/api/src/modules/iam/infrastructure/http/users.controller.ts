@@ -46,13 +46,16 @@ export class UsersController {
 
   @Get()
   @RequiresPermission('iam.users', 'READ')
-  @ApiOperation({ summary: 'Listar usuarios (cursor paginado, createdAt DESC).' })
+  @ApiOperation({
+    summary: 'Listar usuarios (cursor paginado, createdAt DESC).',
+  })
   @ApiCursorPaginatedResponse(UserResponseDto)
   async list(
     @Query() query: ListUsersQueryDto,
   ): Promise<CursorPaginatedResponseDto<UserResponseDto>> {
+    const limit = query.limit ?? 20;
     const page = await this.listUsers.executeWithCursor({
-      limit: query.limit,
+      limit,
       cursor: query.cursor,
       userType: query.userType,
       isActive: query.isActive,
@@ -61,7 +64,7 @@ export class UsersController {
     return CursorPaginatedResponseDto.of(
       page.items.map(UserResponseDto.fromUser),
       page.nextCursor,
-      query.limit,
+      limit,
     );
   }
 

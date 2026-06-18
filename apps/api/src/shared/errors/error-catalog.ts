@@ -112,6 +112,60 @@ export const ERROR_CATALOG = {
     defaultMessage: 'El cursor de paginación es inválido o ha sido modificado.',
   },
 
+  // Blog
+  POST_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Post no encontrado.',
+  },
+  SLUG_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un elemento con ese slug.',
+  },
+  CATEGORY_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Categoría no encontrada.',
+  },
+  TAG_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Etiqueta no encontrada.',
+  },
+  INVALID_POST_TRANSITION: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La transición de estado del post no está permitida.',
+  },
+
+  // Workflows
+  WORKFLOW_DSL_INVALID: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La definición del workflow (DSL) no es válida.',
+  },
+  WORKFLOW_DEFINITION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Definición de workflow no encontrada.',
+  },
+  WORKFLOW_VERSION_CONFLICT: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe esa versión del workflow.',
+  },
+  WORKFLOW_RUN_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Run de workflow no encontrado.',
+  },
+  ACTION_HANDLER_NOT_FOUND: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'No hay handler registrado para esa acción.',
+  },
+
   // Mailer
   MAIL_PROVIDER_UNAVAILABLE: {
     httpStatus: 502,
