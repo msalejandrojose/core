@@ -5,6 +5,7 @@ import { ApiSectionsPage } from '@/features/api-sections/ApiSectionsPage';
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
+import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
 import { RoleDetailPage } from '@/features/roles/RoleDetailPage';
 import { RolesPage } from '@/features/roles/RolesPage';
 import { UserDetailPage } from '@/features/users/UserDetailPage';
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
         </Route>
 
         {/* Rutas protegidas */}
