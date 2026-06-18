@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DangerZone } from '@/components/DangerZone';
 import { DeactivateUserDialog } from './components/DeactivateUserDialog';
 import { EditUserForm } from './components/EditUserForm';
 import { ReactivateUserButton } from './components/ReactivateUserButton';
@@ -72,16 +73,10 @@ export function UserDetailPage() {
           </Card>
 
           {user.isActive ? (
-            <Card className="border-destructive/30">
-              <CardHeader>
-                <CardTitle className="text-destructive">
-                  Zona de peligro
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DeactivateUserDialog id={user.id} />
-              </CardContent>
-            </Card>
+            <DangerZone
+              description="El usuario no podrá iniciar sesión. Se puede reactivar después."
+              action={<DeactivateUserDialog id={user.id} />}
+            />
           ) : (
             <Card>
               <CardHeader>
