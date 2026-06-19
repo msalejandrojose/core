@@ -152,6 +152,9 @@ importers:
       '@core/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@core/forms':
+        specifier: workspace:*
+        version: link:../../packages/forms
       '@fontsource-variable/geist':
         specifier: ^5.2.9
         version: 5.2.9
@@ -288,6 +291,8 @@ importers:
         version: 5.9.3
 
   packages/config: {}
+
+  packages/forms: {}
 
 packages:
 
