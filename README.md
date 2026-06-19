@@ -21,8 +21,9 @@ core/
 │   ├── ui/                # componentes React compartidos
 │   ├── forms/             # primitivas y validación de formularios
 │   └── config/            # tsconfig / eslint / prettier base
-├── docker/                # stack local (MySQL + API)
-├── run.sh                 # entrypoint: ./run.sh [db|full]
+├── docker/                # stack local (MySQL + API + proxy Caddy)
+├── stack.config.json      # qué piezas componen el stack + subdominios + puertos
+├── run.sh                 # entrypoint: ./run.sh [db|full|api|backoffice|web|mobile]
 └── pnpm-workspace.yaml
 ```
 
@@ -64,6 +65,55 @@ Para validar la imagen Docker de la API end-to-end:
 
 ---
 
+## Composición del stack y URLs por subdominio
+
+Qué piezas componen el proyecto (api, backoffice, web, mobile), qué subdominio
+lleva cada una bajo **`aj-local.es`** y en qué puerto interno escucha se define de
+forma declarativa en **`stack.config.json`** (validado por
+`packages/config/stack.schema.json`). Marca una pieza con `"enabled": false` para
+que no se construya, no se levante ni se cablee en las demás.
+
+```jsonc
+{
+  "domains": { "base": "aj-local.es", "localBase": "aj-local.es" },
+  "parts": {
+    "api":        { "enabled": true,  "subdomain": "api",   "internalPort": 3000, "runMode": "docker" },
+    "backoffice": { "enabled": true,  "subdomain": "admin", "internalPort": 4200, "runMode": "host" },
+    "web":        { "enabled": false, "subdomain": "www",   "internalPort": 4300, "runMode": "host" },
+    "mobile":     { "enabled": false, "subdomain": "app",   "internalPort": 4400, "runMode": "host" }
+  }
+}
+```
+
+`run.sh` lee esa config y, según el modo, regenera `docker/Caddyfile`, levanta los
+servicios Docker necesarios y un **reverse proxy (Caddy)** que enruta cada
+subdominio a su pieza. Las URLs van **sin puerto** (`http://api.aj-local.es`,
+`http://admin.aj-local.es`): Caddy enruta por host. Las piezas con
+`runMode: "host"` (los frontends en `pnpm dev`/HMR) corren fuera de Docker y el
+proxy las alcanza vía `host.docker.internal`.
+
+### Resolución DNS local — `/etc/hosts`
+
+No hace falta registrar dominio. `run.sh` detecta qué entradas faltan en
+`/etc/hosts` para las piezas activas y muestra la línea lista para pegar:
+
+```
+127.0.0.1 api.aj-local.es admin.aj-local.es
+```
+
+Con `./run.sh --setup-hosts` las añade automáticamente (con `sudo`).
+
+### Cableado entre piezas
+
+`run.sh` deriva las URLs de la config y las inyecta:
+
+- **API** → `CORS_ORIGINS` (lista de URLs de los frontends habilitados); la lee
+  `main.ts` en `app.enableCors`.
+- **Backoffice (Vite)** → `VITE_API_URL`.
+- **Web (Astro)** → `PUBLIC_API_URL`.
+
+---
+
 ## Scripts útiles
 
 | Comando | Para qué |
@@ -72,8 +122,14 @@ Para validar la imagen Docker de la API end-to-end:
 | `pnpm build:api` | Build de producción de la API. |
 | `pnpm --filter @core/api prisma:migrate` | Crear/aplicar migración en dev. |
 | `pnpm --filter @core/api prisma:studio` | GUI de Prisma. |
+| `pnpm --filter @core/config test` | Tests del loader de `stack.config.json`. |
 | `./run.sh` | Solo MySQL (desarrollo backend con hot reload). |
-| `./run.sh full` | MySQL + API dockerizada. |
+| `./run.sh full` | Todas las piezas habilitadas (API dockerizada + proxy). |
+| `./run.sh api` | MySQL + API dockerizada + proxy. |
+| `./run.sh backoffice` | MySQL + proxy (el backoffice se sirve desde el host). |
+| `./run.sh --setup-hosts` | Añade a `/etc/hosts` los subdominios que falten. |
+
+> Requiere [`jq`](https://jqlang.github.io/jq/) para leer `stack.config.json`.
 
 ---
 

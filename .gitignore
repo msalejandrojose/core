@@ -20,6 +20,9 @@ packages/api-client/src/generated/schema.d.ts
 # Storage module — ficheros subidos en local (driver LOCAL), nunca se commitean
 apps/api/.storage/
 
+# Caddyfile generado por run.sh desde stack.config.json (artefacto, no se commitea)
+docker/Caddyfile
+
 # Env
 # Convención del backend (apps/api):
 #   .env        → secretos locales, NUNCA committed

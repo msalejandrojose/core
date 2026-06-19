@@ -1,0 +1,20 @@
+# Caddyfile — REFERENCIA (no se usa directamente).
+#
+# `run.sh` genera `docker/Caddyfile` dinámicamente a partir de `stack.config.json`,
+# añadiendo un bloque por cada pieza con `enabled: true`. Este archivo documenta
+# la forma del resultado.
+#
+# Reglas de enrutado:
+#   - Pieza con runMode "docker"  → reverse_proxy <nombre-servicio>:<internalPort>
+#   - Pieza con runMode "host"    → reverse_proxy host.docker.internal:<internalPort>
+#     (los frontends en `pnpm dev`/HMR corren en el host, fuera de Docker).
+#
+# Ejemplo con api (docker) + backoffice (host) habilitados:
+
+api.aj-local.es {
+	reverse_proxy api:3000
+}
+
+admin.aj-local.es {
+	reverse_proxy host.docker.internal:4200
+}

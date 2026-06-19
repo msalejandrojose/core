@@ -16,11 +16,11 @@ services:
       timeout: 5s
       retries: 10
 
-  # API — solo se levanta con --profile full (./run.sh full)
+  # API — se levanta con los perfiles `api` o `full` (./run.sh api|full).
   # Para iteración rápida del backend conviene seguir usando `pnpm dev:api`
-  # contra mysql levantado en local.
+  # contra mysql levantado en local (./run.sh).
   api:
-    profiles: ["full"]
+    profiles: ["api", "full"]
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
@@ -33,15 +33,32 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      # Variables de conexión a BBDD — las consumirá la API cuando
-      # añadamos el ORM (Prisma / TypeORM / Drizzle).
       DB_HOST: mysql
       DB_PORT: 3306
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
+      # Orígenes permitidos por CORS — los deriva `run.sh` de stack.config.json
+      # (URLs de los frontends habilitados) y los exporta antes de levantar.
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     ports:
       - "${API_PORT:-3000}:3000"
+
+  # Reverse proxy local: enruta los subdominios *.aj-local.es a cada pieza.
+  # `run.sh` regenera ./Caddyfile desde stack.config.json antes de levantar.
+  # Se activa con cualquier perfil que sirva tráfico web.
+  proxy:
+    profiles: ["api", "backoffice", "web", "full"]
+    image: caddy:2-alpine
+    container_name: core-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    # Permite que Caddy alcance los frontends que corren en el host (runMode host).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   mysql_data:

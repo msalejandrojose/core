@@ -3,6 +3,7 @@ import {
   Files,
   LayoutDashboard,
   LayoutList,
+  Newspaper,
   Settings,
   Shield,
   SquareStack,
@@ -18,6 +19,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Files,
   Settings,
   LayoutList,
+  Newspaper,
   // Añadir según se creen secciones nuevas.
 };
 
