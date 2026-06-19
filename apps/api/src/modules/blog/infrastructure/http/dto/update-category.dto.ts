@@ -20,13 +20,13 @@ export class UpdateCategoryDto {
   @MaxLength(140)
   slug?: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsString()
   description?: string | null;
 
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsUUID()

@@ -1,0 +1,15 @@
+{
+  "$schema": "./packages/config/stack.schema.json",
+  "domains": { "base": "aj-local.es", "localBase": "aj-local.es" },
+  "parts": {
+    "api": { "enabled": true, "subdomain": "api", "internalPort": 3000, "runMode": "docker" },
+    "backoffice": { "enabled": true, "subdomain": "admin", "internalPort": 4200, "runMode": "host" },
+    "web": { "enabled": false, "subdomain": "www", "internalPort": 4300, "runMode": "host" },
+    "mobile": { "enabled": false, "subdomain": "app", "internalPort": 4400, "runMode": "host" }
+  },
+  "environments": {
+    "local": { "scheme": "http", "host": "aj-local.es" },
+    "staging": { "scheme": "https", "host": "staging.aj-local.es" },
+    "prod": { "scheme": "https", "host": "aj.es" }
+  }
+}

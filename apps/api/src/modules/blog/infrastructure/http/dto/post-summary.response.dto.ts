@@ -9,12 +9,13 @@ export class PostSummaryResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() slug: string;
   @ApiProperty() title: string;
-  @ApiProperty({ nullable: true }) excerpt: string | null;
+  @ApiProperty({ type: String, nullable: true }) excerpt: string | null;
   @ApiProperty({ enum: ['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'] })
   status: PostStatus;
-  @ApiProperty({ nullable: true }) publishedAt: Date | null;
-  @ApiProperty({ nullable: true }) coverImageId: string | null;
-  @ApiProperty({ nullable: true }) coverImageUrl: string | null;
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
+  publishedAt: Date | null;
+  @ApiProperty({ type: String, nullable: true }) coverImageId: string | null;
+  @ApiProperty({ type: String, nullable: true }) coverImageUrl: string | null;
   @ApiProperty() viewCount: number;
   @ApiProperty({ type: PostCategoryRefDto, nullable: true })
   category: PostCategoryRefDto | null;

@@ -57,6 +57,27 @@ const ProfilePage = lazy(() =>
     default: m.ProfilePage,
   })),
 );
+const PostsPage = lazy(() =>
+  import('@/features/blog/posts/PostsPage').then((m) => ({
+    default: m.PostsPage,
+  })),
+);
+const PostEditorPage = lazy(() =>
+  import('@/features/blog/posts/PostEditorPage').then((m) => ({
+    default: m.PostEditorPage,
+  })),
+);
+const CategoriesPage = lazy(() =>
+  import('@/features/blog/categories/CategoriesPage').then((m) => ({
+    default: m.CategoriesPage,
+  })),
+);
+const TagsPage = lazy(() =>
+  import('@/features/blog/tags/TagsPage').then((m) => ({ default: m.TagsPage })),
+);
+const FilesPage = lazy(() =>
+  import('@/features/files/FilesPage').then((m) => ({ default: m.FilesPage })),
+);
 
 function PageFallback() {
   return (
@@ -90,6 +111,12 @@ export default function App() {
               <Route path="/roles/:id" element={<RoleDetailPage />} />
               <Route path="/sections" element={<ApiSectionsPage />} />
               <Route path="/sections/:id" element={<ApiSectionDetailPage />} />
+              <Route path="/blog/posts" element={<PostsPage />} />
+              <Route path="/blog/posts/new" element={<PostEditorPage />} />
+              <Route path="/blog/posts/:id" element={<PostEditorPage />} />
+              <Route path="/blog/categories" element={<CategoriesPage />} />
+              <Route path="/blog/tags" element={<TagsPage />} />
+              <Route path="/files" element={<FilesPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>

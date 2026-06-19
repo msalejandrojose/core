@@ -13,8 +13,8 @@ export class PostCategoryRefDto {
 // Firma del autor (subconjunto del User).
 export class PostAuthorRefDto {
   @ApiProperty() id: string;
-  @ApiProperty({ nullable: true }) firstName: string | null;
-  @ApiProperty({ nullable: true }) lastName: string | null;
+  @ApiProperty({ type: String, nullable: true }) firstName: string | null;
+  @ApiProperty({ type: String, nullable: true }) lastName: string | null;
 }
 
 // Detalle completo de un post (incluye `content`).
@@ -22,17 +22,18 @@ export class PostResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() slug: string;
   @ApiProperty() title: string;
-  @ApiProperty({ nullable: true }) excerpt: string | null;
+  @ApiProperty({ type: String, nullable: true }) excerpt: string | null;
   @ApiProperty() content: string;
   @ApiProperty({ enum: ['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'] })
   status: PostStatus;
-  @ApiProperty({ nullable: true }) publishedAt: Date | null;
-  @ApiProperty({ nullable: true }) coverImageId: string | null;
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
+  publishedAt: Date | null;
+  @ApiProperty({ type: String, nullable: true }) coverImageId: string | null;
   // URL de la portada. En el MVP es FK suave: el front la resuelve con
   // `GET /files/:id`. Se deja el campo para integrarlo con storage más adelante.
-  @ApiProperty({ nullable: true }) coverImageUrl: string | null;
-  @ApiProperty({ nullable: true }) metaTitle: string | null;
-  @ApiProperty({ nullable: true }) metaDescription: string | null;
+  @ApiProperty({ type: String, nullable: true }) coverImageUrl: string | null;
+  @ApiProperty({ type: String, nullable: true }) metaTitle: string | null;
+  @ApiProperty({ type: String, nullable: true }) metaDescription: string | null;
   @ApiProperty() viewCount: number;
   @ApiProperty({ type: PostCategoryRefDto, nullable: true })
   category: PostCategoryRefDto | null;

@@ -6,6 +6,18 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // CORS. Los orígenes permitidos vienen de `CORS_ORIGINS` (lista separada por
+  // comas), que `run.sh` deriva de stack.config.json (URLs de los frontends
+  // habilitados). Sin la variable, se reflejan los orígenes (cómodo en dev).
+  const corsOrigins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  app.enableCors({
+    origin: corsOrigins.length > 0 ? corsOrigins : true,
+    credentials: true,
+  });
+
   // Validación global. `whitelist` quita propiedades no declaradas en el DTO.
   // `forbidNonWhitelisted` devuelve 400 si llegan. `transform` aplica
   // conversiones (string → number, etc.).

@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://core.local/stack.schema.json",
+  "title": "Core stack composition config",
+  "description": "Define qué piezas componen el proyecto, su subdominio bajo aj-local.es y cómo se levantan.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["domains", "parts", "environments"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "domains": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base", "localBase"],
+      "properties": {
+        "base": { "type": "string", "minLength": 1 },
+        "localBase": { "type": "string", "minLength": 1 }
+      }
+    },
+    "parts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["api", "backoffice", "web", "mobile"],
+      "properties": {
+        "api": { "$ref": "#/definitions/part" },
+        "backoffice": { "$ref": "#/definitions/part" },
+        "web": { "$ref": "#/definitions/part" },
+        "mobile": { "$ref": "#/definitions/part" }
+      }
+    },
+    "environments": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["local", "staging", "prod"],
+      "properties": {
+        "local": { "$ref": "#/definitions/environment" },
+        "staging": { "$ref": "#/definitions/environment" },
+        "prod": { "$ref": "#/definitions/environment" }
+      }
+    }
+  },
+  "definitions": {
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "subdomain", "internalPort"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "subdomain": { "type": "string", "minLength": 1 },
+        "internalPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "runMode": { "type": "string", "enum": ["docker", "host"] }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "host"],
+      "properties": {
+        "scheme": { "type": "string", "enum": ["http", "https"] },
+        "host": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

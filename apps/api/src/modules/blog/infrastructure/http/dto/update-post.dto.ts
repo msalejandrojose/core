@@ -28,20 +28,20 @@ export class UpdatePostDto {
   @MaxLength(180)
   slug?: string;
 
-  @ApiPropertyOptional({ maxLength: 320, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 320, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsString()
   @MaxLength(320)
   excerpt?: string | null;
 
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsUUID()
   coverImageId?: string | null;
 
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsUUID()
@@ -53,14 +53,14 @@ export class UpdatePostDto {
   @IsUUID('all', { each: true })
   tagIds?: string[];
 
-  @ApiPropertyOptional({ maxLength: 200, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 200, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsString()
   @MaxLength(200)
   metaTitle?: string | null;
 
-  @ApiPropertyOptional({ maxLength: 320, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 320, nullable: true })
   @IsOptional()
   @ValidateIf((_o, v) => v !== null)
   @IsString()

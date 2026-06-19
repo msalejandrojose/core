@@ -196,16 +196,31 @@ El override está en `.gitignore`:
 
 ## 5. Docker stack
 
-`docker/docker-compose.yml` define dos servicios:
+`docker/docker-compose.yml` define tres servicios:
 
-| Servicio | Profile | Cuándo se levanta |
+| Servicio | Profiles | Cuándo se levanta |
 |---|---|---|
 | `mysql` | (ninguno) | Siempre con `./run.sh` |
-| `api` | `full` | Solo con `./run.sh full` |
+| `api` | `api`, `full` | `./run.sh api` o `./run.sh full` |
+| `proxy` (Caddy) | `api`, `backoffice`, `web`, `full` | Con cualquier pieza que sirva tráfico web |
 
-**`./run.sh`** (en la raíz) acepta:
-- `./run.sh` (default `db`) → solo BBDD. Úsalo para desarrollar el backend con `pnpm dev:api` (hot reload).
-- `./run.sh full` → BBDD + API dockerizada. Para validar que la imagen funciona end-to-end.
+**Composición declarativa del stack** (`stack.config.json` en la raíz, validado por
+`packages/config/stack.schema.json`): define qué piezas (`api`/`backoffice`/`web`/`mobile`)
+están `enabled`, su `subdomain` bajo `aj-local.es`, su `internalPort` y su `runMode`
+(`docker` para la API, `host` para frontends en `pnpm dev`). El helper TS está en
+`packages/config` (`loadStackConfig`, `enabledParts`, `getUrl`).
+
+**`./run.sh`** (en la raíz) lee `stack.config.json`, regenera `docker/Caddyfile`
+(gitignored), comprueba `/etc/hosts` y deriva el cableado por env (`CORS_ORIGINS`
+para la API, `VITE_API_URL`/`PUBLIC_API_URL` para los frontends). Modos:
+- `./run.sh` (default `db`) → solo BBDD. Para desarrollar el backend con `pnpm dev:api`.
+- `./run.sh full` → todas las piezas habilitadas (API dockerizada + proxy).
+- `./run.sh api|backoffice|web|mobile` → esa pieza + MySQL (+ proxy si sirve web).
+- `./run.sh --setup-hosts` → añade a `/etc/hosts` los subdominios que falten.
+
+Requiere `jq`. Las URLs van sin puerto: Caddy enruta por host (`api.aj-local.es`,
+`admin.aj-local.es`); los frontends `host` se alcanzan vía `host.docker.internal`.
+La API lee `CORS_ORIGINS` en `main.ts` (`app.enableCors`).
 
 **Credenciales de MySQL** en `docker/.env`:
 - Root: `MYSQL_ROOT_USER=root`, `MYSQL_ROOT_PASSWORD`
