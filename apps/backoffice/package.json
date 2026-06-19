@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@core/api-client": "workspace:*",
+    "@core/forms": "workspace:*",
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@hookform/resolvers": "^5.4.0",
