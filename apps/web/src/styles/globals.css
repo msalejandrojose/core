@@ -1,0 +1,61 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/fraunces";
+
+@theme {
+  /* Brand — terracota / clay (tono cálido editorial) */
+  --color-brand: oklch(0.58 0.12 40);
+  --color-brand-light: oklch(0.72 0.08 40);
+  --color-brand-dark: oklch(0.42 0.12 40);
+
+  /* Fondos — greige (blanco cálido) */
+  --color-bg: oklch(0.98 0.008 80);
+  --color-bg-muted: oklch(0.94 0.012 80);
+  --color-bg-subtle: oklch(0.91 0.014 80);
+
+  /* Texto */
+  --color-fg: oklch(0.18 0.02 60);
+  --color-fg-muted: oklch(0.45 0.03 60);
+  --color-fg-subtle: oklch(0.62 0.025 60);
+
+  /* Bordes */
+  --color-border: oklch(0.86 0.014 80);
+  --color-border-strong: oklch(0.72 0.018 60);
+
+  /* Tipografía */
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter Variable', system-ui, -apple-system, sans-serif;
+
+  /* Radios */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    min-height: 100dvh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+  }
+
+  ::selection {
+    background-color: var(--color-brand);
+    color: white;
+  }
+}

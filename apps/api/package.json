@@ -25,7 +25,8 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:format": "prisma format",
-    "seed": "pnpm build && node dist/seeds/seed-iam.js",
+    "seed": "pnpm build && node dist/seeds/seed-iam.js && node dist/seeds/seed-sections.js",
+    "seed:sections": "pnpm build && node dist/seeds/seed-sections.js",
     "sync:sections": "pnpm build && node dist/seeds/sync-api-sections.js"
   },
   "dependencies": {

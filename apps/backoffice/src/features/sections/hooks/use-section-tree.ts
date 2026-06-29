@@ -1,25 +1,51 @@
 import { useQuery } from '@tanstack/react-query';
-import { BACKOFFICE_SECTION_TREE } from '../section-tree';
-import type { SectionTreeNode } from '../types';
+import type { SectionTreeNode } from '@core/sections';
+import { apiClient } from '@/api/client';
 
 /**
- * Árbol de secciones navegables del backoffice.
- *
- * ⚠️ Hoy devuelve un árbol local (TASK-38 aún no implementa el módulo backend).
- * Cuando exista `GET /sections/tree`, sustituir el `queryFn` por:
- *
- *   const { data, error } = await apiClient.GET('/sections/tree', {
- *     params: { query: { scope: 'BACKOFFICE' } },
- *   });
- *   if (error) throw error;
- *   return data;
- *
- * El resto de la app (header/tabs) no cambia: consume `SectionTreeNode[]`.
+ * Árbol de secciones navegables del backoffice, servido por
+ * `GET /sections/tree?scope=BACKOFFICE` y filtrado por los permisos del
+ * usuario autenticado. Normalizamos `icon`/`route` (`null` en el backend) a
+ * opcional para casar con el tipo canónico de `@core/sections`.
  */
 export function useSectionTree() {
   return useQuery<SectionTreeNode[]>({
     queryKey: ['section-tree', 'BACKOFFICE'],
-    queryFn: async () => BACKOFFICE_SECTION_TREE,
-    staleTime: 1000 * 60 * 5, // 5 min: el árbol cambia poco
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET('/sections/tree', {
+        params: { query: { scope: 'BACKOFFICE' } },
+      });
+      if (error) throw error;
+      return (data ?? []).map(normalize);
+    },
+    staleTime: 1000 * 60 * 5,
   });
+}
+
+interface ApiNode {
+  id: string;
+  code: string;
+  name: string;
+  icon?: string | null;
+  route?: string | null;
+  scope: 'BACKOFFICE' | 'APP' | 'SHARED';
+  order: number;
+  isActive: boolean;
+  apiRequirements?: string[];
+  children: ApiNode[];
+}
+
+function normalize(node: ApiNode): SectionTreeNode {
+  return {
+    id: node.id,
+    code: node.code,
+    name: node.name,
+    icon: node.icon ?? undefined,
+    route: node.route ?? undefined,
+    scope: node.scope,
+    order: node.order,
+    isActive: node.isActive,
+    apiRequirements: node.apiRequirements,
+    children: node.children.map(normalize),
+  };
 }

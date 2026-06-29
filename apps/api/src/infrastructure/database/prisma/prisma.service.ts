@@ -17,6 +17,9 @@ function buildAdapter(): PrismaMariaDb {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
+    // MySQL 8 usa caching_sha2_password por defecto; sin SSL el driver mariadb
+    // necesita poder recuperar la public key del servidor para el handshake.
+    allowPublicKeyRetrieval: true,
   });
 }
 

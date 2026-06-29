@@ -76,6 +76,13 @@ url_of() {
 CADDYFILE="${DOCKER_DIR}/Caddyfile"
 {
   echo "# Generado por run.sh desde stack.config.json — no editar a mano."
+  # En local servimos HTTP plano: aj-local.es no resuelve por DNS público, así
+  # que el HTTPS automático de Caddy intenta ACME, falla con NXDOMAIN y devuelve
+  # 308 a https que el navegador no puede abrir.
+  echo ""
+  echo "{"
+  echo "	auto_https off"
+  echo "}"
   for part in ${ENABLED_PARTS}; do
     sub="$(part_field "${part}" subdomain)"
     port="$(part_field "${part}" internalPort)"
@@ -86,7 +93,7 @@ CADDYFILE="${DOCKER_DIR}/Caddyfile"
       upstream="host.docker.internal:${port}"
     fi
     echo ""
-    echo "${sub}.${LOCAL_BASE} {"
+    echo "${sub}.${LOCAL_BASE}:80 {"
     printf '\treverse_proxy %s\n' "${upstream}"
     echo "}"
   done
@@ -123,14 +130,10 @@ if [ -n "${MISSING}" ]; then
 fi
 
 # --- Cableado entre piezas (env) ----------------------------------------------
-# CORS de la API = URLs de los frontends habilitados.
-CORS_LIST=""
-for part in backoffice web mobile; do
-  if echo "${ENABLED_PARTS}" | grep -qx "${part}"; then
-    CORS_LIST="${CORS_LIST}${CORS_LIST:+,}$(url_of "${part}")"
-  fi
-done
-export CORS_ORIGINS="${CORS_LIST}"
+# En local reflejamos cualquier origin (localhost:<port>, 127.0.0.1, *.local,
+# variantes con/sin puerto…) para que el navegador no rebote por CORS mientras
+# se itera. En staging/prod se debe pasar un CORS_ORIGINS explícito.
+export CORS_ORIGINS="*"
 
 API_URL=""
 if echo "${ENABLED_PARTS}" | grep -qx "api"; then

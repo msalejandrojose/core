@@ -1,0 +1,58 @@
+---
+interface Props {
+  headline: string;
+  subheadline: string;
+  cta?: { label: string; href: string };
+  ctaSecondary?: { label: string; href: string };
+}
+
+const { headline, subheadline, cta, ctaSecondary } = Astro.props;
+---
+
+<section class="relative overflow-hidden py-24 lg:py-40">
+  <!-- Fondo decorativo -->
+  <div
+    class="absolute inset-0 -z-10 pointer-events-none"
+    aria-hidden="true"
+  >
+    <div
+      class="absolute top-0 right-0 w-[600px] h-[600px] rounded-full"
+      style="background: radial-gradient(circle, oklch(0.72 0.08 40 / 0.08) 0%, transparent 70%); transform: translate(20%, -30%);"
+    ></div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="max-w-3xl">
+      <h1
+        class="font-display text-5xl lg:text-7xl font-semibold leading-[1.1] tracking-tight text-fg"
+      >
+        {headline}
+      </h1>
+
+      <p class="mt-6 text-xl leading-relaxed text-fg-muted max-w-2xl">
+        {subheadline}
+      </p>
+
+      {(cta || ctaSecondary) && (
+        <div class="mt-10 flex flex-wrap items-center gap-4">
+          {cta && (
+            <a
+              href={cta.href}
+              class="inline-flex items-center px-6 py-3 rounded-md bg-brand text-white font-medium hover:bg-brand-dark transition-colors"
+            >
+              {cta.label}
+            </a>
+          )}
+          {ctaSecondary && (
+            <a
+              href={ctaSecondary.href}
+              class="inline-flex items-center px-6 py-3 rounded-md border border-border text-fg font-medium hover:bg-bg-muted transition-colors"
+            >
+              {ctaSecondary.label}
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+</section>

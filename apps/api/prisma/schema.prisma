@@ -117,6 +117,22 @@ enum PendingActionStatus {
   CANCELED
 }
 
+/// Ámbito de un nodo del árbol de navegación de UI. Distinto de `RoleScope`:
+/// aquí marcamos en qué app (`BACKOFFICE`/`APP`) se renderiza la sección, o si
+/// es compartida (`SHARED`, p.ej. perfil/ajustes que existen en ambas).
+enum SectionScope {
+  BACKOFFICE
+  APP
+  SHARED
+}
+
+/// Tipo de override de acceso a una `Section`. `DENY` siempre gana sobre
+/// `GRANT` (deny-by-default cuando no hay registro).
+enum SectionAccessType {
+  GRANT
+  DENY
+}
+
 // ---------------------------------------------------------------------------
 // Modelos
 // ---------------------------------------------------------------------------
@@ -150,6 +166,7 @@ model User {
   userApiSectionPermissions UserApiSectionPermission[]
   storedFiles               StoredFile[]
   posts                     Post[]
+  sectionAccess             UserSectionAccess[]
 
   @@map("user")
 }
@@ -174,6 +191,7 @@ model UserRole {
   // Relaciones
   userUserRoles             UserUserRole[]
   roleApiSectionPermissions RoleApiSectionPermission[]
+  sectionAccess             RoleSectionAccess[]
 
   @@map("user_role")
 }
@@ -535,4 +553,67 @@ model PendingAction {
   @@index([status, kind, definitionId, createdAt])
   @@index([runId])
   @@map("workflow_pending_action")
+}
+
+/// Nodo del árbol de navegación de UI. `code` es el slug legible
+/// (`users`, `iam.users`, `settings.general`). Self-FK `parentId` modela el
+/// árbol. `apiRequirements` es la lista de códigos de `ApiSection` que el
+/// usuario debe poder consumir para que la sección aparezca — sólo es una
+/// conveniencia (la seguridad real la hace el guard de cada endpoint).
+model Section {
+  id              String       @id @default(uuid()) @db.Char(36)
+  code            String       @db.VarChar(255)
+  name            String       @db.VarChar(255)
+  icon            String?      @db.VarChar(100)
+  route           String?      @db.VarChar(500)
+  parentId        String?      @map("parent_id") @db.Char(36)
+  scope           SectionScope
+  order           Int          @default(0)
+  isActive        Boolean      @default(true) @map("is_active")
+  apiRequirements Json?        @map("api_requirements")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  parent     Section?            @relation("SectionTree", fields: [parentId], references: [id])
+  children   Section[]           @relation("SectionTree")
+  roleAccess RoleSectionAccess[]
+  userAccess UserSectionAccess[]
+
+  @@unique([code, scope])
+  @@index([scope, isActive, order])
+  @@index([parentId])
+  @@map("section")
+}
+
+/// Override de visibilidad de una `Section` para un rol. Si una sección tiene
+/// `DENY` en algún rol del usuario, no se muestra. `GRANT` la hace visible
+/// salvo que otro registro la deniegue. Sin registros → sección oculta.
+model RoleSectionAccess {
+  userRoleId String            @map("user_role_id") @db.Char(36)
+  sectionId  String            @map("section_id") @db.Char(36)
+  access     SectionAccessType
+  createdAt  DateTime          @default(now()) @map("created_at")
+
+  userRole UserRole @relation(fields: [userRoleId], references: [id], onDelete: Cascade)
+  section  Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@id([userRoleId, sectionId])
+  @@index([sectionId])
+  @@map("role_section_access")
+}
+
+/// Override de visibilidad de una `Section` para un usuario concreto. Tiene
+/// prioridad sobre los registros de rol — útil para excepciones puntuales.
+model UserSectionAccess {
+  userId    String            @map("user_id") @db.Char(36)
+  sectionId String            @map("section_id") @db.Char(36)
+  access    SectionAccessType
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, sectionId])
+  @@index([sectionId])
+  @@map("user_section_access")
 }

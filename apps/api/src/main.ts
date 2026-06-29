@@ -8,13 +8,15 @@ async function bootstrap() {
 
   // CORS. Los orígenes permitidos vienen de `CORS_ORIGINS` (lista separada por
   // comas), que `run.sh` deriva de stack.config.json (URLs de los frontends
-  // habilitados). Sin la variable, se reflejan los orígenes (cómodo en dev).
+  // habilitados). Sin la variable o con `*`, se reflejan los orígenes (cómodo
+  // en dev — evita fricción con localhost:<port>, 127.0.0.1, *.local, etc.).
   const corsOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+  const allowAll = corsOrigins.length === 0 || corsOrigins.includes('*');
   app.enableCors({
-    origin: corsOrigins.length > 0 ? corsOrigins : true,
+    origin: allowAll ? true : corsOrigins,
     credentials: true,
   });
 

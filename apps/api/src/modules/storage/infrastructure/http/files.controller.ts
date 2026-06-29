@@ -30,6 +30,7 @@ import { GetFileSignedUrlUseCase } from '../../application/use-cases/get-file-si
 import { CreateSignedUploadUseCase } from '../../application/use-cases/create-signed-upload.use-case';
 import { ConfirmUploadUseCase } from '../../application/use-cases/confirm-upload.use-case';
 import { LocalDiskStorageAdapter } from '../adapters/local-disk-storage.adapter';
+import { Public } from '../../../iam/infrastructure/http/decorators/public.decorator';
 import { StoredFileResponseDto } from './dto/stored-file-response.dto';
 import { ListFilesQueryDto } from './dto/list-files-query.dto';
 import { CreateSignedUploadDto } from './dto/create-signed-upload.dto';
@@ -99,6 +100,7 @@ export class FilesController {
   }
 
   @Get('raw')
+  @Public()
   @ApiOperation({
     summary:
       'Sirve el binario de un fichero LOCAL a partir de un token firmado de corta duración.',

@@ -172,6 +172,33 @@ export const ERROR_CATALOG = {
     level: 'error',
     defaultMessage: 'No se pudo enviar el correo. Inténtalo más tarde.',
   },
+
+  // Sections (UI navigation tree)
+  SECTION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Sección no encontrada.',
+  },
+  SECTION_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe una sección con ese código en ese scope.',
+  },
+  SECTION_CYCLE: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La jerarquía crearía un ciclo.',
+  },
+  SECTION_SCOPE_MISMATCH: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'El scope del hijo no es compatible con el del padre.',
+  },
+  SECTION_IN_USE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'La sección tiene subsecciones activas.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;

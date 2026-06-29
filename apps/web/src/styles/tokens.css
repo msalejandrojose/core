@@ -1,0 +1,37 @@
+/* Dark mode via preferencia del sistema (cuando no hay override explícito) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-brand: oklch(0.62 0.12 40);
+    --color-brand-light: oklch(0.72 0.08 40);
+    --color-brand-dark: oklch(0.48 0.14 40);
+
+    --color-bg: oklch(0.13 0.02 60);
+    --color-bg-muted: oklch(0.19 0.022 60);
+    --color-bg-subtle: oklch(0.24 0.022 60);
+
+    --color-fg: oklch(0.96 0.006 80);
+    --color-fg-muted: oklch(0.68 0.018 80);
+    --color-fg-subtle: oklch(0.52 0.015 80);
+
+    --color-border: oklch(0.28 0.022 60);
+    --color-border-strong: oklch(0.38 0.022 60);
+  }
+}
+
+/* Dark mode via toggle explícito (localStorage → data-theme="dark" en <html>) */
+[data-theme='dark'] {
+  --color-brand: oklch(0.62 0.12 40);
+  --color-brand-light: oklch(0.72 0.08 40);
+  --color-brand-dark: oklch(0.48 0.14 40);
+
+  --color-bg: oklch(0.13 0.02 60);
+  --color-bg-muted: oklch(0.19 0.022 60);
+  --color-bg-subtle: oklch(0.24 0.022 60);
+
+  --color-fg: oklch(0.96 0.006 80);
+  --color-fg-muted: oklch(0.68 0.018 80);
+  --color-fg-subtle: oklch(0.52 0.015 80);
+
+  --color-border: oklch(0.28 0.022 60);
+  --color-border-strong: oklch(0.38 0.022 60);
+}

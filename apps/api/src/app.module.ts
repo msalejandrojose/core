@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, DiscoveryModule } from '@nestjs/core';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { IamModule } from './modules/iam/iam.module';
+import { SectionsModule } from './modules/sections/sections.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { WorkflowsModule } from './modules/workflows/workflows.module';
@@ -24,6 +25,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     DiscoveryModule,
     PrismaModule,
     IamModule,
+    SectionsModule,
     StorageModule,
     BlogModule,
     WorkflowsModule,

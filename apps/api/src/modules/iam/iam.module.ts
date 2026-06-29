@@ -159,6 +159,12 @@ import { MailerModule } from '../mailer/mailer.module';
     { provide: APP_GUARD, useExisting: JwtAuthGuard },
     { provide: APP_GUARD, useExisting: PermissionGuard },
   ],
-  exports: [JwtAuthGuard, PermissionGuard, ResolvePermissionUseCase, TOKEN_ISSUER],
+  exports: [
+    JwtAuthGuard,
+    PermissionGuard,
+    ResolvePermissionUseCase,
+    TOKEN_ISSUER,
+    ROLE_REPOSITORY,
+  ],
 })
 export class IamModule {}

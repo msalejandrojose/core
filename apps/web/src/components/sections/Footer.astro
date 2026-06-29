@@ -1,0 +1,25 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-border bg-bg-muted mt-auto">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+      <div>
+        <p class="font-display text-lg font-semibold text-fg">Core</p>
+        <p class="mt-1 text-sm text-fg-muted">Plataforma digital.</p>
+      </div>
+
+      <nav class="flex flex-wrap gap-x-8 gap-y-2" aria-label="Footer">
+        <a href="/" class="text-sm text-fg-muted hover:text-fg transition-colors">Inicio</a>
+        <a href="/contacto" class="text-sm text-fg-muted hover:text-fg transition-colors">Contacto</a>
+      </nav>
+    </div>
+
+    <div class="mt-8 pt-8 border-t border-border">
+      <p class="text-xs text-fg-subtle">
+        © {year} Core. Todos los derechos reservados.
+      </p>
+    </div>
+  </div>
+</footer>

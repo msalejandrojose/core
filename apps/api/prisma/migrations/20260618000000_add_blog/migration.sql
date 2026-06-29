@@ -10,7 +10,7 @@ CREATE TABLE `post_category` (
 
     UNIQUE INDEX `post_category_slug_key`(`slug`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable post_tag
 CREATE TABLE `post_tag` (
@@ -21,7 +21,7 @@ CREATE TABLE `post_tag` (
 
     UNIQUE INDEX `post_tag_slug_key`(`slug`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable post
 CREATE TABLE `post` (
@@ -46,7 +46,7 @@ CREATE TABLE `post` (
     INDEX `post_category_id_idx`(`category_id`),
     INDEX `post_author_id_idx`(`author_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable post_tag_on_post
 CREATE TABLE `post_tag_on_post` (
@@ -55,7 +55,7 @@ CREATE TABLE `post_tag_on_post` (
 
     INDEX `post_tag_on_post_tag_id_idx`(`tag_id`),
     PRIMARY KEY (`post_id`, `tag_id`)
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
 ALTER TABLE `post_category` ADD CONSTRAINT `post_category_parent_id_fkey` FOREIGN KEY (`parent_id`) REFERENCES `post_category`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

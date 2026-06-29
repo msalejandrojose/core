@@ -1,0 +1,32 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+---
+
+<MarketingLayout
+  title="Página no encontrada"
+  description="La página que buscas no existe o ha sido movida."
+>
+  <section class="flex-1 flex items-center justify-center py-40">
+    <div class="max-w-xl mx-auto px-6 text-center">
+      <p
+        class="font-display text-8xl font-semibold leading-none"
+        style="color: var(--color-brand);"
+        aria-hidden="true"
+      >
+        404
+      </p>
+      <h1 class="font-display text-3xl font-semibold text-fg mt-4">
+        Página no encontrada
+      </h1>
+      <p class="text-fg-muted mt-4 leading-relaxed">
+        La página que buscas no existe o ha sido movida a otra dirección.
+      </p>
+      <a
+        href="/"
+        class="mt-10 inline-flex items-center px-6 py-3 rounded-md bg-brand text-white font-medium hover:bg-brand-dark transition-colors"
+      >
+        Volver al inicio
+      </a>
+    </div>
+  </section>
+</MarketingLayout>

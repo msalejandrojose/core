@@ -30,6 +30,14 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    # Carga JWT_SECRET, MAIL_*, STORAGE_*, etc. desde los .env de apps/api.
+    # `.env` sobrescribe a `.env.local` (defaults no-secretos del equipo).
+    # El bloque `environment:` de abajo gana sobre ambos para forzar DB_HOST=mysql.
+    env_file:
+      - path: ../apps/api/.env.local
+        required: true
+      - path: ../apps/api/.env
+        required: false
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -43,6 +51,10 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-}
     ports:
       - "${API_PORT:-3000}:3000"
+    # Persistimos el storage local entre recreates del contenedor para que los
+    # ficheros subidos con STORAGE_DRIVER=LOCAL no se pierdan al reiniciar.
+    volumes:
+      - api_storage:/app/.storage
 
   # Reverse proxy local: enruta los subdominios *.aj-local.es a cada pieza.
   # `run.sh` regenera ./Caddyfile desde stack.config.json antes de levantar.
@@ -63,3 +75,5 @@ services:
 volumes:
   mysql_data:
     name: core-mysql-data
+  api_storage:
+    name: core-api-storage
