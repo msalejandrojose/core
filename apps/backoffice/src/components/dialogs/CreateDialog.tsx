@@ -14,6 +14,7 @@ interface CreateDialogProps {
   trigger: ReactNode;
   title: string;
   description?: string;
+  icon?: ReactNode;
   children: ReactNode;
   onSubmit: () => void;
   isPending?: boolean;
@@ -22,15 +23,11 @@ interface CreateDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-/**
- * Dialog genérico para crear/editar recursos. El formulario vive como `children`
- * (fuera del dialog) y el submit se dispara con la prop `onSubmit`, de modo que
- * el dialog solo controla apertura y estado `isPending` del botón.
- */
 export function CreateDialog({
   trigger,
   title,
   description,
+  icon,
   children,
   onSubmit,
   isPending,
@@ -43,6 +40,11 @@ export function CreateDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
+          {icon && (
+            <div className="bg-muted mb-1 flex size-10 items-center justify-center rounded-lg">
+              {icon}
+            </div>
+          )}
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>

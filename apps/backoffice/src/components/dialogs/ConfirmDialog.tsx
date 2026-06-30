@@ -1,3 +1,4 @@
+import { AlertTriangle } from 'lucide-react';
 import { type ReactNode } from 'react';
 import {
   AlertDialog,
@@ -20,10 +21,6 @@ interface ConfirmDialogProps {
   destructiveLabel?: string;
 }
 
-/**
- * Confirmación de acciones destructivas (borrar). El botón de confirmación usa
- * el color `destructive` del tema. Solo dispara `onConfirm` al confirmar.
- */
 export function ConfirmDialog({
   trigger,
   title = '¿Estás seguro?',
@@ -37,6 +34,9 @@ export function ConfirmDialog({
       <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
+          <div className="bg-destructive/10 mb-1 flex size-10 items-center justify-center rounded-lg">
+            <AlertTriangle className="text-destructive size-5" />
+          </div>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
