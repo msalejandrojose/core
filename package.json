@@ -8,7 +8,10 @@
     "build:api": "pnpm --filter @core/api build",
     "dev:backoffice": "pnpm --filter @core/backoffice dev",
     "build:backoffice": "pnpm --filter @core/backoffice build",
-    "preview:backoffice": "pnpm --filter @core/backoffice preview"
+    "preview:backoffice": "pnpm --filter @core/backoffice preview",
+    "dev:web": "pnpm --filter @core/web dev",
+    "build:web": "pnpm --filter @core/web build",
+    "preview:web": "pnpm --filter @core/web preview"
   },
   "engines": {
     "node": ">=20",
