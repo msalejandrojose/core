@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { FormInstance, FormInstanceStatus, FormResponsePolicy } from '../../domain/entities/form-instance.entity';
 import { FormInstanceNotFoundError } from '../../domain/errors/form-instance-not-found.error';
-import { FORM_INSTANCE_REPOSITORY, FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
+import { FORM_INSTANCE_REPOSITORY, type FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
 
 export interface UpdateFormInstanceInput {
   id: string;

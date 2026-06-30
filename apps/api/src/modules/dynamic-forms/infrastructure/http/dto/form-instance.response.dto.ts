@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FormInstance, FormInstanceStatus, FormResponsePolicy } from '../../../domain/entities/form-instance.entity';
+import { type FormInstance, type FormInstanceStatus, type FormResponsePolicy } from '../../../domain/entities/form-instance.entity';
 
 export class FormInstanceResponseDto {
   @ApiProperty() id: string;

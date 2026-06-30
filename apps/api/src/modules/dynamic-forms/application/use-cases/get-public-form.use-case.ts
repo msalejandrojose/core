@@ -3,8 +3,8 @@ import { Form } from '../../domain/entities/form.entity';
 import { FormInstance } from '../../domain/entities/form-instance.entity';
 import { FormInstanceClosedError } from '../../domain/errors/form-instance-closed.error';
 import { FormInstanceNotFoundError } from '../../domain/errors/form-instance-not-found.error';
-import { FORM_INSTANCE_REPOSITORY, FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
-import { FORM_REPOSITORY, FormRepositoryPort } from '../ports/form-repository.port';
+import { FORM_INSTANCE_REPOSITORY, type FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
+import { FORM_REPOSITORY, type FormRepositoryPort } from '../ports/form-repository.port';
 
 export interface GetPublicFormResult {
   form: Pick<Form, 'id' | 'title' | 'description' | 'schema'>;

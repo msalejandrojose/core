@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { FormResponse } from '../../domain/entities/form-response.entity';
 import { FormResponseNotFoundError } from '../../domain/errors/form-response-not-found.error';
-import { FORM_RESPONSE_REPOSITORY, FormResponseRepositoryPort } from '../ports/form-response-repository.port';
+import { FORM_RESPONSE_REPOSITORY, type FormResponseRepositoryPort } from '../ports/form-response-repository.port';
 
 @Injectable()
 export class GetFormResponseUseCase {

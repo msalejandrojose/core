@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CursorPage } from '../../../../shared/pagination';
 import { FormInstance } from '../../domain/entities/form-instance.entity';
-import { FORM_INSTANCE_REPOSITORY, FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
+import { FORM_INSTANCE_REPOSITORY, type FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
 
 export interface ListFormInstancesInput {
   formId: string;

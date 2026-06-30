@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Param, Post, Req } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Request } from 'express';
+import { type Request } from 'express';
 import { type AccessTokenPayload } from '../../../iam/application/ports/token-issuer.port';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import { Public } from '../../../iam/infrastructure/http/decorators/public.decorator';

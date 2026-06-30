@@ -2,8 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { FormInstance, FormResponsePolicy } from '../../domain/entities/form-instance.entity';
 import { FormNotFoundError } from '../../domain/errors/form-not-found.error';
-import { FORM_REPOSITORY, FormRepositoryPort } from '../ports/form-repository.port';
-import { FORM_INSTANCE_REPOSITORY, FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
+import { FORM_REPOSITORY, type FormRepositoryPort } from '../ports/form-repository.port';
+import { FORM_INSTANCE_REPOSITORY, type FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
 
 export interface CreateFormInstanceInput {
   formId: string;

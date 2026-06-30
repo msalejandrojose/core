@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString } from 'class-validator';
 import { CursorPaginationQueryDto } from '../../../../../shared/pagination';
-import { FormStatus } from '../../../domain/entities/form.entity';
+import { type FormStatus } from '../../../domain/entities/form.entity';
 
 const FORM_STATUSES: FormStatus[] = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
 

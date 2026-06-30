@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsDate, IsIn, IsInt, IsOptional, Min } from 'class-validator';
-import { FormInstanceStatus, FormResponsePolicy } from '../../../domain/entities/form-instance.entity';
+import { type FormInstanceStatus, type FormResponsePolicy } from '../../../domain/entities/form-instance.entity';
 
 const RESPONSE_POLICIES: FormResponsePolicy[] = ['SINGLE_PER_LINK', 'SINGLE_PER_USER', 'UNLIMITED'];
 const INSTANCE_STATUSES: FormInstanceStatus[] = ['ACTIVE', 'CLOSED'];
