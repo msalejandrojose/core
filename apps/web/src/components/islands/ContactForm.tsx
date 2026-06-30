@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import { getApiUrl } from '../../lib/api';
 
 interface FormData {
@@ -17,11 +17,11 @@ export default function ContactForm() {
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus('submitting');
     setErrorMsg('');

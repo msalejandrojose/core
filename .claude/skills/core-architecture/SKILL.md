@@ -13,8 +13,8 @@ This skill captures the conventions established for this repo. Use it as the sou
 core/
 ├── apps/                    # things that get deployed
 │   ├── api/                 # NestJS backend (API-first, expone OpenAPI/Swagger)
-│   ├── backoffice/          # React + Vite (planned, vacío)
-│   ├── web/                 # Astro static site (planned, vacío)
+│   ├── backoffice/          # React + Vite (backoffice interno)
+│   ├── web/                 # Astro 5 static site — sitio público (@core/web)
 │   └── mobile/              # Ionic + React PWA + iOS/Android (planned, vacío)
 ├── packages/                # librerías internas que consumen las apps
 │   ├── api-client/          # cliente TS generado desde el OpenAPI del backend (vacío)
@@ -244,7 +244,94 @@ docker build -f apps/api/Dockerfile -t core-api:latest .
 
 La imagen lee `process.env.PORT` así que funciona en Cloud Run, ECS, Render, Fly, Railway sin cambios.
 
-## 6. Añadir una nueva app o package al workspace
+## 6. apps/web — sitio público Astro
+
+`apps/web` es el sitio estático público del monorepo. Nombre de paquete: `@core/web`. Implementado con **Astro 5 (SSG)**, **Tailwind 4** y **React** para islands interactivos.
+
+### Stack concreto
+
+| Pieza | Decisión |
+|---|---|
+| Framework | Astro 5 (`output: 'static'`) |
+| Estilos | Tailwind 4 vía `@tailwindcss/vite` (config en CSS, no en `tailwind.config.ts`) |
+| Islands | `@astrojs/react` — React 19 solo donde haga falta interactividad |
+| Tipografía | Fraunces Variable (display) + Inter Variable (body) — `@fontsource-variable/*` |
+| Sitemap | `@astrojs/sitemap` — genera `sitemap-index.xml` en build |
+| Type-check | `@astrojs/check` (`pnpm --filter @core/web check`) |
+
+### Estructura interna de apps/web
+
+```
+apps/web/
+├── public/                  # favicon.svg, robots.txt
+├── src/
+│   ├── components/
+│   │   ├── Seo.astro        # OG + Twitter cards
+│   │   ├── ui/              # Button, Container, Link (Astro)
+│   │   ├── sections/        # Header, Footer, Hero (Astro)
+│   │   └── islands/         # ContactForm.tsx (React, client:load)
+│   ├── layouts/
+│   │   ├── BaseLayout.astro       # html + head + anti-flash dark-mode script
+│   │   └── MarketingLayout.astro  # Header + Footer + slot
+│   ├── pages/               # index.astro, contacto.astro, 404.astro
+│   ├── lib/
+│   │   ├── api.ts           # fetch wrapper → PUBLIC_API_URL
+│   │   └── seo.ts           # buildSeoMeta helper
+│   ├── styles/
+│   │   ├── globals.css      # @import tailwindcss + @theme (tokens light) + @layer base
+│   │   └── tokens.css       # overrides dark mode (prefers-color-scheme + data-theme)
+│   └── content/config.ts    # Content Collections preparado, vacío
+├── astro.config.mjs
+├── tsconfig.json            # extends astro/tsconfigs/strict, TS ~5.7
+├── .env.example
+└── README.md
+```
+
+### Design tokens
+
+Paleta **greige + terracota/clay**. Los tokens se definen en `@theme` dentro de `globals.css` (Tailwind 4 los convierte en CSS custom properties). El dark mode sobrescribe esas variables en `tokens.css` via `prefers-color-scheme` y `[data-theme='dark']`.
+
+Clases Tailwind generadas: `bg-brand`, `text-fg`, `bg-bg-muted`, `border-border`, `rounded-md`, etc.
+
+### Variables de entorno de la web
+
+⚠️ **Convención INVERSA a `apps/api/`**: aquí `.env.local` está gitignored (convención Vite/Astro). Solo las variables con prefijo `PUBLIC_` se exponen al browser.
+
+| Variable | Uso |
+|---|---|
+| `PUBLIC_API_URL` | URL de la API (usada en `src/lib/api.ts` y el island de contacto) |
+| `PUBLIC_SITE_URL` | URL del propio sitio (sitemap + OG tags) |
+
+`run.sh` inyecta `PUBLIC_API_URL` derivado de `stack.config.json` cuando se levanta con `./run.sh web`.
+
+### Wiring con el stack local
+
+- `stack.config.json`: `"web": { "enabled": true, "subdomain": "www", "internalPort": 4321, "runMode": "host" }`
+- Caddy enruta `http://www.aj-local.es:80` → `host.docker.internal:4321` (dev server Astro).
+- `./run.sh web` levanta MySQL + proxy. La web corre en el host: `pnpm dev:web`.
+- `./run.sh --setup-hosts` añade `www.aj-local.es` a `/etc/hosts`.
+
+### Scripts
+
+```bash
+pnpm dev:web       # dev server en localhost:4321
+pnpm build:web     # astro check + astro build → apps/web/dist/
+pnpm preview:web   # sirve dist/ localmente
+```
+
+### Añadir una página nueva
+
+1. Crear `src/pages/<nombre>.astro`.
+2. Usar `MarketingLayout` (header + footer) o `BaseLayout` (solo html + SEO).
+3. Pasar `title` y `description` al layout — el componente `Seo.astro` genera todo el head.
+
+### Añadir un island React
+
+1. Crear el componente en `src/components/islands/<Nombre>.tsx`.
+2. Importarlo en la página Astro y añadir directiva `client:load` (o `client:visible` si no es above-the-fold).
+3. Para acceder a la API usar `getApiUrl()` o `apiFetch()` de `src/lib/api.ts`.
+
+## 7. Añadir una nueva app o package al workspace
 
 ### Una nueva app (frontend)
 
