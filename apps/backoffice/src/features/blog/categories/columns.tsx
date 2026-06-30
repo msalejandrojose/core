@@ -1,14 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal } from 'lucide-react';
-import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
+import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { RowActions } from '@/components/data-table/RowActions';
 import type { CategoryRow } from '../types';
 import { CategoryFormDialog } from './components/CategoryFormDialog';
 import { useDeleteCategory } from './hooks/use-delete-category';
@@ -40,37 +33,21 @@ export const columns: ColumnDef<CategoryRow>[] = [
 function CategoryRowActions({ category }: { category: CategoryRow }) {
   const remove = useDeleteCategory();
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8">
-          <MoreHorizontal size={14} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+    <RowActions
+      onDelete={() => remove.mutate(category.id)}
+      deleteTitle="¿Eliminar categoría?"
+      deleteDescription="Los posts que la usaban quedarán sin categoría. No se puede deshacer."
+      isDeleting={remove.isPending}
+      extra={
         <CategoryFormDialog
           category={category}
           trigger={
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              Editar
-            </DropdownMenuItem>
+            <Button variant="ghost" size="icon" className="size-8" title="Editar">
+              <Pencil size={14} />
+            </Button>
           }
         />
-        <DropdownMenuSeparator />
-        <ConfirmDialog
-          trigger={
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={(e) => e.preventDefault()}
-            >
-              Eliminar
-            </DropdownMenuItem>
-          }
-          title="¿Eliminar categoría?"
-          description="Los posts que la usaban quedarán sin categoría. No se puede deshacer."
-          onConfirm={() => remove.mutate(category.id)}
-          isPending={remove.isPending}
-        />
-      </DropdownMenuContent>
-    </DropdownMenu>
+      }
+    />
   );
 }
