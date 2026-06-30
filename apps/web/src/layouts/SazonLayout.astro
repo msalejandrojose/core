@@ -1,0 +1,100 @@
+---
+import '../styles/sazon.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+}
+
+const {
+  title = 'Sazón — Fruta de temporada a domicilio en Albacete',
+  description = 'Seleccionamos personalmente la mejor fruta de temporada y la llevamos a tu casa en Albacete. Estamos validando el interés. Apúntate para ser de los primeros.',
+  canonical = Astro.url.href,
+} = Astro.props;
+
+const siteName = 'Sazón';
+const ogImage = new URL('/og.jpg', Astro.site ?? Astro.url).href;
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <meta name="theme-color" content="#FAF6EC" />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_ES" />
+  <meta property="og:site_name" content={siteName} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={ogImage} />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImage} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": siteName,
+        "url": Astro.site?.href ?? Astro.url.origin,
+        "areaServed": "Albacete, España"
+      },
+      {
+        "@type": "LocalBusiness",
+        "name": siteName,
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Albacete",
+          "addressRegion": "Castilla-La Mancha",
+          "addressCountry": "ES"
+        },
+        "description": "Servicio de fruta de temporada seleccionada personalmente y entregada a domicilio en Albacete."
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "¿Por qué me pedís el contacto?", "acceptedAnswer": { "@type": "Answer", "text": "Porque queremos saber si esta idea interesa en Albacete antes de lanzarla." } },
+          { "@type": "Question", "name": "¿Cuándo estará disponible?", "acceptedAnswer": { "@type": "Answer", "text": "Estamos validando el interés. Avisaremos a quienes se apunten en cuanto abramos." } },
+          { "@type": "Question", "name": "¿Tiene algún compromiso?", "acceptedAnswer": { "@type": "Answer", "text": "No. Simplemente recibirás información cuando abramos." } },
+          { "@type": "Question", "name": "¿En qué zonas trabajaréis?", "acceptedAnswer": { "@type": "Answer", "text": "Comenzaremos por Albacete capital." } }
+        ]
+      }
+    ]
+  })} />
+</head>
+<body>
+  <slot />
+
+  <script>
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+    } else {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        }
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    }
+  </script>
+</body>
+</html>
