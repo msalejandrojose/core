@@ -10,6 +10,7 @@ export interface UpdateFormInput {
   title?: string;
   description?: string | null;
   schema?: unknown;
+  status?: import('../../domain/entities/form.entity').FormStatus;
 }
 
 @Injectable()
@@ -31,6 +32,7 @@ export class UpdateFormUseCase {
       title: input.title,
       description: input.description,
       schema: input.schema,
+      status: input.status,
     });
   }
 }

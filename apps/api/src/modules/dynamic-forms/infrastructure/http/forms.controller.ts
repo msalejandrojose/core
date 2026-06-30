@@ -105,6 +105,7 @@ export class FormsController {
       title: dto.title,
       description: dto.description,
       schema: dto.schema,
+      status: dto.status,
     });
     return FormResponseDto.fromDomain(form);
   }
