@@ -24,6 +24,17 @@ interface EditUserFormProps {
   };
 }
 
+function Fieldset({ legend, children }: { legend: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="space-y-4">
+      <legend className="text-muted-foreground mb-3 text-[10px] font-semibold tracking-widest uppercase">
+        {legend}
+      </legend>
+      {children}
+    </fieldset>
+  );
+}
+
 export function EditUserForm({ user }: EditUserFormProps) {
   const { mutate, isPending } = useUpdateUser(user.id);
   const form = useForm<FormValues>({
@@ -34,25 +45,35 @@ export function EditUserForm({ user }: EditUserFormProps) {
     },
   });
 
+  const isDirty = form.formState.isDirty;
+
   const submit = form.handleSubmit((v) =>
-    // String vacío → null para "borrar" el nombre (el API lo admite).
-    mutate({ firstName: v.firstName || null, lastName: v.lastName || null }),
+    mutate(
+      { firstName: v.firstName || null, lastName: v.lastName || null },
+      { onSuccess: () => form.reset(v) },
+    ),
   );
 
   return (
     <Form {...form}>
-      <form onSubmit={submit} className="space-y-4">
-        <div className="grid gap-2">
-          <Label>Email</Label>
-          <Input value={user.email} readOnly disabled />
-        </div>
-        <FieldWrapper control={form.control} name="firstName" label="Nombre">
-          {(field) => <Input {...field} />}
-        </FieldWrapper>
-        <FieldWrapper control={form.control} name="lastName" label="Apellido">
-          {(field) => <Input {...field} />}
-        </FieldWrapper>
-        <Button type="submit" disabled={isPending}>
+      <form onSubmit={submit} className="space-y-6">
+        <Fieldset legend="Cuenta">
+          <div className="grid gap-2">
+            <Label>Email</Label>
+            <Input value={user.email} readOnly disabled />
+          </div>
+        </Fieldset>
+
+        <Fieldset legend="Identidad">
+          <FieldWrapper control={form.control} name="firstName" label="Nombre">
+            {(field) => <Input {...field} />}
+          </FieldWrapper>
+          <FieldWrapper control={form.control} name="lastName" label="Apellido">
+            {(field) => <Input {...field} />}
+          </FieldWrapper>
+        </Fieldset>
+
+        <Button type="submit" disabled={isPending || !isDirty} className="w-full sm:w-auto">
           {isPending ? 'Guardando…' : 'Guardar cambios'}
         </Button>
       </form>

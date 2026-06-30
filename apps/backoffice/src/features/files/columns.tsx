@@ -1,15 +1,8 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { Download, MoreHorizontal } from 'lucide-react';
-import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
-import { Badge } from '@/components/ui/badge';
+import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { RowActions } from '@/components/data-table/RowActions';
+import { Badge } from '@/components/ui/badge';
 import { formatBytes } from './lib/format';
 import { useDeleteFile } from './hooks/use-delete-file';
 import { useDownloadFile } from './hooks/use-download-file';
@@ -71,37 +64,23 @@ function FileRowActions({ file }: { file: StoredFile }) {
   const remove = useDeleteFile();
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8">
-          <MoreHorizontal size={14} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onSelect={() =>
-            download.mutate({ id: file.id, filename: file.originalName })
-          }
+    <RowActions
+      onDelete={() => remove.mutate(file.id)}
+      deleteTitle="¿Eliminar fichero?"
+      deleteDescription="El fichero se borra (lógicamente) y dejará de estar disponible."
+      isDeleting={remove.isPending}
+      extra={
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          title="Descargar"
+          disabled={download.isPending}
+          onClick={() => download.mutate({ id: file.id, filename: file.originalName })}
         >
           <Download size={14} />
-          Descargar
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <ConfirmDialog
-          trigger={
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={(e) => e.preventDefault()}
-            >
-              Eliminar
-            </DropdownMenuItem>
-          }
-          title="¿Eliminar fichero?"
-          description="El fichero se borra (lógicamente) y dejará de estar disponible."
-          onConfirm={() => remove.mutate(file.id)}
-          isPending={remove.isPending}
-        />
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </Button>
+      }
+    />
   );
 }

@@ -6,8 +6,9 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Search } from 'lucide-react';
+import { AlertTriangle, Search } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -26,12 +27,14 @@ interface DataTableProps<T> {
   data: T[];
   columns: ColumnDef<T>[];
   isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   pagination: DataTablePaginationConfig;
   onSearch?: (value: string) => void;
   searchPlaceholder?: string;
   emptyMessage?: string;
-  toolbar?: ReactNode; // botón "Crear", filtros extra, etc.
-  /** Estado de orden controlado (server-side). Si se omite, no hay orden. */
+  emptyCta?: ReactNode;
+  toolbar?: ReactNode;
   sorting?: SortingState;
   onSortingChange?: OnChangeFn<SortingState>;
 }
@@ -40,17 +43,19 @@ export function DataTable<T>({
   data,
   columns,
   isLoading,
+  isError,
+  onRetry,
   pagination,
   onSearch,
   searchPlaceholder = 'Buscar…',
   emptyMessage = 'Sin resultados',
+  emptyCta,
   toolbar,
   sorting,
   onSortingChange,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState('');
 
-  // Debounce de 300 ms para no lanzar requests en cada tecla.
   useEffect(() => {
     const t = setTimeout(() => onSearch?.(search), 300);
     return () => clearTimeout(t);
@@ -60,8 +65,8 @@ export function DataTable<T>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    manualPagination: true, // la paginación la gestiona el servidor
-    manualSorting: true, // el orden lo aplica el servidor
+    manualPagination: true,
+    manualSorting: true,
     state: { sorting: sorting ?? [] },
     onSortingChange,
     rowCount: pagination.mode === 'offset' ? pagination.pagination.total : undefined,
@@ -69,7 +74,6 @@ export function DataTable<T>({
 
   return (
     <div className="space-y-4">
-      {/* Toolbar: búsqueda + acciones */}
       {(onSearch || toolbar) && (
         <div className="flex items-center justify-between gap-4">
           {onSearch ? (
@@ -92,7 +96,6 @@ export function DataTable<T>({
         </div>
       )}
 
-      {/* Tabla */}
       <div className="bg-card rounded-md border">
         <Table>
           <TableHeader>
@@ -111,10 +114,25 @@ export function DataTable<T>({
           <TableBody>
             {isLoading ? (
               <DataTableSkeleton columns={columns.length} rows={10} />
+            ) : isError ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columns.length} className="h-48 text-center">
+                  <div className="text-muted-foreground flex flex-col items-center gap-3">
+                    <AlertTriangle size={28} className="text-destructive/60" />
+                    <span className="text-sm">Error al cargar los datos.</span>
+                    {onRetry && (
+                      <Button variant="outline" size="sm" onClick={onRetry}>
+                        Reintentar
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
               <DataTableEmptyState
                 colSpan={columns.length}
                 message={emptyMessage}
+                cta={emptyCta}
               />
             ) : (
               table.getRowModel().rows.map((row) => (
@@ -131,7 +149,6 @@ export function DataTable<T>({
         </Table>
       </div>
 
-      {/* Paginación */}
       <DataTablePagination {...pagination} />
     </div>
   );

@@ -1,16 +1,8 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { DataTableColumnHeader } from '@/components/data-table/DataTableColumnHeader';
-import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
+import { RowActions } from '@/components/data-table/RowActions';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useDeleteRole } from './hooks/use-delete-role';
 import type { RoleRow, RoleScope } from './types';
 
@@ -72,31 +64,13 @@ function RoleRowActions({ id }: { id: string }) {
   const { mutate: deleteRole, isPending } = useDeleteRole();
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8">
-          <MoreHorizontal size={14} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-          <Link to={`/roles/${id}`}>Ver detalle</Link>
-        </DropdownMenuItem>
-        <ConfirmDialog
-          trigger={
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={(e) => e.preventDefault()}
-            >
-              Eliminar
-            </DropdownMenuItem>
-          }
-          title="¿Eliminar rol?"
-          description="Los usuarios con este rol perderán sus permisos asociados."
-          onConfirm={() => deleteRole(id)}
-          isPending={isPending}
-        />
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <RowActions
+      viewHref={`/roles/${id}`}
+      editHref={`/roles/${id}`}
+      onDelete={() => deleteRole(id)}
+      deleteTitle="¿Eliminar rol?"
+      deleteDescription="Los usuarios con este rol perderán sus permisos asociados."
+      isDeleting={isPending}
+    />
   );
 }
