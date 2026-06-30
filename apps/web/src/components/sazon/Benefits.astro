@@ -1,0 +1,36 @@
+---
+import IconCherry from './icons/IconCherry.astro';
+import IconClock  from './icons/IconClock.astro';
+import IconLeaf   from './icons/IconLeaf.astro';
+import IconSpark  from './icons/IconSpark.astro';
+
+const benefits = [
+  { Icon: IconCherry, title: 'Fruta seleccionada personalmente', body: 'No compramos cualquier fruta. Elegimos la que merece la pena.' },
+  { Icon: IconClock,  title: 'Ahorra tiempo',                   body: 'Nosotros hacemos el trabajo. Tú recibes la caja.' },
+  { Icon: IconLeaf,   title: 'Producto de temporada',           body: 'Siempre buscamos fruta en su mejor momento.' },
+  { Icon: IconSpark,  title: 'Más sabor',                       body: 'La fruta buena se nota desde el primer bocado.' },
+];
+---
+<section class="py-24 md:py-36 px-5 md:px-10 bg-white border-t border-mist-dark/50">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-14 md:mb-20 reveal">
+      <p class="eyebrow mb-4">Por qué esta idea</p>
+      <h2 class="font-sazon text-[clamp(28px,3.8vw,46px)] leading-[1.08] [letter-spacing:var(--tracking-tighter)] font-medium mb-5">
+        Cada vez es más difícil encontrar fruta realmente buena sin recorrer varias tiendas.
+      </h2>
+      <p class="text-[17px] md:text-[18px] leading-[1.55] text-ink/65">
+        Queremos encargarnos de esa búsqueda por ti. Que solo tengas que disfrutarla.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-px bg-mist-dark/60 border border-mist-dark/60 rounded-lg overflow-hidden">
+      {benefits.map(({ Icon, title, body }) => (
+        <div class="bg-white p-7 md:p-10 card-hover">
+          <Icon />
+          <h3 class="font-sazon text-[20px] leading-tight font-medium [letter-spacing:var(--tracking-tighter)] mt-5 mb-2.5">{title}</h3>
+          <p class="text-[15px] leading-[1.55] text-ink/65">{body}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

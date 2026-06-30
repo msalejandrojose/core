@@ -1,0 +1,29 @@
+---
+const steps = [
+  { n: '01', title: 'Tú haces la solicitud',   body: 'Nos dices que te interesa el servicio y en qué zona estás. Sin elegir variedades ni cantidades.' },
+  { n: '02', title: 'Nosotros seleccionamos',   body: 'Buscamos personalmente la mejor fruta de temporada. La que tiene punto, la que está en su mejor momento.' },
+  { n: '03', title: 'La recibes en casa',       body: 'Cuando lancemos el servicio podrás recibir fruta fresca sin salir de casa.' },
+];
+---
+<section class="py-24 md:py-36 px-5 md:px-10 border-t border-mist-dark/50">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-14 md:mb-20 reveal">
+      <p class="eyebrow mb-4">Cómo funciona</p>
+      <h2 class="font-sazon text-[clamp(28px,3.8vw,46px)] leading-[1.08] [letter-spacing:var(--tracking-tighter)] font-medium">
+        Sin app, sin catálogo,<br />sin elegir entre 40 variedades.
+      </h2>
+    </div>
+    <div class="grid md:grid-cols-3 gap-12 md:gap-10">
+      {steps.map((s, i) => (
+        <div class="reveal" style={`transition-delay: ${i * 0.1}s`}>
+          <div class="flex items-baseline gap-3 mb-5">
+            <span class="font-mono text-[11px] tracking-[0.16em] text-olive-600">{s.n}</span>
+            <div class="flex-1 hairline"></div>
+          </div>
+          <h3 class="font-sazon text-[22px] md:text-[24px] leading-tight font-medium [letter-spacing:var(--tracking-tighter)] mb-3">{s.title}</h3>
+          <p class="text-[16px] leading-[1.55] text-ink/65">{s.body}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

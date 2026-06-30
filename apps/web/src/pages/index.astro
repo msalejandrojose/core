@@ -1,16 +1,27 @@
 ---
-import MarketingLayout from '../layouts/MarketingLayout.astro';
-import Hero from '../components/sections/Hero.astro';
----
+import SazonLayout  from '../layouts/SazonLayout.astro';
+import SiteHeader   from '../components/sazon/SiteHeader.astro';
+import Hero         from '../components/sazon/Hero.astro';
+import HowItWorks   from '../components/sazon/HowItWorks.astro';
+import Benefits     from '../components/sazon/Benefits.astro';
+import Audience     from '../components/sazon/Audience.astro';
+import Gallery      from '../components/sazon/Gallery.astro';
+import FAQ          from '../components/sazon/FAQ.astro';
+import FinalCTA     from '../components/sazon/FinalCTA.astro';
+import SiteFooter   from '../components/sazon/SiteFooter.astro';
 
-<MarketingLayout
-  title="Inicio"
-  description="Gestiona, crece y escala desde un único lugar. Plataforma digital Core."
->
-  <Hero
-    headline="El núcleo de tu negocio digital"
-    subheadline="Gestiona, crece y escala desde un único lugar. Diseñado para equipos que no quieren perder el tiempo."
-    cta={{ label: 'Contacta con nosotros', href: '/contacto' }}
-    ctaSecondary={{ label: 'Saber más', href: '#' }}
-  />
-</MarketingLayout>
+const seasonal = ['cerezas', 'paraguayo', 'melocotón'];
+---
+<SazonLayout>
+  <SiteHeader />
+  <main>
+    <Hero seasonal={seasonal} />
+    <HowItWorks />
+    <Benefits />
+    <Audience />
+    <Gallery />
+    <FAQ />
+    <FinalCTA />
+  </main>
+  <SiteFooter />
+</SazonLayout>
