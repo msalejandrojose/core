@@ -133,6 +133,26 @@ enum SectionAccessType {
   DENY
 }
 
+/// Estado de ciclo de vida de un formulario dinámico.
+enum FormStatus {
+  DRAFT      // borrador, no se puede publicar instancias
+  PUBLISHED  // activo, se pueden crear instancias
+  ARCHIVED   // retirado, instancias existentes se cierran
+}
+
+/// Estado de una instancia/link público de formulario.
+enum FormInstanceStatus {
+  ACTIVE
+  CLOSED
+}
+
+/// Política de respuesta de una instancia de formulario.
+enum FormResponsePolicy {
+  SINGLE_PER_LINK  // una sola respuesta total por instancia
+  SINGLE_PER_USER  // una por usuario autenticado o fingerprint anónimo
+  UNLIMITED        // sin límite (salvo maxResponses)
+}
+
 // ---------------------------------------------------------------------------
 // Modelos
 // ---------------------------------------------------------------------------
@@ -616,4 +636,76 @@ model UserSectionAccess {
   @@id([userId, sectionId])
   @@index([sectionId])
   @@map("user_section_access")
+}
+
+// ---------------------------------------------------------------------------
+// Formularios dinámicos (módulo `dynamic-forms`)
+// ---------------------------------------------------------------------------
+
+/// Definición de un formulario dinámico. El `schema` es JSON que describe
+/// los campos (tipo, validaciones, condiciones). Se almacena como JSON para
+/// ser consumido por el renderer del frontend sin acoplamiento al backend.
+model Form {
+  id          String     @id @default(uuid()) @db.Char(36)
+  title       String     @db.VarChar(200)
+  description String?    @db.Text
+  schema      Json       // estructura declarativa de campos (ver TASK-92 §schema)
+  status      FormStatus @default(DRAFT)
+  createdById String?    @map("created_by_id") @db.Char(36) // FK suave a User
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  instances FormInstance[]
+
+  @@index([status])
+  @@index([createdById])
+  @@map("form")
+}
+
+/// Link público de un formulario. Cada instancia tiene un `hash` opaco que
+/// se incluye en la URL y permite configurar política, ventana y límites
+/// de forma independiente para cada distribución del mismo formulario.
+model FormInstance {
+  id             String             @id @default(uuid()) @db.Char(36)
+  formId         String             @map("form_id") @db.Char(36)
+  hash           String             @unique @db.VarChar(64) // token URL-safe, ≥32 chars
+  responsePolicy FormResponsePolicy @map("response_policy") @default(UNLIMITED)
+  requiresAuth   Boolean            @default(false) @map("requires_auth")
+  opensAt        DateTime?          @map("opens_at")
+  closesAt       DateTime?          @map("closes_at")
+  maxResponses   Int?               @map("max_responses") // cap global, null = sin límite
+  status         FormInstanceStatus @default(ACTIVE)
+  createdById    String?            @map("created_by_id") @db.Char(36) // FK suave a User
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  form      Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
+  responses FormResponse[]
+
+  @@index([formId])
+  @@index([hash])
+  @@index([status, closesAt])
+  @@map("form_instance")
+}
+
+/// Respuesta enviada por un usuario (o anónimo) a una instancia de formulario.
+/// `answers` guarda el mapa fieldKey→value validado. `schemaSnapshot` preserva
+/// el schema vigente en el momento del envío para mantener coherencia si el
+/// formulario cambia después.
+model FormResponse {
+  id                      String   @id @default(uuid()) @db.Char(36)
+  formInstanceId          String   @map("form_instance_id") @db.Char(36)
+  submittedById           String?  @map("submitted_by_id") @db.Char(36) // null si anónimo
+  submittedByFingerprint  String?  @map("submitted_by_fingerprint") @db.VarChar(128) // hash IP+UA para anónimos
+  answers                 Json     // mapa fieldKey → value
+  schemaSnapshot          Json     @map("schema_snapshot") // copia del schema al enviar
+  submittedAt             DateTime @default(now()) @map("submitted_at")
+  ipAddress               String?  @map("ip_address") @db.VarChar(45)
+  userAgent               String?  @map("user_agent") @db.VarChar(512)
+
+  formInstance FormInstance @relation(fields: [formInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([formInstanceId, submittedAt])
+  @@index([submittedById])
+  @@map("form_response")
 }
