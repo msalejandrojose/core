@@ -18,7 +18,6 @@ import { useRoles } from '../hooks/use-roles';
 import { useUpdateRole } from '../hooks/use-update-role';
 import { ROLE_SCOPES, type RoleScope } from '../types';
 
-// Centinela para "sin rol padre" (Radix Select no admite value vacío).
 const NO_PARENT = '__none__';
 
 const schema = z.object({
@@ -41,11 +40,20 @@ interface EditRoleFormProps {
   };
 }
 
+function Fieldset({ legend, children }: { legend: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="space-y-4">
+      <legend className="text-muted-foreground mb-3 text-[10px] font-semibold tracking-widest uppercase">
+        {legend}
+      </legend>
+      {children}
+    </fieldset>
+  );
+}
+
 export function EditRoleForm({ role }: EditRoleFormProps) {
   const { mutate, isPending } = useUpdateRole(role.id);
   const { data: rolesData } = useRoles({ page: 1, limit: 100 });
-  // Excluye el propio rol para evitar el ciclo trivial (A → A); ciclos más
-  // profundos los rechaza la API.
   const parentOptions = (rolesData?.data ?? []).filter((r) => r.id !== role.id);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -57,71 +65,73 @@ export function EditRoleForm({ role }: EditRoleFormProps) {
     },
   });
 
+  const isDirty = form.formState.isDirty;
+
   const submit = form.handleSubmit((v) =>
-    mutate({
-      name: v.name,
-      scope: v.scope,
-      description: v.description || null,
-      // NO_PARENT → null limpia el padre; el API admite null explícito.
-      parentRoleId: v.parentRoleId === NO_PARENT ? null : v.parentRoleId,
-    }),
+    mutate(
+      {
+        name: v.name,
+        scope: v.scope,
+        description: v.description || null,
+        parentRoleId: v.parentRoleId === NO_PARENT ? null : v.parentRoleId,
+      },
+      { onSuccess: () => form.reset(v) },
+    ),
   );
 
   return (
     <Form {...form}>
-      <form onSubmit={submit} className="space-y-4">
-        <div className="grid gap-2">
-          <Label>Código</Label>
-          <Input value={role.code} readOnly disabled className="font-mono" />
-        </div>
-        <FieldWrapper control={form.control} name="name" label="Nombre">
-          {(field) => <Input {...field} />}
-        </FieldWrapper>
-        <FieldWrapper control={form.control} name="scope" label="Scope">
-          {(field) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ROLE_SCOPES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </FieldWrapper>
-        <FieldWrapper
-          control={form.control}
-          name="parentRoleId"
-          label="Rol padre"
-        >
-          {(field) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_PARENT}>Sin rol padre</SelectItem>
-                {parentOptions.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </FieldWrapper>
-        <FieldWrapper
-          control={form.control}
-          name="description"
-          label="Descripción"
-        >
-          {(field) => <Textarea rows={3} {...field} />}
-        </FieldWrapper>
-        <Button type="submit" disabled={isPending}>
+      <form onSubmit={submit} className="space-y-6">
+        <Fieldset legend="Identificación">
+          <div className="grid gap-2">
+            <Label>Código</Label>
+            <Input value={role.code} readOnly disabled className="font-mono" />
+          </div>
+          <FieldWrapper control={form.control} name="name" label="Nombre">
+            {(field) => <Input {...field} />}
+          </FieldWrapper>
+          <FieldWrapper control={form.control} name="scope" label="Scope">
+            {(field) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_SCOPES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </FieldWrapper>
+        </Fieldset>
+
+        <Fieldset legend="Configuración">
+          <FieldWrapper control={form.control} name="parentRoleId" label="Rol padre">
+            {(field) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_PARENT}>Sin rol padre</SelectItem>
+                  {parentOptions.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </FieldWrapper>
+          <FieldWrapper control={form.control} name="description" label="Descripción">
+            {(field) => <Textarea rows={3} {...field} />}
+          </FieldWrapper>
+        </Fieldset>
+
+        <Button type="submit" disabled={isPending || !isDirty} className="w-full sm:w-auto">
           {isPending ? 'Guardando…' : 'Guardar cambios'}
         </Button>
       </form>

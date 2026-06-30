@@ -4,7 +4,7 @@
   "parts": {
     "api": { "enabled": true, "subdomain": "api", "internalPort": 3000, "runMode": "docker" },
     "backoffice": { "enabled": true, "subdomain": "admin", "internalPort": 4200, "runMode": "host" },
-    "web": { "enabled": false, "subdomain": "www", "internalPort": 4300, "runMode": "host" },
+    "web": { "enabled": true, "subdomain": "www", "internalPort": 4321, "runMode": "host" },
     "mobile": { "enabled": false, "subdomain": "app", "internalPort": 4400, "runMode": "host" }
   },
   "environments": {

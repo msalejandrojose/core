@@ -1,14 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { RowActions } from '@/components/data-table/RowActions';
 import { useDeleteApiSection } from './hooks/use-delete-api-section';
 import type { ApiSectionRow } from './types';
 
@@ -45,31 +37,14 @@ function ApiSectionRowActions({ id }: { id: string }) {
   const { mutate: deleteSection, isPending } = useDeleteApiSection();
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8">
-          <MoreHorizontal size={14} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-          <Link to={`/sections/${id}`}>Ver detalle</Link>
-        </DropdownMenuItem>
-        <ConfirmDialog
-          trigger={
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={(e) => e.preventDefault()}
-            >
-              Eliminar
-            </DropdownMenuItem>
-          }
-          title="¿Eliminar sección?"
-          description="Solo se puede eliminar si ningún rol o usuario tiene permisos sobre ella."
-          onConfirm={() => deleteSection(id)}
-          isPending={isPending}
-        />
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <RowActions
+      viewHref={`/sections/${id}`}
+      editHref={`/sections/${id}`}
+      editState={{ mode: 'edit' }}
+      onDelete={() => deleteSection(id)}
+      deleteTitle="¿Eliminar sección?"
+      deleteDescription="Solo se puede eliminar si ningún rol o usuario tiene permisos sobre ella."
+      isDeleting={isPending}
+    />
   );
 }

@@ -1,8 +1,10 @@
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { DataTable } from '@/components/data-table/DataTable';
 import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
 import { columns } from './columns';
-import { CreateApiSectionDialog } from './components/CreateApiSectionDialog';
 import { useApiSectionsList } from './hooks/use-api-sections-list';
 import type { ApiSectionRow } from './types';
 
@@ -25,7 +27,14 @@ export function ApiSectionsPage() {
       <PageHeader
         title="Secciones"
         description="Catálogo de ApiSections sobre el que se conceden permisos."
-        actions={<CreateApiSectionDialog />}
+        actions={
+          <Button asChild>
+            <Link to="/sections/nuevo">
+              <Plus size={16} />
+              Nueva sección
+            </Link>
+          </Button>
+        }
       />
       <DataTable
         data={rows}

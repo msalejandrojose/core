@@ -1,0 +1,39 @@
+---
+const nav = [
+  { label: 'Inicio', href: '/' },
+  { label: 'Contacto', href: '/contacto' },
+];
+---
+
+<header
+  class="sticky top-0 z-50 border-b border-border bg-bg/80 backdrop-blur-md"
+>
+  <div class="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
+    <a href="/" class="font-display text-xl font-semibold tracking-tight text-fg">
+      Core
+    </a>
+
+    <nav class="hidden md:flex items-center gap-8" aria-label="Principal">
+      {nav.map(({ label, href }) => (
+        <a
+          href={href}
+          class="text-sm text-fg-muted hover:text-fg transition-colors"
+        >
+          {label}
+        </a>
+      ))}
+    </nav>
+
+    <!-- Mobile: menú hamburguesa pendiente de implementar -->
+    <button
+      class="md:hidden p-2 text-fg-muted hover:text-fg transition-colors rounded-md"
+      aria-label="Abrir menú"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <rect y="3" width="20" height="2" rx="1" />
+        <rect y="9" width="20" height="2" rx="1" />
+        <rect y="15" width="20" height="2" rx="1" />
+      </svg>
+    </button>
+  </div>
+</header>

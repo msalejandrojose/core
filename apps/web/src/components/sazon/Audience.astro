@@ -1,0 +1,29 @@
+---
+const groups = [
+  { n: '01', title: 'Familias',         body: 'Que la fruta no falte en casa, sin tener que pensar en ella.' },
+  { n: '02', title: 'Trabajadores',     body: 'Con poco tiempo entre semana y ganas de comer bien igualmente.' },
+  { n: '03', title: 'Personas mayores', body: 'Sin cargar bolsas pesadas, sin desplazamientos innecesarios.' },
+  { n: '04', title: 'Disfrutones',      body: 'Que se notan la diferencia entre fruta buena y fruta cualquiera.' },
+];
+---
+<section class="py-24 md:py-36 px-5 md:px-10 border-t border-mist-dark/50">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-14 md:mb-20 reveal">
+      <p class="eyebrow mb-4">Para quién es</p>
+      <h2 class="font-sazon text-[clamp(28px,3.8vw,46px)] leading-[1.08] [letter-spacing:var(--tracking-tighter)] font-medium">
+        Para quien quiere comer mejor<br />sin perder media tarde buscándola.
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6">
+      {groups.map((g, i) => (
+        <div class="reveal" style={`transition-delay: ${i * 0.08}s`}>
+          <div class="hairline mb-5"></div>
+          <p class="font-mono text-[10px] tracking-[0.16em] uppercase text-olive-600 mb-3">{g.n}</p>
+          <h3 class="font-sazon text-[20px] md:text-[22px] leading-tight font-medium [letter-spacing:var(--tracking-tighter)] mb-2">{g.title}</h3>
+          <p class="text-[14px] md:text-[15px] leading-relaxed text-ink/60">{g.body}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

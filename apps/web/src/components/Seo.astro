@@ -1,0 +1,37 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  url?: string;
+  type?: 'website' | 'article';
+}
+
+const {
+  title,
+  description = 'Plataforma digital Core.',
+  image,
+  url = Astro.url.href,
+  type = 'website',
+} = Astro.props;
+
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://aj.es';
+const ogImage = image ? image : `${siteUrl}/og-default.png`;
+const fullTitle = `${title} | Core`;
+---
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={url} />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content="Core" />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:url" content={url} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />

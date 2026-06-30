@@ -1,0 +1,63 @@
+---
+interface Props {
+  idSuffix?: string;
+  cta?: string;
+  action?: string;
+  variant?: 'card' | 'inverse';
+}
+
+const {
+  idSuffix = '',
+  cta = 'Quiero probar el servicio',
+  action,
+  variant = 'card',
+} = Astro.props;
+
+const wrapperClass = variant === 'card'
+  ? 'bg-white border border-mist-dark/70 rounded-lg p-5 md:p-6 max-w-[440px]'
+  : 'bg-cream text-ink border border-cream rounded-lg p-5 md:p-7 max-w-[460px] mx-auto text-left';
+
+const idNombre = `nombre${idSuffix}`;
+const idContacto = `contacto${idSuffix}`;
+const idCp = `cp${idSuffix}`;
+---
+<form
+  class={wrapperClass}
+  method={action ? 'POST' : undefined}
+  action={action}
+  data-lead-form
+>
+  <div class="space-y-3 mb-4">
+    <div>
+      <label class="field-label" for={idNombre}>Nombre</label>
+      <input class="field" id={idNombre} name="nombre" type="text" required autocomplete="name" placeholder="Cómo te llamas" />
+    </div>
+    <div>
+      <label class="field-label" for={idContacto}>Teléfono o email</label>
+      <input class="field" id={idContacto} name="contacto" type="text" required autocomplete="tel email" placeholder="Para avisarte cuando abramos" />
+    </div>
+    <div>
+      <label class="field-label" for={idCp}>
+        Código postal <span class="normal-case tracking-normal text-ink/35">— opcional</span>
+      </label>
+      <input class="field" id={idCp} name="cp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="postal-code" placeholder="02001" />
+    </div>
+  </div>
+  <button type="submit" class="btn-primary w-full py-3.5 md:py-4 rounded-md font-medium text-[15px] md:text-[16px] tracking-tight">
+    {cta} →
+  </button>
+  <p class={`text-[12px] mt-3.5 leading-relaxed ${variant === 'inverse' ? 'text-ink/50 text-center' : 'text-ink/50'}`}>
+    Sin compromiso. Solo queremos saber si este servicio interesa en Albacete.
+  </p>
+</form>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('form[data-lead-form]').forEach(form => {
+    if (form.getAttribute('action')) return;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = form.querySelector<HTMLButtonElement>('button[type=submit]');
+      if (btn) { btn.innerText = 'Recibido — te avisamos pronto'; btn.disabled = true; }
+    });
+  });
+</script>

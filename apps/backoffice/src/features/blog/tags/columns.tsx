@@ -1,14 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal } from 'lucide-react';
-import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
+import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { RowActions } from '@/components/data-table/RowActions';
 import type { TagRow } from '../types';
 import { TagFormDialog } from './components/TagFormDialog';
 import { useDeleteTag } from './hooks/use-delete-tag';
@@ -31,37 +24,21 @@ export const columns: ColumnDef<TagRow>[] = [
 function TagRowActions({ tag }: { tag: TagRow }) {
   const remove = useDeleteTag();
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8">
-          <MoreHorizontal size={14} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+    <RowActions
+      onDelete={() => remove.mutate(tag.id)}
+      deleteTitle="¿Eliminar etiqueta?"
+      deleteDescription="Se quitará de los posts que la usaban. No se puede deshacer."
+      isDeleting={remove.isPending}
+      extra={
         <TagFormDialog
           tag={tag}
           trigger={
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              Editar
-            </DropdownMenuItem>
+            <Button variant="ghost" size="icon" className="size-8" title="Editar">
+              <Pencil size={14} />
+            </Button>
           }
         />
-        <DropdownMenuSeparator />
-        <ConfirmDialog
-          trigger={
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={(e) => e.preventDefault()}
-            >
-              Eliminar
-            </DropdownMenuItem>
-          }
-          title="¿Eliminar etiqueta?"
-          description="Se quitará de los posts que la usaban. No se puede deshacer."
-          onConfirm={() => remove.mutate(tag.id)}
-          isPending={remove.isPending}
-        />
-      </DropdownMenuContent>
-    </DropdownMenu>
+      }
+    />
   );
 }

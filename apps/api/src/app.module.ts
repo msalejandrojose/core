@@ -3,10 +3,12 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, DiscoveryModule } from '@nestjs/core';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { IamModule } from './modules/iam/iam.module';
+import { SectionsModule } from './modules/sections/sections.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { BlogModule } from './modules/blog/blog.module';
-import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { DynamicFormsModule } from './modules/dynamic-forms/dynamic-forms.module';
 import { WorkflowsModule } from './modules/workflows/workflows.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ErrorLogModule } from './infrastructure/error-log/error-log.module';
 import { AppExceptionFilter } from './shared/filters/app-exception.filter';
 
@@ -25,10 +27,12 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     DiscoveryModule,
     PrismaModule,
     IamModule,
+    SectionsModule,
     StorageModule,
     BlogModule,
-    DashboardModule,
+    DynamicFormsModule,
     WorkflowsModule,
+    DashboardModule,
     ErrorLogModule,
   ],
   providers: [

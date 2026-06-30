@@ -57,6 +57,11 @@ COPY --from=builder --chown=app:app /out/node_modules ./node_modules
 COPY --from=builder --chown=app:app /out/dist ./dist
 COPY --from=builder --chown=app:app /out/package.json ./package.json
 
+# /app pertenece a root por defecto, así que el user `app` no puede crear
+# subdirectorios en él. Damos la propiedad al user de runtime y dejamos
+# preparado el directorio para el storage local (driver LOCAL en dev).
+RUN mkdir -p /app/.storage && chown -R app:app /app
+
 USER app
 EXPOSE 3000
 
