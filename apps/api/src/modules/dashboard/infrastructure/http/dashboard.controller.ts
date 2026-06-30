@@ -1,17 +1,21 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { GetDashboardSummaryUseCase } from '../../application/use-cases/get-dashboard-summary.use-case';
-import { DashboardSummaryResponseDto } from './dto/dashboard-summary.response.dto';
+import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
+import { GetDashboardStatsUseCase } from '../../application/use-cases/get-dashboard-stats.use-case';
+import { DashboardStatsResponseDto } from './dto/dashboard-stats-response.dto';
 
 @ApiTags('dashboard')
+@Auth()
 @Controller('dashboard')
 export class DashboardController {
-  constructor(private readonly getSummary: GetDashboardSummaryUseCase) {}
+  constructor(private readonly getStats: GetDashboardStatsUseCase) {}
 
-  @Get('summary')
-  @ApiOperation({ summary: 'KPIs de resumen del sistema' })
-  @ApiOkResponse({ type: DashboardSummaryResponseDto })
-  async summary(): Promise<DashboardSummaryResponseDto> {
-    return this.getSummary.execute();
+  @Get('stats')
+  @ApiOperation({
+    summary: 'Métricas agregadas para el dashboard del backoffice.',
+  })
+  @ApiOkResponse({ type: DashboardStatsResponseDto })
+  async stats(): Promise<DashboardStatsResponseDto> {
+    return DashboardStatsResponseDto.from(await this.getStats.execute());
   }
 }

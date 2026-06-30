@@ -1,6 +1,8 @@
 # Spec: @core/forms — schema declarativo de formularios
 
-> **Estado:** draft. Validar contra el primer caso real (alta de usuario) antes de implementar.
+> **Estado:** v1 implementada (TASK-79) — núcleo + renderer React en el backoffice +
+> migración del alta de usuario. Esta spec describe el diseño completo; ver
+> [`README.md`](./README.md) para el alcance concreto de la v1 y lo que queda para v2.
 
 ## Objetivo
 

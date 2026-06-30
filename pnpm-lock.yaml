@@ -152,6 +152,9 @@ importers:
       '@core/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@core/forms':
+        specifier: workspace:*
+        version: link:../../packages/forms
       '@core/sections':
         specifier: workspace:*
         version: link:../../packages/sections
@@ -334,6 +337,8 @@ importers:
         version: 5.7.3
 
   packages/config: {}
+
+  packages/forms: {}
 
   packages/sections: {}
 
