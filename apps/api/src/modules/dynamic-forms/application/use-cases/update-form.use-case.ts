@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Form } from '../../domain/entities/form.entity';
 import { FormNotFoundError } from '../../domain/errors/form-not-found.error';
 import { FormSchemaInvalidError } from '../../domain/errors/form-schema-invalid.error';
-import { FORM_REPOSITORY, FormRepositoryPort } from '../ports/form-repository.port';
+import { FORM_REPOSITORY, type FormRepositoryPort } from '../ports/form-repository.port';
 import { validateFormSchema } from '../validators/form-schema.validator';
 
 export interface UpdateFormInput {
@@ -10,6 +10,7 @@ export interface UpdateFormInput {
   title?: string;
   description?: string | null;
   schema?: unknown;
+  status?: import('../../domain/entities/form.entity').FormStatus;
 }
 
 @Injectable()
@@ -31,6 +32,7 @@ export class UpdateFormUseCase {
       title: input.title,
       description: input.description,
       schema: input.schema,
+      status: input.status,
     });
   }
 }

@@ -4,9 +4,9 @@ import { FormInstanceClosedError } from '../../domain/errors/form-instance-close
 import { FormInstanceNotFoundError } from '../../domain/errors/form-instance-not-found.error';
 import { FormResponseDuplicateError } from '../../domain/errors/form-response-duplicate.error';
 import { FormResponseLimitReachedError } from '../../domain/errors/form-response-limit-reached.error';
-import { FORM_INSTANCE_REPOSITORY, FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
-import { FORM_REPOSITORY, FormRepositoryPort } from '../ports/form-repository.port';
-import { FORM_RESPONSE_REPOSITORY, FormResponseRepositoryPort } from '../ports/form-response-repository.port';
+import { FORM_INSTANCE_REPOSITORY, type FormInstanceRepositoryPort } from '../ports/form-instance-repository.port';
+import { FORM_REPOSITORY, type FormRepositoryPort } from '../ports/form-repository.port';
+import { FORM_RESPONSE_REPOSITORY, type FormResponseRepositoryPort } from '../ports/form-response-repository.port';
 
 export interface SubmitFormResponseInput {
   hash: string;

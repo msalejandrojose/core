@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CursorPage } from '../../../../shared/pagination';
 import { Form, FormStatus } from '../../domain/entities/form.entity';
-import { FORM_REPOSITORY, FormRepositoryPort } from '../ports/form-repository.port';
+import { FORM_REPOSITORY, type FormRepositoryPort } from '../ports/form-repository.port';
 
 export interface ListFormsInput {
   limit: number;

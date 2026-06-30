@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
-import { FormStatus } from '../../../domain/entities/form.entity';
+import { type FormStatus } from '../../../domain/entities/form.entity';
 
 const FORM_STATUSES: FormStatus[] = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
 
