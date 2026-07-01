@@ -1,4 +1,8 @@
 ---
+/*
+ * Audience — "La Huerta Urbana"
+ * Clean, domestic, close to home.
+ */
 const groups = [
   { n: '01', title: 'Familias',         body: 'Que la fruta no falte en casa, sin tener que pensar en ella.' },
   { n: '02', title: 'Trabajadores',     body: 'Con poco tiempo entre semana y ganas de comer bien igualmente.' },
@@ -6,8 +10,11 @@ const groups = [
   { n: '04', title: 'Disfrutones',      body: 'Que se notan la diferencia entre fruta buena y fruta cualquiera.' },
 ];
 ---
-<section class="py-24 md:py-36 px-5 md:px-10 border-t border-mist-dark/50">
+
+<!-- ── El Campo: Huerta Urbana ────────────────────────────── -->
+<section class="relative py-24 md:py-36 px-5 md:px-10 border-t border-mist-dark/50">
   <div class="max-w-[1280px] mx-auto">
+
     <div class="max-w-[640px] mb-14 md:mb-20 reveal">
       <p class="eyebrow mb-4">Para quién es</p>
       <h2 class="font-sazon text-[clamp(28px,3.8vw,46px)] leading-[1.08] [letter-spacing:var(--tracking-tighter)] font-medium">
@@ -17,13 +24,26 @@ const groups = [
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6">
       {groups.map((g, i) => (
-        <div class="reveal" style={`transition-delay: ${i * 0.08}s`}>
-          <div class="hairline mb-5"></div>
+        <div class="reveal" style={`transition-delay: ${i * 0.1}s`}>
+          <!-- Línea con gradiente frutal animado -->
+          <div
+            class="mb-5"
+            style="height:1px; background: linear-gradient(90deg, var(--color-cherry), var(--color-citrus), var(--color-mango), var(--color-kiwi)); background-size: 300% 100%; animation: gradient-shift 8s linear infinite;"
+            aria-hidden="true"
+          ></div>
           <p class="font-mono text-[10px] tracking-[0.16em] uppercase text-olive-600 mb-3">{g.n}</p>
-          <h3 class="font-sazon text-[20px] md:text-[22px] leading-tight font-medium [letter-spacing:var(--tracking-tighter)] mb-2">{g.title}</h3>
+          <h3 class="font-sazon text-[20px] md:text-[22px] leading-tight font-medium [letter-spacing:var(--tracking-tighter)] mb-2">
+            {g.title}
+          </h3>
           <p class="text-[14px] md:text-[15px] leading-relaxed text-ink/60">{g.body}</p>
         </div>
       ))}
     </div>
+  </div>
+
+  <!-- Label campo -->
+  <div class="absolute bottom-6 right-5 md:right-10 flex items-center gap-2.5" aria-hidden="true">
+    <div class="hairline w-8 opacity-35"></div>
+    <span class="campo-label text-olive-600">Huerta urbana</span>
   </div>
 </section>

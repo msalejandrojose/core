@@ -1,12 +1,33 @@
 ---
+/*
+ * Gallery — "El Invernadero"
+ * Luz dorada difusa, calor, cristal. El producto en su mejor versión.
+ */
+
 interface Props {
   images?: { src: string; alt: string }[];
 }
 const { images = [] } = Astro.props;
 const [big, top, bottom] = images;
 ---
-<section class="py-24 md:py-36 px-5 md:px-10 bg-white border-t border-mist-dark/50">
-  <div class="max-w-[1280px] mx-auto">
+
+<!-- ── El Campo: Invernadero ──────────────────────────────── -->
+<section
+  class="relative py-24 md:py-36 px-5 md:px-10 border-t border-mist-dark/50 overflow-hidden"
+>
+  <!-- Luz de invernadero: cálida, dorada, difusa -->
+  <div
+    class="absolute inset-0 pointer-events-none"
+    style="background: radial-gradient(ellipse 75% 60% at 50% 0%, color-mix(in srgb, var(--color-mango) 10%, transparent), transparent)"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="absolute inset-0 pointer-events-none bg-white/65"
+    aria-hidden="true"
+  ></div>
+
+  <div class="relative max-w-[1280px] mx-auto">
+
     <div class="max-w-[640px] mb-14 md:mb-20 reveal">
       <p class="eyebrow mb-4">El producto</p>
       <h2 class="font-sazon text-[clamp(28px,3.8vw,46px)] leading-[1.08] [letter-spacing:var(--tracking-tighter)] font-medium">
@@ -14,30 +35,56 @@ const [big, top, bottom] = images;
       </h2>
     </div>
 
+    <!-- Grid asimétrico 8/4 -->
     <div class="grid md:grid-cols-12 gap-3 md:gap-4">
+
+      <!-- Imagen principal -->
       <div class="md:col-span-8 reveal">
         {big ? (
-          <img src={big.src} alt={big.alt} class="w-full aspect-[16/11] object-cover rounded-sm" loading="lazy" />
+          <img
+            src={big.src}
+            alt={big.alt}
+            class="w-full aspect-[16/11] object-cover rounded-sm"
+            loading="lazy"
+          />
         ) : (
           <div class="img-ph aspect-[16/11] rounded-sm" aria-hidden="true"></div>
         )}
       </div>
+
+      <!-- Dos imágenes secundarias -->
       <div class="md:col-span-4 grid grid-rows-2 gap-3 md:gap-4">
         <div class="reveal" style="transition-delay: .1s">
           {top ? (
-            <img src={top.src} alt={top.alt} class="w-full h-full aspect-[4/3] md:aspect-auto object-cover rounded-sm" loading="lazy" />
+            <img
+              src={top.src}
+              alt={top.alt}
+              class="w-full h-full aspect-[4/3] md:aspect-auto object-cover rounded-sm"
+              loading="lazy"
+            />
           ) : (
             <div class="img-ph aspect-[4/3] md:aspect-auto md:h-full rounded-sm" aria-hidden="true"></div>
           )}
         </div>
         <div class="reveal" style="transition-delay: .2s">
           {bottom ? (
-            <img src={bottom.src} alt={bottom.alt} class="w-full h-full aspect-[4/3] md:aspect-auto object-cover rounded-sm" loading="lazy" />
+            <img
+              src={bottom.src}
+              alt={bottom.alt}
+              class="w-full h-full aspect-[4/3] md:aspect-auto object-cover rounded-sm"
+              loading="lazy"
+            />
           ) : (
             <div class="img-ph aspect-[4/3] md:aspect-auto md:h-full rounded-sm" aria-hidden="true"></div>
           )}
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Label campo -->
+  <div class="absolute bottom-6 right-5 md:right-10 flex items-center gap-2.5" aria-hidden="true">
+    <div class="hairline w-8 opacity-35"></div>
+    <span class="campo-label text-olive-600">Invernadero</span>
   </div>
 </section>

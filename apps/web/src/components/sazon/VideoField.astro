@@ -1,0 +1,105 @@
+---
+/*
+ * VideoField — Módulo "El Campo"
+ * Primera sección de la landing. Full-screen, cinematográfica.
+ * Muestra visualmente el origen: el campo, el agricultor, la cosecha.
+ *
+ * En producción: sustituir el <img> poster por <video autoplay muted loop playsinline>
+ * apuntando a /videos/campo.mp4 (≈ 30s, 1080p).
+ */
+
+interface Props {
+  videoSrc?: string;
+  posterSrc?: string;
+}
+
+const {
+  videoSrc,
+  posterSrc = 'https://picsum.photos/seed/campo-trigo-cosecha-dorado/1920/1080',
+} = Astro.props;
+---
+
+<section
+  id="campo"
+  class="relative min-h-[100dvh] flex flex-col justify-end overflow-hidden"
+  aria-label="Del campo a tu mesa"
+>
+  <!-- ── Fondo: vídeo o imagen placeholder ─────────────────── -->
+  <div class="absolute inset-0 z-0">
+    {videoSrc ? (
+      <video
+        class="w-full h-full object-cover"
+        autoplay
+        muted
+        loop
+        playsinline
+        poster={posterSrc}
+      >
+        <source src={videoSrc} type="video/mp4" />
+      </video>
+    ) : (
+      <img
+        src={posterSrc}
+        alt=""
+        aria-hidden="true"
+        width="1920"
+        height="1080"
+        class="w-full h-full object-cover"
+        fetchpriority="high"
+      />
+    )}
+
+    <!-- Gradientes superpuestos: oscurece suelo, aclara cielo -->
+    <div class="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/20 to-transparent"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-ink/25 to-transparent" style="height: 35%"></div>
+  </div>
+
+  <!-- ── Grano de película (se reutiliza el global del body) ── -->
+
+  <!-- ── Contenido ─────────────────────────────────────────── -->
+  <div class="relative z-10 w-full px-5 md:px-10 pb-16 md:pb-20 pt-24">
+    <div class="max-w-[1280px] mx-auto">
+
+      <!-- Tagline -->
+      <p
+        class="reveal-left font-sazon text-[clamp(48px,8vw,108px)] leading-[0.96] [letter-spacing:var(--tracking-tightest)] font-medium text-cream mb-5"
+        style="text-shadow: 0 2px 40px rgba(31,37,25,0.5)"
+      >
+        Del campo<br />a tu mesa.
+      </p>
+
+      <!-- Subtexto -->
+      <p
+        class="reveal-left text-cream/65 text-[16px] md:text-[18px] leading-relaxed max-w-[380px]"
+        style="transition-delay: .15s; text-shadow: 0 1px 12px rgba(31,37,25,0.6)"
+      >
+        Sin intermediarios. Sin supermercado. Solo la fruta que merece la pena.
+      </p>
+
+      <!-- Label de tipo de campo -->
+      <div class="absolute bottom-8 right-5 md:right-10 flex items-center gap-3" aria-hidden="true">
+        <div class="hairline w-12 opacity-30" style="background: var(--color-cream)"></div>
+        <span class="campo-label text-cream">Secano · Albacete</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Franja separadora de colores frutales en la transición inferior -->
+  <div class="absolute bottom-0 left-0 right-0 z-10">
+    <div class="fruit-strip"></div>
+  </div>
+</section>
+
+<script>
+  /* Activa las clases reveal-left cuando el elemento entra en viewport */
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    }
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.reveal-left').forEach(el => io.observe(el));
+</script>

@@ -1,6 +1,7 @@
 ---
 import SazonLayout  from '../layouts/SazonLayout.astro';
 import SiteHeader   from '../components/sazon/SiteHeader.astro';
+import VideoField   from '../components/sazon/VideoField.astro';
 import Hero         from '../components/sazon/Hero.astro';
 import HowItWorks   from '../components/sazon/HowItWorks.astro';
 import Benefits     from '../components/sazon/Benefits.astro';
@@ -13,15 +14,36 @@ import SiteFooter   from '../components/sazon/SiteFooter.astro';
 const seasonal = ['cerezas', 'paraguayo', 'melocotón'];
 ---
 <SazonLayout>
+  <!-- Grano de película (decorativo global, pointer-events none) -->
+  <div class="grain-overlay" aria-hidden="true"></div>
+
   <SiteHeader />
+
   <main>
+    <!-- 1. El Campo — vídeo cinematográfico de apertura -->
+    <VideoField />
+
+    <!-- 2. La Huerta — hero con formulario de lead -->
     <Hero seasonal={seasonal} />
+
+    <!-- 3. El Secano — cómo funciona -->
     <HowItWorks />
+
+    <!-- 4. El Regadío — por qué esta idea -->
     <Benefits />
+
+    <!-- 5. La Huerta Urbana — para quién es -->
     <Audience />
+
+    <!-- 6. El Invernadero — galería del producto -->
     <Gallery />
+
+    <!-- 7. Preguntas frecuentes -->
     <FAQ />
+
+    <!-- 8. La Bodega — CTA final -->
     <FinalCTA />
   </main>
+
   <SiteFooter />
 </SazonLayout>

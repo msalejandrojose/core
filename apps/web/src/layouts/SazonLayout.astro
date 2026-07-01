@@ -82,8 +82,9 @@ const ogImage = new URL('/og.jpg', Astro.site ?? Astro.url).href;
 
   <script>
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     if (reduceMotion) {
-      document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+      document.querySelectorAll('.reveal, .reveal-left').forEach(el => el.classList.add('in'));
     } else {
       const io = new IntersectionObserver((entries) => {
         for (const e of entries) {
@@ -92,8 +93,8 @@ const ogImage = new URL('/og.jpg', Astro.site ?? Astro.url).href;
             io.unobserve(e.target);
           }
         }
-      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+      }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+      document.querySelectorAll('.reveal, .reveal-left').forEach(el => io.observe(el));
     }
   </script>
 </body>
