@@ -187,6 +187,7 @@ model User {
   storedFiles               StoredFile[]
   posts                     Post[]
   sectionAccess             UserSectionAccess[]
+  dashboards                Dashboard[]
 
   @@map("user")
 }
@@ -708,4 +709,49 @@ model FormResponse {
   @@index([formInstanceId, submittedAt])
   @@index([submittedById])
   @@map("form_response")
+}
+
+enum WidgetType {
+  KPI_CARD
+  LINE
+  BAR
+  AREA
+}
+
+/// Dashboard personalizado por usuario. Cada usuario tiene al menos uno
+/// marcado como default. Los widgets definen el layout (grid react-grid-layout).
+model Dashboard {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id") @db.Char(36)
+  name      String   @db.VarChar(255)
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  widgets DashboardWidget[]
+
+  @@index([userId])
+  @@map("dashboard")
+}
+
+/// Widget dentro de un dashboard. La posición y tamaño siguen el sistema de
+/// react-grid-layout (columnas x, fila y, ancho w, alto h). `config` es JSON
+/// libre para customización futura (título, color, rango).
+model DashboardWidget {
+  id          String     @id @default(cuid())
+  dashboardId String     @map("dashboard_id")
+  kpiSlug     String     @map("kpi_slug") @db.VarChar(100)
+  widgetType  WidgetType @map("widget_type")
+  x           Int
+  y           Int
+  w           Int
+  h           Int
+  config      Json?
+  order       Int        @default(0)
+
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@index([dashboardId])
+  @@map("dashboard_widget")
 }
