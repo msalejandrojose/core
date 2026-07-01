@@ -15,20 +15,30 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { KpiChart } from './components/KpiChart';
 import { RangeSelector } from './components/RangeSelector';
-import { useDashboardStats } from './hooks/use-dashboard-stats';
+import { useDashboardSummary, type KpiItem } from './hooks/use-dashboard-summary';
 import {
   getRangeFromPreset,
   RANGE_PRESETS,
   type RangePreset,
 } from './hooks/use-kpi-series';
 
-interface StatCard {
-  label: string;
-  value: number;
-  sub?: string;
-  icon: LucideIcon;
-  to: string;
-}
+const SLUG_ICON: Record<string, LucideIcon> = {
+  'users.total': Users,
+  'users.active': Users,
+  'roles.total': Shield,
+  'files.total': Files,
+  'blog.posts.published': Newspaper,
+  'blog.posts.draft': Newspaper,
+};
+
+const SLUG_ROUTE: Record<string, string> = {
+  'users.total': '/users',
+  'users.active': '/users',
+  'roles.total': '/roles',
+  'files.total': '/files',
+  'blog.posts.published': '/blog/posts',
+  'blog.posts.draft': '/blog/posts',
+};
 
 const QUICK_LINKS: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/users', label: 'Usuarios', icon: Users },
@@ -45,46 +55,11 @@ const CHART_KPIS = [
 ];
 
 export function DashboardPage() {
-  const { data, isLoading, isError } = useDashboardStats();
+  const { data, isLoading, isError } = useDashboardSummary();
   const [preset, setPreset] = useState<RangePreset>(RANGE_PRESETS[1]!);
   const range = getRangeFromPreset(preset);
 
-  const cards: StatCard[] = data
-    ? [
-        {
-          label: 'Usuarios',
-          value: data.users.total,
-          sub: `${data.users.active} activos`,
-          icon: Users,
-          to: '/users',
-        },
-        {
-          label: 'Roles',
-          value: data.roles.total,
-          icon: Shield,
-          to: '/roles',
-        },
-        {
-          label: 'Secciones API',
-          value: data.apiSections.total,
-          icon: SquareStack,
-          to: '/sections',
-        },
-        {
-          label: 'Posts',
-          value: data.blog.posts,
-          sub: `${data.blog.published} publicados`,
-          icon: Newspaper,
-          to: '/blog/posts',
-        },
-        {
-          label: 'Ficheros',
-          value: data.files.total,
-          icon: Files,
-          to: '/files',
-        },
-      ]
-    : [];
+  const kpis: KpiItem[] = data?.kpis ?? [];
 
   return (
     <div className="space-y-8">
@@ -97,10 +72,10 @@ export function DashboardPage() {
           </p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {isLoading
-            ? Array.from({ length: 5 }).map((_, i) => <StatSkeleton key={i} />)
-            : cards.map((card) => <StatCardView key={card.label} card={card} />)}
+            ? Array.from({ length: 6 }).map((_, i) => <StatSkeleton key={i} />)
+            : kpis.map((kpi) => <KpiCard key={kpi.slug} kpi={kpi} />)}
         </div>
       )}
 
@@ -136,22 +111,23 @@ export function DashboardPage() {
   );
 }
 
-function StatCardView({ card }: { card: StatCard }) {
-  const Icon = card.icon;
+function KpiCard({ kpi }: { kpi: KpiItem }) {
+  const Icon = SLUG_ICON[kpi.slug] ?? Files;
+  const to = SLUG_ROUTE[kpi.slug] ?? '/';
+  const formatted =
+    kpi.unit === 'bytes'
+      ? formatBytes(kpi.value)
+      : kpi.value.toLocaleString('es-ES');
+
   return (
-    <Link to={card.to} className="group">
+    <Link to={to} className="group">
       <Card className="gap-2 py-5 transition-colors group-hover:border-foreground/20">
         <div className="flex items-center justify-between px-6">
-          <span className="text-muted-foreground text-sm">{card.label}</span>
+          <span className="text-muted-foreground text-sm">{kpi.label}</span>
           <Icon className="text-muted-foreground size-4" />
         </div>
         <div className="px-6">
-          <p className="text-3xl font-semibold tracking-tight tabular-nums">
-            {card.value.toLocaleString('es-ES')}
-          </p>
-          {card.sub && (
-            <p className="text-muted-foreground mt-1 text-xs">{card.sub}</p>
-          )}
+          <p className="text-3xl font-semibold tracking-tight tabular-nums">{formatted}</p>
         </div>
       </Card>
     </Link>
@@ -197,4 +173,12 @@ function QuickLink({
       </Card>
     </Link>
   );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }

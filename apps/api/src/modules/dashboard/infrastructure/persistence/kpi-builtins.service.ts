@@ -87,6 +87,15 @@ export class KpiBuiltinsService implements OnModuleInit {
           granularity,
         ),
     });
+
+    this.registry.register({
+      slug: 'blog.posts.draft',
+      label: 'Posts en borrador',
+      category: 'blog',
+      unit: 'count',
+      format: 'integer',
+      scalar: () => this.prisma.post.count({ where: { status: 'DRAFT' } }),
+    });
   }
 
   private async createdAtSeries(

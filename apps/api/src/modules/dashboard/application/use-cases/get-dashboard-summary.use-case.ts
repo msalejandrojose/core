@@ -26,7 +26,7 @@ export class GetDashboardSummaryUseCase {
         this.prisma.user.count(),
         this.prisma.user.count({ where: { lastLoginAt: { gte: thirtyDaysAgo } } }),
         this.prisma.userRole.count(),
-        this.prisma.storedFile.count(),
+        this.prisma.storedFile.count({ where: { deletedAt: null } }),
         this.prisma.post.count({ where: { status: 'PUBLISHED' } }),
         this.prisma.post.count({ where: { status: 'DRAFT' } }),
       ]);
