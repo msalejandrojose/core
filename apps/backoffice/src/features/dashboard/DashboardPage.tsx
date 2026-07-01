@@ -1,11 +1,10 @@
 import {
   ChevronDown,
+  Copy,
   Edit2,
-  Files,
-  Newspaper,
+  LayoutTemplate,
   Plus,
-  Shield,
-  Users,
+  Settings,
   X,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -28,26 +27,31 @@ import {
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartWidget } from './components/ChartWidget';
+import { GaugeWidget } from './components/GaugeWidget';
 import { KpiCardWidget } from './components/KpiCardWidget';
+import { KpiGalleryDialog } from './components/KpiGalleryDialog';
+import { WidgetConfigSheet } from './components/WidgetConfigSheet';
+import { parseConfig, type WidgetConfig } from './components/widget-config';
 import {
-  useAddWidget,
   useCreateDashboard,
+  useCreateFromTemplate,
   useDashboard,
   useDashboards,
   useDeleteDashboard,
+  useDashboardTemplates,
+  useDuplicateDashboard,
   useRemoveWidget,
   useSaveLayout,
   useUpdateDashboard,
   type Dashboard,
   type DashboardWidget,
   type LayoutWidget,
-  type WidgetType,
 } from './hooks/use-dashboards';
-import { useKpiCatalog } from './hooks/use-kpi-catalog';
 
-// 12-column grid, each "row" is ~100px
 const GRID_COLS = 12;
 const ROW_H = 100;
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
   const { data, isLoading } = useDashboards();
@@ -68,7 +72,7 @@ export function DashboardPage() {
   );
 }
 
-// ─── Inner component with resolved dashboard ID ───────────────────────────────
+// ─── Inner component ──────────────────────────────────────────────────────────
 
 interface DashboardPageContentProps {
   dashboards: Dashboard[];
@@ -83,13 +87,16 @@ function DashboardPageContent({
 }: DashboardPageContentProps) {
   const { data: dashboard, isLoading } = useDashboard(activeDashboardId);
   const [editMode, setEditMode] = useState(false);
-  const [addWidgetOpen, setAddWidgetOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [configWidget, setConfigWidget] = useState<DashboardWidget | null>(null);
 
   const saveLayout = useSaveLayout();
   const removeWidget = useRemoveWidget();
   const deleteDashboard = useDeleteDashboard();
+  const duplicateDashboard = useDuplicateDashboard();
 
   function handleRemoveWidget(widget: DashboardWidget) {
     if (!dashboard) return;
@@ -99,16 +106,27 @@ function DashboardPageContent({
     );
   }
 
-  function handleSaveLayout(widgets: LayoutWidget[]) {
+  function handleSaveLayout() {
     if (!dashboard) return;
     saveLayout.mutate(
-      { dashboardId: dashboard.id, widgets },
+      { dashboardId: dashboard.id, widgets: dashboard.widgets.map(widgetToLayout) },
       {
-        onSuccess: () => {
-          toast.success('Layout guardado');
-          setEditMode(false);
-        },
+        onSuccess: () => { toast.success('Layout guardado'); setEditMode(false); },
         onError: () => toast.error('No se pudo guardar el layout'),
+      },
+    );
+  }
+
+  function handleWidgetConfigSave(widgetId: string, config: WidgetConfig) {
+    if (!dashboard) return;
+    const updated: LayoutWidget[] = dashboard.widgets.map((w) =>
+      w.id === widgetId ? { ...widgetToLayout(w), config: config as Record<string, unknown> } : widgetToLayout(w),
+    );
+    saveLayout.mutate(
+      { dashboardId: dashboard.id, widgets: updated },
+      {
+        onSuccess: () => toast.success('Widget configurado'),
+        onError: () => toast.error('No se pudo guardar la configuración'),
       },
     );
   }
@@ -126,14 +144,25 @@ function DashboardPageContent({
     });
   }
 
+  function handleDuplicate() {
+    if (!dashboard) return;
+    duplicateDashboard.mutate(dashboard.id, {
+      onSuccess: (d: Dashboard) => {
+        toast.success('Dashboard duplicado');
+        onSelectDashboard(d.id);
+      },
+      onError: () => toast.error('No se pudo duplicar'),
+    });
+  }
+
   const activeDashboard = dashboards.find((d) => d.id === activeDashboardId) ?? dashboards[0];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <PageHeader title="Dashboard" description={activeDashboard?.name} />
+        <div className="flex items-center gap-2">
+          <PageHeader title={activeDashboard?.name ?? 'Dashboard'} />
           {dashboards.length > 1 && (
             <DashboardSelector
               dashboards={dashboards}
@@ -145,41 +174,49 @@ function DashboardPageContent({
         <div className="flex items-center gap-2">
           {editMode && dashboard && (
             <>
-              <Button variant="outline" size="sm" onClick={() => setAddWidgetOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setGalleryOpen(true)}>
                 <Plus className="size-4" />
                 Añadir widget
               </Button>
-              <Button
-                size="sm"
-                onClick={() => handleSaveLayout(dashboard.widgets.map(widgetToLayout))}
-                disabled={saveLayout.isPending}
-              >
+              <Button size="sm" onClick={handleSaveLayout} disabled={saveLayout.isPending}>
                 Guardar
               </Button>
+              <Button variant="ghost" size="sm" onClick={() => setEditMode(false)}>
+                Cancelar
+              </Button>
             </>
+          )}
+          {!editMode && (
+            <Button variant="outline" size="sm" onClick={() => setEditMode(true)}>
+              <Edit2 className="size-4" />
+              Editar
+            </Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                <Edit2 className="size-4" />
-                <ChevronDown className="size-3" />
+                <ChevronDown className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditMode((v) => !v)}>
-                {editMode ? 'Salir del editor' : 'Editar layout'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setRenameOpen(true)}>
-                Renombrar dashboard
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem onClick={() => setCreateOpen(true)}>
-                Nuevo dashboard
+                <Plus className="mr-2 size-4" /> Nuevo dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTemplatesOpen(true)}>
+                <LayoutTemplate className="mr-2 size-4" /> Desde plantilla
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDuplicate} disabled={!dashboard}>
+                <Copy className="mr-2 size-4" /> Duplicar dashboard
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setRenameOpen(true)} disabled={!dashboard}>
+                Renombrar
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 onClick={handleDeleteDashboard}
-                disabled={dashboards.length <= 1}
+                disabled={dashboards.length <= 1 || !dashboard}
               >
                 Eliminar dashboard
               </DropdownMenuItem>
@@ -196,24 +233,39 @@ function DashboardPageContent({
           dashboard={dashboard}
           editMode={editMode}
           onRemoveWidget={handleRemoveWidget}
+          onConfigWidget={setConfigWidget}
         />
       )}
 
       {/* Dialogs */}
       {dashboard && (
-        <AddWidgetDialog
-          open={addWidgetOpen}
-          onClose={() => setAddWidgetOpen(false)}
+        <KpiGalleryDialog
+          open={galleryOpen}
+          onClose={() => setGalleryOpen(false)}
           dashboardId={dashboard.id}
           existingSlugs={dashboard.widgets.map((w) => w.kpiSlug)}
           nextY={nextY(dashboard.widgets)}
         />
       )}
+
+      <WidgetConfigSheet
+        widget={configWidget}
+        onClose={() => setConfigWidget(null)}
+        onSave={handleWidgetConfigSave}
+      />
+
       <CreateDashboardDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onCreated={(id) => onSelectDashboard(id)}
+        onCreated={onSelectDashboard}
       />
+
+      <TemplatesDialog
+        open={templatesOpen}
+        onClose={() => setTemplatesOpen(false)}
+        onCreated={onSelectDashboard}
+      />
+
       {dashboard && (
         <RenameDashboardDialog
           open={renameOpen}
@@ -231,9 +283,10 @@ interface DashboardGridProps {
   dashboard: Dashboard;
   editMode: boolean;
   onRemoveWidget: (widget: DashboardWidget) => void;
+  onConfigWidget: (widget: DashboardWidget) => void;
 }
 
-function DashboardGrid({ dashboard, editMode, onRemoveWidget }: DashboardGridProps) {
+function DashboardGrid({ dashboard, editMode, onRemoveWidget, onConfigWidget }: DashboardGridProps) {
   if (dashboard.widgets.length === 0) {
     return (
       <div className="text-muted-foreground flex h-48 items-center justify-center rounded-lg border border-dashed text-sm">
@@ -245,34 +298,35 @@ function DashboardGrid({ dashboard, editMode, onRemoveWidget }: DashboardGridPro
   const maxRow = Math.max(...dashboard.widgets.map((w) => w.y + w.h));
 
   return (
-    <div
-      className="relative"
-      style={{ height: maxRow * ROW_H }}
-    >
-      {/* Grid lines in edit mode */}
+    <div className="relative" style={{ height: maxRow * ROW_H }}>
       {editMode && (
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="pointer-events-none absolute inset-0 opacity-30"
           style={{
             backgroundImage: `repeating-linear-gradient(to right, var(--color-border) 0, var(--color-border) 1px, transparent 1px, transparent ${100 / GRID_COLS}%)`,
-            opacity: 0.4,
           }}
         />
       )}
       {dashboard.widgets.map((widget) => (
-        <div
-          key={widget.id}
-          className={`absolute p-1 ${editMode ? 'cursor-move' : ''}`}
-          style={widgetStyle(widget)}
-        >
+        <div key={widget.id} className="absolute p-1" style={widgetStyle(widget)}>
           <div className="relative h-full">
             {editMode && (
-              <button
-                onClick={() => onRemoveWidget(widget)}
-                className="bg-destructive text-destructive-foreground absolute -right-1 -top-1 z-10 flex size-5 items-center justify-center rounded-full shadow-sm"
-              >
-                <X className="size-3" />
-              </button>
+              <>
+                <button
+                  onClick={() => onRemoveWidget(widget)}
+                  className="bg-destructive text-destructive-foreground absolute -right-1 -top-1 z-20 flex size-5 items-center justify-center rounded-full shadow-sm"
+                  title="Eliminar widget"
+                >
+                  <X className="size-3" />
+                </button>
+                <button
+                  onClick={() => onConfigWidget(widget)}
+                  className="bg-background text-muted-foreground border-border absolute -left-1 -top-1 z-20 flex size-5 items-center justify-center rounded-full border shadow-sm"
+                  title="Configurar widget"
+                >
+                  <Settings className="size-3" />
+                </button>
+              </>
             )}
             <WidgetRenderer widget={widget} />
           </div>
@@ -283,10 +337,14 @@ function DashboardGrid({ dashboard, editMode, onRemoveWidget }: DashboardGridPro
 }
 
 function WidgetRenderer({ widget }: { widget: DashboardWidget }) {
+  const config = parseConfig(widget.config);
   if (widget.widgetType === 'KPI_CARD') {
-    return <KpiCardWidget kpiSlug={widget.kpiSlug} />;
+    return <KpiCardWidget kpiSlug={widget.kpiSlug} config={config} />;
   }
-  return <ChartWidget kpiSlug={widget.kpiSlug} widgetType={widget.widgetType} />;
+  if (widget.widgetType === 'GAUGE') {
+    return <GaugeWidget kpiSlug={widget.kpiSlug} config={config} />;
+  }
+  return <ChartWidget kpiSlug={widget.kpiSlug} widgetType={widget.widgetType} config={config} />;
 }
 
 // ─── Dashboard Selector ───────────────────────────────────────────────────────
@@ -303,7 +361,7 @@ function DashboardSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="ghost" size="sm" className="text-muted-foreground h-7 px-2">
           <ChevronDown className="size-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -315,7 +373,9 @@ function DashboardSelector({
             className={d.id === activeDashboardId ? 'font-medium' : ''}
           >
             {d.name}
-            {d.isDefault && <span className="text-muted-foreground ml-2 text-xs">(defecto)</span>}
+            {d.isDefault && (
+              <span className="text-muted-foreground ml-2 text-xs">(defecto)</span>
+            )}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -323,99 +383,50 @@ function DashboardSelector({
   );
 }
 
-// ─── Add Widget Dialog ────────────────────────────────────────────────────────
+// ─── Templates Dialog ─────────────────────────────────────────────────────────
 
-const WIDGET_ICONS: Record<string, React.ElementType> = {
-  'users.total': Users,
-  'users.active': Users,
-  'roles.total': Shield,
-  'files.total': Files,
-  'blog.posts.published': Newspaper,
-  'blog.posts.draft': Newspaper,
-};
-
-function AddWidgetDialog({
+function TemplatesDialog({
   open,
   onClose,
-  dashboardId,
-  existingSlugs,
-  nextY,
+  onCreated,
 }: {
   open: boolean;
   onClose: () => void;
-  dashboardId: string;
-  existingSlugs: string[];
-  nextY: number;
+  onCreated: (id: string) => void;
 }) {
-  const { data: catalog } = useKpiCatalog();
-  const addWidget = useAddWidget();
-  const [selectedType, setSelectedType] = useState<WidgetType>('KPI_CARD');
+  const { data } = useDashboardTemplates();
+  const createFromTemplate = useCreateFromTemplate();
+  const templates = data?.templates ?? [];
 
-  const available = (catalog?.kpis ?? []).filter((k) => !existingSlugs.includes(k.slug));
-
-  function handleAdd(slug: string) {
-    const isCard = selectedType === 'KPI_CARD';
-    addWidget.mutate(
-      {
-        dashboardId,
-        kpiSlug: slug,
-        widgetType: selectedType,
-        x: 0,
-        y: nextY,
-        w: isCard ? 3 : 12,
-        h: isCard ? 2 : 4,
+  function handleSelect(templateId: string) {
+    createFromTemplate.mutate(templateId, {
+      onSuccess: (d: Dashboard) => {
+        toast.success('Dashboard creado desde plantilla');
+        onCreated(d.id);
+        onClose();
       },
-      {
-        onSuccess: () => {
-          toast.success('Widget añadido');
-          onClose();
-        },
-        onError: () => toast.error('No se pudo añadir el widget'),
-      },
-    );
+      onError: () => toast.error('No se pudo crear el dashboard'),
+    });
   }
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Añadir widget</DialogTitle>
+          <DialogTitle>Plantillas</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            {(['KPI_CARD', 'LINE', 'BAR'] as WidgetType[]).map((t) => (
-              <Button
-                key={t}
-                variant={selectedType === t ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedType(t)}
-              >
-                {t === 'KPI_CARD' ? 'Tarjeta' : t === 'LINE' ? 'Línea' : 'Barras'}
-              </Button>
-            ))}
-          </div>
-          <div className="max-h-64 space-y-1 overflow-y-auto">
-            {available.length === 0 && (
-              <p className="text-muted-foreground py-4 text-center text-sm">
-                No hay KPIs disponibles para añadir.
-              </p>
-            )}
-            {available.map((kpi) => {
-              const Icon = WIDGET_ICONS[kpi.slug] ?? Files;
-              return (
-                <button
-                  key={kpi.slug}
-                  onClick={() => handleAdd(kpi.slug)}
-                  disabled={addWidget.isPending}
-                  className="hover:bg-accent flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-                >
-                  <Icon className="text-muted-foreground size-4 shrink-0" />
-                  <span className="text-left">{kpi.label}</span>
-                  <span className="text-muted-foreground ml-auto text-xs">{kpi.slug}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="space-y-2">
+          {templates.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => handleSelect(t.id)}
+              disabled={createFromTemplate.isPending}
+              className="hover:bg-accent w-full rounded-lg border p-3 text-left transition-colors"
+            >
+              <p className="font-medium">{t.name}</p>
+              <p className="text-muted-foreground text-sm">{t.description}</p>
+            </button>
+          ))}
         </div>
       </DialogContent>
     </Dialog>
@@ -480,7 +491,7 @@ function CreateDashboardDialog({
   );
 }
 
-// ─── Rename Dashboard Dialog ──────────────────────────────────────────────────
+// ─── Rename Dialog ────────────────────────────────────────────────────────────
 
 function RenameDashboardDialog({
   open,
@@ -500,10 +511,7 @@ function RenameDashboardDialog({
     update.mutate(
       { id: dashboard.id, name: name.trim() },
       {
-        onSuccess: () => {
-          toast.success('Dashboard renombrado');
-          onClose();
-        },
+        onSuccess: () => { toast.success('Dashboard renombrado'); onClose(); },
         onError: () => toast.error('No se pudo renombrar'),
       },
     );
@@ -516,11 +524,7 @@ function RenameDashboardDialog({
           <DialogTitle>Renombrar dashboard</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-          />
+          <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar

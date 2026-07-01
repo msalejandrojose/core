@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { KpiChart } from './KpiChart';
 import { useKpiCatalog } from '../hooks/use-kpi-catalog';
-import { getRangeFromPreset, RANGE_PRESETS, type RangePreset } from '../hooks/use-kpi-series';
+import { getRangeFromPreset, RANGE_PRESETS, type Granularity, type RangePreset } from '../hooks/use-kpi-series';
 import type { WidgetType } from '../hooks/use-dashboards';
+import type { WidgetConfig } from './widget-config';
 
 interface ChartWidgetProps {
   kpiSlug: string;
   widgetType: WidgetType;
+  config?: WidgetConfig | null;
 }
 
 const WIDGET_CHART_TYPE: Record<string, 'line' | 'bar'> = {
@@ -15,13 +17,22 @@ const WIDGET_CHART_TYPE: Record<string, 'line' | 'bar'> = {
   AREA: 'line',
 };
 
-export function ChartWidget({ kpiSlug, widgetType }: ChartWidgetProps) {
-  const [preset, setPreset] = useState<RangePreset>(RANGE_PRESETS[1]!);
+const RANGE_PRESET_MAP: Record<string, RangePreset> = Object.fromEntries(
+  RANGE_PRESETS.map((p) => [p.label, p]),
+);
+
+export function ChartWidget({ kpiSlug, widgetType, config }: ChartWidgetProps) {
+  const defaultPreset = config?.range ? (RANGE_PRESET_MAP[config.range] ?? RANGE_PRESETS[1]!) : RANGE_PRESETS[1]!;
+  const [preset, setPreset] = useState<RangePreset>(defaultPreset);
   const range = getRangeFromPreset(preset);
+
   const { data: catalog } = useKpiCatalog();
   const meta = catalog?.kpis.find((k) => k.slug === kpiSlug);
-  const label = meta?.label ?? kpiSlug;
-  const chartType = WIDGET_CHART_TYPE[widgetType] ?? 'line';
+
+  const label = config?.title ?? meta?.label ?? kpiSlug;
+  const effectiveType = config?.chartType ?? widgetType;
+  const chartType = WIDGET_CHART_TYPE[effectiveType] ?? 'line';
+  const granularity: Granularity = config?.granularity ?? preset.granularity;
 
   return (
     <div className="flex h-full flex-col gap-2">
@@ -49,7 +60,7 @@ export function ChartWidget({ kpiSlug, widgetType }: ChartWidgetProps) {
           label={label}
           from={range.from}
           to={range.to}
-          granularity={preset.granularity}
+          granularity={granularity}
           type={chartType}
         />
       </div>

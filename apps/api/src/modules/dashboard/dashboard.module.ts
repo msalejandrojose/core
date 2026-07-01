@@ -3,6 +3,7 @@ import { KpiRegistry } from './application/kpi-registry.service';
 import { DASHBOARD_STATS_REPOSITORY } from './application/ports/dashboard-stats-repository.port';
 import { DASHBOARD_REPOSITORY } from './application/ports/dashboard-repository.port';
 import { AddWidgetUseCase } from './application/use-cases/add-widget.use-case';
+import { DuplicateDashboardUseCase } from './application/use-cases/duplicate-dashboard.use-case';
 import { CreateDashboardUseCase } from './application/use-cases/create-dashboard.use-case';
 import { DeleteDashboardUseCase } from './application/use-cases/delete-dashboard.use-case';
 import { GetDashboardStatsUseCase } from './application/use-cases/get-dashboard-stats.use-case';
@@ -42,6 +43,7 @@ import { PrismaDashboardStatsRepository } from './infrastructure/persistence/pri
     CreateDashboardUseCase,
     UpdateDashboardUseCase,
     DeleteDashboardUseCase,
+    DuplicateDashboardUseCase,
     SaveLayoutUseCase,
     AddWidgetUseCase,
     RemoveWidgetUseCase,

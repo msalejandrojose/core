@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 
-export type WidgetType = 'KPI_CARD' | 'LINE' | 'BAR' | 'AREA';
+export type WidgetType = 'KPI_CARD' | 'LINE' | 'BAR' | 'AREA' | 'GAUGE';
 
 export interface DashboardWidget {
   id: string;
@@ -173,5 +173,51 @@ export function useRemoveWidget() {
     onSuccess: (_: void, vars: { dashboardId: string }) => {
       qc.invalidateQueries({ queryKey: ['dashboards', vars.dashboardId] });
     },
+  });
+}
+
+export function useDuplicateDashboard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await client.POST('/dashboards/{id}/duplicate', {
+        params: { path: { id } },
+      });
+      if (error) throw error;
+      return data as Dashboard;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['dashboards'] }),
+  });
+}
+
+export interface DashboardTemplate {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export function useDashboardTemplates() {
+  return useQuery<{ templates: DashboardTemplate[] }>({
+    queryKey: ['dashboards', 'templates'],
+    queryFn: async () => {
+      const { data, error } = await client.GET('/dashboards/templates');
+      if (error) throw error;
+      return data;
+    },
+    staleTime: Infinity,
+  });
+}
+
+export function useCreateFromTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      const { data, error } = await client.POST('/dashboards/from-template/{templateId}', {
+        params: { path: { templateId } },
+      });
+      if (error) throw error;
+      return data as Dashboard;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['dashboards'] }),
   });
 }

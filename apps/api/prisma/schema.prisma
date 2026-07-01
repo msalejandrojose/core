@@ -716,6 +716,7 @@ enum WidgetType {
   LINE
   BAR
   AREA
+  GAUGE
 }
 
 /// Dashboard personalizado por usuario. Cada usuario tiene al menos uno

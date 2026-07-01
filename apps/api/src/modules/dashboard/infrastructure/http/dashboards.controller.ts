@@ -22,9 +22,11 @@ import {
   DashboardForbiddenError,
   DashboardNotFoundError,
 } from '../../domain/errors/dashboard.errors';
+import { DASHBOARD_TEMPLATES } from '../../application/dashboard-templates';
 import { AddWidgetUseCase } from '../../application/use-cases/add-widget.use-case';
 import { CreateDashboardUseCase } from '../../application/use-cases/create-dashboard.use-case';
 import { DeleteDashboardUseCase } from '../../application/use-cases/delete-dashboard.use-case';
+import { DuplicateDashboardUseCase } from '../../application/use-cases/duplicate-dashboard.use-case';
 import { GetDashboardUseCase } from '../../application/use-cases/get-dashboard.use-case';
 import { ListDashboardsUseCase } from '../../application/use-cases/list-dashboards.use-case';
 import { RemoveWidgetUseCase } from '../../application/use-cases/remove-widget.use-case';
@@ -50,10 +52,47 @@ export class DashboardsController {
     private readonly createDashboard: CreateDashboardUseCase,
     private readonly updateDashboard: UpdateDashboardUseCase,
     private readonly deleteDashboard: DeleteDashboardUseCase,
+    private readonly duplicateDashboard: DuplicateDashboardUseCase,
     private readonly saveLayout: SaveLayoutUseCase,
     private readonly addWidget: AddWidgetUseCase,
     private readonly removeWidget: RemoveWidgetUseCase,
   ) {}
+
+  // ─── Templates ──────────────────────────────────────────────────────────────
+
+  @Get('templates')
+  @ApiOperation({ summary: 'Lista plantillas de dashboard predefinidas.' })
+  getTemplates() {
+    return {
+      templates: DASHBOARD_TEMPLATES.map(({ id, name, description }) => ({ id, name, description })),
+    };
+  }
+
+  @Post('from-template/:templateId')
+  @ApiOperation({ summary: 'Crea un dashboard a partir de una plantilla.' })
+  @ApiCreatedResponse({ type: DashboardDto })
+  async createFromTemplate(
+    @Param('templateId') templateId: string,
+    @CurrentUser() user: AccessTokenPayload,
+  ): Promise<DashboardDto> {
+    const template = DASHBOARD_TEMPLATES.find((t) => t.id === templateId);
+    if (!template) throw new NotFoundException(`Template '${templateId}' not found`);
+
+    const dashboard = await this.createDashboard.execute({
+      userId: user.sub,
+      name: template.name,
+    });
+
+    const withLayout = await this.saveLayout.execute(
+      dashboard.id,
+      user.sub,
+      template.widgets.map((w, i) => ({ ...w, id: `tpl-${i}` })),
+    );
+
+    return DashboardDto.from(withLayout);
+  }
+
+  // ─── CRUD ────────────────────────────────────────────────────────────────────
 
   @Get()
   @ApiOperation({ summary: 'Lista los dashboards del usuario autenticado.' })
@@ -93,6 +132,22 @@ export class DashboardsController {
         makeDefault: dto.makeDefault,
       }),
     );
+  }
+
+  @Post(':id/duplicate')
+  @ApiOperation({ summary: 'Duplica un dashboard existente.' })
+  @ApiCreatedResponse({ type: DashboardDto })
+  async duplicate(
+    @Param('id') id: string,
+    @CurrentUser() user: AccessTokenPayload,
+  ): Promise<DashboardDto> {
+    try {
+      return DashboardDto.from(await this.duplicateDashboard.execute(id, user.sub));
+    } catch (e) {
+      if (e instanceof DashboardNotFoundError) throw new NotFoundException(e.message);
+      if (e instanceof DashboardForbiddenError) throw new ForbiddenException(e.message);
+      throw e;
+    }
   }
 
   @Patch(':id')

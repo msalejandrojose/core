@@ -1,4 +1,4 @@
-export type WidgetType = 'KPI_CARD' | 'LINE' | 'BAR' | 'AREA';
+export type WidgetType = 'KPI_CARD' | 'LINE' | 'BAR' | 'AREA' | 'GAUGE';
 
 export interface DashboardWidget {
   id: string;

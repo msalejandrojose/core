@@ -13,7 +13,7 @@ import {
 } from 'class-validator';
 import type { Dashboard, DashboardWidget, WidgetType } from '../../../domain/entities/dashboard.entity';
 
-const WIDGET_TYPES: WidgetType[] = ['KPI_CARD', 'LINE', 'BAR', 'AREA'];
+const WIDGET_TYPES: WidgetType[] = ['KPI_CARD', 'LINE', 'BAR', 'AREA', 'GAUGE'];
 
 // ─── Response DTOs ────────────────────────────────────────────────────────────
 
