@@ -7,12 +7,20 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { KpiChart } from './components/KpiChart';
+import { RangeSelector } from './components/RangeSelector';
 import { useDashboardStats } from './hooks/use-dashboard-stats';
+import {
+  getRangeFromPreset,
+  RANGE_PRESETS,
+  type RangePreset,
+} from './hooks/use-kpi-series';
 
 interface StatCard {
   label: string;
@@ -30,8 +38,16 @@ const QUICK_LINKS: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/files', label: 'Ficheros', icon: Files },
 ];
 
+const CHART_KPIS = [
+  { slug: 'users.total', label: 'Nuevos usuarios', type: 'bar' as const },
+  { slug: 'blog.posts.published', label: 'Posts publicados', type: 'line' as const },
+  { slug: 'files.total', label: 'Ficheros subidos', type: 'bar' as const },
+];
+
 export function DashboardPage() {
   const { data, isLoading, isError } = useDashboardStats();
+  const [preset, setPreset] = useState<RangePreset>(RANGE_PRESETS[1]!);
+  const range = getRangeFromPreset(preset);
 
   const cards: StatCard[] = data
     ? [
@@ -88,10 +104,28 @@ export function DashboardPage() {
         </div>
       )}
 
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-foreground text-base font-medium">Evolución temporal</h2>
+          <RangeSelector value={preset} onChange={setPreset} />
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {CHART_KPIS.map((kpi) => (
+            <KpiChart
+              key={kpi.slug}
+              slug={kpi.slug}
+              label={kpi.label}
+              type={kpi.type}
+              from={range.from}
+              to={range.to}
+              granularity={preset.granularity}
+            />
+          ))}
+        </div>
+      </section>
+
       <section className="space-y-3">
-        <h2 className="text-foreground text-base font-medium">
-          Accesos directos
-        </h2>
+        <h2 className="text-foreground text-base font-medium">Accesos directos</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {QUICK_LINKS.map((link) => (
             <QuickLink key={link.to} {...link} />
