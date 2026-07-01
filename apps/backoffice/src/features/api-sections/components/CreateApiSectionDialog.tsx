@@ -108,7 +108,7 @@ export function CreateApiSectionDialog() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_PARENT}>Sin sección padre</SelectItem>
-                  {parentOptions.map((s) => (
+                  {parentOptions.map((s: any) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name}
                     </SelectItem>

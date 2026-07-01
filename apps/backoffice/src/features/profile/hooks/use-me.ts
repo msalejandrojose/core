@@ -6,7 +6,7 @@ export function useMe() {
   return useQuery({
     queryKey: ['me'],
     queryFn: async () => {
-      const { data, error } = await apiClient.GET('/auth/me');
+      const { data, error } = await apiClient.GET('/auth/me', {});
       if (error) throw error;
       return data;
     },

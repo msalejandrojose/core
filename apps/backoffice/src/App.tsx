@@ -83,12 +83,6 @@ const TagsPage = lazy(() =>
 const FilesPage = lazy(() =>
   import('@/features/files/FilesPage').then((m) => ({ default: m.FilesPage })),
 );
-const DashboardPage = lazy(() =>
-  import('@/features/dashboard/DashboardPage').then((m) => ({
-    default: m.DashboardPage,
-  })),
-);
-
 function PageFallback() {
   return (
     <div className="flex min-h-svh items-center justify-center">
