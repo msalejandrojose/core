@@ -34,6 +34,7 @@ const SECTIONS: ReadonlyArray<{
   { code: 'iam.roles', name: 'IAM · Roles', parent: 'iam', description: null },
   { code: 'iam.api_sections', name: 'IAM · API Sections', parent: 'iam', description: null },
   { code: 'iam.permissions', name: 'IAM · Permissions', parent: 'iam', description: null },
+  { code: 'iam.sections', name: 'IAM · Sections', parent: 'iam', description: 'Gestión del árbol de secciones de UI.' },
   { code: 'forms', name: 'Dynamic Forms', parent: 'root', description: 'Formularios dinámicos.' },
 ];
 
