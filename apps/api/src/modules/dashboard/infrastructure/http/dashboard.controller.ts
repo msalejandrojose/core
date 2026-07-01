@@ -81,6 +81,16 @@ export class DashboardController {
     return { values };
   }
 
+  @Get('kpis/:slug/value')
+  @ApiOperation({ summary: 'Valor escalar actual de un KPI individual.' })
+  @ApiOkResponse({ type: KpiValueItemDto })
+  async kpiValue(@Param('slug') slug: string): Promise<KpiValueItemDto> {
+    const def = this.kpiRegistry.get(slug);
+    if (!def) throw new NotFoundException(`KPI '${slug}' not found`);
+    const value = await def.scalar();
+    return { slug, value };
+  }
+
   @Get('kpis/:slug/series')
   @ApiOperation({ summary: 'Serie temporal de un KPI.' })
   @ApiOkResponse({ type: KpiSeriesResponseDto })

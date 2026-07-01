@@ -7,7 +7,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/ui/card';
@@ -15,12 +15,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { KpiChart } from './components/KpiChart';
 import { RangeSelector } from './components/RangeSelector';
-import { useDashboardSummary, type KpiItem } from './hooks/use-dashboard-summary';
+import { useKpiCatalog, type KpiMeta } from './hooks/use-kpi-catalog';
+import { useKpiValues, type KpiValueItem } from './hooks/use-kpi-values';
 import {
   getRangeFromPreset,
   RANGE_PRESETS,
   type RangePreset,
 } from './hooks/use-kpi-series';
+
+/** Slugs a mostrar en el dashboard, en el orden deseado. */
+const DASHBOARD_SLUGS = [
+  'users.total',
+  'users.active',
+  'roles.total',
+  'files.total',
+  'blog.posts.published',
+  'blog.posts.draft',
+] as const;
 
 const SLUG_ICON: Record<string, LucideIcon> = {
   'users.total': Users,
@@ -55,11 +66,24 @@ const CHART_KPIS = [
 ];
 
 export function DashboardPage() {
-  const { data, isLoading, isError } = useDashboardSummary();
   const [preset, setPreset] = useState<RangePreset>(RANGE_PRESETS[1]!);
   const range = getRangeFromPreset(preset);
 
-  const kpis: KpiItem[] = data?.kpis ?? [];
+  const slugs = useMemo(() => [...DASHBOARD_SLUGS], []);
+  const { data: catalog, isLoading: catalogLoading } = useKpiCatalog();
+  const { data: valuesData, isLoading: valuesLoading, isError } = useKpiValues(slugs);
+
+  const isLoading = catalogLoading || valuesLoading;
+
+  const catalogMap = useMemo<Record<string, KpiMeta>>(
+    () => Object.fromEntries((catalog?.kpis ?? []).map((k) => [k.slug, k])),
+    [catalog],
+  );
+
+  const valuesMap = useMemo<Record<string, KpiValueItem>>(
+    () => Object.fromEntries((valuesData?.values ?? []).map((v) => [v.slug, v])),
+    [valuesData],
+  );
 
   return (
     <div className="space-y-8">
@@ -74,8 +98,17 @@ export function DashboardPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {isLoading
-            ? Array.from({ length: 6 }).map((_, i) => <StatSkeleton key={i} />)
-            : kpis.map((kpi) => <KpiCard key={kpi.slug} kpi={kpi} />)}
+            ? Array.from({ length: DASHBOARD_SLUGS.length }).map((_, i) => (
+                <StatSkeleton key={i} />
+              ))
+            : slugs.map((slug) => (
+                <KpiCard
+                  key={slug}
+                  slug={slug}
+                  meta={catalogMap[slug]}
+                  valueItem={valuesMap[slug]}
+                />
+              ))}
         </div>
       )}
 
@@ -111,23 +144,37 @@ export function DashboardPage() {
   );
 }
 
-function KpiCard({ kpi }: { kpi: KpiItem }) {
-  const Icon = SLUG_ICON[kpi.slug] ?? Files;
-  const to = SLUG_ROUTE[kpi.slug] ?? '/';
-  const formatted =
-    kpi.unit === 'bytes'
-      ? formatBytes(kpi.value)
-      : kpi.value.toLocaleString('es-ES');
+interface KpiCardProps {
+  slug: string;
+  meta: KpiMeta | undefined;
+  valueItem: KpiValueItem | undefined;
+}
+
+function KpiCard({ slug, meta, valueItem }: KpiCardProps) {
+  const Icon = SLUG_ICON[slug] ?? Files;
+  const to = SLUG_ROUTE[slug] ?? '/';
+  const label = meta?.label ?? slug;
+  const hasError = !!valueItem?.error;
+  const displayValue =
+    valueItem?.value == null
+      ? '—'
+      : meta?.unit === 'bytes'
+        ? formatBytes(valueItem.value)
+        : valueItem.value.toLocaleString('es-ES');
 
   return (
     <Link to={to} className="group">
       <Card className="gap-2 py-5 transition-colors group-hover:border-foreground/20">
         <div className="flex items-center justify-between px-6">
-          <span className="text-muted-foreground text-sm">{kpi.label}</span>
+          <span className="text-muted-foreground text-sm">{label}</span>
           <Icon className="text-muted-foreground size-4" />
         </div>
         <div className="px-6">
-          <p className="text-3xl font-semibold tracking-tight tabular-nums">{formatted}</p>
+          {hasError ? (
+            <p className="text-muted-foreground text-sm">Error</p>
+          ) : (
+            <p className="text-3xl font-semibold tracking-tight tabular-nums">{displayValue}</p>
+          )}
         </div>
       </Card>
     </Link>
