@@ -1,6 +1,7 @@
 import {
   RoleSectionAccessRecord,
   Section,
+  SectionAccessType,
   SectionScope,
   UserSectionAccessRecord,
 } from '../../domain/entities/section.entity';
@@ -63,4 +64,27 @@ export interface SectionRepositoryPort {
 
   /** Lista grants/denies del usuario sobre cualquier sección. */
   findUserAccess(userId: string): Promise<UserSectionAccessRecord[]>;
+
+  /** Lista todos los grants/denies de roles y usuarios para una sección concreta. */
+  findAccessBySectionId(
+    sectionId: string,
+  ): Promise<{ roleAccess: RoleSectionAccessRecord[]; userAccess: UserSectionAccessRecord[] }>;
+
+  /** Crea o actualiza el acceso de un rol a una sección. */
+  setRoleAccess(sectionId: string, roleId: string, access: SectionAccessType): Promise<void>;
+
+  /** Elimina el acceso de un rol a una sección. No falla si no existía. */
+  revokeRoleAccess(sectionId: string, roleId: string): Promise<void>;
+
+  /** Crea o actualiza el acceso de un usuario a una sección. */
+  setUserAccess(sectionId: string, userId: string, access: SectionAccessType): Promise<void>;
+
+  /** Elimina el acceso de un usuario a una sección. No falla si no existía. */
+  revokeUserAccess(sectionId: string, userId: string): Promise<void>;
+
+  /** Comprueba si existe un rol (UserRole) con ese id. */
+  roleExistsById(id: string): Promise<boolean>;
+
+  /** Comprueba si existe un usuario con ese id. */
+  userExistsById(id: string): Promise<boolean>;
 }

@@ -3,6 +3,7 @@ import { PrismaService } from '../../../../infrastructure/database/prisma/prisma
 import {
   RoleSectionAccessRecord,
   Section,
+  SectionAccessType,
   SectionScope,
   UserSectionAccessRecord,
 } from '../../domain/entities/section.entity';
@@ -138,5 +139,71 @@ export class PrismaSectionRepository implements SectionRepositoryPort {
       select: { userId: true, sectionId: true, access: true },
     });
     return rows;
+  }
+
+  async findAccessBySectionId(
+    sectionId: string,
+  ): Promise<{ roleAccess: RoleSectionAccessRecord[]; userAccess: UserSectionAccessRecord[] }> {
+    const [roleAccess, userAccess] = await Promise.all([
+      this.prisma.roleSectionAccess.findMany({
+        where: { sectionId },
+        select: { userRoleId: true, sectionId: true, access: true },
+      }),
+      this.prisma.userSectionAccess.findMany({
+        where: { sectionId },
+        select: { userId: true, sectionId: true, access: true },
+      }),
+    ]);
+    return { roleAccess, userAccess };
+  }
+
+  async setRoleAccess(
+    sectionId: string,
+    roleId: string,
+    access: SectionAccessType,
+  ): Promise<void> {
+    await this.prisma.roleSectionAccess.upsert({
+      where: { userRoleId_sectionId: { userRoleId: roleId, sectionId } },
+      create: { userRoleId: roleId, sectionId, access },
+      update: { access },
+    });
+  }
+
+  async revokeRoleAccess(sectionId: string, roleId: string): Promise<void> {
+    await this.prisma.roleSectionAccess
+      .delete({ where: { userRoleId_sectionId: { userRoleId: roleId, sectionId } } })
+      .catch(() => {
+        // Idempotente: no falla si el registro no existía
+      });
+  }
+
+  async setUserAccess(
+    sectionId: string,
+    userId: string,
+    access: SectionAccessType,
+  ): Promise<void> {
+    await this.prisma.userSectionAccess.upsert({
+      where: { userId_sectionId: { userId, sectionId } },
+      create: { userId, sectionId, access },
+      update: { access },
+    });
+  }
+
+  async revokeUserAccess(sectionId: string, userId: string): Promise<void> {
+    await this.prisma.userSectionAccess
+      .delete({ where: { userId_sectionId: { userId, sectionId } } })
+      .catch(() => {
+        // Idempotente: no falla si el registro no existía
+      });
+  }
+
+  async roleExistsById(id: string): Promise<boolean> {
+    const count = await this.prisma.userRole.count({ where: { id } });
+    return count > 0;
+  }
+
+  async userExistsById(id: string): Promise<boolean> {
+    const count = await this.prisma.user.count({ where: { id } });
+    return count > 0;
   }
 }
