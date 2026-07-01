@@ -20,6 +20,9 @@ export class KpiMetaDto {
   @ApiPropertyOptional({ enum: ['integer', 'decimal', 'compact'] })
   format?: string;
 
+  @ApiProperty({ enum: ['scalar', 'computed'], description: 'How the KPI value is derived.' })
+  kind!: 'scalar' | 'computed';
+
   @ApiProperty({ description: 'Whether this KPI supports time-series queries.' })
   hasSeries!: boolean;
 }
@@ -38,6 +41,7 @@ export class KpiCatalogResponseDto {
       meta.category = d.category;
       meta.unit = d.unit;
       meta.format = d.format;
+      meta.kind = d.kind ?? 'scalar';
       meta.hasSeries = typeof d.series === 'function';
       return meta;
     });

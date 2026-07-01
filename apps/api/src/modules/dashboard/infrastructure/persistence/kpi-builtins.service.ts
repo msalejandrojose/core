@@ -87,6 +87,30 @@ export class KpiBuiltinsService implements OnModuleInit {
           granularity,
         ),
     });
+
+    this.registry.register({
+      slug: 'blog.posts.draft',
+      label: 'Posts en borrador',
+      category: 'blog',
+      unit: 'count',
+      format: 'integer',
+      scalar: () => this.prisma.post.count({ where: { status: 'DRAFT' } }),
+    });
+
+    this.registry.register({
+      slug: 'files.bytes_total',
+      label: 'Almacenamiento total',
+      category: 'storage',
+      unit: 'bytes',
+      format: 'compact',
+      scalar: async () => {
+        const result = await this.prisma.storedFile.aggregate({
+          _sum: { sizeBytes: true },
+          where: { deletedAt: null },
+        });
+        return result._sum.sizeBytes ?? 0;
+      },
+    });
   }
 
   private async createdAtSeries(

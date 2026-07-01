@@ -14,7 +14,9 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { KpiRegistry } from '../../application/kpi-registry.service';
 import { GetDashboardStatsUseCase } from '../../application/use-cases/get-dashboard-stats.use-case';
+import { GetDashboardSummaryUseCase } from '../../application/use-cases/get-dashboard-summary.use-case';
 import { DashboardStatsResponseDto } from './dto/dashboard-stats-response.dto';
+import { DashboardSummaryResponseDto } from './dto/dashboard-summary.response.dto';
 import { KpiCatalogResponseDto } from './dto/kpi-catalog.response.dto';
 import { KpiSeriesQueryDto, KpiSeriesResponseDto } from './dto/kpi-series.response.dto';
 import {
@@ -31,8 +33,16 @@ const MAX_HOUR_RANGE_DAYS = 7;
 export class DashboardController {
   constructor(
     private readonly getStats: GetDashboardStatsUseCase,
+    private readonly getDashboardSummary: GetDashboardSummaryUseCase,
     private readonly kpiRegistry: KpiRegistry,
   ) {}
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Resumen de KPIs del dashboard (DASH-01).' })
+  @ApiOkResponse({ type: DashboardSummaryResponseDto })
+  async summary(): Promise<DashboardSummaryResponseDto> {
+    return this.getDashboardSummary.execute();
+  }
 
   @Get('stats')
   @ApiOperation({ summary: 'Métricas agregadas para el dashboard del backoffice.' })
@@ -69,6 +79,16 @@ export class DashboardController {
     });
 
     return { values };
+  }
+
+  @Get('kpis/:slug/value')
+  @ApiOperation({ summary: 'Valor escalar actual de un KPI individual.' })
+  @ApiOkResponse({ type: KpiValueItemDto })
+  async kpiValue(@Param('slug') slug: string): Promise<KpiValueItemDto> {
+    const def = this.kpiRegistry.get(slug);
+    if (!def) throw new NotFoundException(`KPI '${slug}' not found`);
+    const value = await def.scalar();
+    return { slug, value };
   }
 
   @Get('kpis/:slug/series')
