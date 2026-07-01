@@ -8,6 +8,7 @@ export interface KpiMeta {
   category: string;
   unit: 'count' | 'bytes' | 'percent' | 'currency' | 'duration_ms';
   format?: 'integer' | 'decimal' | 'compact';
+  kind: 'scalar' | 'computed';
   hasSeries: boolean;
 }
 

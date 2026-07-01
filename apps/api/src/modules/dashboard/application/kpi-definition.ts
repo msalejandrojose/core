@@ -23,8 +23,10 @@ export interface KpiDefinition {
   category: string;
   unit: 'count' | 'bytes' | 'percent' | 'currency' | 'duration_ms';
   format?: 'integer' | 'decimal' | 'compact';
+  /** 'scalar' for direct DB queries; 'computed' for derived expressions. */
+  kind?: 'scalar' | 'computed';
   /** Returns the current aggregate value. */
-  scalar: () => Promise<number>;
+  scalar: () => Promise<number | null>;
   /** Optional: time-series breakdown over a date range. */
   series?: (range: Range, granularity: Granularity) => Promise<KpiSeriesPoint[]>;
 }
