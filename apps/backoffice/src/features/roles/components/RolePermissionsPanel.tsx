@@ -25,7 +25,7 @@ export function RolePermissionsPanel({ roleId }: { roleId: string }) {
   const [pendingRevokeId, setPendingRevokeId] = useState<string | null>(null);
 
   const permMap = new Map(
-    (permissions ?? []).map((p) => [p.apiSectionId, p.level]),
+    (permissions ?? []).map((p: any) => [p.apiSectionId, p.level]),
   );
 
   function handleChange(sectionId: string, level: PermissionLevel) {
@@ -54,7 +54,7 @@ export function RolePermissionsPanel({ roleId }: { roleId: string }) {
     const q = search.trim().toLowerCase();
     if (!q) return all;
     return all.filter(
-      (s) =>
+      (s: any) =>
         s.name.toLowerCase().includes(q) ||
         s.code.toLowerCase().includes(q),
     );
@@ -92,8 +92,8 @@ export function RolePermissionsPanel({ roleId }: { roleId: string }) {
         <p className="text-muted-foreground py-4 text-center text-sm">Sin resultados para "{search}"</p>
       ) : (
         <div className="space-y-0">
-          {list.map((section) => {
-            const current: PermissionLevel = permMap.get(section.id) ?? 'NONE';
+          {list.map((section: any) => {
+            const current: PermissionLevel = (permMap.get(section.id) ?? 'NONE') as PermissionLevel;
             const isPendingRevoke = pendingRevokeId === section.id;
 
             return (

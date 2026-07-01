@@ -33,7 +33,7 @@ export function TagMultiSelect({ value, onChange }: TagMultiSelectProps) {
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {tags.map((tag) => {
+      {tags.map((tag: any) => {
         const selected = value.includes(tag.id);
         return (
           <button key={tag.id} type="button" onClick={() => toggle(tag.id)}>

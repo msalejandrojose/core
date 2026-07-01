@@ -262,7 +262,7 @@ function PostEditorForm({ post }: { post?: PostDetail }) {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NO_CATEGORY}>Sin categoría</SelectItem>
-                        {categories.map((c) => (
+                        {categories.map((c: any) => (
                           <SelectItem key={c.id} value={c.id}>
                             {c.name}
                           </SelectItem>

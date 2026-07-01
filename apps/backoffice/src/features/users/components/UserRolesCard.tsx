@@ -30,9 +30,9 @@ export function UserRolesCard({ userId }: { userId: string }) {
   // asignar para que vuelva a mostrar el placeholder.
   const [selected, setSelected] = useState('');
 
-  const assignedIds = new Set((assigned ?? []).map((r) => r.id));
+  const assignedIds = new Set((assigned ?? []).map((r: any) => r.id));
   const assignable = (allRoles?.data ?? []).filter(
-    (r) => !assignedIds.has(r.id),
+    (r: any) => !assignedIds.has(r.id),
   );
 
   function handleAssign(roleId: string) {
@@ -48,7 +48,7 @@ export function UserRolesCard({ userId }: { userId: string }) {
     <div className="space-y-4">
       {assigned && assigned.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {assigned.map((r) => (
+          {assigned.map((r: any) => (
             <Badge key={r.id} variant="outline" className="gap-1 pr-1">
               {r.name}
               <button
@@ -79,7 +79,7 @@ export function UserRolesCard({ userId }: { userId: string }) {
           />
         </SelectTrigger>
         <SelectContent>
-          {assignable.map((r) => (
+          {assignable.map((r: any) => (
             <SelectItem key={r.id} value={r.id}>
               {r.name}
               <span className="text-muted-foreground ml-1 font-mono text-xs">

@@ -54,7 +54,7 @@ function Fieldset({ legend, children }: { legend: string; children: React.ReactN
 export function EditRoleForm({ role }: EditRoleFormProps) {
   const { mutate, isPending } = useUpdateRole(role.id);
   const { data: rolesData } = useRoles({ page: 1, limit: 100 });
-  const parentOptions = (rolesData?.data ?? []).filter((r) => r.id !== role.id);
+  const parentOptions = (rolesData?.data ?? []).filter((r: any) => r.id !== role.id);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -117,7 +117,7 @@ export function EditRoleForm({ role }: EditRoleFormProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_PARENT}>Sin rol padre</SelectItem>
-                  {parentOptions.map((r) => (
+                  {parentOptions.map((r: any) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.name}
                     </SelectItem>
