@@ -12,7 +12,7 @@ export interface CreateApiSectionInput {
 
 export function useCreateApiSection({
   onSuccess,
-}: { onSuccess?: () => void } = {}) {
+}: { onSuccess?: (id: string) => void } = {}) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: CreateApiSectionInput) => {
@@ -20,10 +20,10 @@ export function useCreateApiSection({
       if (error) throw error;
       return data;
     },
-    onSuccess() {
+    onSuccess(data) {
       qc.invalidateQueries({ queryKey: ['api-sections'] });
       toast.success('Sección creada correctamente');
-      onSuccess?.();
+      onSuccess?.(data!.id);
     },
     onError(error) {
       toast.error(getApiErrorMessage(error, 'Error al crear la sección'));
