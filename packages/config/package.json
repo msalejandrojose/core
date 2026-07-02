@@ -7,7 +7,10 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./stack.schema.json": "./stack.schema.json"
+    "./stack.schema.json": "./stack.schema.json",
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/node.json": "./tsconfig/node.json",
+    "./tsconfig/bundler.json": "./tsconfig/bundler.json"
   },
   "scripts": {
     "test": "node --test --experimental-strip-types"
