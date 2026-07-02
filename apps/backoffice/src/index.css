@@ -6,98 +6,111 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Sistema visual del backoffice (TASK-74, Fase 0).
- * Dirección: admin "quiet" pero intencional. Neutros fríos + un único acento
- * de marca terracota/clay (coherente con el design system de la app mobile),
- * usado con moderación (acción primaria, foco, estado activo). Tipografía
- * Geist (UI) + Geist Mono (IDs/códigos). OKLCH en todo el ramp.
+ * Sistema visual del backoffice — paleta greige cálida + acento clay.
+ * Tokens extraídos píxel a píxel de la app de Claude (iOS), convertidos a oklch.
+ * Tipografía: Geist (UI) + Geist Mono (IDs/códigos).
  */
 :root {
-  --radius: 0.625rem;
+  --radius: 1rem;
 
-  /* Motion: easings exponenciales (sin bounce) + duraciones. */
+  /* Motion */
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-fast: 120ms;
   --duration-base: 180ms;
   --duration-slow: 260ms;
 
-  --background: oklch(0.993 0.002 67);
-  --foreground: oklch(0.2 0.008 67);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.008 67);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.008 67);
+  /* Superficies cálidas (greige) */
+  --background: oklch(0.952 0.004 91.4);        /* #F0EFEC fondo app */
+  --foreground: oklch(0.284 0.005 106.7);        /* #2A2A27 near-black cálido */
+  --card: oklch(0.982 0.003 106.4);             /* #F9F9F7 superficie elevada */
+  --card-foreground: oklch(0.284 0.005 106.7);
+  --popover: oklch(0.982 0.003 106.4);
+  --popover-foreground: oklch(0.284 0.005 106.7);
 
-  /* Acento de marca: terracota/clay. */
-  --primary: oklch(0.55 0.132 41);
-  --primary-foreground: oklch(0.99 0.005 67);
+  /* Marca = clay/terracota */
+  --primary: oklch(0.610 0.114 41.7);           /* #BC6A4A */
+  --primary-foreground: oklch(0.985 0.002 106);
+  --primary-pressed: oklch(0.546 0.116 40.4);   /* #A85638 hover/pressed */
 
-  --secondary: oklch(0.968 0.003 67);
-  --secondary-foreground: oklch(0.25 0.01 67);
-  --muted: oklch(0.968 0.003 67);
-  /* Más oscuro que el shadcn por defecto para cumplir contraste AA. */
-  --muted-foreground: oklch(0.485 0.012 67);
-  --accent: oklch(0.958 0.012 50);
-  --accent-foreground: oklch(0.35 0.06 41);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.004 67);
-  --input: oklch(0.91 0.004 67);
-  --ring: oklch(0.55 0.132 41);
+  /* Secundario / inset */
+  --secondary: oklch(0.937 0.008 91.5);         /* #ECEAE4 campos inset */
+  --secondary-foreground: oklch(0.284 0.005 106.7);
+  --muted: oklch(0.937 0.008 91.5);
+  --muted-foreground: oklch(0.674 0.015 88.7);  /* #9A968C cabeceras/captions */
+  --accent: oklch(0.924 0.007 97.4);            /* #E7E6E1 fila hover */
+  --accent-foreground: oklch(0.284 0.005 106.7);
 
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  /* Funcionales */
+  --destructive: oklch(0.514 0.128 28.4);       /* #A4453B brick */
+  --border: oklch(0.913 0.010 87.5);            /* #E5E2DB hairline */
+  --input: oklch(0.913 0.010 87.5);
+  --ring: oklch(0.610 0.114 41.7);
 
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.2 0.008 67);
-  --sidebar-primary: oklch(0.55 0.132 41);
-  --sidebar-primary-foreground: oklch(0.99 0.005 67);
-  --sidebar-accent: oklch(0.968 0.003 67);
-  --sidebar-accent-foreground: oklch(0.25 0.01 67);
-  --sidebar-border: oklch(0.91 0.004 67);
-  --sidebar-ring: oklch(0.55 0.132 41);
+  /* Extras de marca */
+  --info: oklch(0.536 0.152 258.4);             /* azul funcional (toggles, selección) */
+  --brand-purple: oklch(0.569 0.174 284.4);
+
+  /* Charts: clay + análogos cálidos + azul/púrpura funcionales */
+  --chart-1: oklch(0.610 0.114 41.7);           /* clay */
+  --chart-2: oklch(0.536 0.152 258.4);          /* blue */
+  --chart-3: oklch(0.569 0.174 284.4);          /* purple */
+  --chart-4: oklch(0.674 0.015 88.7);           /* greige */
+  --chart-5: oklch(0.514 0.128 28.4);           /* brick */
+
+  /* Sidebar */
+  --sidebar: oklch(0.982 0.003 106.4);
+  --sidebar-foreground: oklch(0.284 0.005 106.7);
+  --sidebar-primary: oklch(0.610 0.114 41.7);
+  --sidebar-primary-foreground: oklch(0.985 0.002 106);
+  --sidebar-accent: oklch(0.924 0.007 97.4);
+  --sidebar-accent-foreground: oklch(0.284 0.005 106.7);
+  --sidebar-border: oklch(0.913 0.010 87.5);
+  --sidebar-ring: oklch(0.610 0.114 41.7);
 }
 
 .dark {
-  --background: oklch(0.165 0.005 67);
-  --foreground: oklch(0.97 0.003 67);
-  --card: oklch(0.212 0.006 67);
-  --card-foreground: oklch(0.97 0.003 67);
-  --popover: oklch(0.212 0.006 67);
-  --popover-foreground: oklch(0.97 0.003 67);
+  /* Oscuro CÁLIDO (no zinc/slate azulado por defecto de shadcn) */
+  --background: oklch(0.222 0.004 84.6);        /* #1C1B19 */
+  --foreground: oklch(0.958 0.007 97.4);        /* #F2F1EC */
+  --card: oklch(0.265 0.004 84.6);             /* #262523 */
+  --card-foreground: oklch(0.958 0.007 97.4);
+  --popover: oklch(0.265 0.004 84.6);
+  --popover-foreground: oklch(0.958 0.007 97.4);
 
-  /* Terracota un punto más claro para contraste en oscuro. */
-  --primary: oklch(0.7 0.13 44);
-  --primary-foreground: oklch(0.2 0.03 41);
+  --primary: oklch(0.690 0.103 46.8);           /* clay on dark #D08763 */
+  --primary-foreground: oklch(0.222 0.004 84.6);
+  --primary-pressed: oklch(0.620 0.110 44);
 
-  --secondary: oklch(0.274 0.006 67);
-  --secondary-foreground: oklch(0.97 0.003 67);
-  --muted: oklch(0.274 0.006 67);
-  --muted-foreground: oklch(0.72 0.013 67);
-  --accent: oklch(0.29 0.018 45);
-  --accent-foreground: oklch(0.97 0.003 67);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.13 44);
+  --secondary: oklch(0.301 0.005 91.6);         /* #2F2E2B inset */
+  --secondary-foreground: oklch(0.958 0.007 97.4);
+  --muted: oklch(0.301 0.005 91.6);
+  --muted-foreground: oklch(0.696 0.015 88.7);  /* #A19D93 */
+  --accent: oklch(0.333 0.012 93.8);
+  --accent-foreground: oklch(0.958 0.007 97.4);
 
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --destructive: oklch(0.669 0.131 32.9);       /* brick on dark #D9745F */
+  --border: oklch(0.333 0.012 93.8);            /* #38362F */
+  --input: oklch(0.333 0.012 93.8);
+  --ring: oklch(0.690 0.103 46.8);
 
-  --sidebar: oklch(0.212 0.006 67);
-  --sidebar-foreground: oklch(0.97 0.003 67);
-  --sidebar-primary: oklch(0.7 0.13 44);
-  --sidebar-primary-foreground: oklch(0.2 0.03 41);
-  --sidebar-accent: oklch(0.274 0.006 67);
-  --sidebar-accent-foreground: oklch(0.97 0.003 67);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.7 0.13 44);
+  --info: oklch(0.701 0.119 257.9);             /* blue on dark #6FA0E8 */
+  --brand-purple: oklch(0.701 0.140 284);
+
+  --chart-1: oklch(0.690 0.103 46.8);
+  --chart-2: oklch(0.701 0.119 257.9);
+  --chart-3: oklch(0.701 0.140 284);
+  --chart-4: oklch(0.696 0.015 88.7);
+  --chart-5: oklch(0.669 0.131 32.9);
+
+  --sidebar: oklch(0.265 0.004 84.6);
+  --sidebar-foreground: oklch(0.958 0.007 97.4);
+  --sidebar-primary: oklch(0.690 0.103 46.8);
+  --sidebar-primary-foreground: oklch(0.222 0.004 84.6);
+  --sidebar-accent: oklch(0.333 0.012 93.8);
+  --sidebar-accent-foreground: oklch(0.958 0.007 97.4);
+  --sidebar-border: oklch(0.333 0.012 93.8);
+  --sidebar-ring: oklch(0.690 0.103 46.8);
 }
 
 @theme inline {
@@ -139,6 +152,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-info: var(--info);
+  --color-brand-purple: var(--brand-purple);
 }
 
 @layer base {
@@ -154,8 +169,16 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  /* Números tabulares en tablas: las columnas de cifras alinean. */
   table {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .shadow-card {
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.04), 0 1px 1px oklch(0 0 0 / 0.03);
+  }
+  .shadow-floating {
+    box-shadow: 0 8px 24px oklch(0 0 0 / 0.10), 0 2px 6px oklch(0 0 0 / 0.06);
   }
 }
