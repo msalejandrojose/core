@@ -1,0 +1,10 @@
+{
+  "extends": "@core/config/tsconfig/bundler.json",
+  "compilerOptions": {
+    "declaration": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

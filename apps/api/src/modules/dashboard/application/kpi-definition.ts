@@ -1,4 +1,6 @@
-export type Granularity = 'hour' | 'day' | 'week' | 'month';
+import type { Granularity } from '@core/shared-types';
+
+export type { Granularity };
 
 export interface Range {
   /** ISO date string (YYYY-MM-DD) */

@@ -1,5 +1,6 @@
-export type FormResponsePolicy = 'SINGLE_PER_LINK' | 'SINGLE_PER_USER' | 'UNLIMITED';
-export type FormInstanceStatus = 'ACTIVE' | 'CLOSED';
+import type { FormResponsePolicy, FormInstanceStatus } from '@core/shared-types';
+
+export type { FormResponsePolicy, FormInstanceStatus };
 
 export interface FormInstance {
   id: string;

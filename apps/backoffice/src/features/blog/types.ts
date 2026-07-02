@@ -1,11 +1,8 @@
-export const POST_STATUSES = [
-  'DRAFT',
-  'SCHEDULED',
-  'PUBLISHED',
-  'ARCHIVED',
-] as const;
+import type { PostStatus } from '@core/shared-types';
+import { POST_STATUSES } from '@core/shared-types';
 
-export type PostStatus = (typeof POST_STATUSES)[number];
+export type { PostStatus };
+export { POST_STATUSES };
 
 /** Fila del listado de posts (versión resumida, sin `content`). */
 export interface PostRow {

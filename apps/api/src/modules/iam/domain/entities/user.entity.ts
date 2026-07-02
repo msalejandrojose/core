@@ -1,4 +1,6 @@
-export type UserType = 'BACKOFFICE' | 'APP';
+import type { UserType } from '@core/shared-types';
+
+export type { UserType };
 
 // Entidad de dominio pura. No depende de Prisma ni de Nest. Si necesitas
 // crear un User desde una fila de BBDD, usa el `UserMapper` en
