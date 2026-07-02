@@ -1,4 +1,6 @@
-export type FormStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+import type { FormStatus } from '@core/shared-types';
+
+export type { FormStatus };
 
 export interface Form {
   id: string;

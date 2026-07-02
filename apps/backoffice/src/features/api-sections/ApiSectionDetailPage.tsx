@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Pencil, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
+import { useDetailMode } from '@/lib/use-detail-mode';
 import { FieldWrapper } from '@/components/forms/FieldWrapper';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,19 +49,13 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-type Mode = 'view' | 'edit' | 'create';
 
 export function ApiSectionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const location = useLocation();
   const navigate = useNavigate();
 
   const isCreate = !id;
-  const initialMode: Mode = isCreate
-    ? 'create'
-    : (location.state as { mode?: Mode } | null)?.mode ?? 'view';
-
-  const [mode, setMode] = useState<Mode>(initialMode);
+  const { mode, isEditable, enterEdit, enterView } = useDetailMode(isCreate);
 
   const { data: section, isLoading } = useApiSection(id ?? '');
   const { data: sections } = useApiSections();
@@ -68,7 +63,7 @@ export function ApiSectionDetailPage() {
   const parentOptions = (sections?.data ?? []).filter((s: any) => s.id !== id);
 
   const create = useCreateApiSection({
-    onSuccess: () => navigate('/sections', { replace: true }),
+    onSuccess: (newId) => navigate(`/sections/${newId}`, { replace: true }),
   });
   const update = useUpdateApiSection(id ?? '');
 
@@ -111,7 +106,7 @@ export function ApiSectionDetailPage() {
           description: values.description || null,
           parentSectionId,
         },
-        { onSuccess: () => setMode('view') },
+        { onSuccess: () => enterView() },
       );
     }
   });
@@ -126,11 +121,10 @@ export function ApiSectionDetailPage() {
         description: section?.description ?? '',
         parentSectionId: section?.parentSectionId ?? NO_PARENT,
       });
-      setMode('view');
+      enterView();
     }
   };
 
-  const isEditable = mode === 'edit' || mode === 'create';
   const isPending = create.isPending || update.isPending;
 
   const title =
@@ -152,7 +146,7 @@ export function ApiSectionDetailPage() {
 
         <div className="flex gap-2">
           {mode === 'view' && (
-            <Button variant="outline" onClick={() => setMode('edit')}>
+            <Button variant="outline" onClick={enterEdit}>
               <Pencil size={14} />
               Editar
             </Button>

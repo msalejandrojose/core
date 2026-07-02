@@ -1,4 +1,6 @@
-export type WidgetType = 'KPI_CARD' | 'LINE' | 'BAR' | 'AREA' | 'GAUGE';
+import type { WidgetType } from '@core/shared-types';
+
+export type { WidgetType };
 
 export interface DashboardWidget {
   id: string;

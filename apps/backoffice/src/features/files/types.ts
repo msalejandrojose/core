@@ -1,3 +1,5 @@
+import type { StorageDriverName, StoredFileStatus } from '@core/shared-types';
+
 /** Metadata de un fichero almacenado (alineada con `StoredFileResponseDto`). */
 export interface StoredFile {
   id: string;
@@ -5,8 +7,8 @@ export interface StoredFile {
   originalName: string;
   mimeType: string;
   sizeBytes: number;
-  driver: string;
-  status: string;
+  driver: StorageDriverName;
+  status: StoredFileStatus;
   createdAt: string;
   updatedAt: string;
 }

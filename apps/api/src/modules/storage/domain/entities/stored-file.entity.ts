@@ -1,5 +1,6 @@
-export type StorageDriverName = 'LOCAL' | 'S3' | 'GCS';
-export type StoredFileStatus = 'PENDING' | 'READY';
+import type { StorageDriverName, StoredFileStatus } from '@core/shared-types';
+
+export type { StorageDriverName, StoredFileStatus };
 
 export interface StoredFile {
   id: string;
