@@ -1,11 +1,4 @@
 import type {
-  Field,
-  FormSchema,
-  SelectOption,
-  Validation,
-} from '@core/forms';
-import type {
-  FormFieldOption,
   FormFieldSchema,
   FormFieldType,
   FormSchemaJson,
@@ -93,69 +86,9 @@ export function duplicateKeys(fields: FormFieldSchema[]): Set<string> {
   return dups;
 }
 
-// --- Adaptador al schema de `@core/forms` -----------------------------------
-
-function toOptions(options: FormFieldOption[] | undefined): SelectOption[] {
-  return (options ?? []).map((o) => ({ value: o.value, label: o.label }));
-}
-
-function toValidations(field: FormFieldSchema): Validation[] {
-  const validations: Validation[] = [];
-  if (field.required) validations.push({ kind: 'required' });
-  if (field.type === 'email') validations.push({ kind: 'email' });
-  if (typeof field.minLength === 'number')
-    validations.push({ kind: 'minLength', value: field.minLength });
-  if (typeof field.maxLength === 'number')
-    validations.push({ kind: 'maxLength', value: field.maxLength });
-  if (typeof field.min === 'number')
-    validations.push({ kind: 'min', value: field.min });
-  if (typeof field.max === 'number')
-    validations.push({ kind: 'max', value: field.max });
-  if (field.pattern && field.pattern.trim())
-    validations.push({ kind: 'pattern', value: field.pattern });
-  return validations;
-}
-
-/**
- * Traduce el schema persistido del backoffice al schema declarativo de
- * `@core/forms`, de modo que el mismo `FormRenderer` compartido pinte tanto el
- * preview del builder como (a futuro) el formulario público. Garantiza paridad
- * WYSIWYG sin duplicar lógica de render.
- */
-export function apiSchemaToCoreSchema(schema: FormSchemaJson): FormSchema {
-  const fields: Field[] = schema.fields.map((f) => {
-    const base = {
-      name: f.key,
-      label: f.label,
-      placeholder: f.placeholder,
-      helpText: f.helpText,
-      required: f.required,
-      validations: toValidations(f),
-    };
-    switch (f.type) {
-      case 'textarea':
-        return { ...base, type: 'textarea', rows: f.rows };
-      case 'number':
-        return { ...base, type: 'number', min: f.min, max: f.max, step: f.step };
-      case 'select':
-        return { ...base, type: 'select', options: toOptions(f.options) };
-      case 'multiselect':
-        return { ...base, type: 'multiselect', options: toOptions(f.options) };
-      case 'radio':
-        return { ...base, type: 'radio', options: toOptions(f.options) };
-      case 'checkbox':
-        return { ...base, type: 'checkbox' };
-      case 'email':
-        return { ...base, type: 'email' };
-      case 'date':
-        return { ...base, type: 'date' };
-      case 'text':
-      default:
-        return { ...base, type: 'text' };
-    }
-  });
-  return { fields };
-}
+// El adaptador schema-API → `@core/forms` vive en el package compartido para
+// reutilizarse también en la web pública; se re-exporta por conveniencia.
+export { apiSchemaToCoreSchema } from '@core/forms';
 
 /** Formatea el valor de una respuesta para lectura, resolviendo labels de opciones. */
 export function formatAnswer(

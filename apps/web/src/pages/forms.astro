@@ -1,0 +1,20 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import DynamicForm from '../components/islands/DynamicForm';
+---
+
+<MarketingLayout
+  title="Formulario"
+  description="Completa el formulario."
+>
+  <section class="py-20 lg:py-28">
+    <div class="mx-auto w-full max-w-2xl px-6 lg:px-8">
+      <!--
+        Isla client:only — el formulario se resuelve enteramente en el cliente a
+        partir del hash de instancia (`?f=<hash>`): no tiene sentido prerenderizarlo
+        en el build estático.
+      -->
+      <DynamicForm client:only="react" />
+    </div>
+  </section>
+</MarketingLayout>

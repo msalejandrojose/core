@@ -318,6 +318,9 @@ importers:
       '@astrojs/sitemap':
         specifier: ^3.2.0
         version: 3.7.3
+      '@core/forms':
+        specifier: workspace:*
+        version: link:../../packages/forms
       '@fontsource-variable/fraunces':
         specifier: ^5.0.0
         version: 5.2.9

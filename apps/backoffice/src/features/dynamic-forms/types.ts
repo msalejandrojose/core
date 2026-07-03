@@ -1,11 +1,19 @@
 /**
  * Tipos del módulo de formularios dinámicos del backoffice.
  *
- * El `schema` de un formulario se persiste como JSON opaco en la API (que solo
- * valida `version` + `fields[].key` + `fields[].type`). El backoffice es dueño
- * de la forma concreta de ese JSON: la define aquí (`FormFieldSchema`) y la
- * traduce al schema de `@core/forms` para el preview (ver `schema.ts`).
+ * La forma JSON del schema (`FormFieldSchema` / `FormSchemaJson`) y el adaptador
+ * al schema declarativo viven en `@core/forms` para compartirse con la web
+ * pública; aquí se re-exportan por conveniencia y se añaden los DTOs y enums
+ * propios del backoffice.
  */
+import type {
+  FormFieldOption,
+  FormFieldSchema,
+  FormFieldType,
+  FormSchemaJson,
+} from '@core/forms';
+
+export type { FormFieldOption, FormFieldSchema, FormFieldType, FormSchemaJson };
 
 /** Envoltura de paginación por cursor devuelta por la API. */
 export interface CursorPage<T> {
@@ -21,52 +29,6 @@ export type FormResponsePolicy =
   | 'UNLIMITED';
 
 export type FormInstanceStatus = 'ACTIVE' | 'CLOSED';
-
-/** Tipos de campo que ofrece el builder (subconjunto soportado por la API). */
-export type FormFieldType =
-  | 'text'
-  | 'textarea'
-  | 'email'
-  | 'number'
-  | 'select'
-  | 'multiselect'
-  | 'checkbox'
-  | 'radio'
-  | 'date';
-
-export interface FormFieldOption {
-  value: string;
-  label: string;
-}
-
-/** Un campo del schema tal como lo persiste el backoffice. */
-export interface FormFieldSchema {
-  key: string;
-  type: FormFieldType;
-  label?: string;
-  placeholder?: string;
-  helpText?: string;
-  required?: boolean;
-  /** select / multiselect / radio */
-  options?: FormFieldOption[];
-  /** text / textarea / email */
-  minLength?: number;
-  maxLength?: number;
-  /** number */
-  min?: number;
-  max?: number;
-  step?: number;
-  /** text / textarea / email (regex sin delimitadores) */
-  pattern?: string;
-  /** textarea */
-  rows?: number;
-}
-
-/** Schema completo persistido en `Form.schema`. */
-export interface FormSchemaJson {
-  version: number;
-  fields: FormFieldSchema[];
-}
 
 export interface FormDto {
   id: string;

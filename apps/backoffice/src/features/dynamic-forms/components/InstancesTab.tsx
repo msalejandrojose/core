@@ -25,7 +25,7 @@ import {
 
 function publicUrl(hash: string): string {
   const base = import.meta.env.VITE_PUBLIC_FORMS_URL ?? window.location.origin;
-  return `${base.replace(/\/$/, '')}/forms/${hash}`;
+  return `${base.replace(/\/$/, '')}/forms?f=${encodeURIComponent(hash)}`;
 }
 
 export function InstancesTab({ formId }: { formId: string }) {
