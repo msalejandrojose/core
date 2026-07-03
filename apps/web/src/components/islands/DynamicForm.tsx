@@ -311,7 +311,7 @@ function Control({
           <option value="" disabled>
             {placeholder ?? 'Selecciona una opción'}
           </option>
-          {field.options.map((opt) => (
+          {(field.options ?? []).map((opt) => (
             <option key={opt.value} value={opt.value} disabled={opt.disabled}>
               {opt.label}
             </option>
@@ -321,7 +321,7 @@ function Control({
     case 'radio':
       return (
         <div className="space-y-2">
-          {field.options.map((opt) => {
+          {(field.options ?? []).map((opt) => {
             const id = `${field.name}-${opt.value}`;
             return (
               <label
@@ -351,7 +351,7 @@ function Control({
         onChange(checked ? [...selected, v] : selected.filter((x) => x !== v));
       return (
         <div className="space-y-2">
-          {field.options.map((opt) => {
+          {(field.options ?? []).map((opt) => {
             const id = `${field.name}-${opt.value}`;
             return (
               <label

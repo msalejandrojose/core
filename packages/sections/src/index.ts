@@ -9,3 +9,9 @@ export type {
 
 export { defineSection } from './helpers/define-section.js';
 export { findSection, flattenTree, walkTree } from './helpers/walk-tree.js';
+
+export {
+  createSectionFormRepository,
+  type SectionSource,
+  type SectionFormRepositoryOptions,
+} from './form-repository.js';

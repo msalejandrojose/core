@@ -250,7 +250,7 @@ function renderControl(
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>
-            {field.options.map((opt) => (
+            {(field.options ?? []).map((opt) => (
               <SelectItem
                 key={opt.value}
                 value={opt.value}
@@ -269,7 +269,7 @@ function renderControl(
           onValueChange={rhf.onChange}
           disabled={disabled}
         >
-          {field.options.map((opt) => {
+          {(field.options ?? []).map((opt) => {
             const id = `${rhf.name}-${opt.value}`;
             return (
               <div key={opt.value} className="flex items-center gap-2">
@@ -312,7 +312,7 @@ function renderControl(
       };
       return (
         <div className="grid gap-2">
-          {field.options.map((opt) => {
+          {(field.options ?? []).map((opt) => {
             const id = `${rhf.name}-${opt.value}`;
             return (
               <div key={opt.value} className="flex items-center gap-2">

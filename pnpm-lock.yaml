@@ -373,7 +373,11 @@ importers:
 
   packages/forms: {}
 
-  packages/sections: {}
+  packages/sections:
+    dependencies:
+      '@core/forms':
+        specifier: workspace:*
+        version: link:../forms
 
   packages/shared-types:
     dependencies:
