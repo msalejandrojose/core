@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__461cd94a-2fb6-4afc-a451-0067ea8910ac__notion-create-pages",
+      "mcp__461cd94a-2fb6-4afc-a451-0067ea8910ac__notion-update-page",
+      "mcp__461cd94a-2fb6-4afc-a451-0067ea8910ac__notion-update-data-source",
+      "mcp__461cd94a-2fb6-4afc-a451-0067ea8910ac__notion-search",
+      "mcp__461cd94a-2fb6-4afc-a451-0067ea8910ac__notion-fetch",
+      "mcp__461cd94a-2fb6-4afc-a451-0067ea8910ac__notion-create-database",
+      "mcp__461cd94a-2fb6-4afc-a451-0067ea8910ac__notion-create-comment",
+      "mcp__461cd94a-2fb6-4afc-a451-0067ea8910ac__notion-move-pages",
+      "mcp__Notion__notion-create-pages",
+      "mcp__Notion__notion-update-page",
+      "mcp__Notion__notion-update-data-source",
+      "mcp__Notion__notion-search",
+      "mcp__Notion__notion-fetch",
+      "mcp__Notion__notion-create-database",
+      "mcp__Notion__notion-create-comment",
+      "mcp__Notion__notion-move-pages"
+    ]
+  }
+}
