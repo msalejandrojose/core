@@ -92,6 +92,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
     route: '/files',
     order: 4,
   },
+  {
+    code: 'forms',
+    name: 'Formularios',
+    icon: 'ClipboardList',
+    route: '/forms',
+    order: 5,
+  },
 ];
 
 const ADMIN_ROLE_CODE = 'admin';

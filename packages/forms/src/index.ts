@@ -17,6 +17,7 @@ export type {
   NumberField,
   SelectField,
   MultiselectField,
+  RadioField,
   CheckboxField,
   ToggleField,
   DateField,

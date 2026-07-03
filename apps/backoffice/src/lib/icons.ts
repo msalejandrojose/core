@@ -1,5 +1,6 @@
 import {
   Circle,
+  ClipboardList,
   Files,
   LayoutDashboard,
   LayoutList,
@@ -20,6 +21,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Settings,
   LayoutList,
   Newspaper,
+  ClipboardList,
   // Añadir según se creen secciones nuevas.
 };
 

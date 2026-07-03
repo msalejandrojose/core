@@ -12,6 +12,7 @@ export const es = {
       roles: 'Roles',
       sections: 'Secciones',
       files: 'Archivos',
+      forms: 'Formularios',
     },
     userMenu: {
       profile: 'Perfil',

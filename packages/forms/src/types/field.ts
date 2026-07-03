@@ -78,6 +78,12 @@ export interface MultiselectField extends DataFieldBase {
   defaultValue?: string[];
 }
 
+export interface RadioField extends DataFieldBase {
+  type: 'radio';
+  options: SelectOption[];
+  defaultValue?: string;
+}
+
 export interface CheckboxField extends DataFieldBase {
   type: 'checkbox';
   defaultValue?: boolean;
@@ -140,6 +146,7 @@ export type DataField =
   | NumberField
   | SelectField
   | MultiselectField
+  | RadioField
   | CheckboxField
   | ToggleField
   | DateField
