@@ -10,5 +10,8 @@
   },
   "scripts": {
     "test": "node --test --experimental-strip-types"
+  },
+  "dependencies": {
+    "@core/forms": "workspace:*"
   }
 }

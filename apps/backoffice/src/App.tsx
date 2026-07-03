@@ -83,6 +83,16 @@ const TagsPage = lazy(() =>
 const FilesPage = lazy(() =>
   import('@/features/files/FilesPage').then((m) => ({ default: m.FilesPage })),
 );
+const FormsListPage = lazy(() =>
+  import('@/features/dynamic-forms/FormsListPage').then((m) => ({
+    default: m.FormsListPage,
+  })),
+);
+const FormDetailPage = lazy(() =>
+  import('@/features/dynamic-forms/FormDetailPage').then((m) => ({
+    default: m.FormDetailPage,
+  })),
+);
 function PageFallback() {
   return (
     <div className="flex min-h-svh items-center justify-center">
@@ -122,6 +132,9 @@ export default function App() {
               <Route path="/blog/categories" element={<CategoriesPage />} />
               <Route path="/blog/tags" element={<TagsPage />} />
               <Route path="/files" element={<FilesPage />} />
+              <Route path="/forms" element={<FormsListPage />} />
+              <Route path="/forms/nuevo" element={<FormDetailPage />} />
+              <Route path="/forms/:id" element={<FormDetailPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>

@@ -17,6 +17,7 @@ export type {
   NumberField,
   SelectField,
   MultiselectField,
+  RadioField,
   CheckboxField,
   ToggleField,
   DateField,
@@ -54,3 +55,23 @@ export {
   type ValidateOptions,
   type ValidationResult,
 } from './validation/index.ts';
+
+// Schema persistido (forma JSON de la API) + adaptador al schema declarativo
+export type {
+  FormFieldType,
+  FormFieldOption,
+  FormFieldSchema,
+  FormSchemaJson,
+} from './persisted/types.ts';
+export { apiSchemaToCoreSchema } from './persisted/adapter.ts';
+
+// Selectores con repositorio (§5): contrato + resolución
+export type {
+  FormRepository,
+  FormRepositoryOption,
+  FormRepositoryQuery,
+  FormRepositoryResult,
+  FormRepositoryRegistry,
+  RepositorySource,
+} from './repository/types.ts';
+export { resolveFormRepositories } from './repository/resolve.ts';

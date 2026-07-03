@@ -1,5 +1,6 @@
 import type { Condition } from './condition.ts';
 import type { I18nKey, JsonValue } from './json.ts';
+import type { RepositorySource } from '../repository/types.ts';
 import type { Validation } from './validation.ts';
 
 /** Opción de un campo de selección (`select` / `multiselect`). */
@@ -68,14 +69,25 @@ export interface NumberField extends DataFieldBase {
 
 export interface SelectField extends DataFieldBase {
   type: 'select';
-  options: SelectOption[];
+  /** Opciones estáticas. Opcional si se declara `source` (repositorio). */
+  options?: SelectOption[];
+  /** Fuente de opciones por repositorio (se resuelve con `resolveFormRepositories`). */
+  source?: RepositorySource;
   defaultValue?: string;
 }
 
 export interface MultiselectField extends DataFieldBase {
   type: 'multiselect';
-  options: SelectOption[];
+  options?: SelectOption[];
+  source?: RepositorySource;
   defaultValue?: string[];
+}
+
+export interface RadioField extends DataFieldBase {
+  type: 'radio';
+  options?: SelectOption[];
+  source?: RepositorySource;
+  defaultValue?: string;
 }
 
 export interface CheckboxField extends DataFieldBase {
@@ -140,6 +152,7 @@ export type DataField =
   | NumberField
   | SelectField
   | MultiselectField
+  | RadioField
   | CheckboxField
   | ToggleField
   | DateField

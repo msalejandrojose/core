@@ -13,7 +13,10 @@ import {
   type FieldValues,
 } from 'react-hook-form';
 import { FieldWrapper } from '@/components/forms/FieldWrapper';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -247,7 +250,7 @@ function renderControl(
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>
-            {field.options.map((opt) => (
+            {(field.options ?? []).map((opt) => (
               <SelectItem
                 key={opt.value}
                 value={opt.value}
@@ -259,6 +262,75 @@ function renderControl(
           </SelectContent>
         </Select>
       );
+    case 'radio':
+      return (
+        <RadioGroup
+          value={(rhf.value as string) ?? ''}
+          onValueChange={rhf.onChange}
+          disabled={disabled}
+        >
+          {(field.options ?? []).map((opt) => {
+            const id = `${rhf.name}-${opt.value}`;
+            return (
+              <div key={opt.value} className="flex items-center gap-2">
+                <RadioGroupItem
+                  id={id}
+                  value={opt.value}
+                  disabled={opt.disabled}
+                />
+                <Label htmlFor={id} className="font-normal">
+                  {opt.label}
+                </Label>
+              </div>
+            );
+          })}
+        </RadioGroup>
+      );
+    case 'checkbox':
+      return (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={rhf.name}
+            checked={Boolean(rhf.value)}
+            onCheckedChange={(v) => rhf.onChange(v === true)}
+            disabled={disabled}
+          />
+          {placeholder && (
+            <Label htmlFor={rhf.name} className="font-normal">
+              {placeholder}
+            </Label>
+          )}
+        </div>
+      );
+    case 'multiselect': {
+      const selected = Array.isArray(rhf.value) ? (rhf.value as string[]) : [];
+      const toggle = (value: string, checked: boolean) => {
+        const next = checked
+          ? [...selected, value]
+          : selected.filter((v) => v !== value);
+        rhf.onChange(next);
+      };
+      return (
+        <div className="grid gap-2">
+          {(field.options ?? []).map((opt) => {
+            const id = `${rhf.name}-${opt.value}`;
+            return (
+              <div key={opt.value} className="flex items-center gap-2">
+                <Checkbox
+                  id={id}
+                  checked={selected.includes(opt.value)}
+                  onCheckedChange={(v) => toggle(opt.value, v === true)}
+                  disabled={disabled || opt.disabled}
+                />
+                <Label htmlFor={id} className="font-normal">
+                  {opt.label}
+                </Label>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
     default:
       // Tipo sin componente en el renderer v1 (checkbox, toggle, multiselect…).
       // Forward-compatible: avisamos en dev y no renderizamos nada.
