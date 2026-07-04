@@ -165,6 +165,8 @@ import { MailerModule } from '../mailer/mailer.module';
     ResolvePermissionUseCase,
     TOKEN_ISSUER,
     ROLE_REPOSITORY,
+    // Consumido por el resolver de target `users` de WorkflowsModule.
+    USER_REPOSITORY,
   ],
 })
 export class IamModule {}

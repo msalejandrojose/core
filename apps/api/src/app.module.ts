@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_FILTER, DiscoveryModule } from '@nestjs/core';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { IamModule } from './modules/iam/iam.module';
@@ -25,6 +26,8 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     // Necesario para el script `sync:sections`, que recorre los handlers
     // buscando metadatos `@RequiresPermission`. Pesa cero en runtime.
     DiscoveryModule,
+    // Scheduler (cron) del módulo de workflows.
+    ScheduleModule.forRoot(),
     PrismaModule,
     IamModule,
     SectionsModule,

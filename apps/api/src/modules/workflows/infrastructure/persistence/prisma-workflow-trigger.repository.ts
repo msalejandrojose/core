@@ -29,6 +29,10 @@ export class PrismaWorkflowTriggerRepository implements WorkflowTriggerRepositor
             ? Prisma.DbNull
             : (t.cronPayload as Prisma.InputJsonValue),
         nextFireAt: t.nextFireAt ?? null,
+        target:
+          t.target == null
+            ? Prisma.DbNull
+            : (t.target as Prisma.InputJsonValue),
       })),
     });
   }
@@ -42,5 +46,23 @@ export class PrismaWorkflowTriggerRepository implements WorkflowTriggerRepositor
       },
     });
     return rows.map((r) => WorkflowTriggerMapper.toDomain(r));
+  }
+
+  async findDueCronTriggers(now: Date): Promise<WorkflowTrigger[]> {
+    const rows = await this.prisma.workflowTrigger.findMany({
+      where: {
+        kind: 'CRON',
+        definition: { isActive: true },
+        OR: [{ nextFireAt: null }, { nextFireAt: { lte: now } }],
+      },
+    });
+    return rows.map((r) => WorkflowTriggerMapper.toDomain(r));
+  }
+
+  async updateNextFireAt(id: string, nextFireAt: Date): Promise<void> {
+    await this.prisma.workflowTrigger.update({
+      where: { id },
+      data: { nextFireAt },
+    });
   }
 }

@@ -14,6 +14,7 @@ export class PendingActionMapper {
       runAt: row.runAt,
       eventType: row.eventType,
       matchExpression: row.matchExpression,
+      target: row.target,
       consumedEventId: row.consumedEventId,
       createdAt: row.createdAt,
       consumedAt: row.consumedAt,

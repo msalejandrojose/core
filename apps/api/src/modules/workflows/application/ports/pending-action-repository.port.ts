@@ -14,6 +14,7 @@ export interface CreatePendingActionData {
   runAt?: Date | null;
   eventType?: string | null;
   matchExpression?: unknown;
+  target?: unknown;
 }
 
 export interface PendingActionRepositoryPort {

@@ -9,4 +9,6 @@ export interface WorkflowTrigger {
   cronExpression: string | null;
   cronPayload: unknown;
   nextFireAt: Date | null;
+  // Descriptor de target (fan-out). Null = un único run sin target.
+  target: unknown;
 }

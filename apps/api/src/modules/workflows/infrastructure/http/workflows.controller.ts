@@ -24,6 +24,8 @@ import { ListWorkflowDefinitionsUseCase } from '../../application/use-cases/list
 import { TriggerManualRunUseCase } from '../../application/use-cases/trigger-manual-run.use-case';
 import { WorkflowDefinitionResponseDto } from './dto/workflow-definition.response.dto';
 import { WorkflowRunResponseDto } from './dto/workflow-run.response.dto';
+import { WorkflowRunBatchResponseDto } from './dto/workflow-run-batch.response.dto';
+import { DispatchWorkflowDto } from './dto/dispatch-workflow.dto';
 
 @ApiTags('Workflows')
 @Controller('workflows/definitions')
@@ -109,7 +111,9 @@ export class WorkflowsController {
 
   @Post(':key/run')
   @RequiresPermission('workflows', 'WRITE')
-  @ApiOperation({ summary: 'Disparo manual de la versión activa.' })
+  @ApiOperation({
+    summary: 'Disparo manual de la versión activa (sin target).',
+  })
   @ApiBody({
     schema: { type: 'object' },
     description: 'Payload del evento sintético.',
@@ -119,7 +123,24 @@ export class WorkflowsController {
     @Param('key') key: string,
     @Body() body: unknown,
   ): Promise<WorkflowRunResponseDto> {
-    const run = await this.manualRun.execute(key, body ?? {});
+    const [run] = await this.manualRun.execute(key, body ?? {});
     return WorkflowRunResponseDto.fromDomain(run);
+  }
+
+  @Post(':key/dispatch')
+  @RequiresPermission('workflows', 'WRITE')
+  @ApiOperation({
+    summary: 'Disparo inmediato sobre un target (fan-out: un run por entidad).',
+  })
+  @ApiCreatedResponse({ type: WorkflowRunBatchResponseDto })
+  async dispatch(
+    @Param('key') key: string,
+    @Body() body: DispatchWorkflowDto,
+  ): Promise<WorkflowRunBatchResponseDto> {
+    const runs = await this.manualRun.execute(key, body.payload ?? {}, {
+      type: body.target.type,
+      filter: body.target.filter,
+    });
+    return WorkflowRunBatchResponseDto.fromDomain(runs);
   }
 }

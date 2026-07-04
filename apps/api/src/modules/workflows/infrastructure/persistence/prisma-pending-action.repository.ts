@@ -26,6 +26,10 @@ export class PrismaPendingActionRepository implements PendingActionRepositoryPor
           data.matchExpression == null
             ? Prisma.DbNull
             : (data.matchExpression as Prisma.InputJsonValue),
+        target:
+          data.target == null
+            ? Prisma.DbNull
+            : (data.target as Prisma.InputJsonValue),
       },
     });
     return PendingActionMapper.toDomain(row);

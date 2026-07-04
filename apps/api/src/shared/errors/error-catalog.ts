@@ -165,6 +165,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'No hay handler registrado para esa acción.',
   },
+  TARGET_RESOLVER_NOT_FOUND: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'No hay resolver registrado para ese tipo de target.',
+  },
 
   // Mailer
   MAIL_PROVIDER_UNAVAILABLE: {
@@ -207,7 +212,8 @@ export const ERROR_CATALOG = {
   FORM_RESPONSE_LIMIT_REACHED: {
     httpStatus: 409,
     level: 'warn',
-    defaultMessage: 'Este formulario ha alcanzado el número máximo de respuestas.',
+    defaultMessage:
+      'Este formulario ha alcanzado el número máximo de respuestas.',
   },
 
   // Sections (UI navigation tree)

@@ -72,6 +72,8 @@ export class PendingActionResponseDto {
   @ApiProperty() status: string;
   @ApiProperty({ nullable: true }) runAt: Date | null;
   @ApiProperty({ nullable: true }) eventType: string | null;
+  @ApiProperty({ nullable: true, type: 'object', additionalProperties: true })
+  target: unknown;
   @ApiProperty() createdAt: Date;
 
   static fromDomain(pa: PendingAction): PendingActionResponseDto {
@@ -82,6 +84,7 @@ export class PendingActionResponseDto {
     dto.status = pa.status;
     dto.runAt = pa.runAt;
     dto.eventType = pa.eventType;
+    dto.target = pa.target;
     dto.createdAt = pa.createdAt;
     return dto;
   }
