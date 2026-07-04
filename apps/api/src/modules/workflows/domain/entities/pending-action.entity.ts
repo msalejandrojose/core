@@ -19,6 +19,8 @@ export interface PendingAction {
   runAt: Date | null;
   eventType: string | null;
   matchExpression: unknown;
+  // Entidad target ya resuelta (fan-out) para PENDING_START. Null = sin target.
+  target: unknown;
   consumedEventId: string | null;
   createdAt: Date;
   consumedAt: Date | null;

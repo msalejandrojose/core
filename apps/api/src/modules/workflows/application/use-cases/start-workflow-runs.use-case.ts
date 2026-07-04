@@ -64,13 +64,14 @@ export class StartWorkflowRunsUseCase {
       if (max != null) {
         const active = await this.runs.countActiveByDefinition(definition.id);
         if (active >= max) {
-          // Se encola el arranque; la reanudación de PENDING_START (incluida la
-          // reinyección del target) es trabajo del scheduler en una iteración
-          // posterior.
+          // Se encola el arranque guardando la entidad target ya resuelta, de
+          // modo que el consumidor de PENDING_START (scheduler, iteración
+          // posterior) reanude el run sobre ESA entidad y no re-haga el fan-out.
           await this.pending.create({
             definitionId: definition.id,
             triggerEventId: event?.id ?? null,
             kind: 'PENDING_START',
+            target,
           });
           continue;
         }

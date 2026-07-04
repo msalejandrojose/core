@@ -151,9 +151,41 @@ describe('StartWorkflowRunsUseCase', () => {
         definitionId: 'def-1',
         triggerEventId: 'ev-1',
         kind: 'PENDING_START',
+        target: null,
       }),
     );
     expect(runs.create).not.toHaveBeenCalled();
     expect(created).toHaveLength(0);
+  });
+
+  it('al encolar por concurrencia guarda la entidad target resuelta', async () => {
+    runs.countActiveByDefinition.mockResolvedValue(5);
+    targets.resolve.mockResolvedValue([
+      { id: 'u1', entityType: 'user', data: { id: 'u1' } },
+      { id: 'u2', entityType: 'user', data: { id: 'u2' } },
+    ]);
+
+    await useCase.execute({
+      definition: makeDefinition({ maxConcurrentRuns: 1 }),
+      event,
+      triggerKind: 'cron',
+      target: { type: 'users' },
+    });
+
+    // Un PENDING_START por entidad, cada uno con SU target resuelto.
+    expect(pending.create).toHaveBeenCalledTimes(2);
+    expect(pending.create).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        kind: 'PENDING_START',
+        target: { id: 'u1', entityType: 'user', data: { id: 'u1' } },
+      }),
+    );
+    expect(pending.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        target: { id: 'u2', entityType: 'user', data: { id: 'u2' } },
+      }),
+    );
   });
 });

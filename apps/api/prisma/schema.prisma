@@ -564,6 +564,9 @@ model PendingAction {
   runAt           DateTime?           @map("run_at")
   eventType       String?             @map("event_type") @db.VarChar(120)
   matchExpression Json?               @map("match_expression")
+  // Entidad target ya resuelta (fan-out) para kind = PENDING_START, de modo que
+  // el consumidor reanude el run sobre ESA entidad. NULL = run sin target.
+  target          Json?
   consumedEventId String?             @map("consumed_event_id") @db.Char(36)
   createdAt       DateTime            @default(now()) @map("created_at")
   consumedAt      DateTime?           @map("consumed_at")
