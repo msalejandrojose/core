@@ -5,7 +5,7 @@
   "description": "Monorepo: NestJS API + Backoffice (React) + Web (Astro) + Mobile (Ionic)",
   "scripts": {
     "dev:api": "pnpm --filter @core/api start:dev",
-    "build:api": "pnpm --filter @core/api build",
+    "build:api": "pnpm --filter @core/api... build",
     "dev:backoffice": "pnpm --filter @core/backoffice dev",
     "build:backoffice": "pnpm --filter @core/backoffice build",
     "preview:backoffice": "pnpm --filter @core/backoffice preview",

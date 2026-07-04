@@ -93,6 +93,36 @@ const FormDetailPage = lazy(() =>
     default: m.FormDetailPage,
   })),
 );
+const WorkflowsListPage = lazy(() =>
+  import('@/features/workflows/WorkflowsListPage').then((m) => ({
+    default: m.WorkflowsListPage,
+  })),
+);
+const WorkflowDetailPage = lazy(() =>
+  import('@/features/workflows/WorkflowDetailPage').then((m) => ({
+    default: m.WorkflowDetailPage,
+  })),
+);
+const WorkflowEditorPage = lazy(() =>
+  import('@/features/workflows/WorkflowEditorPage').then((m) => ({
+    default: m.WorkflowEditorPage,
+  })),
+);
+const WorkflowRunsPage = lazy(() =>
+  import('@/features/workflows/WorkflowRunsPage').then((m) => ({
+    default: m.WorkflowRunsPage,
+  })),
+);
+const WorkflowRunDetailPage = lazy(() =>
+  import('@/features/workflows/WorkflowRunDetailPage').then((m) => ({
+    default: m.WorkflowRunDetailPage,
+  })),
+);
+const WorkflowEventsPage = lazy(() =>
+  import('@/features/workflows/WorkflowEventsPage').then((m) => ({
+    default: m.WorkflowEventsPage,
+  })),
+);
 function PageFallback() {
   return (
     <div className="flex min-h-svh items-center justify-center">
@@ -135,6 +165,26 @@ export default function App() {
               <Route path="/forms" element={<FormsListPage />} />
               <Route path="/forms/nuevo" element={<FormDetailPage />} />
               <Route path="/forms/:id" element={<FormDetailPage />} />
+              <Route
+                path="/workflows"
+                element={<Navigate to="/workflows/definitions" replace />}
+              />
+              <Route
+                path="/workflows/definitions"
+                element={<WorkflowsListPage />}
+              />
+              <Route path="/workflows/nuevo" element={<WorkflowEditorPage />} />
+              <Route path="/workflows/runs" element={<WorkflowRunsPage />} />
+              <Route
+                path="/workflows/runs/:id"
+                element={<WorkflowRunDetailPage />}
+              />
+              <Route path="/workflows/events" element={<WorkflowEventsPage />} />
+              <Route path="/workflows/:key" element={<WorkflowDetailPage />} />
+              <Route
+                path="/workflows/:key/editar"
+                element={<WorkflowEditorPage />}
+              />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
