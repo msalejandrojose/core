@@ -197,7 +197,7 @@ model LeadTagOnLead {
 > **Decisión — status como enum, no como tabla de pipeline configurable.**
 > El MVP usa un `LeadStatus` enum fijo. Un pipeline configurable por el usuario
 > (varios embudos, etapas custom con orden y color) queda documentado como
-> iteración 2 (§13): implicaría tablas `Pipeline` + `PipelineStage` y cambiar
+> iteración 2 (§14): implicaría tablas `Pipeline` + `PipelineStage` y cambiar
 > `status` por `stageId`. Se arranca con enum porque cubre el 90% del caso y no
 > introduce una pantalla de administración adicional.
 
@@ -428,7 +428,7 @@ UNQUALIFIED→ NEW            // reapertura permitida
 
 - Cada cambio: persiste el nuevo `status`, añade `LeadActivity STATUS_CHANGE`
   y emite `lead.status_changed` en **una transacción** (la emisión del evento
-  puede ir fire-and-forget tras el commit; ver §12).
+  puede ir fire-and-forget tras el commit; ver §13).
 - `WON` solo se alcanza vía `ConvertLeadUseCase` (exige el vínculo a User),
   no por `change-status` a pelo.
 
@@ -463,7 +463,48 @@ Todos (excepto el público) requieren JWT. Decorar con `@ApiTags('leads')`,
 `@ApiCursorPaginatedResponse(...)` y el `meta` lo construye el controller
 (§9 de la skill `core-architecture`).
 
-## 12. Transaccionalidad y errores
+## 12. Registro en el backoffice — nodo del sidebar
+
+Los endpoints de §11 existen a nivel de API, pero **no aparecen en el
+backoffice** hasta que se registra el nodo de navegación correspondiente en el
+árbol de `Section` (scope `BACKOFFICE`). El sidebar dinámico (BO-07) consume
+`GET /sections/tree?scope=BACKOFFICE` y filtra por los permisos del usuario, así
+que basta con seedear la sección y darle acceso a los roles que gestionan leads.
+
+**Seed a añadir** (en el seed de secciones del backend, junto a los de `users`,
+`blog`, etc.):
+
+```ts
+// scope BACKOFFICE. Un único nodo de primer nivel es suficiente para el MVP.
+{
+  code: 'leads',
+  name: 'Leads',                 // label directo (i18n llegará después, ver BO-07)
+  icon: 'Contact',               // nombre de icono lucide-react (añadir al ICON_MAP del front)
+  route: '/leads',
+  scope: 'BACKOFFICE',
+  order: 40,                     // colócalo según el orden deseado del menú
+  isActive: true,
+  apiRequirements: null,         // opcional: exigir permisos IAM de api-section
+}
+```
+
+- **Acceso por rol:** crear un `RoleSectionAccess` con `access = GRANT` para los
+  roles que gestionan leads (p.ej. `admin`, `comercial`/`sales`). Sin registro,
+  la sección queda oculta (deny-by-default). Un `UserSectionAccess DENY` puntual
+  permite excepciones por usuario.
+- **Sub-navegación (opcional):** si se implementa la vista Kanban del backoffice
+  como ruta separada, añadir un nodo hijo `leads.board` (`route: '/leads/board'`,
+  `parentId` = el nodo `leads`). Para el MVP con una sola pantalla de listado no
+  hace falta.
+- **Icono:** `Contact` (o `UserPlus`) debe añadirse al `ICON_MAP` de
+  `apps/backoffice/src/lib/icons.ts`; si no está, el sidebar usa el fallback.
+
+> El detalle de las **pantallas** (listado, ficha con timeline, Kanban) vive en
+> el spec de frontend
+> [`apps/backoffice/docs/specs/10-modulo-leads.md`](../../../backoffice/docs/specs/10-modulo-leads.md).
+> Este módulo de API solo aporta los endpoints y el seed de la sección.
+
+## 13. Transaccionalidad y errores
 
 - **Transición + activity** van en la misma transacción Prisma. La **emisión
   del evento** a `workflows` se hace **después del commit** (fire-and-forget con
@@ -479,7 +520,7 @@ Todos (excepto el público) requieren JWT. Decorar con `@ApiTags('leads')`,
   veces (reintento del front), no crear dos leads → buscar por `formResponseId`
   antes de crear.
 
-## 13. Fuera de scope (MVP)
+## 14. Fuera de scope (MVP)
 
 - **Pipeline configurable** (tablas `Pipeline`/`PipelineStage`, varios embudos,
   etapas custom): iteración 2. El MVP usa el enum `LeadStatus`.
@@ -494,7 +535,7 @@ Todos (excepto el público) requieren JWT. Decorar con `@ApiTags('leads')`,
 - **Reasignación round-robin / SLA**: se resuelve con workflows sobre
   `lead.created`, no con código en este módulo.
 
-## 14. Quick checks antes de implementar
+## 15. Quick checks antes de implementar
 
 - [ ] El módulo respeta la frontera `domain` ⟂ Nest/Prisma (§2.3 de `core-architecture`).
 - [ ] `leads` **no importa** `dynamic-forms` ni `notifications`; solo depende de
@@ -503,6 +544,8 @@ Todos (excepto el público) requieren JWT. Decorar con `@ApiTags('leads')`,
       `formResponseId` (idempotencia).
 - [ ] Cada controller tiene `@ApiTags`/`@ApiOperation` para `/docs`; el público
       documenta que va sin `@ApiBearerAuth`.
+- [ ] Seed de la `Section` `leads` (scope `BACKOFFICE`) + `RoleSectionAccess`
+      `GRANT` para los roles que gestionan leads (§12).
 - [ ] Los listados usan paginación por cursor (`createdAt DESC, id ASC`) y el
       `meta` lo arma el controller.
 - [ ] Las transiciones de estado se validan contra la máquina de §10.
