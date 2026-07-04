@@ -10,6 +10,7 @@ import { WORKFLOW_STEP_REPOSITORY } from './application/ports/workflow-step-repo
 import { PENDING_ACTION_REPOSITORY } from './application/ports/pending-action-repository.port';
 import { TEMPLATE_EVALUATOR } from './application/ports/template-evaluator.port';
 import { ACTION_HANDLER_REGISTRY } from './application/ports/action-handler-registry.port';
+import { CONTEXT_ENRICHER_REGISTRY } from './application/ports/context-enricher-registry.port';
 
 // Adapters
 import { PrismaEventRepository } from './infrastructure/persistence/prisma-event.repository';
@@ -20,8 +21,10 @@ import { PrismaWorkflowStepRepository } from './infrastructure/persistence/prism
 import { PrismaPendingActionRepository } from './infrastructure/persistence/prisma-pending-action.repository';
 import { JsonPathTemplateEvaluator } from './infrastructure/template/jsonpath-template.evaluator';
 import { NestActionHandlerRegistry } from './infrastructure/engine/nest-action-handler.registry';
+import { NestContextEnricherRegistry } from './infrastructure/engine/nest-context-enricher.registry';
 import { EngineActionsExecutor } from './infrastructure/engine/engine-actions.executor';
 import { LogActionHandler } from './infrastructure/handlers/log.handler';
+import { TriggerContextEnricher } from './infrastructure/enrichers/trigger-context.enricher';
 
 // Use cases
 import { AdvanceWorkflowRunUseCase } from './application/use-cases/advance-workflow-run.use-case';
@@ -80,6 +83,17 @@ import { WorkflowHandlersController } from './infrastructure/http/workflow-handl
       useFactory: (log: LogActionHandler) =>
         new NestActionHandlerRegistry([log]),
       inject: [LogActionHandler],
+    },
+
+    // Enrichers de contexto built-in. Se aplican en cadena al crear un run, en
+    // el orden en que se listan aquí. Otros módulos añadirán los suyos a esta
+    // lista cuando se añada el patrón forRoot.
+    TriggerContextEnricher,
+    {
+      provide: CONTEXT_ENRICHER_REGISTRY,
+      useFactory: (trigger: TriggerContextEnricher) =>
+        new NestContextEnricherRegistry([trigger]),
+      inject: [TriggerContextEnricher],
     },
 
     EngineActionsExecutor,
