@@ -104,3 +104,10 @@ export const TRIGGER_KIND_LABELS: Record<WorkflowTriggerKind, string> = {
   cron: 'Programado (cron)',
   manual: 'Manual',
 };
+
+/** Entrada del catálogo de handlers (`GET /workflows/handlers`). */
+export interface RegisteredHandlerInfo {
+  key: string;
+  /** JSON Schema aproximado del input, para el editor. */
+  inputSchema: unknown;
+}

@@ -103,6 +103,11 @@ const WorkflowDetailPage = lazy(() =>
     default: m.WorkflowDetailPage,
   })),
 );
+const WorkflowEditorPage = lazy(() =>
+  import('@/features/workflows/WorkflowEditorPage').then((m) => ({
+    default: m.WorkflowEditorPage,
+  })),
+);
 function PageFallback() {
   return (
     <div className="flex min-h-svh items-center justify-center">
@@ -146,7 +151,12 @@ export default function App() {
               <Route path="/forms/nuevo" element={<FormDetailPage />} />
               <Route path="/forms/:id" element={<FormDetailPage />} />
               <Route path="/workflows" element={<WorkflowsListPage />} />
+              <Route path="/workflows/nuevo" element={<WorkflowEditorPage />} />
               <Route path="/workflows/:key" element={<WorkflowDetailPage />} />
+              <Route
+                path="/workflows/:key/editar"
+                element={<WorkflowEditorPage />}
+              />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>

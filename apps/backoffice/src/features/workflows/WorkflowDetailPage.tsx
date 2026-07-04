@@ -1,4 +1,4 @@
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, CircleCheck, Loader2, Pencil } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { WorkflowCanvas } from './components/WorkflowCanvas';
+import { useActivateWorkflowVersion } from './hooks/use-activate-workflow-version';
 import { useWorkflowVersions } from './hooks/use-workflow-versions';
 import { TRIGGER_KIND_LABELS } from './types';
 
@@ -20,6 +21,7 @@ export function WorkflowDetailPage() {
   const { data: versions, isLoading, isError } = useWorkflowVersions(key);
 
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+  const activate = useActivateWorkflowVersion(key);
 
   const current = useMemo(() => {
     if (!versions?.length) return null;
@@ -57,24 +59,42 @@ export function WorkflowDetailPage() {
         title={current.name}
         description={dsl.meta?.description ?? undefined}
         actions={
-          versions && versions.length > 1 ? (
-            <Select
-              value={String(current.version)}
-              onValueChange={(v) => setSelectedVersion(Number(v))}
-            >
-              <SelectTrigger size="sm" className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {versions.map((v) => (
-                  <SelectItem key={v.version} value={String(v.version)}>
-                    v{v.version}
-                    {v.isActive ? ' · activa' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : undefined
+          <div className="flex items-center gap-2">
+            {versions && versions.length > 1 && (
+              <Select
+                value={String(current.version)}
+                onValueChange={(v) => setSelectedVersion(Number(v))}
+              >
+                <SelectTrigger size="sm" className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {versions.map((v) => (
+                    <SelectItem key={v.version} value={String(v.version)}>
+                      v{v.version}
+                      {v.isActive ? ' · activa' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {!current.isActive && (
+              <Button
+                variant="outline"
+                onClick={() => activate.mutate(current.version)}
+                disabled={activate.isPending}
+              >
+                <CircleCheck size={16} />
+                Activar
+              </Button>
+            )}
+            <Button asChild>
+              <Link to={`/workflows/${encodeURIComponent(current.key)}/editar`}>
+                <Pencil size={16} />
+                Editar
+              </Link>
+            </Button>
+          </div>
         }
       />
 

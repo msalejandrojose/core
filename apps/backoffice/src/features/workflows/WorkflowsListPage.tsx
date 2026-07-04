@@ -1,6 +1,9 @@
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { DataTable } from '@/components/data-table/DataTable';
 import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
 import { columns } from './columns';
 import { useWorkflowDefinitions } from './hooks/use-workflow-definitions';
 import type { WorkflowDefinitionRow } from './types';
@@ -32,6 +35,14 @@ export function WorkflowsListPage() {
       <PageHeader
         title="Workflows"
         description="Automatizaciones disparadas por eventos: cada workflow encadena acciones y condiciones. Abre uno para ver su lienzo."
+        actions={
+          <Button asChild>
+            <Link to="/workflows/nuevo">
+              <Plus size={16} />
+              Nuevo workflow
+            </Link>
+          </Button>
+        }
       />
       <DataTable
         data={rows}
