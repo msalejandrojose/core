@@ -11,6 +11,8 @@ import { PENDING_ACTION_REPOSITORY } from './application/ports/pending-action-re
 import { TEMPLATE_EVALUATOR } from './application/ports/template-evaluator.port';
 import { ACTION_HANDLER_REGISTRY } from './application/ports/action-handler-registry.port';
 import { CONTEXT_ENRICHER_REGISTRY } from './application/ports/context-enricher-registry.port';
+import { TARGET_RESOLVER_REGISTRY } from './application/ports/target-resolver-registry.port';
+import { CRON_CLOCK } from './application/ports/cron-clock.port';
 
 // Adapters
 import { PrismaEventRepository } from './infrastructure/persistence/prisma-event.repository';
@@ -22,12 +24,18 @@ import { PrismaPendingActionRepository } from './infrastructure/persistence/pris
 import { JsonPathTemplateEvaluator } from './infrastructure/template/jsonpath-template.evaluator';
 import { NestActionHandlerRegistry } from './infrastructure/engine/nest-action-handler.registry';
 import { NestContextEnricherRegistry } from './infrastructure/engine/nest-context-enricher.registry';
+import { NestTargetResolverRegistry } from './infrastructure/engine/nest-target-resolver.registry';
 import { EngineActionsExecutor } from './infrastructure/engine/engine-actions.executor';
 import { LogActionHandler } from './infrastructure/handlers/log.handler';
 import { TriggerContextEnricher } from './infrastructure/enrichers/trigger-context.enricher';
+import { TargetContextEnricher } from './infrastructure/enrichers/target-context.enricher';
+import { UsersTargetResolver } from './infrastructure/targets/users.target-resolver';
+import { CronParserClock } from './infrastructure/scheduler/cron-parser.clock';
+import { WorkflowSchedulerService } from './infrastructure/scheduler/workflow-scheduler.service';
 
 // Use cases
 import { AdvanceWorkflowRunUseCase } from './application/use-cases/advance-workflow-run.use-case';
+import { StartWorkflowRunsUseCase } from './application/use-cases/start-workflow-runs.use-case';
 import { RegisterEventUseCase } from './application/use-cases/register-event.use-case';
 import { PublishWorkflowDefinitionUseCase } from './application/use-cases/publish-workflow-definition.use-case';
 import { ActivateWorkflowDefinitionUseCase } from './application/use-cases/activate-workflow-definition.use-case';
@@ -43,9 +51,11 @@ import { WorkflowsController } from './infrastructure/http/workflows.controller'
 import { EventsController } from './infrastructure/http/events.controller';
 import { WorkflowRunsController } from './infrastructure/http/workflow-runs.controller';
 import { WorkflowHandlersController } from './infrastructure/http/workflow-handlers.controller';
+import { SchedulerController } from './infrastructure/http/scheduler.controller';
 
-// Motor de eventos + workflows (v1 síncrono). El runtime asíncrono (scheduler,
-// reanudación de delay/wait, cron, retries, dry-run) es una iteración posterior.
+// Motor de eventos + workflows. Disparo por evento, cron (scheduler) y manual/
+// inmediato, con fan-out por target (un run por entidad). La reanudación de
+// delay/wait y los retries siguen siendo una iteración posterior.
 @Module({
   imports: [IamModule],
   controllers: [
@@ -53,6 +63,7 @@ import { WorkflowHandlersController } from './infrastructure/http/workflow-handl
     EventsController,
     WorkflowRunsController,
     WorkflowHandlersController,
+    SchedulerController,
   ],
   providers: [
     { provide: EVENT_REPOSITORY, useClass: PrismaEventRepository },
@@ -89,16 +100,33 @@ import { WorkflowHandlersController } from './infrastructure/http/workflow-handl
     // el orden en que se listan aquí. Otros módulos añadirán los suyos a esta
     // lista cuando se añada el patrón forRoot.
     TriggerContextEnricher,
+    TargetContextEnricher,
     {
       provide: CONTEXT_ENRICHER_REGISTRY,
-      useFactory: (trigger: TriggerContextEnricher) =>
-        new NestContextEnricherRegistry([trigger]),
-      inject: [TriggerContextEnricher],
+      useFactory: (
+        trigger: TriggerContextEnricher,
+        target: TargetContextEnricher,
+      ) => new NestContextEnricherRegistry([trigger, target]),
+      inject: [TriggerContextEnricher, TargetContextEnricher],
     },
+
+    // Resolvers de target built-in (fan-out sobre entidades del sistema).
+    UsersTargetResolver,
+    {
+      provide: TARGET_RESOLVER_REGISTRY,
+      useFactory: (users: UsersTargetResolver) =>
+        new NestTargetResolverRegistry([users]),
+      inject: [UsersTargetResolver],
+    },
+
+    // Reloj de cron (scheduler).
+    { provide: CRON_CLOCK, useClass: CronParserClock },
+    WorkflowSchedulerService,
 
     EngineActionsExecutor,
 
     AdvanceWorkflowRunUseCase,
+    StartWorkflowRunsUseCase,
     RegisterEventUseCase,
     PublishWorkflowDefinitionUseCase,
     ActivateWorkflowDefinitionUseCase,

@@ -7,26 +7,15 @@ import {
   type EventRepositoryPort,
 } from '../ports/event-repository.port';
 import {
-  PENDING_ACTION_REPOSITORY,
-  type PendingActionRepositoryPort,
-} from '../ports/pending-action-repository.port';
-import {
   WORKFLOW_DEFINITION_REPOSITORY,
   type WorkflowDefinitionRepositoryPort,
 } from '../ports/workflow-definition-repository.port';
 import {
-  WORKFLOW_RUN_REPOSITORY,
-  type WorkflowRunRepositoryPort,
-} from '../ports/workflow-run-repository.port';
-import {
   WORKFLOW_TRIGGER_REPOSITORY,
   type WorkflowTriggerRepositoryPort,
 } from '../ports/workflow-trigger-repository.port';
-import {
-  CONTEXT_ENRICHER_REGISTRY,
-  type ContextEnricherRegistryPort,
-} from '../ports/context-enricher-registry.port';
-import { AdvanceWorkflowRunUseCase } from './advance-workflow-run.use-case';
+import { TargetDescriptor } from '../ports/target-resolver.port';
+import { StartWorkflowRunsUseCase } from './start-workflow-runs.use-case';
 
 export interface RegisterEventInput {
   type: string;
@@ -38,8 +27,8 @@ export interface RegisterEventInput {
 
 // Punto de entrada de cualquier evento (spec §6, entrypoint 1). Persiste el
 // Event (deduplicando por idempotencyKey), busca triggers EVENT de definiciones
-// activas, y para cada match crea un run y lo avanza (o lo encola como
-// PENDING_START si se supera maxConcurrentRuns).
+// activas, y para cada match delega en StartWorkflowRuns (que hace el fan-out
+// por target si el trigger lo declara, enriquece el contexto y avanza).
 @Injectable()
 export class RegisterEventUseCase {
   constructor(
@@ -48,13 +37,7 @@ export class RegisterEventUseCase {
     private readonly triggers: WorkflowTriggerRepositoryPort,
     @Inject(WORKFLOW_DEFINITION_REPOSITORY)
     private readonly definitions: WorkflowDefinitionRepositoryPort,
-    @Inject(WORKFLOW_RUN_REPOSITORY)
-    private readonly runs: WorkflowRunRepositoryPort,
-    @Inject(PENDING_ACTION_REPOSITORY)
-    private readonly pending: PendingActionRepositoryPort,
-    @Inject(CONTEXT_ENRICHER_REGISTRY)
-    private readonly enrichers: ContextEnricherRegistryPort,
-    private readonly advance: AdvanceWorkflowRunUseCase,
+    private readonly start: StartWorkflowRunsUseCase,
   ) {}
 
   async execute(input: RegisterEventInput): Promise<WorkflowEvent> {
@@ -75,41 +58,12 @@ export class RegisterEventUseCase {
       const definition = await this.definitions.findById(trigger.definitionId);
       if (!definition) continue;
 
-      const max = definition.dsl.meta?.maxConcurrentRuns;
-      if (max != null) {
-        const active = await this.runs.countActiveByDefinition(definition.id);
-        if (active >= max) {
-          await this.pending.create({
-            definitionId: definition.id,
-            triggerEventId: event.id,
-            kind: 'PENDING_START',
-          });
-          continue;
-        }
-      }
-
-      const context = await this.enrichers.enrich(
-        { ...(definition.dsl.context ?? {}) },
-        {
-          definitionKey: definition.key,
-          trigger: 'event',
-          event: {
-            type: event.type,
-            payload: event.payload,
-            sourceUserId: event.sourceUserId,
-            correlationId: event.correlationId,
-            occurredAt: event.occurredAt,
-          },
-        },
-      );
-
-      const run = await this.runs.create({
-        definitionId: definition.id,
-        triggerEventId: event.id,
-        context,
-        currentStepKey: null,
+      await this.start.execute({
+        definition,
+        event,
+        triggerKind: 'event',
+        target: (trigger.target ?? null) as TargetDescriptor | null,
       });
-      await this.advance.execute(run.id);
     }
 
     return event;

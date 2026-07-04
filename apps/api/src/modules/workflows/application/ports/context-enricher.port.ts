@@ -12,10 +12,19 @@ export interface EnrichmentEvent {
   occurredAt: Date;
 }
 
+// Entidad del sistema sobre la que corre este run concreto (fan-out). Null si
+// el disparo no lleva target (un único run "global").
+export interface EnrichmentTarget {
+  id: string;
+  entityType: string;
+  data: Record<string, unknown>;
+}
+
 export interface EnrichmentContext {
   definitionKey: string;
-  trigger: 'event' | 'manual';
+  trigger: 'event' | 'cron' | 'manual';
   event: EnrichmentEvent | null;
+  target?: EnrichmentTarget | null;
 }
 
 // Una unidad de enriquecimiento del contexto inicial de un run. Recibe el

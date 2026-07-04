@@ -12,6 +12,7 @@ import {
   type CreateTriggerData,
   type WorkflowTriggerRepositoryPort,
 } from '../ports/workflow-trigger-repository.port';
+import { CRON_CLOCK, type CronClockPort } from '../ports/cron-clock.port';
 
 const MAX_DSL_BYTES = 64 * 1024;
 
@@ -26,6 +27,7 @@ export class PublishWorkflowDefinitionUseCase {
     private readonly definitions: WorkflowDefinitionRepositoryPort,
     @Inject(WORKFLOW_TRIGGER_REPOSITORY)
     private readonly triggers: WorkflowTriggerRepositoryPort,
+    @Inject(CRON_CLOCK) private readonly cron: CronClockPort,
   ) {}
 
   async execute(rawDsl: unknown): Promise<WorkflowDefinition> {
@@ -62,6 +64,7 @@ export class PublishWorkflowDefinitionUseCase {
       isActive: isFirst,
     });
 
+    const now = new Date();
     const triggerData: CreateTriggerData[] = dsl.triggers.map((trigger) => {
       switch (trigger.kind) {
         case 'event':
@@ -70,17 +73,30 @@ export class PublishWorkflowDefinitionUseCase {
             kind: 'EVENT',
             eventType: trigger.eventType,
             matchExpression: trigger.match ?? null,
+            target: trigger.target ?? null,
           };
-        case 'cron':
+        case 'cron': {
+          // Valida la expresión (5 campos UTC) y programa el primer disparo.
+          if (!this.cron.isValid(trigger.cronExpression)) {
+            throw new InvalidWorkflowDefinitionError(
+              `Expresión cron inválida: "${trigger.cronExpression}".`,
+            );
+          }
           return {
             definitionId: definition.id,
             kind: 'CRON',
             cronExpression: trigger.cronExpression,
             cronPayload: trigger.payload ?? null,
-            nextFireAt: null,
+            nextFireAt: this.cron.next(trigger.cronExpression, now),
+            target: trigger.target ?? null,
           };
+        }
         case 'manual':
-          return { definitionId: definition.id, kind: 'MANUAL' };
+          return {
+            definitionId: definition.id,
+            kind: 'MANUAL',
+            target: trigger.target ?? null,
+          };
       }
     });
     await this.triggers.createMany(triggerData);

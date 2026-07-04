@@ -8,19 +8,30 @@ import { z } from 'zod';
 // el `match-evaluator` en runtime.
 const matchExpressionSchema = z.record(z.string(), z.unknown());
 
+// Target declarativo: sobre qué entidades del sistema corre el workflow. Si se
+// declara, el disparo hace fan-out (un run por entidad resuelta). `type`
+// selecciona el resolver registrado (p.ej. 'users').
+const targetSchema = z.object({
+  type: z.string().min(1).max(120),
+  filter: z.record(z.string(), z.unknown()).optional(),
+});
+
 const triggerSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('event'),
     eventType: z.string().min(1).max(120),
     match: matchExpressionSchema.optional(),
+    target: targetSchema.optional(),
   }),
   z.object({
     kind: z.literal('cron'),
     cronExpression: z.string().min(1).max(60),
     payload: z.record(z.string(), z.unknown()).optional(),
+    target: targetSchema.optional(),
   }),
   z.object({
     kind: z.literal('manual'),
+    target: targetSchema.optional(),
   }),
 ]);
 

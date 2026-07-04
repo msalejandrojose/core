@@ -491,6 +491,9 @@ model WorkflowTrigger {
   cronPayload    Json?     @map("cron_payload")
   nextFireAt     DateTime? @map("next_fire_at")
 
+  // Target (fan-out): sobre qué entidades corre. NULL = un único run global.
+  target Json? // { type, filter? } — mini DSL spec §4.4
+
   definition WorkflowDefinition @relation(fields: [definitionId], references: [id], onDelete: Restrict)
 
   @@index([kind, eventType])

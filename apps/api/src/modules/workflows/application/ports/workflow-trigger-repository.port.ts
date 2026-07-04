@@ -13,10 +13,16 @@ export interface CreateTriggerData {
   cronExpression?: string | null;
   cronPayload?: unknown;
   nextFireAt?: Date | null;
+  target?: unknown;
 }
 
 export interface WorkflowTriggerRepositoryPort {
   createMany(triggers: CreateTriggerData[]): Promise<void>;
   // Triggers de tipo EVENT cuya definición está activa, para un eventType dado.
   findActiveEventTriggers(eventType: string): Promise<WorkflowTrigger[]>;
+  // Triggers CRON de definiciones activas cuyo `nextFireAt` ya venció (o es
+  // NULL = aún no programado). Los consume el scheduler.
+  findDueCronTriggers(now: Date): Promise<WorkflowTrigger[]>;
+  // Reprograma el próximo disparo de un trigger CRON.
+  updateNextFireAt(id: string, nextFireAt: Date): Promise<void>;
 }

@@ -12,6 +12,7 @@ export class WorkflowTriggerMapper {
       cronExpression: row.cronExpression,
       cronPayload: row.cronPayload,
       nextFireAt: row.nextFireAt,
+      target: row.target,
     };
   }
 }
