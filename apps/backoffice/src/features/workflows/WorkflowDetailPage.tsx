@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ManualRunDialog } from './components/ManualRunDialog';
 import { WorkflowCanvas } from './components/WorkflowCanvas';
 import { useActivateWorkflowVersion } from './hooks/use-activate-workflow-version';
 import { useWorkflowVersions } from './hooks/use-workflow-versions';
@@ -88,6 +89,7 @@ export function WorkflowDetailPage() {
                 Activar
               </Button>
             )}
+            {current.isActive && <ManualRunDialog workflowKey={current.key} />}
             <Button asChild>
               <Link to={`/workflows/${encodeURIComponent(current.key)}/editar`}>
                 <Pencil size={16} />

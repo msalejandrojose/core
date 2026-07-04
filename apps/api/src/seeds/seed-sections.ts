@@ -105,6 +105,29 @@ const BACKOFFICE_TREE: SeedNode[] = [
     icon: 'Workflow',
     route: '/workflows',
     order: 6,
+    children: [
+      {
+        code: 'workflows.definitions',
+        name: 'Definiciones',
+        icon: 'Workflow',
+        route: '/workflows/definitions',
+        order: 0,
+      },
+      {
+        code: 'workflows.runs',
+        name: 'Ejecuciones',
+        icon: 'Play',
+        route: '/workflows/runs',
+        order: 1,
+      },
+      {
+        code: 'workflows.events',
+        name: 'Eventos',
+        icon: 'Zap',
+        route: '/workflows/events',
+        order: 2,
+      },
+    ],
   },
 ];
 

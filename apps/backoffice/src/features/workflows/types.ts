@@ -111,3 +111,124 @@ export interface RegisteredHandlerInfo {
   /** JSON Schema aproximado del input, para el editor. */
   inputSchema: unknown;
 }
+
+// --- Runs / ejecución ---------------------------------------------------
+
+export type WorkflowRunStatus =
+  | 'RUNNING'
+  | 'WAITING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELED';
+
+export type WorkflowStepStatus =
+  | 'PENDING'
+  | 'RUNNING'
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'SKIPPED';
+
+export interface WorkflowRunDto {
+  id: string;
+  definitionId: string;
+  triggerEventId: string | null;
+  status: WorkflowRunStatus;
+  context: Record<string, unknown>;
+  currentStepKey: string | null;
+  isDryRun: boolean;
+  startedAt: string;
+  finishedAt: string | null;
+  lastError: string | null;
+}
+
+export interface WorkflowStepExecutionDto {
+  id: string;
+  stepKey: string;
+  actionKey: string;
+  status: WorkflowStepStatus;
+  attempt: number;
+  input: unknown;
+  output: unknown;
+  error: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+export interface PendingActionDto {
+  id: string;
+  stepKey: string | null;
+  kind: string;
+  status: string;
+  runAt: string | null;
+  eventType: string | null;
+  createdAt: string;
+}
+
+export interface WorkflowRunDetailDto {
+  run: WorkflowRunDto;
+  steps: WorkflowStepExecutionDto[];
+  pendingActions: PendingActionDto[];
+}
+
+export const RUN_STATUSES: WorkflowRunStatus[] = [
+  'RUNNING',
+  'WAITING',
+  'COMPLETED',
+  'FAILED',
+  'CANCELED',
+];
+
+export const RUN_STATUS_LABELS: Record<WorkflowRunStatus, string> = {
+  RUNNING: 'En curso',
+  WAITING: 'En espera',
+  COMPLETED: 'Completado',
+  FAILED: 'Fallido',
+  CANCELED: 'Cancelado',
+};
+
+/** Variante del `Badge` por estado de run. */
+export const RUN_STATUS_VARIANT: Record<
+  WorkflowRunStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+  RUNNING: 'default',
+  WAITING: 'outline',
+  COMPLETED: 'secondary',
+  FAILED: 'destructive',
+  CANCELED: 'secondary',
+};
+
+export const STEP_STATUS_LABELS: Record<WorkflowStepStatus, string> = {
+  PENDING: 'Pendiente',
+  RUNNING: 'En curso',
+  SUCCEEDED: 'OK',
+  FAILED: 'Fallido',
+  SKIPPED: 'Omitido',
+};
+
+export const STEP_STATUS_VARIANT: Record<
+  WorkflowStepStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+  PENDING: 'outline',
+  RUNNING: 'default',
+  SUCCEEDED: 'secondary',
+  FAILED: 'destructive',
+  SKIPPED: 'outline',
+};
+
+export function isRunActive(status: WorkflowRunStatus): boolean {
+  return status === 'RUNNING' || status === 'WAITING';
+}
+
+// --- Eventos ------------------------------------------------------------
+
+export interface WorkflowEventDto {
+  id: string;
+  type: string;
+  payload: unknown;
+  sourceUserId: string | null;
+  correlationId: string | null;
+  idempotencyKey: string | null;
+  occurredAt: string;
+}

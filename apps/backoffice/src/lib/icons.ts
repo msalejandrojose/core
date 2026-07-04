@@ -5,11 +5,13 @@ import {
   LayoutDashboard,
   LayoutList,
   Newspaper,
+  Play,
   Settings,
   Shield,
   SquareStack,
   Users,
   Workflow,
+  Zap,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -24,6 +26,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Newspaper,
   ClipboardList,
   Workflow,
+  Play,
+  Zap,
   // Añadir según se creen secciones nuevas.
 };
 
