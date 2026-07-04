@@ -37,12 +37,18 @@ export function useKpiSeries(
   return useQuery({
     queryKey: ['dashboard', 'kpi-series', slug, from, to, granularity],
     queryFn: async () => {
-      const { data, error } = await (apiClient as any).GET(
-        `/dashboard/kpis/${slug}/series`,
-        { params: { query: { from, to, granularity } } },
+      const { data, error } = await apiClient.GET(
+        '/dashboard/kpis/{slug}/series',
+        { params: { path: { slug }, query: { from, to, granularity } } },
       );
       if (error) throw error;
-      return data as { slug: string; from: string; to: string; granularity: string; points: { t: string; v: number | null }[] };
+      return data as unknown as {
+        slug: string;
+        from: string;
+        to: string;
+        granularity: string;
+        points: { t: string; v: number | null }[];
+      };
     },
     enabled,
     staleTime: 60_000,

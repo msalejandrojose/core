@@ -76,7 +76,7 @@ export function CategoryFormDialog({
   const { data: categoriesData } = useCategories({ page: 1, limit: 100 });
   // Excluye la propia categoría para no permitir el ciclo trivial.
   const parentOptions = (categoriesData?.data ?? []).filter(
-    (c: any) => c.id !== category?.id,
+    (c) => c.id !== category?.id,
   );
 
   // Autogenera el slug desde el nombre mientras el usuario no lo edite a mano.
@@ -139,7 +139,7 @@ export function CategoryFormDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_PARENT}>Sin categoría padre</SelectItem>
-                  {parentOptions.map((c: any) => (
+                  {parentOptions.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}
                     </SelectItem>

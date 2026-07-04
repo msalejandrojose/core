@@ -155,7 +155,7 @@ export function useAddWidget() {
       if (error) throw error;
       return data as DashboardWidget;
     },
-    onSuccess: (_: DashboardWidget, vars: { dashboardId: string }) => {
+    onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['dashboards', vars.dashboardId] });
     },
   });
@@ -170,7 +170,7 @@ export function useRemoveWidget() {
       });
       if (error) throw error;
     },
-    onSuccess: (_: void, vars: { dashboardId: string }) => {
+    onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['dashboards', vars.dashboardId] });
     },
   });

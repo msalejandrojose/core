@@ -18,7 +18,8 @@ export function useCreateFormInstance(formId: string) {
     mutationFn: async (body: CreateFormInstanceInput) => {
       const { data, error } = await apiClient.POST('/forms/{formId}/instances', {
         params: { path: { formId } },
-        body,
+        // Body genérico en el OpenAPI; el tipo real lo valida el backend.
+        body: body as never,
       });
       if (error) throw error;
       return data as unknown as FormInstanceDto;

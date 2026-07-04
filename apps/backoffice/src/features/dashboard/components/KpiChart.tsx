@@ -92,7 +92,7 @@ function buildOption(
       backgroundColor: 'var(--color-popover)',
       borderColor: 'var(--color-border)',
       textStyle: { color: 'var(--color-popover-foreground)', fontSize: 12 },
-      formatter: (params: any) => {
+      formatter: (params: Array<{ name: string; value: number | null }>) => {
         const p = params[0];
         return `${p.name}<br /><b>${p.value ?? '—'}</b>`;
       },

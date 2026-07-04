@@ -16,7 +16,9 @@ export function useCreateForm({
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: CreateFormInput) => {
-      const { data, error } = await apiClient.POST('/forms', { body });
+      // El OpenAPI declara el body como objeto genérico (el `schema` es JSON
+      // libre validado en el backend); se castea para el cliente tipado.
+      const { data, error } = await apiClient.POST('/forms', { body: body as never });
       if (error) throw error;
       return data as unknown as FormDto;
     },

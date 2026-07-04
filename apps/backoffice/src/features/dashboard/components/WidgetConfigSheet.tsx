@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -49,17 +49,20 @@ export function WidgetConfigSheet({ widget, onClose, onSave }: WidgetConfigSheet
     existing.thresholds?.red != null ? String(existing.thresholds.red) : '',
   );
 
-  // Reset when widget changes
-  useEffect(() => {
-    const cfg = parseConfig(widget?.config);
-    setTitle(cfg.title ?? '');
-    setSubtitle(cfg.subtitle ?? '');
-    setChartType(cfg.chartType);
-    setRange(cfg.range);
-    setThresholdGreen(cfg.thresholds?.green != null ? String(cfg.thresholds.green) : '');
-    setThresholdYellow(cfg.thresholds?.yellow != null ? String(cfg.thresholds.yellow) : '');
-    setThresholdRed(cfg.thresholds?.red != null ? String(cfg.thresholds.red) : '');
-  }, [widget]);
+  // Reinicia el formulario cuando cambia el widget seleccionado. Patrón de
+  // "ajuste de estado en render" (sin efecto): compara la identidad del widget
+  // con la anterior y resincroniza los campos desde su config.
+  const [prevWidgetId, setPrevWidgetId] = useState(widget?.id);
+  if (widget?.id !== prevWidgetId) {
+    setPrevWidgetId(widget?.id);
+    setTitle(existing.title ?? '');
+    setSubtitle(existing.subtitle ?? '');
+    setChartType(existing.chartType);
+    setRange(existing.range);
+    setThresholdGreen(existing.thresholds?.green != null ? String(existing.thresholds.green) : '');
+    setThresholdYellow(existing.thresholds?.yellow != null ? String(existing.thresholds.yellow) : '');
+    setThresholdRed(existing.thresholds?.red != null ? String(existing.thresholds.red) : '');
+  }
 
   function handleSave() {
     if (!widget) return;

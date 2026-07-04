@@ -23,7 +23,13 @@ export function useUpdateFormInstance(formId: string, instanceId: string) {
     mutationFn: async (body: UpdateFormInstanceInput) => {
       const { data, error } = await apiClient.PATCH(
         '/forms/{formId}/instances/{instanceId}',
-        { params: { path: { formId, instanceId } }, body },
+        {
+          // El OpenAPI del PATCH solo documenta `instanceId` como path param
+          // (falta declarar `formId`), pero la URL lo necesita: se envía igual
+          // y se castea el tipo. El body también es genérico en el OpenAPI.
+          params: { path: { formId, instanceId } as { instanceId: string } },
+          body: body as never,
+        },
       );
       if (error) throw error;
       return data as unknown as FormInstanceDto;
