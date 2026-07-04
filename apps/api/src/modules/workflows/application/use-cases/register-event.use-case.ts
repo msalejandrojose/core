@@ -22,6 +22,10 @@ import {
   WORKFLOW_TRIGGER_REPOSITORY,
   type WorkflowTriggerRepositoryPort,
 } from '../ports/workflow-trigger-repository.port';
+import {
+  CONTEXT_ENRICHER_REGISTRY,
+  type ContextEnricherRegistryPort,
+} from '../ports/context-enricher-registry.port';
 import { AdvanceWorkflowRunUseCase } from './advance-workflow-run.use-case';
 
 export interface RegisterEventInput {
@@ -48,6 +52,8 @@ export class RegisterEventUseCase {
     private readonly runs: WorkflowRunRepositoryPort,
     @Inject(PENDING_ACTION_REPOSITORY)
     private readonly pending: PendingActionRepositoryPort,
+    @Inject(CONTEXT_ENRICHER_REGISTRY)
+    private readonly enrichers: ContextEnricherRegistryPort,
     private readonly advance: AdvanceWorkflowRunUseCase,
   ) {}
 
@@ -82,10 +88,25 @@ export class RegisterEventUseCase {
         }
       }
 
+      const context = await this.enrichers.enrich(
+        { ...(definition.dsl.context ?? {}) },
+        {
+          definitionKey: definition.key,
+          trigger: 'event',
+          event: {
+            type: event.type,
+            payload: event.payload,
+            sourceUserId: event.sourceUserId,
+            correlationId: event.correlationId,
+            occurredAt: event.occurredAt,
+          },
+        },
+      );
+
       const run = await this.runs.create({
         definitionId: definition.id,
         triggerEventId: event.id,
-        context: { ...(definition.dsl.context ?? {}) },
+        context,
         currentStepKey: null,
       });
       await this.advance.execute(run.id);
