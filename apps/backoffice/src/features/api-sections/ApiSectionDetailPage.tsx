@@ -60,7 +60,7 @@ export function ApiSectionDetailPage() {
   const { data: section, isLoading } = useApiSection(id ?? '');
   const { data: sections } = useApiSections();
 
-  const parentOptions = (sections?.data ?? []).filter((s: any) => s.id !== id);
+  const parentOptions = (sections?.data ?? []).filter((s) => s.id !== id);
 
   const create = useCreateApiSection({
     onSuccess: (newId) => navigate(`/sections/${newId}`, { replace: true }),
@@ -196,7 +196,7 @@ export function ApiSectionDetailPage() {
                         <Label className="text-muted-foreground text-xs">Sección padre</Label>
                         <p className="text-sm">
                           {section?.parentSectionId
-                            ? (parentOptions.find((s: any) => s.id === section.parentSectionId)?.name ??
+                            ? (parentOptions.find((s) => s.id === section.parentSectionId)?.name ??
                               section.parentSectionId)
                             : '—'}
                         </p>
@@ -242,7 +242,7 @@ export function ApiSectionDetailPage() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value={NO_PARENT}>Sin sección padre</SelectItem>
-                              {parentOptions.map((s: any) => (
+                              {parentOptions.map((s) => (
                                 <SelectItem key={s.id} value={s.id}>
                                   {s.name}
                                 </SelectItem>

@@ -43,7 +43,7 @@ export function EditApiSectionForm({ section }: EditApiSectionFormProps) {
   const { data: sections } = useApiSections();
   // Excluye la propia sección para no asignarse como su propio padre.
   const parentOptions = (sections?.data ?? []).filter(
-    (s: any) => s.id !== section.id,
+    (s) => s.id !== section.id,
   );
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -84,7 +84,7 @@ export function EditApiSectionForm({ section }: EditApiSectionFormProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_PARENT}>Sin sección padre</SelectItem>
-                {parentOptions.map((s: any) => (
+                {parentOptions.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.name}
                   </SelectItem>

@@ -17,7 +17,8 @@ export function useUpdateForm(id: string) {
     mutationFn: async (body: UpdateFormInput) => {
       const { data, error } = await apiClient.PATCH('/forms/{id}', {
         params: { path: { id } },
-        body,
+        // Body genérico en el OpenAPI; el tipo real lo valida el backend.
+        body: body as never,
       });
       if (error) throw error;
       return data as unknown as FormDto;

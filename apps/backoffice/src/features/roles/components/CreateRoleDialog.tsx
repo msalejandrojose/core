@@ -128,7 +128,7 @@ export function CreateRoleDialog() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_PARENT}>Sin rol padre</SelectItem>
-                  {parentOptions.map((r: any) => (
+                  {parentOptions.map((r) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.name}
                     </SelectItem>
