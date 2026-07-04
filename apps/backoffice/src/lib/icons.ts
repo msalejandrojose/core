@@ -9,6 +9,7 @@ import {
   Shield,
   SquareStack,
   Users,
+  Workflow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -22,6 +23,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   LayoutList,
   Newspaper,
   ClipboardList,
+  Workflow,
   // Añadir según se creen secciones nuevas.
 };
 

@@ -99,6 +99,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
     route: '/forms',
     order: 5,
   },
+  {
+    code: 'workflows',
+    name: 'Workflows',
+    icon: 'Workflow',
+    route: '/workflows',
+    order: 6,
+  },
 ];
 
 const ADMIN_ROLE_CODE = 'admin';

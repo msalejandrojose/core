@@ -93,6 +93,16 @@ const FormDetailPage = lazy(() =>
     default: m.FormDetailPage,
   })),
 );
+const WorkflowsListPage = lazy(() =>
+  import('@/features/workflows/WorkflowsListPage').then((m) => ({
+    default: m.WorkflowsListPage,
+  })),
+);
+const WorkflowDetailPage = lazy(() =>
+  import('@/features/workflows/WorkflowDetailPage').then((m) => ({
+    default: m.WorkflowDetailPage,
+  })),
+);
 function PageFallback() {
   return (
     <div className="flex min-h-svh items-center justify-center">
@@ -135,6 +145,8 @@ export default function App() {
               <Route path="/forms" element={<FormsListPage />} />
               <Route path="/forms/nuevo" element={<FormDetailPage />} />
               <Route path="/forms/:id" element={<FormDetailPage />} />
+              <Route path="/workflows" element={<WorkflowsListPage />} />
+              <Route path="/workflows/:key" element={<WorkflowDetailPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
