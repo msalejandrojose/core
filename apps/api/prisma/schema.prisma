@@ -188,6 +188,16 @@ enum LeadActivityType {
   SYSTEM
 }
 
+/// Canal físico de entrega de una notificación. Lo define el
+/// `SendingAccountType`; el resto del sistema lo deriva de ahí. Espejo del
+/// enum `NotificationChannel` de `@core/shared-types`.
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  // futuro: WHATSAPP, WEBHOOK, IN_APP…
+}
+
 // ---------------------------------------------------------------------------
 // Modelos
 // ---------------------------------------------------------------------------
@@ -893,4 +903,72 @@ model LeadTagOnLead {
   @@id([leadId, tagId])
   @@index([tagId])
   @@map("lead_tag_on_lead")
+}
+
+// ---------------------------------------------------------------------------
+// Notificaciones (cuentas de envío + tipos de mensaje)
+// ---------------------------------------------------------------------------
+
+/// Tipo de cuenta de envío. Define un `channel` y dos contratos declarativos:
+/// `configSchema` (qué campos necesita configurar una `SendingAccount` de este
+/// tipo: credenciales, remitente…) y `messageSchema` (qué campos de contenido
+/// pide un `MessageType` de este canal). Son descriptores de campos (misma
+/// idea que el schema de los formularios dinámicos) que dirigen el render del
+/// backoffice; la validación server-side usa el catálogo de canales en código.
+/// Mayormente semilla/administración.
+model SendingAccountType {
+  id            String              @id @default(uuid()) @db.Char(36)
+  key           String              @unique @db.VarChar(60) // "email", "sms", "push"
+  name          String              @db.VarChar(120)
+  channel       NotificationChannel
+  configSchema  Json                @map("config_schema") // descriptores de config de la cuenta
+  messageSchema Json                @map("message_schema") // descriptores del contenido del mensaje
+  isActive      Boolean             @default(true) @map("is_active")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  accounts SendingAccount[]
+
+  @@index([channel])
+  @@map("sending_account_type")
+}
+
+/// Cuenta de envío concreta y configurada de un tipo. Ej: "Resend — producción".
+/// `config` se valida contra el catálogo del canal; los campos marcados como
+/// secretos (apiKey, authToken…) se guardan cifrados en reposo.
+model SendingAccount {
+  id        String   @id @default(uuid()) @db.Char(36)
+  typeId    String   @map("type_id") @db.Char(36)
+  name      String   @db.VarChar(160)
+  config    Json // validado contra el catálogo del tipo; secretos cifrados
+  isActive  Boolean  @default(true) @map("is_active")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  type         SendingAccountType @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  messageTypes MessageType[]
+
+  @@index([typeId])
+  @@map("sending_account")
+}
+
+/// Tipo de mensaje. Selecciona una `SendingAccount` (⇒ hereda su canal) y
+/// guarda en `content` los campos propios de ese canal (subject/html para
+/// email, body para SMS, title/body para push). Admite plantillas `{{ var }}`
+/// que se renderizan en el momento del envío contra el contexto del workflow.
+model MessageType {
+  id        String   @id @default(uuid()) @db.Char(36)
+  key       String   @unique @db.VarChar(120) // "welcome_email"
+  name      String   @db.VarChar(160)
+  accountId String   @map("account_id") @db.Char(36)
+  content   Json // validado contra el messageSchema del canal; admite plantillas
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  account SendingAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([accountId])
+  @@map("message_type")
 }

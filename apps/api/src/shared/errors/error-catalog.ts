@@ -259,6 +259,43 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'La sección tiene subsecciones activas.',
   },
+
+  // Notifications (cuentas de envío + tipos de mensaje)
+  SENDING_ACCOUNT_TYPE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Tipo de cuenta de envío no encontrado.',
+  },
+  SENDING_ACCOUNT_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Cuenta de envío no encontrada.',
+  },
+  MESSAGE_TYPE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Tipo de mensaje no encontrado.',
+  },
+  INVALID_ACCOUNT_CONFIG: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La configuración de la cuenta de envío no es válida.',
+  },
+  INVALID_MESSAGE_CONTENT: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'El contenido del tipo de mensaje no es válido.',
+  },
+  CHANNEL_NOT_SUPPORTED: {
+    httpStatus: 422,
+    level: 'error',
+    defaultMessage: 'No hay dispatcher para el canal de la cuenta.',
+  },
+  NOTIFICATION_DELIVERY_FAILED: {
+    httpStatus: 502,
+    level: 'error',
+    defaultMessage: 'No se pudo entregar la notificación.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;

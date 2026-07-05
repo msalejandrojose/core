@@ -11,6 +11,7 @@ import { DynamicFormsModule } from './modules/dynamic-forms/dynamic-forms.module
 import { WorkflowsModule } from './modules/workflows/workflows.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ErrorLogModule } from './infrastructure/error-log/error-log.module';
 import { HealthModule } from './infrastructure/health/health.module';
 import { AppExceptionFilter } from './shared/filters/app-exception.filter';
@@ -39,6 +40,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     WorkflowsModule,
     DashboardModule,
     LeadsModule,
+    NotificationsModule,
     ErrorLogModule,
     HealthModule,
   ],
