@@ -216,6 +216,23 @@ export const ERROR_CATALOG = {
       'Este formulario ha alcanzado el número máximo de respuestas.',
   },
 
+  // Leads
+  LEAD_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Lead no encontrado.',
+  },
+  LEAD_TAG_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Etiqueta de lead no encontrada.',
+  },
+  INVALID_LEAD_TRANSITION: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La transición de estado del lead no está permitida.',
+  },
+
   // Sections (UI navigation tree)
   SECTION_NOT_FOUND: {
     httpStatus: 404,

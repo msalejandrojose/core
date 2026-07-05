@@ -135,9 +135,9 @@ enum SectionAccessType {
 
 /// Estado de ciclo de vida de un formulario dinámico.
 enum FormStatus {
-  DRAFT      // borrador, no se puede publicar instancias
-  PUBLISHED  // activo, se pueden crear instancias
-  ARCHIVED   // retirado, instancias existentes se cierran
+  DRAFT // borrador, no se puede publicar instancias
+  PUBLISHED // activo, se pueden crear instancias
+  ARCHIVED // retirado, instancias existentes se cierran
 }
 
 /// Estado de una instancia/link público de formulario.
@@ -148,9 +148,44 @@ enum FormInstanceStatus {
 
 /// Política de respuesta de una instancia de formulario.
 enum FormResponsePolicy {
-  SINGLE_PER_LINK  // una sola respuesta total por instancia
-  SINGLE_PER_USER  // una por usuario autenticado o fingerprint anónimo
-  UNLIMITED        // sin límite (salvo maxResponses)
+  SINGLE_PER_LINK // una sola respuesta total por instancia
+  SINGLE_PER_USER // una por usuario autenticado o fingerprint anónimo
+  UNLIMITED // sin límite (salvo maxResponses)
+}
+
+/// Ciclo de vida de un lead (pipeline comercial). Ver spec `leads` §10.
+enum LeadStatus {
+  NEW // recién capturado, sin tocar
+  CONTACTED // primer contacto hecho
+  QUALIFIED // cumple criterio de calificación
+  PROPOSAL // se le ha enviado propuesta/oferta
+  WON // convertido (cierre positivo)
+  LOST // cierre negativo
+  UNQUALIFIED // descartado por no encajar
+}
+
+/// Origen por el que entró un lead.
+enum LeadSource {
+  WEB_FORM // vino de una FormInstance pública
+  MANUAL // alta desde backoffice
+  IMPORT // carga masiva
+  API // integración externa
+  REFERRAL // recomendación
+  OTHER
+}
+
+/// Tipo de entrada del timeline de un lead.
+enum LeadActivityType {
+  NOTE
+  STATUS_CHANGE
+  ASSIGNMENT
+  SCORE_CHANGE
+  FORM_SUBMISSION
+  EMAIL
+  CALL
+  MEETING
+  CONVERSION
+  SYSTEM
 }
 
 // ---------------------------------------------------------------------------
@@ -656,7 +691,7 @@ model Form {
   id          String     @id @default(uuid()) @db.Char(36)
   title       String     @db.VarChar(200)
   description String?    @db.Text
-  schema      Json       // estructura declarativa de campos (ver TASK-92 §schema)
+  schema      Json // estructura declarativa de campos (ver TASK-92 §schema)
   status      FormStatus @default(DRAFT)
   createdById String?    @map("created_by_id") @db.Char(36) // FK suave a User
   createdAt   DateTime   @default(now()) @map("created_at")
@@ -676,7 +711,7 @@ model FormInstance {
   id             String             @id @default(uuid()) @db.Char(36)
   formId         String             @map("form_id") @db.Char(36)
   hash           String             @unique @db.VarChar(64) // token URL-safe, ≥32 chars
-  responsePolicy FormResponsePolicy @map("response_policy") @default(UNLIMITED)
+  responsePolicy FormResponsePolicy @default(UNLIMITED) @map("response_policy")
   requiresAuth   Boolean            @default(false) @map("requires_auth")
   opensAt        DateTime?          @map("opens_at")
   closesAt       DateTime?          @map("closes_at")
@@ -700,15 +735,15 @@ model FormInstance {
 /// el schema vigente en el momento del envío para mantener coherencia si el
 /// formulario cambia después.
 model FormResponse {
-  id                      String   @id @default(uuid()) @db.Char(36)
-  formInstanceId          String   @map("form_instance_id") @db.Char(36)
-  submittedById           String?  @map("submitted_by_id") @db.Char(36) // null si anónimo
-  submittedByFingerprint  String?  @map("submitted_by_fingerprint") @db.VarChar(128) // hash IP+UA para anónimos
-  answers                 Json     // mapa fieldKey → value
-  schemaSnapshot          Json     @map("schema_snapshot") // copia del schema al enviar
-  submittedAt             DateTime @default(now()) @map("submitted_at")
-  ipAddress               String?  @map("ip_address") @db.VarChar(45)
-  userAgent               String?  @map("user_agent") @db.VarChar(512)
+  id                     String   @id @default(uuid()) @db.Char(36)
+  formInstanceId         String   @map("form_instance_id") @db.Char(36)
+  submittedById          String?  @map("submitted_by_id") @db.Char(36) // null si anónimo
+  submittedByFingerprint String?  @map("submitted_by_fingerprint") @db.VarChar(128) // hash IP+UA para anónimos
+  answers                Json // mapa fieldKey → value
+  schemaSnapshot         Json     @map("schema_snapshot") // copia del schema al enviar
+  submittedAt            DateTime @default(now()) @map("submitted_at")
+  ipAddress              String?  @map("ip_address") @db.VarChar(45)
+  userAgent              String?  @map("user_agent") @db.VarChar(512)
 
   formInstance FormInstance @relation(fields: [formInstanceId], references: [id], onDelete: Cascade)
 
@@ -761,4 +796,101 @@ model DashboardWidget {
 
   @@index([dashboardId])
   @@map("dashboard_widget")
+}
+
+// ---------------------------------------------------------------------------
+// Leads (módulo `leads`)
+// ---------------------------------------------------------------------------
+
+/// Contacto comercial potencial y su estado en el pipeline. Las FK a `User` y a
+/// `FormResponse` son suaves (columna sin `@relation`) para no acoplar el módulo
+/// ni romper el histórico al borrar un usuario. Ver spec `leads`.
+model Lead {
+  id String @id @default(uuid()) @db.Char(36)
+
+  // Identidad del contacto
+  email           String? @db.VarChar(255)
+  emailNormalized String? @map("email_normalized") @db.VarChar(255) // lower+trim para dedupe
+  phone           String? @db.VarChar(40)
+  firstName       String? @map("first_name") @db.VarChar(100)
+  lastName        String? @map("last_name") @db.VarChar(100)
+  company         String? @db.VarChar(160)
+
+  // Ciclo de vida
+  status  LeadStatus @default(NEW)
+  score   Int        @default(0)
+  ownerId String?    @map("owner_id") @db.Char(36) // FK suave a User
+
+  // Atribución / origen
+  source         LeadSource @default(OTHER)
+  formResponseId String?    @map("form_response_id") @db.Char(36) // FK suave a FormResponse
+  utmSource      String?    @map("utm_source") @db.VarChar(120)
+  utmMedium      String?    @map("utm_medium") @db.VarChar(120)
+  utmCampaign    String?    @map("utm_campaign") @db.VarChar(120)
+
+  // Datos flexibles
+  customFields Json? @map("custom_fields")
+
+  // Consentimiento (GDPR)
+  consentGiven Boolean   @default(false) @map("consent_given")
+  consentAt    DateTime? @map("consent_at")
+
+  // Conversión
+  convertedToUserId String?   @map("converted_to_user_id") @db.Char(36) // FK suave a User
+  convertedAt       DateTime? @map("converted_at")
+
+  createdById String?  @map("created_by_id") @db.Char(36) // FK suave a User
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  activities LeadActivity[]
+  tags       LeadTagOnLead[]
+
+  @@index([status, createdAt])
+  @@index([ownerId, status])
+  @@index([emailNormalized])
+  @@index([source])
+  @@map("lead")
+}
+
+/// Entrada de timeline de un lead. Inmutable: solo se añade, nunca se edita.
+model LeadActivity {
+  id      String           @id @default(uuid()) @db.Char(36)
+  leadId  String           @map("lead_id") @db.Char(36)
+  type    LeadActivityType
+  body    String?          @db.Text
+  meta    Json?
+  actorId String?          @map("actor_id") @db.Char(36) // FK suave a User (null = sistema)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+  @@map("lead_activity")
+}
+
+/// Catálogo de etiquetas de leads.
+model LeadTag {
+  id        String   @id @default(uuid()) @db.Char(36)
+  name      String   @unique @db.VarChar(80)
+  color     String?  @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  leads LeadTagOnLead[]
+
+  @@map("lead_tag")
+}
+
+/// Join N:N entre leads y etiquetas.
+model LeadTagOnLead {
+  leadId String @map("lead_id") @db.Char(36)
+  tagId  String @map("tag_id") @db.Char(36)
+
+  lead Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tag  LeadTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([leadId, tagId])
+  @@index([tagId])
+  @@map("lead_tag_on_lead")
 }
