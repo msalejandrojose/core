@@ -40,4 +40,10 @@ export {
 } from './leads/lead.js';
 export type { LeadStatus, LeadSource, LeadActivityType } from './leads/lead.js';
 
+export {
+  NotificationChannelSchema,
+  NOTIFICATION_CHANNELS,
+} from './notifications/channel.js';
+export type { NotificationChannel } from './notifications/channel.js';
+
 export type { CursorMeta, OffsetMeta } from './pagination/meta.js';
