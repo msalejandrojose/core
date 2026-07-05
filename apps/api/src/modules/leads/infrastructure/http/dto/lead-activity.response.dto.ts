@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { LEAD_ACTIVITY_TYPES, type LeadActivityType } from '@core/shared-types';
 import { type LeadActivity } from '../../../domain/entities/lead-activity.entity';
 
@@ -6,9 +6,9 @@ export class LeadActivityResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() leadId: string;
   @ApiProperty({ enum: LEAD_ACTIVITY_TYPES }) type: LeadActivityType;
-  @ApiPropertyOptional({ nullable: true }) body: string | null;
-  @ApiPropertyOptional({ nullable: true }) meta: unknown;
-  @ApiPropertyOptional({ nullable: true }) actorId: string | null;
+  @ApiProperty({ type: String, nullable: true }) body: string | null;
+  @ApiProperty({ type: Object, nullable: true }) meta: unknown;
+  @ApiProperty({ type: String, nullable: true }) actorId: string | null;
   @ApiProperty() createdAt: Date;
 
   static fromDomain(activity: LeadActivity): LeadActivityResponseDto {

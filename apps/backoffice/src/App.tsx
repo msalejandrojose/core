@@ -83,6 +83,14 @@ const TagsPage = lazy(() =>
 const FilesPage = lazy(() =>
   import('@/features/files/FilesPage').then((m) => ({ default: m.FilesPage })),
 );
+const LeadsPage = lazy(() =>
+  import('@/features/leads/LeadsPage').then((m) => ({ default: m.LeadsPage })),
+);
+const LeadDetailPage = lazy(() =>
+  import('@/features/leads/LeadDetailPage').then((m) => ({
+    default: m.LeadDetailPage,
+  })),
+);
 const FormsListPage = lazy(() =>
   import('@/features/dynamic-forms/FormsListPage').then((m) => ({
     default: m.FormsListPage,
@@ -161,6 +169,8 @@ export default function App() {
               <Route path="/blog/posts/:id" element={<PostEditorPage />} />
               <Route path="/blog/categories" element={<CategoriesPage />} />
               <Route path="/blog/tags" element={<TagsPage />} />
+              <Route path="/leads" element={<LeadsPage />} />
+              <Route path="/leads/:id" element={<LeadDetailPage />} />
               <Route path="/files" element={<FilesPage />} />
               <Route path="/forms" element={<FormsListPage />} />
               <Route path="/forms/nuevo" element={<FormDetailPage />} />
