@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { IamModule } from '../iam/iam.module';
 import { WorkflowsModule } from '../workflows/workflows.module';
+import { DynamicFormsModule } from '../dynamic-forms/dynamic-forms.module';
 import { LEAD_REPOSITORY } from './application/ports/lead-repository.port';
 import { LEAD_ACTIVITY_REPOSITORY } from './application/ports/lead-activity-repository.port';
 import { LEAD_TAG_REPOSITORY } from './application/ports/lead-tag-repository.port';
@@ -24,9 +25,10 @@ import { PrismaLeadTagRepository } from './infrastructure/persistence/prisma-lea
 import { WorkflowLeadEventPublisher } from './infrastructure/events/workflow-lead-event-publisher';
 import { LeadsController } from './infrastructure/http/leads.controller';
 import { PublicLeadsController } from './infrastructure/http/public-leads.controller';
+import { LeadsCreateFromResponseHandler } from './infrastructure/workflow/leads-create-from-response.handler';
 
 @Module({
-  imports: [IamModule, WorkflowsModule],
+  imports: [IamModule, WorkflowsModule, DynamicFormsModule],
   controllers: [LeadsController, PublicLeadsController],
   providers: [
     // Ports → Adapters
@@ -54,6 +56,9 @@ import { PublicLeadsController } from './infrastructure/http/public-leads.contro
     SetLeadTagsUseCase,
     ListLeadTagsUseCase,
     CreateLeadTagUseCase,
+
+    // Workflow action handler (descubierto por el registry de workflows).
+    LeadsCreateFromResponseHandler,
   ],
 })
 export class LeadsModule {}
