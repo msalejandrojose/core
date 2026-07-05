@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   LEAD_SOURCES,
   LEAD_STATUSES,
@@ -10,30 +10,32 @@ import { type Lead } from '../../../domain/entities/lead.entity';
 class LeadTagRefDto {
   @ApiProperty() id: string;
   @ApiProperty() name: string;
-  @ApiPropertyOptional({ nullable: true }) color: string | null;
+  @ApiProperty({ type: String, nullable: true }) color: string | null;
 }
 
 export class LeadResponseDto {
   @ApiProperty() id: string;
-  @ApiPropertyOptional({ nullable: true }) email: string | null;
-  @ApiPropertyOptional({ nullable: true }) phone: string | null;
-  @ApiPropertyOptional({ nullable: true }) firstName: string | null;
-  @ApiPropertyOptional({ nullable: true }) lastName: string | null;
-  @ApiPropertyOptional({ nullable: true }) company: string | null;
+  @ApiProperty({ type: String, nullable: true }) email: string | null;
+  @ApiProperty({ type: String, nullable: true }) phone: string | null;
+  @ApiProperty({ type: String, nullable: true }) firstName: string | null;
+  @ApiProperty({ type: String, nullable: true }) lastName: string | null;
+  @ApiProperty({ type: String, nullable: true }) company: string | null;
   @ApiProperty({ enum: LEAD_STATUSES }) status: LeadStatus;
   @ApiProperty() score: number;
-  @ApiPropertyOptional({ nullable: true }) ownerId: string | null;
+  @ApiProperty({ type: String, nullable: true }) ownerId: string | null;
   @ApiProperty({ enum: LEAD_SOURCES }) source: LeadSource;
-  @ApiPropertyOptional({ nullable: true }) formResponseId: string | null;
-  @ApiPropertyOptional({ nullable: true }) utmSource: string | null;
-  @ApiPropertyOptional({ nullable: true }) utmMedium: string | null;
-  @ApiPropertyOptional({ nullable: true }) utmCampaign: string | null;
-  @ApiPropertyOptional({ nullable: true }) customFields: unknown;
+  @ApiProperty({ type: String, nullable: true }) formResponseId: string | null;
+  @ApiProperty({ type: String, nullable: true }) utmSource: string | null;
+  @ApiProperty({ type: String, nullable: true }) utmMedium: string | null;
+  @ApiProperty({ type: String, nullable: true }) utmCampaign: string | null;
+  @ApiProperty({ type: Object, nullable: true }) customFields: unknown;
   @ApiProperty() consentGiven: boolean;
-  @ApiPropertyOptional({ nullable: true }) consentAt: Date | null;
-  @ApiPropertyOptional({ nullable: true }) convertedToUserId: string | null;
-  @ApiPropertyOptional({ nullable: true }) convertedAt: Date | null;
-  @ApiPropertyOptional({ nullable: true }) createdById: string | null;
+  @ApiProperty({ type: Date, nullable: true }) consentAt: Date | null;
+  @ApiProperty({ type: String, nullable: true }) convertedToUserId:
+    | string
+    | null;
+  @ApiProperty({ type: Date, nullable: true }) convertedAt: Date | null;
+  @ApiProperty({ type: String, nullable: true }) createdById: string | null;
   @ApiProperty() createdAt: Date;
   @ApiProperty() updatedAt: Date;
   @ApiProperty({ type: [LeadTagRefDto] }) tags: LeadTagRefDto[];

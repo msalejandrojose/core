@@ -1,6 +1,7 @@
 import {
   Circle,
   ClipboardList,
+  Contact,
   Files,
   LayoutDashboard,
   LayoutList,
@@ -25,6 +26,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   LayoutList,
   Newspaper,
   ClipboardList,
+  Contact,
   Workflow,
   Play,
   Zap,

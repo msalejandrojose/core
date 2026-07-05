@@ -1,10 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { type LeadTag } from '../../../domain/entities/lead-tag.entity';
 
 export class LeadTagResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() name: string;
-  @ApiPropertyOptional({ nullable: true }) color: string | null;
+  @ApiProperty({ type: String, nullable: true }) color: string | null;
   @ApiProperty() createdAt: Date;
 
   static fromDomain(tag: LeadTag): LeadTagResponseDto {
