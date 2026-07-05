@@ -1,8 +1,8 @@
 # Spec — Módulo `leads`
 
-> Estado: **borrador / pendiente de implementar**
+> Estado: **implementado (MVP)** — módulo `apps/api/src/modules/leads/`
 > Owner: backend
-> Última edición: 2026-07-04
+> Última edición: 2026-07-05
 
 ## 1. Objetivo
 

@@ -26,4 +26,18 @@ export {
 } from './forms/form-status.js';
 export type { FormStatus, FormResponsePolicy, FormInstanceStatus } from './forms/form-status.js';
 
+export {
+  LeadStatusSchema,
+  LEAD_STATUSES,
+  LeadSourceSchema,
+  LEAD_SOURCES,
+  LeadActivityTypeSchema,
+  LEAD_ACTIVITY_TYPES,
+  CLOSED_LEAD_STATUSES,
+  isClosedLeadStatus,
+  LEAD_STATUS_TRANSITIONS,
+  canTransitionLeadStatus,
+} from './leads/lead.js';
+export type { LeadStatus, LeadSource, LeadActivityType } from './leads/lead.js';
+
 export type { CursorMeta, OffsetMeta } from './pagination/meta.js';

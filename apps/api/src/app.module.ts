@@ -10,6 +10,7 @@ import { BlogModule } from './modules/blog/blog.module';
 import { DynamicFormsModule } from './modules/dynamic-forms/dynamic-forms.module';
 import { WorkflowsModule } from './modules/workflows/workflows.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { LeadsModule } from './modules/leads/leads.module';
 import { ErrorLogModule } from './infrastructure/error-log/error-log.module';
 import { AppExceptionFilter } from './shared/filters/app-exception.filter';
 
@@ -36,6 +37,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     DynamicFormsModule,
     WorkflowsModule,
     DashboardModule,
+    LeadsModule,
     ErrorLogModule,
   ],
   providers: [

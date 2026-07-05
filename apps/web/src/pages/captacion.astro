@@ -1,0 +1,42 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import LeadCaptureForm from '../components/islands/LeadCaptureForm';
+---
+
+<MarketingLayout
+  title="Solicita información"
+  description="Déjanos tus datos y nos pondremos en contacto contigo. Sin compromiso."
+>
+  <section class="py-24 lg:py-32">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-16 lg:gap-24 items-start">
+
+        <!-- Intro -->
+        <div class="lg:sticky lg:top-32">
+          <h1 class="font-display text-4xl lg:text-5xl font-semibold tracking-tight text-fg">
+            Cuéntanos qué necesitas
+          </h1>
+          <p class="mt-5 text-lg leading-relaxed text-fg-muted">
+            Déjanos tus datos y un miembro del equipo se pondrá en contacto
+            contigo para ayudarte. Sin compromiso.
+          </p>
+          <div class="mt-10 space-y-4">
+            <div class="flex items-center gap-3 text-fg-muted text-sm">
+              <span class="text-brand" aria-hidden="true">✦</span>
+              Respuesta en menos de 24 horas
+            </div>
+            <div class="flex items-center gap-3 text-fg-muted text-sm">
+              <span class="text-brand" aria-hidden="true">✦</span>
+              Tus datos solo se usan para contactarte
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de captación (React island → POST /public/leads) -->
+        <div>
+          <LeadCaptureForm client:load />
+        </div>
+      </div>
+    </div>
+  </section>
+</MarketingLayout>
