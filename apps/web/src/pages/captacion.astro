@@ -1,6 +1,12 @@
 ---
 import MarketingLayout from '../layouts/MarketingLayout.astro';
-import LeadCaptureForm from '../components/islands/LeadCaptureForm';
+import DynamicForm from '../components/islands/DynamicForm';
+
+// Hash de la FormInstance pública de captación (la crea el seed
+// `pnpm --filter @core/api seed:leads`). Se configura en apps/web/.env como
+// PUBLIC_LEADS_FORM_HASH. Al enviarse, el backend dispara el workflow que crea
+// el lead a partir de la respuesta.
+const leadFormHash = import.meta.env.PUBLIC_LEADS_FORM_HASH;
 ---
 
 <MarketingLayout
@@ -32,9 +38,14 @@ import LeadCaptureForm from '../components/islands/LeadCaptureForm';
           </div>
         </div>
 
-        <!-- Formulario de captación (React island → POST /public/leads) -->
+        <!--
+          Formulario dinámico servido por dynamic-forms (renderiza el schema de
+          la FormInstance por su hash). El envío dispara el evento
+          `form.response.submitted` → workflow → creación del lead.
+          client:only — se resuelve enteramente en el cliente.
+        -->
         <div>
-          <LeadCaptureForm client:load />
+          <DynamicForm hash={leadFormHash} client:only="react" />
         </div>
       </div>
     </div>
