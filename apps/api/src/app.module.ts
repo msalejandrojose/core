@@ -12,6 +12,7 @@ import { WorkflowsModule } from './modules/workflows/workflows.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { ErrorLogModule } from './infrastructure/error-log/error-log.module';
+import { HealthModule } from './infrastructure/health/health.module';
 import { AppExceptionFilter } from './shared/filters/app-exception.filter';
 
 @Module({
@@ -39,6 +40,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     DashboardModule,
     LeadsModule,
     ErrorLogModule,
+    HealthModule,
   ],
   providers: [
     {
