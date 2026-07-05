@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IamModule } from '../iam/iam.module';
+import { WorkflowsModule } from '../workflows/workflows.module';
 import { FORM_REPOSITORY } from './application/ports/form-repository.port';
 import { FORM_INSTANCE_REPOSITORY } from './application/ports/form-instance-repository.port';
 import { FORM_RESPONSE_REPOSITORY } from './application/ports/form-response-repository.port';
@@ -25,7 +26,7 @@ import { FormResponsesController } from './infrastructure/http/form-responses.co
 import { PublicFormsController } from './infrastructure/http/public-forms.controller';
 
 @Module({
-  imports: [IamModule],
+  imports: [IamModule, WorkflowsModule],
   controllers: [
     FormsController,
     FormInstancesController,
@@ -35,8 +36,14 @@ import { PublicFormsController } from './infrastructure/http/public-forms.contro
   providers: [
     // Ports → Adapters
     { provide: FORM_REPOSITORY, useClass: PrismaFormRepository },
-    { provide: FORM_INSTANCE_REPOSITORY, useClass: PrismaFormInstanceRepository },
-    { provide: FORM_RESPONSE_REPOSITORY, useClass: PrismaFormResponseRepository },
+    {
+      provide: FORM_INSTANCE_REPOSITORY,
+      useClass: PrismaFormInstanceRepository,
+    },
+    {
+      provide: FORM_RESPONSE_REPOSITORY,
+      useClass: PrismaFormResponseRepository,
+    },
 
     // Use cases — forms
     CreateFormUseCase,
@@ -59,5 +66,8 @@ import { PublicFormsController } from './infrastructure/http/public-forms.contro
     GetPublicFormUseCase,
     SubmitFormResponseUseCase,
   ],
+  // GetFormResponseUseCase se exporta para que otros módulos (leads) lean una
+  // respuesta por id sin acoplarse a la persistencia de dynamic-forms.
+  exports: [GetFormResponseUseCase],
 })
 export class DynamicFormsModule {}

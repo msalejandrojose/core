@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
 import { IamModule } from '../iam/iam.module';
 
 // Ports (tokens)
@@ -57,7 +58,7 @@ import { SchedulerController } from './infrastructure/http/scheduler.controller'
 // inmediato, con fan-out por target (un run por entidad). La reanudación de
 // delay/wait y los retries siguen siendo una iteración posterior.
 @Module({
-  imports: [IamModule],
+  imports: [IamModule, DiscoveryModule],
   controllers: [
     WorkflowsController,
     EventsController,
@@ -86,15 +87,11 @@ import { SchedulerController } from './infrastructure/http/scheduler.controller'
     },
     { provide: TEMPLATE_EVALUATOR, useClass: JsonPathTemplateEvaluator },
 
-    // Handlers built-in. Otros módulos podrán registrar los suyos cuando se
-    // añada el patrón forRoot; en v1 el registry se construye con estos.
+    // Handlers built-in. Otros módulos registran los suyos declarándolos como
+    // providers y decorándolos con `@WorkflowActionHandler()`: el registry los
+    // descubre vía DiscoveryService en `onApplicationBootstrap`.
     LogActionHandler,
-    {
-      provide: ACTION_HANDLER_REGISTRY,
-      useFactory: (log: LogActionHandler) =>
-        new NestActionHandlerRegistry([log]),
-      inject: [LogActionHandler],
-    },
+    { provide: ACTION_HANDLER_REGISTRY, useClass: NestActionHandlerRegistry },
 
     // Enrichers de contexto built-in. Se aplican en cadena al crear un run, en
     // el orden en que se listan aquí. Otros módulos añadirán los suyos a esta

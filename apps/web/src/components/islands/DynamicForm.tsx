@@ -27,7 +27,7 @@ function readHash(): string | null {
   return new URLSearchParams(window.location.search).get('f');
 }
 
-export default function DynamicForm() {
+export default function DynamicForm({ hash: hashProp }: { hash?: string } = {}) {
   const [phase, setPhase] = useState<Phase>('loading');
   const [data, setData] = useState<PublicFormResponse | null>(null);
   const [loadError, setLoadError] = useState<{ code: string; message: string } | null>(
@@ -35,7 +35,9 @@ export default function DynamicForm() {
   );
 
   useEffect(() => {
-    const hash = readHash();
+    // Prioriza el hash pasado por prop (p.ej. la página de captación con el
+    // hash de su FormInstance); si no, lo lee de la query string (`?f=`).
+    const hash = hashProp || readHash();
     if (!hash) {
       setLoadError({
         code: 'NO_HASH',
@@ -58,7 +60,7 @@ export default function DynamicForm() {
         setLoadError({ code, message });
         setPhase('error');
       });
-  }, []);
+  }, [hashProp]);
 
   if (phase === 'loading') {
     return (
@@ -107,9 +109,19 @@ function FormBody({ data }: { data: PublicFormResponse }) {
     [schema],
   );
 
-  const [values, setValues] = useState<FormValues>(() =>
-    getDefaultValues(schema),
-  );
+  const [values, setValues] = useState<FormValues>(() => {
+    const defaults = getDefaultValues(schema);
+    // Precarga cualquier campo cuyo `key` coincida con un parámetro de la URL.
+    // Sirve para los campos ocultos de atribución (`utm_source`, etc.).
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      for (const field of dataFields) {
+        const v = params.get(field.name);
+        if (v != null && v !== '') defaults[field.name] = v;
+      }
+    }
+    return defaults;
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [submitError, setSubmitError] = useState<string | null>(null);

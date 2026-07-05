@@ -4,6 +4,7 @@ import {
   ActionContext,
   ActionHandlerPort,
 } from '../../application/ports/action-handler.port';
+import { WorkflowActionHandler } from '../../application/ports/workflow-action-handler.decorator';
 
 const inputSchema = z.object({
   message: z.string(),
@@ -16,6 +17,7 @@ type LogInput = z.infer<typeof inputSchema>;
 // Handler built-in `log`: útil para tests/debug de workflows. No tiene
 // side-effects externos, así que es seguro también en dry-run.
 @Injectable()
+@WorkflowActionHandler()
 export class LogActionHandler implements ActionHandlerPort<LogInput> {
   readonly key = 'log';
   readonly inputSchema = inputSchema;
