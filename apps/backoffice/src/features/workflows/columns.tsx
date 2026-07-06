@@ -1,5 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { Link } from 'react-router-dom';
+import { RowActions } from '@/components/data-table/RowActions';
 import { Badge } from '@/components/ui/badge';
 import type { WorkflowDefinitionRow } from './types';
 
@@ -69,5 +70,15 @@ export const columns: ColumnDef<WorkflowDefinitionRow>[] = [
         {formatDate(row.original.createdAt)}
       </span>
     ),
+  },
+  {
+    id: 'actions',
+    enableSorting: false,
+    cell: ({ row }) => {
+      const key = encodeURIComponent(row.original.key);
+      return (
+        <RowActions viewHref={`/workflows/${key}`} editHref={`/workflows/${key}/editar`} />
+      );
+    },
   },
 ];
