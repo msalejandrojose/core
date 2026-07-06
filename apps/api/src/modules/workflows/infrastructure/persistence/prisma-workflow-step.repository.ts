@@ -48,6 +48,12 @@ export class PrismaWorkflowStepRepository implements WorkflowStepRepositoryPort 
     });
   }
 
+  async countAttempts(runId: string, stepKey: string): Promise<number> {
+    return this.prisma.workflowStepExecution.count({
+      where: { runId, stepKey },
+    });
+  }
+
   async listByRun(runId: string): Promise<WorkflowStepExecution[]> {
     const rows = await this.prisma.workflowStepExecution.findMany({
       where: { runId },

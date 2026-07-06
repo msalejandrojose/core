@@ -22,6 +22,7 @@ describe('WorkflowSchedulerService', () => {
   let events: { create: jest.Mock };
   let cron: { next: jest.Mock; isValid: jest.Mock };
   let start: { execute: jest.Mock };
+  let resume: { execute: jest.Mock };
   let scheduler: WorkflowSchedulerService;
 
   beforeEach(() => {
@@ -40,20 +41,24 @@ describe('WorkflowSchedulerService', () => {
       isValid: jest.fn().mockReturnValue(true),
     };
     start = { execute: jest.fn().mockResolvedValue([{ id: 'run-1' }]) };
+    resume = { execute: jest.fn().mockResolvedValue(0) };
 
     scheduler = new WorkflowSchedulerService(
       triggers as never,
       definitions as never,
       events as never,
-      cron as never,
+      cron,
       start as never,
+      resume as never,
     );
   });
 
   it('dispara los triggers vencidos y reprograma su próximo disparo', async () => {
-    const fired = await scheduler.tick();
+    const { fired } = await scheduler.tick();
 
     expect(fired).toBe(1);
+    // Cada tick también intenta reanudar delay/retry vencidos.
+    expect(resume.execute).toHaveBeenCalledTimes(1);
     // Reprograma con el siguiente instante calculado.
     expect(triggers.updateNextFireAt).toHaveBeenCalledWith(
       'trig-1',
@@ -83,9 +88,19 @@ describe('WorkflowSchedulerService', () => {
       .mockRejectedValueOnce(new Error('db down'))
       .mockResolvedValue(undefined);
 
-    const fired = await scheduler.tick();
+    const { fired } = await scheduler.tick();
 
     expect(fired).toBe(1);
     expect(start.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('reanuda los delay/retry vencidos y reporta el conteo', async () => {
+    triggers.findDueCronTriggers.mockResolvedValue([]);
+    resume.execute.mockResolvedValue(3);
+
+    const { fired, resumed } = await scheduler.tick();
+
+    expect(fired).toBe(0);
+    expect(resumed).toBe(3);
   });
 });

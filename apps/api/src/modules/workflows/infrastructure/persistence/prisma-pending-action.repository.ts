@@ -4,6 +4,7 @@ import { PrismaService } from '../../../../infrastructure/database/prisma/prisma
 import { PendingAction } from '../../domain/entities/pending-action.entity';
 import {
   CreatePendingActionData,
+  FindDuePendingActionsOptions,
   PendingActionRepositoryPort,
 } from '../../application/ports/pending-action-repository.port';
 import { PendingActionMapper } from '../mappers/pending-action.mapper';
@@ -41,5 +42,34 @@ export class PrismaPendingActionRepository implements PendingActionRepositoryPor
       orderBy: { createdAt: 'asc' },
     });
     return rows.map((r) => PendingActionMapper.toDomain(r));
+  }
+
+  async findDue(opts: FindDuePendingActionsOptions): Promise<PendingAction[]> {
+    const rows = await this.prisma.pendingAction.findMany({
+      where: {
+        status: 'PENDING',
+        kind: { in: opts.kinds },
+        runAt: { not: null, lte: opts.now },
+      },
+      orderBy: { runAt: 'asc' },
+      take: opts.limit,
+    });
+    return rows.map((r) => PendingActionMapper.toDomain(r));
+  }
+
+  async markConsumed(
+    id: string,
+    consumedEventId?: string | null,
+  ): Promise<boolean> {
+    // updateMany con guard status=PENDING: la reclama como mucho un llamante.
+    const { count } = await this.prisma.pendingAction.updateMany({
+      where: { id, status: 'PENDING' },
+      data: {
+        status: 'CONSUMED',
+        consumedAt: new Date(),
+        consumedEventId: consumedEventId ?? null,
+      },
+    });
+    return count > 0;
   }
 }

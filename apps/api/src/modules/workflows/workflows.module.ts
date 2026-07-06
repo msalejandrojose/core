@@ -36,6 +36,7 @@ import { WorkflowSchedulerService } from './infrastructure/scheduler/workflow-sc
 
 // Use cases
 import { AdvanceWorkflowRunUseCase } from './application/use-cases/advance-workflow-run.use-case';
+import { ResumeDuePendingActionsUseCase } from './application/use-cases/resume-due-pending-actions.use-case';
 import { StartWorkflowRunsUseCase } from './application/use-cases/start-workflow-runs.use-case';
 import { RegisterEventUseCase } from './application/use-cases/register-event.use-case';
 import { PublishWorkflowDefinitionUseCase } from './application/use-cases/publish-workflow-definition.use-case';
@@ -123,6 +124,7 @@ import { SchedulerController } from './infrastructure/http/scheduler.controller'
     EngineActionsExecutor,
 
     AdvanceWorkflowRunUseCase,
+    ResumeDuePendingActionsUseCase,
     StartWorkflowRunsUseCase,
     RegisterEventUseCase,
     PublishWorkflowDefinitionUseCase,

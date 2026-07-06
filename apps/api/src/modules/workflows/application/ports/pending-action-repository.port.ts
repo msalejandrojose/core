@@ -17,7 +17,19 @@ export interface CreatePendingActionData {
   target?: unknown;
 }
 
+export interface FindDuePendingActionsOptions {
+  now: Date;
+  kinds: PendingActionKind[];
+  limit: number;
+}
+
 export interface PendingActionRepositoryPort {
   create(data: CreatePendingActionData): Promise<PendingAction>;
   listByRun(runId: string): Promise<PendingAction[]>;
+  // Acciones PENDING (de los `kinds` indicados) con `runAt <= now`, más antigua
+  // primero. Para el resumer del scheduler (delay/retry vencidos).
+  findDue(opts: FindDuePendingActionsOptions): Promise<PendingAction[]>;
+  // Marca la acción como CONSUMED de forma atómica. Devuelve `true` solo si ESTA
+  // llamada la reclamó (estaba PENDING); `false` si ya la consumió otro (idempotencia).
+  markConsumed(id: string, consumedEventId?: string | null): Promise<boolean>;
 }

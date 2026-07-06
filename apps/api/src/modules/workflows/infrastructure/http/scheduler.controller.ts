@@ -11,12 +11,19 @@ export class SchedulerController {
   @Post('tick')
   @RequiresPermission('workflows', 'WRITE')
   @ApiOperation({
-    summary: 'Fuerza una pasada del scheduler (dispara los cron vencidos).',
+    summary:
+      'Fuerza una pasada del scheduler: dispara los cron vencidos y reanuda los delay/retry vencidos.',
   })
   @ApiOkResponse({
-    schema: { type: 'object', properties: { fired: { type: 'number' } } },
+    schema: {
+      type: 'object',
+      properties: {
+        fired: { type: 'number' },
+        resumed: { type: 'number' },
+      },
+    },
   })
-  async tick(): Promise<{ fired: number }> {
-    return { fired: await this.scheduler.tick() };
+  async tick(): Promise<{ fired: number; resumed: number }> {
+    return this.scheduler.tick();
   }
 }
