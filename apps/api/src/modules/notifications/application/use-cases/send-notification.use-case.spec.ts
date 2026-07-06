@@ -119,6 +119,33 @@ describe('SendNotificationUseCase', () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 
+  it('compila el template de bloques a html/text en el envío', async () => {
+    repo.findByKey.mockResolvedValue(
+      buildMessageType({
+        content: {
+          subject: 'Hola {{ firstName }}',
+          template: {
+            blocks: [
+              { type: 'heading', props: { text: 'Hola {{ firstName }}' } },
+            ],
+          },
+        },
+      }),
+    );
+    const result = await useCase.executeByKey('welcome_email', {
+      to: 'user@x.com',
+      variables: { firstName: 'Ana' },
+    });
+
+    expect(result.sent).toBe(true);
+    const [, message] = dispatch.mock.calls[0] as [unknown, RenderedMessage];
+    const html = message.content.html as string;
+    expect(html).toContain('<table');
+    expect(html).toContain('Hola Ana');
+    expect(html).not.toContain('{{');
+    expect(message.content.text).toContain('Hola Ana');
+  });
+
   it('omite (skip) si el tipo de mensaje está inactivo', async () => {
     repo.findByKey.mockResolvedValue(buildMessageType({ isActive: false }));
     const result = await useCase.executeByKey('welcome_email', {

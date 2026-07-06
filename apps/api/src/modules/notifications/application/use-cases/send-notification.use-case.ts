@@ -1,12 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { NotificationChannel } from '@core/shared-types';
 import { channelDefinition } from '../../domain/channels/channel-catalog';
-import { validateFields } from '../../domain/channels/validate-fields';
+import { validateMessageContent } from '../../domain/channels/validate-message-content';
 import type { MessageType } from '../../domain/entities/message-type.entity';
 import { ChannelNotSupportedError } from '../../domain/errors/channel-not-supported.error';
 import { InvalidMessageContentError } from '../../domain/errors/invalid-message-content.error';
 import { MessageTypeNotFoundError } from '../../domain/errors/message-type-not-found.error';
 import { NotificationDeliveryError } from '../../domain/errors/notification-delivery.error';
+import { compileEmailContent } from '../../domain/template/compile-email-content';
 import { renderContent } from '../../domain/template/render-content';
 import { decryptConfigSecrets } from '../config-secrets';
 import {
@@ -89,7 +90,12 @@ export class SendNotificationUseCase {
       to: input.to,
       ...(input.variables ?? {}),
     };
-    const rendered = renderContent(messageType.content, vars);
+    let rendered = renderContent(messageType.content, vars);
+    // EMAIL: si hay `template` de bloques, se compila a html/text antes de
+    // validar y despachar (retrocompatible: sin template, no cambia nada).
+    if (channel === 'EMAIL') {
+      rendered = compileEmailContent(rendered, vars);
+    }
 
     const base = {
       dryRun,
@@ -108,9 +114,8 @@ export class SendNotificationUseCase {
       return { ...base, sent: false, skipped: true, reason: 'inactive' };
     }
 
-    // Valida el contenido YA renderizado (formato real, no plantillas).
-    const fields = channelDefinition(channel).message;
-    const error = validateFields(fields, rendered);
+    // Valida el contenido YA renderizado y compilado (formato real).
+    const error = validateMessageContent(channel, rendered);
     if (error) throw new InvalidMessageContentError(error);
 
     const dispatcher = this.dispatchers.get(channel);

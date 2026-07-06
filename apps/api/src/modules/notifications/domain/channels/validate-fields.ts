@@ -1,3 +1,4 @@
+import { validateTemplate } from '../template/validate-template';
 import type { FieldDescriptor } from './field-descriptor';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -65,6 +66,13 @@ export function validateFields(
           return `"${field.key}" debe ser una de: ${(field.options ?? []).join(', ')}`;
         }
         break;
+      case 'template': {
+        // La estructura se valida igual con o sin plantillas: las props de
+        // texto pueden llevar `{{ var }}` (son strings) y se resuelven al enviar.
+        const templateError = validateTemplate(value);
+        if (templateError) return `"${field.key}": ${templateError}`;
+        break;
+      }
     }
   }
 
