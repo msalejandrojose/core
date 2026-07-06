@@ -107,6 +107,7 @@ enum WorkflowStepStatus {
 enum PendingActionKind {
   DELAY // se consume cuando runAt <= now
   WAIT_EVENT // se consume cuando llega un Event matching
+  WAIT_CONDITION // se reevalúa la condición cada runAt hasta cumplirse o vencer deadlineAt
   RETRY // reintento programado de un step que falló
   PENDING_START // un trigger se disparó pero maxConcurrentRuns está lleno
 }
@@ -607,6 +608,8 @@ model PendingAction {
   kind            PendingActionKind
   status          PendingActionStatus @default(PENDING)
   runAt           DateTime?           @map("run_at")
+  // Fecha límite del wait (WAIT_CONDITION/WAIT_EVENT): al vencer se toma onTimeout.
+  deadlineAt      DateTime?           @map("deadline_at")
   eventType       String?             @map("event_type") @db.VarChar(120)
   matchExpression Json?               @map("match_expression")
   // Entidad target ya resuelta (fan-out) para kind = PENDING_START, de modo que

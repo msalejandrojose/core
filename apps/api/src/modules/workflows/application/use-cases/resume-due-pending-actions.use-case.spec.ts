@@ -7,7 +7,11 @@ const dsl = (steps: unknown[]) => ({
 });
 
 describe('ResumeDuePendingActionsUseCase', () => {
-  let pending: { findDue: jest.Mock; markConsumed: jest.Mock };
+  let pending: {
+    findDue: jest.Mock;
+    markConsumed: jest.Mock;
+    create: jest.Mock;
+  };
   let runs: { findById: jest.Mock; update: jest.Mock };
   let definitions: { findById: jest.Mock };
   let advance: { execute: jest.Mock };
@@ -25,6 +29,7 @@ describe('ResumeDuePendingActionsUseCase', () => {
     pending = {
       findDue: jest.fn().mockResolvedValue([]),
       markConsumed: jest.fn().mockResolvedValue(true),
+      create: jest.fn().mockResolvedValue({ id: 'pa-new' }),
     };
     runs = {
       findById: jest.fn().mockResolvedValue(waitingRun()),
@@ -40,12 +45,12 @@ describe('ResumeDuePendingActionsUseCase', () => {
     );
   });
 
-  it('solo pide acciones DELAY y RETRY vencidas', async () => {
+  it('pide las acciones diferidas vencidas (delay/retry/wait_condition)', async () => {
     const now = new Date();
     await useCase.execute(now, 25);
     expect(pending.findDue).toHaveBeenCalledWith({
       now,
-      kinds: ['DELAY', 'RETRY'],
+      kinds: ['DELAY', 'RETRY', 'WAIT_CONDITION'],
       limit: 25,
     });
   });
@@ -123,6 +128,97 @@ describe('ResumeDuePendingActionsUseCase', () => {
 
     expect(runs.update).not.toHaveBeenCalled();
     expect(advance.execute).not.toHaveBeenCalled();
+    expect(resumed).toBe(0);
+  });
+
+  const waitConditionDsl = () =>
+    dsl([
+      {
+        key: 's1',
+        action: 'wait_for_condition',
+        input: { condition: { ready: true }, pollInterval: '30s' },
+        onMatch: 's2',
+        onTimeout: 's3',
+      },
+      { key: 's2', action: 'log' },
+      { key: 's3', action: 'log' },
+    ]);
+
+  it('WAIT_CONDITION cumplida: sigue por onMatch', async () => {
+    pending.findDue.mockResolvedValue([
+      {
+        id: 'pa-c1',
+        runId: 'run-1',
+        kind: 'WAIT_CONDITION',
+        stepKey: 's1',
+        matchExpression: { ready: true },
+        deadlineAt: new Date(Date.now() + 60_000),
+      },
+    ]);
+    runs.findById.mockResolvedValue(waitingRun({ context: { ready: true } }));
+    definitions.findById.mockResolvedValue(waitConditionDsl());
+
+    const resumed = await useCase.execute();
+
+    expect(runs.update).toHaveBeenCalledWith('run-1', {
+      currentStepKey: 's2',
+      status: 'RUNNING',
+    });
+    expect(advance.execute).toHaveBeenCalledWith('run-1');
+    expect(resumed).toBe(1);
+  });
+
+  it('WAIT_CONDITION vencida sin cumplirse: sigue por onTimeout', async () => {
+    pending.findDue.mockResolvedValue([
+      {
+        id: 'pa-c2',
+        runId: 'run-1',
+        kind: 'WAIT_CONDITION',
+        stepKey: 's1',
+        matchExpression: { ready: true },
+        deadlineAt: new Date(Date.now() - 1000), // ya vencida
+      },
+    ]);
+    runs.findById.mockResolvedValue(waitingRun({ context: { ready: false } }));
+    definitions.findById.mockResolvedValue(waitConditionDsl());
+
+    await useCase.execute(new Date());
+
+    expect(runs.update).toHaveBeenCalledWith('run-1', {
+      currentStepKey: 's3',
+      status: 'RUNNING',
+    });
+    expect(advance.execute).toHaveBeenCalledWith('run-1');
+  });
+
+  it('WAIT_CONDITION sin cumplir y sin vencer: reprograma el siguiente poll y sigue en espera', async () => {
+    const deadline = new Date(Date.now() + 3_600_000);
+    pending.findDue.mockResolvedValue([
+      {
+        id: 'pa-c3',
+        runId: 'run-1',
+        kind: 'WAIT_CONDITION',
+        stepKey: 's1',
+        matchExpression: { ready: true },
+        deadlineAt: deadline,
+      },
+    ]);
+    runs.findById.mockResolvedValue(waitingRun({ context: { ready: false } }));
+    definitions.findById.mockResolvedValue(waitConditionDsl());
+
+    const resumed = await useCase.execute();
+
+    // No avanza el run; crea un nuevo poll con el mismo deadline.
+    expect(runs.update).not.toHaveBeenCalled();
+    expect(advance.execute).not.toHaveBeenCalled();
+    expect(pending.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run-1',
+        stepKey: 's1',
+        kind: 'WAIT_CONDITION',
+        deadlineAt: deadline,
+      }),
+    );
     expect(resumed).toBe(0);
   });
 

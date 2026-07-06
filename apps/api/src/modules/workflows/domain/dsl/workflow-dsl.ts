@@ -108,6 +108,7 @@ export type RetryPolicy = NonNullable<z.infer<typeof retrySchema>>;
 export const ENGINE_ACTIONS = [
   'delay',
   'wait_for_event',
+  'wait_for_condition',
   'branch',
   'context.set',
   'event.emit',

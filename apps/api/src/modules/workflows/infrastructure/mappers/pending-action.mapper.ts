@@ -12,6 +12,7 @@ export class PendingActionMapper {
       kind: row.kind,
       status: row.status,
       runAt: row.runAt,
+      deadlineAt: row.deadlineAt,
       eventType: row.eventType,
       matchExpression: row.matchExpression,
       target: row.target,

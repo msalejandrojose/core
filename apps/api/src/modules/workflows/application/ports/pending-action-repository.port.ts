@@ -12,6 +12,7 @@ export interface CreatePendingActionData {
   stepKey?: string | null;
   kind: PendingActionKind;
   runAt?: Date | null;
+  deadlineAt?: Date | null;
   eventType?: string | null;
   matchExpression?: unknown;
   target?: unknown;

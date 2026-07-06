@@ -22,6 +22,7 @@ export class PrismaPendingActionRepository implements PendingActionRepositoryPor
         stepKey: data.stepKey ?? null,
         kind: data.kind,
         runAt: data.runAt ?? null,
+        deadlineAt: data.deadlineAt ?? null,
         eventType: data.eventType ?? null,
         matchExpression:
           data.matchExpression == null
