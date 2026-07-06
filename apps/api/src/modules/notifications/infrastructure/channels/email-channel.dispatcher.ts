@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
+import { MailService } from '@sendgrid/mail';
 import type { NotificationChannel } from '@core/shared-types';
 import {
   MAILER_PORT,
@@ -12,6 +13,7 @@ import type {
 } from '../../application/ports/channel-dispatcher.port';
 import { ChannelDispatcher } from '../../application/ports/channel-dispatcher.decorator';
 import { contentField } from './content-field';
+import { resolveEmailProvider } from './email-provider';
 
 interface EmailConfig {
   provider?: string;
@@ -20,10 +22,22 @@ interface EmailConfig {
   apiKey?: string;
 }
 
-// Entrega por email. Si la cuenta trae `apiKey` propia, construye un cliente
-// Resend por-cuenta (respetando su `fromEmail`/`fromName`). Si no (típico en
-// dev/CI, donde el cipher nulo deja la config sin secretos reales), delega en el
-// `MailerPort` global (Resend por env o NullMailer), para no bloquear el flujo.
+interface EmailPayload {
+  from: string;
+  fromEmail: string;
+  fromName?: string;
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}
+
+// Entrega por email. Enruta por `config.provider`:
+//   - resend   → cliente Resend por-cuenta (default; retrocompatible).
+//   - sendgrid → cliente SendGrid (@sendgrid/mail) por-cuenta.
+// Si la cuenta no trae `apiKey` propia (típico en dev/CI, donde el cipher nulo
+// deja la config sin secretos reales), delega en el `MailerPort` global (Resend
+// por env o NullMailer), para no bloquear el flujo.
 @Injectable()
 @ChannelDispatcher()
 export class EmailChannelDispatcher implements ChannelDispatcherPort {
@@ -37,28 +51,63 @@ export class EmailChannelDispatcher implements ChannelDispatcherPort {
     message: RenderedMessage,
   ): Promise<void> {
     const config = account.config as EmailConfig;
-    const subject = contentField(message.content.subject);
-    const html = contentField(message.content.html);
-    const text = contentField(message.content.text);
+    const fromEmail = config.fromEmail ?? '';
+    const payload: EmailPayload = {
+      from: config.fromName ? `${config.fromName} <${fromEmail}>` : fromEmail,
+      fromEmail,
+      fromName: config.fromName,
+      to: message.to,
+      subject: contentField(message.content.subject),
+      html: contentField(message.content.html),
+      text: contentField(message.content.text),
+    };
 
-    if (config.apiKey) {
-      const from = config.fromName
-        ? `${config.fromName} <${config.fromEmail ?? ''}>`
-        : (config.fromEmail ?? '');
-      const { error } = await new Resend(config.apiKey).emails.send({
-        from,
-        to: message.to,
-        subject,
-        html,
-        text,
-      });
-      if (error) throw new Error(error.message);
-      return;
+    switch (resolveEmailProvider(config)) {
+      case 'sendgrid':
+        await this.sendWithSendgrid(config.apiKey!, payload);
+        return;
+      case 'resend':
+        await this.sendWithResend(config.apiKey!, payload);
+        return;
+      case 'fallback':
+        this.logger.debug(
+          `Cuenta "${account.name}" sin apiKey propia → envío vía MailerPort global.`,
+        );
+        await this.mailer.send({
+          to: payload.to,
+          subject: payload.subject,
+          html: payload.html,
+          text: payload.text,
+        });
+        return;
     }
+  }
 
-    this.logger.debug(
-      `Cuenta "${account.name}" sin apiKey propia → envío vía MailerPort global.`,
-    );
-    await this.mailer.send({ to: message.to, subject, html, text });
+  private async sendWithResend(apiKey: string, p: EmailPayload): Promise<void> {
+    const { error } = await new Resend(apiKey).emails.send({
+      from: p.from,
+      to: p.to,
+      subject: p.subject,
+      html: p.html,
+      text: p.text,
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  private async sendWithSendgrid(
+    apiKey: string,
+    p: EmailPayload,
+  ): Promise<void> {
+    // Instancia por-cuenta (no el singleton global) para no compartir apiKey
+    // entre cuentas concurrentes.
+    const client = new MailService();
+    client.setApiKey(apiKey);
+    await client.send({
+      to: p.to,
+      from: p.fromName ? { email: p.fromEmail, name: p.fromName } : p.fromEmail,
+      subject: p.subject,
+      html: p.html,
+      ...(p.text ? { text: p.text } : {}),
+    });
   }
 }

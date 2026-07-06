@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { channelDefinition } from '../../domain/channels/channel-catalog';
-import { validateFields } from '../../domain/channels/validate-fields';
+import { validateMessageContent } from '../../domain/channels/validate-message-content';
 import type { MessageType } from '../../domain/entities/message-type.entity';
 import type { SendingAccount } from '../../domain/entities/sending-account.entity';
 import { InvalidMessageContentError } from '../../domain/errors/invalid-message-content.error';
@@ -54,8 +53,11 @@ export class UpdateMessageTypeUseCase {
     }
 
     const effectiveContent = input.content ?? existing.content;
-    const fields = channelDefinition(account.type!.channel).message;
-    const error = validateFields(fields, effectiveContent, true);
+    const error = validateMessageContent(
+      account.type!.channel,
+      effectiveContent,
+      true,
+    );
     if (error) throw new InvalidMessageContentError(error);
 
     const data: UpdateMessageTypeData = {};

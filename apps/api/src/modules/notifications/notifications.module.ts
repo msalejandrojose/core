@@ -35,6 +35,7 @@ import { NotificationsSendHandler } from './infrastructure/workflow/notification
 import { SendingAccountTypesController } from './infrastructure/http/sending-account-types.controller';
 import { SendingAccountsController } from './infrastructure/http/sending-accounts.controller';
 import { MessageTypesController } from './infrastructure/http/message-types.controller';
+import { EmailTemplatesController } from './infrastructure/http/email-templates.controller';
 
 @Module({
   imports: [IamModule, MailerModule, DiscoveryModule],
@@ -42,6 +43,7 @@ import { MessageTypesController } from './infrastructure/http/message-types.cont
     SendingAccountTypesController,
     SendingAccountsController,
     MessageTypesController,
+    EmailTemplatesController,
   ],
   providers: [
     // Ports → Adapters

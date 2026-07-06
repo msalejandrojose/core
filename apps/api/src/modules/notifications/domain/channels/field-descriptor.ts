@@ -8,7 +8,10 @@ export type FieldType =
   | 'email'
   | 'number'
   | 'select'
-  | 'boolean';
+  | 'boolean'
+  // Plantilla de email por bloques (ver domain/template). El valor es un objeto
+  // estructurado, no un escalar; se valida con `validateTemplate`.
+  | 'template';
 
 export interface FieldDescriptor {
   key: string;

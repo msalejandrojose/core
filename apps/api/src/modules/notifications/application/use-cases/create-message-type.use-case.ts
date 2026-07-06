@@ -1,6 +1,5 @@
 import { ConflictException, Inject, Injectable } from '@nestjs/common';
-import { channelDefinition } from '../../domain/channels/channel-catalog';
-import { validateFields } from '../../domain/channels/validate-fields';
+import { validateMessageContent } from '../../domain/channels/validate-message-content';
 import type { MessageType } from '../../domain/entities/message-type.entity';
 import { InvalidMessageContentError } from '../../domain/errors/invalid-message-content.error';
 import { SendingAccountNotFoundError } from '../../domain/errors/sending-account-not-found.error';
@@ -43,8 +42,11 @@ export class CreateMessageTypeUseCase {
     }
 
     // La cuenta determina el canal ⇒ qué campos de contenido son válidos.
-    const fields = channelDefinition(account.type.channel).message;
-    const error = validateFields(fields, input.content, true);
+    const error = validateMessageContent(
+      account.type.channel,
+      input.content,
+      true,
+    );
     if (error) throw new InvalidMessageContentError(error);
 
     const created = await this.messageTypes.create({

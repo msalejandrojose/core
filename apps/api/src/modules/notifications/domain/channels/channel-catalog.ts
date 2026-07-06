@@ -21,7 +21,7 @@ export const CHANNEL_CATALOG: Record<NotificationChannel, ChannelDefinition> = {
         key: 'provider',
         label: 'Proveedor',
         type: 'select',
-        options: ['resend'],
+        options: ['resend', 'sendgrid'],
         required: true,
       },
       {
@@ -36,13 +36,22 @@ export const CHANNEL_CATALOG: Record<NotificationChannel, ChannelDefinition> = {
         label: 'API key',
         type: 'text',
         secret: true,
-        help: 'Clave del proveedor (Resend). Se guarda cifrada. Si se omite, se usa el mailer global (env).',
+        help: 'Clave del proveedor (Resend o SendGrid). Se guarda cifrada. Si se omite, se usa el mailer global (env).',
       },
     ],
+    // `html` NO es requerido: el cuerpo puede venir como HTML directo o como
+    // `template` de bloques (que se compila a HTML en el envío). La regla
+    // "html o template" la aplica `validateMessageContent`.
     message: [
       { key: 'subject', label: 'Asunto', type: 'text', required: true },
-      { key: 'html', label: 'Cuerpo HTML', type: 'textarea', required: true },
+      { key: 'html', label: 'Cuerpo HTML', type: 'textarea' },
       { key: 'text', label: 'Cuerpo texto plano', type: 'textarea' },
+      {
+        key: 'template',
+        label: 'Plantilla por bloques',
+        type: 'template',
+        help: 'Composición por bloques (hero, texto, botón…). Si se define, el motor la compila a HTML en el envío.',
+      },
     ],
   },
   SMS: {
