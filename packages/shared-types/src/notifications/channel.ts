@@ -8,7 +8,8 @@ export const NotificationChannelSchema = z.enum([
   'EMAIL',
   'SMS',
   'PUSH',
-  // futuro: 'WHATSAPP', 'WEBHOOK', 'IN_APP'…
+  'WHATSAPP',
+  // futuro: 'WEBHOOK', 'IN_APP'…
 ]);
 export type NotificationChannel = z.infer<typeof NotificationChannelSchema>;
 export const NOTIFICATION_CHANNELS = NotificationChannelSchema.options;
