@@ -4,7 +4,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // `rawBody: true` expone `req.rawBody` (Buffer del cuerpo sin parsear), que el
+  // webhook de SendGrid necesita para verificar la firma sobre los bytes exactos.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // CORS. Los orígenes permitidos vienen de `CORS_ORIGINS` (lista separada por
   // comas), que `run.sh` deriva de stack.config.json (URLs de los frontends

@@ -19,6 +19,10 @@ import {
   type ChannelDispatcherRegistryPort,
 } from '../ports/channel-dispatcher-registry.port';
 import {
+  NOTIFICATION_DELIVERY_REPOSITORY,
+  type NotificationDeliveryRepositoryPort,
+} from '../ports/notification-delivery-repository.port';
+import {
   SECRET_CIPHER,
   type SecretCipherPort,
 } from '../ports/secret-cipher.port';
@@ -40,6 +44,8 @@ export interface SendNotificationResult {
   messageTypeKey: string;
   /** Contenido renderizado (útil para el preview). */
   rendered: Record<string, unknown>;
+  /** Id de la delivery persistida (solo en envíos reales). */
+  deliveryId?: string;
 }
 
 @Injectable()
@@ -52,6 +58,8 @@ export class SendNotificationUseCase {
     @Inject(CHANNEL_DISPATCHER_REGISTRY)
     private readonly dispatchers: ChannelDispatcherRegistryPort,
     @Inject(SECRET_CIPHER) private readonly cipher: SecretCipherPort,
+    @Inject(NOTIFICATION_DELIVERY_REPOSITORY)
+    private readonly deliveries: NotificationDeliveryRepositoryPort,
   ) {}
 
   async executeByKey(
@@ -131,15 +139,59 @@ export class SendNotificationUseCase {
       this.cipher,
     );
 
+    // Registra la delivery (log de entregabilidad) antes de despachar: su id se
+    // pasa al proveedor para que lo devuelva en los webhooks (correlación).
+    const provider =
+      typeof config.provider === 'string' ? config.provider : channel;
+    const subject =
+      typeof rendered.subject === 'string' ? rendered.subject : null;
+    const delivery = await this.deliveries.create({
+      messageTypeId: messageType.id,
+      messageTypeKey: messageType.key,
+      accountId: account.id,
+      channel,
+      provider,
+      toAddress: input.to,
+      subject,
+      status: 'pending',
+    });
+
     try {
-      await dispatcher.dispatch(
+      const result = await dispatcher.dispatch(
         { id: account.id, name: account.name, channel, config },
         { to: input.to, content: rendered },
+        { deliveryId: delivery.id },
       );
+      const now = new Date();
+      await this.deliveries.update(delivery.id, {
+        status: 'sent',
+        providerMessageId: result.providerMessageId ?? null,
+        sentAt: now,
+        lastEventAt: now,
+      });
     } catch (err) {
+      await this.markFailed(delivery.id, err);
       throw new NotificationDeliveryError(channel, err);
     }
 
-    return { ...base, sent: true, skipped: false };
+    return { ...base, sent: true, skipped: false, deliveryId: delivery.id };
+  }
+
+  // Marca la delivery como fallida sin enmascarar el error original del envío
+  // (si la propia actualización falla, solo se registra).
+  private async markFailed(deliveryId: string, err: unknown): Promise<void> {
+    try {
+      await this.deliveries.update(deliveryId, {
+        status: 'failed',
+        error: err instanceof Error ? err.message : String(err),
+        lastEventAt: new Date(),
+      });
+    } catch (updateErr) {
+      this.logger.error(
+        `No se pudo marcar la delivery ${deliveryId} como fallida: ${
+          updateErr instanceof Error ? updateErr.message : String(updateErr)
+        }`,
+      );
+    }
   }
 }
