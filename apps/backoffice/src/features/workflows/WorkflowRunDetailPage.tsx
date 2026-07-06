@@ -1,4 +1,4 @@
-import { ArrowLeft, Ban, Loader2 } from 'lucide-react';
+import { ArrowLeft, Ban, Loader2, RotateCcw } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/ui/badge';
@@ -12,16 +12,26 @@ import {
 } from '@/components/ui/card';
 import { RunStatusBadge, StepStatusBadge } from './components/StatusBadges';
 import { useCancelWorkflowRun } from './hooks/use-cancel-workflow-run';
+import { useRetryWorkflowRun } from './hooks/use-retry-workflow-run';
 import { useWorkflowRun } from './hooks/use-workflow-run';
 import { isRunActive, type WorkflowStepExecutionDto, type PendingActionDto } from './types';
 
 const fmt = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' }) : '—';
 
+// Duración legible de un step (inicio → fin). Null si aún no terminó.
+const duration = (startedAt: string, finishedAt: string | null): string | null => {
+  if (!finishedAt) return null;
+  const ms = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
+  if (ms < 1000) return `${ms} ms`;
+  return `${(ms / 1000).toFixed(1)} s`;
+};
+
 export function WorkflowRunDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useWorkflowRun(id);
   const cancel = useCancelWorkflowRun(id);
+  const retry = useRetryWorkflowRun(id);
 
   if (isLoading) {
     return (
@@ -60,6 +70,15 @@ export function WorkflowRunDetailPage() {
             >
               <Ban size={16} />
               Cancelar
+            </Button>
+          ) : run.status === 'FAILED' ? (
+            <Button
+              variant="outline"
+              onClick={() => retry.mutate()}
+              disabled={retry.isPending}
+            >
+              <RotateCcw size={16} />
+              Reintentar
             </Button>
           ) : undefined
         }
@@ -147,6 +166,9 @@ function StepRow({ step }: { step: WorkflowStepExecutionDto }) {
         )}
         <span className="text-muted-foreground ml-auto text-xs">
           {fmt(step.startedAt)}
+          {duration(step.startedAt, step.finishedAt) && (
+            <> · {duration(step.startedAt, step.finishedAt)}</>
+          )}
         </span>
       </div>
       {step.error && (

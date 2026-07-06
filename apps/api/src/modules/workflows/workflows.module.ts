@@ -47,6 +47,7 @@ import { ListEventsUseCase } from './application/use-cases/list-events.use-case'
 import { ListWorkflowRunsUseCase } from './application/use-cases/list-workflow-runs.use-case';
 import { GetWorkflowRunUseCase } from './application/use-cases/get-workflow-run.use-case';
 import { CancelWorkflowRunUseCase } from './application/use-cases/cancel-workflow-run.use-case';
+import { RetryWorkflowRunUseCase } from './application/use-cases/retry-workflow-run.use-case';
 
 // HTTP
 import { WorkflowsController } from './infrastructure/http/workflows.controller';
@@ -135,6 +136,7 @@ import { SchedulerController } from './infrastructure/http/scheduler.controller'
     ListWorkflowRunsUseCase,
     GetWorkflowRunUseCase,
     CancelWorkflowRunUseCase,
+    RetryWorkflowRunUseCase,
   ],
   // RegisterEventUseCase se exporta para que otros módulos disparen eventos
   // (spec §13.1) inyectándolo.
