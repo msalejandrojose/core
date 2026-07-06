@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { WorkflowTrigger } from '../../domain/entities/workflow-trigger.entity';
 import { StartWorkflowRunsUseCase } from '../../application/use-cases/start-workflow-runs.use-case';
+import { ResumeDuePendingActionsUseCase } from '../../application/use-cases/resume-due-pending-actions.use-case';
 import {
   CRON_CLOCK,
   type CronClockPort,
@@ -37,11 +38,14 @@ export class WorkflowSchedulerService {
     @Inject(EVENT_REPOSITORY) private readonly events: EventRepositoryPort,
     @Inject(CRON_CLOCK) private readonly cron: CronClockPort,
     private readonly start: StartWorkflowRunsUseCase,
+    private readonly resume: ResumeDuePendingActionsUseCase,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
-  async tick(): Promise<number> {
+  async tick(): Promise<{ fired: number; resumed: number }> {
     const now = new Date();
+
+    // 1) Dispara los triggers cron vencidos.
     const due = await this.triggers.findDueCronTriggers(now);
     let fired = 0;
     for (const trigger of due) {
@@ -53,8 +57,16 @@ export class WorkflowSchedulerService {
         this.logger.warn(`Trigger cron ${trigger.id} falló: ${message}`);
       }
     }
-    if (fired > 0) this.logger.log(`Scheduler disparó ${fired} trigger(s).`);
-    return fired;
+
+    // 2) Reanuda los runs con delay/retry vencidos.
+    const resumed = await this.resume.execute(now);
+
+    if (fired > 0 || resumed > 0) {
+      this.logger.log(
+        `Scheduler: ${fired} trigger(s) disparado(s), ${resumed} run(s) reanudado(s).`,
+      );
+    }
+    return { fired, resumed };
   }
 
   private async fire(trigger: WorkflowTrigger, now: Date): Promise<void> {
@@ -72,7 +84,7 @@ export class WorkflowSchedulerService {
 
     const event = await this.events.create({
       type: `workflow.cron.${definition.key}`,
-      payload: (trigger.cronPayload ?? {}) as Record<string, unknown>,
+      payload: trigger.cronPayload ?? {},
     });
 
     await this.start.execute({

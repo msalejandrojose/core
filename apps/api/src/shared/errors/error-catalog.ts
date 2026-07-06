@@ -160,6 +160,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Run de workflow no encontrado.',
   },
+  WORKFLOW_RUN_NOT_RETRYABLE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Solo se puede reintentar un run fallido.',
+  },
   ACTION_HANDLER_NOT_FOUND: {
     httpStatus: 422,
     level: 'warn',

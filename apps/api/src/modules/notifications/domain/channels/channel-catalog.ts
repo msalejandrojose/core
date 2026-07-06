@@ -88,6 +88,46 @@ export const CHANNEL_CATALOG: Record<NotificationChannel, ChannelDefinition> = {
       { key: 'body', label: 'Texto del SMS', type: 'textarea', required: true },
     ],
   },
+  WHATSAPP: {
+    config: [
+      {
+        key: 'provider',
+        label: 'Proveedor',
+        type: 'select',
+        options: ['meta'],
+        required: true,
+      },
+      {
+        key: 'phoneNumberId',
+        label: 'Phone Number ID',
+        type: 'text',
+        required: true,
+        help: 'ID del número de WhatsApp en Meta (Cloud API).',
+      },
+      {
+        key: 'accessToken',
+        label: 'Access token',
+        type: 'text',
+        required: true,
+        secret: true,
+        help: 'Token permanente de la app de Meta. Se guarda cifrado.',
+      },
+      {
+        key: 'apiVersion',
+        label: 'Versión de la API',
+        type: 'text',
+        help: 'Versión del Graph API (por defecto v21.0).',
+      },
+    ],
+    message: [
+      {
+        key: 'body',
+        label: 'Texto del mensaje',
+        type: 'textarea',
+        required: true,
+      },
+    ],
+  },
   PUSH: {
     config: [
       {

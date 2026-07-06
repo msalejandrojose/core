@@ -5,6 +5,11 @@ import {
   isEngineAction,
   resolveNextStepKey,
 } from '../../domain/dsl/workflow-dsl';
+import { canRetry, computeBackoffSeconds } from '../../domain/retry';
+import {
+  PENDING_ACTION_REPOSITORY,
+  type PendingActionRepositoryPort,
+} from '../ports/pending-action-repository.port';
 import {
   ACTION_HANDLER_REGISTRY,
   type ActionHandlerRegistryPort,
@@ -36,10 +41,11 @@ import {
 // ciclos en el DSL (p.ej. branch que vuelve a sí mismo).
 const MAX_STEPS_PER_PASS = 100;
 
-// Motor de avance (spec §6.1), versión SÍNCRONA de v1: avanza el run step a
-// step hasta que pausa (delay/wait → WAITING), termina (COMPLETED) o falla
-// (FAILED). El locking optimista, los retries y la reanudación de pausas son
-// iteraciones posteriores (scheduler).
+// Motor de avance (spec §6.1): avanza el run step a step hasta que pausa
+// (delay/wait/retry → WAITING), termina (COMPLETED) o falla (FAILED). Si un step
+// con política `retry` falla y le quedan intentos, programa una acción RETRY con
+// backoff (la reanuda el resumer del scheduler) en vez de fallar el run. El
+// locking optimista distribuido sigue siendo una iteración posterior.
 @Injectable()
 export class AdvanceWorkflowRunUseCase {
   private readonly logger = new Logger(AdvanceWorkflowRunUseCase.name);
@@ -57,6 +63,8 @@ export class AdvanceWorkflowRunUseCase {
     private readonly registry: ActionHandlerRegistryPort,
     @Inject(TEMPLATE_EVALUATOR)
     private readonly template: TemplateEvaluatorPort,
+    @Inject(PENDING_ACTION_REPOSITORY)
+    private readonly pending: PendingActionRepositoryPort,
     private readonly engine: EngineActionsExecutor,
   ) {}
 
@@ -101,11 +109,12 @@ export class AdvanceWorkflowRunUseCase {
 
       const input = this.template.render(step.input ?? {}, scope);
 
+      const attempt = (await this.steps.countAttempts(runId, step.key)) + 1;
       const exec = await this.steps.start({
         runId,
         stepKey: step.key,
         actionKey: step.action,
-        attempt: 1,
+        attempt,
         input,
       });
 
@@ -165,6 +174,28 @@ export class AdvanceWorkflowRunUseCase {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         await this.steps.fail(exec.id, message);
+
+        // ¿El step declara reintentos y quedan intentos? Programa un RETRY con
+        // backoff y deja el run en WAITING; lo reanudará el resumer del scheduler
+        // cuando venza `runAt`. En dry-run no se difiere: falla directo.
+        if (step.retry && !run.isDryRun && canRetry(step.retry, attempt)) {
+          const backoff = computeBackoffSeconds(step.retry, attempt);
+          await this.pending.create({
+            runId,
+            stepKey: step.key,
+            kind: 'RETRY',
+            runAt: new Date(Date.now() + backoff * 1000),
+          });
+          await this.runs.update(runId, {
+            status: 'WAITING',
+            lastError: message,
+          });
+          this.logger.warn(
+            `Run ${runId} step ${step.key} intento ${attempt}/${step.retry.maxAttempts} falló; reintento en ${backoff}s: ${message}`,
+          );
+          return;
+        }
+
         await this.runs.update(runId, {
           status: 'FAILED',
           finishedAt: new Date(),

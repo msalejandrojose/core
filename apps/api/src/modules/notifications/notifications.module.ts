@@ -34,6 +34,7 @@ import { NestChannelDispatcherRegistry } from './infrastructure/channels/nest-ch
 import { EmailChannelDispatcher } from './infrastructure/channels/email-channel.dispatcher';
 import { SmsChannelDispatcher } from './infrastructure/channels/sms-channel.dispatcher';
 import { PushChannelDispatcher } from './infrastructure/channels/push-channel.dispatcher';
+import { WhatsappChannelDispatcher } from './infrastructure/channels/whatsapp-channel.dispatcher';
 import { AesSecretCipher } from './infrastructure/crypto/aes-secret-cipher';
 import { NullSecretCipher } from './infrastructure/crypto/null-secret-cipher';
 import { NotificationsSendHandler } from './infrastructure/workflow/notifications-send.handler';
@@ -106,6 +107,7 @@ import {
     EmailChannelDispatcher,
     SmsChannelDispatcher,
     PushChannelDispatcher,
+    WhatsappChannelDispatcher,
 
     // Use cases — tipos de cuenta
     CreateSendingAccountTypeUseCase,

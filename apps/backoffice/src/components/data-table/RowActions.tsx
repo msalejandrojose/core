@@ -8,6 +8,8 @@ interface RowActionsProps {
   viewHref?: string;
   editHref?: string;
   editState?: Record<string, unknown>;
+  /** Custom trigger rendered in the "Editar" slot when edit isn't a route (e.g. a dialog). Ignored if editHref is set. */
+  editTrigger?: ReactNode;
   onDelete?: () => void;
   deleteTitle?: string;
   deleteDescription?: string;
@@ -19,6 +21,7 @@ export function RowActions({
   viewHref,
   editHref,
   editState,
+  editTrigger,
   onDelete,
   deleteTitle = '¿Eliminar?',
   deleteDescription = 'Esta acción no se puede deshacer.',
@@ -38,12 +41,14 @@ export function RowActions({
           </Link>
         </Button>
       )}
-      {editHref && (
+      {editHref ? (
         <Button variant="ghost" size="icon" className="size-8" asChild>
           <Link to={editHref} state={editState} title="Editar">
             <Pencil size={14} />
           </Link>
         </Button>
+      ) : (
+        editTrigger
       )}
       {onDelete && (
         <ConfirmDialog

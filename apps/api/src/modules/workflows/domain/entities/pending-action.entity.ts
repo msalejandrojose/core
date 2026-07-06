@@ -1,13 +1,14 @@
 export type PendingActionKind =
   | 'DELAY'
   | 'WAIT_EVENT'
+  | 'WAIT_CONDITION'
   | 'RETRY'
   | 'PENDING_START';
 
 export type PendingActionStatus = 'PENDING' | 'CONSUMED' | 'CANCELED';
 
-// Trabajo diferido. En v1 se persiste al pausar un run (delay/wait_for_event);
-// su consumo lo hará el scheduler en una iteración posterior.
+// Trabajo diferido. Se persiste al pausar un run (delay/wait_for_event/
+// wait_for_condition/retry); lo consume el resumer del scheduler.
 export interface PendingAction {
   id: string;
   runId: string | null;
@@ -17,6 +18,8 @@ export interface PendingAction {
   kind: PendingActionKind;
   status: PendingActionStatus;
   runAt: Date | null;
+  // Fecha límite del wait (timeout). Al vencer, el resumer toma la rama onTimeout.
+  deadlineAt: Date | null;
   eventType: string | null;
   matchExpression: unknown;
   // Entidad target ya resuelta (fan-out) para PENDING_START. Null = sin target.

@@ -101,11 +101,14 @@ export const workflowDslSchema = z
 export type WorkflowDsl = z.infer<typeof workflowDslSchema>;
 export type StepDefinition = z.infer<typeof stepSchema>;
 export type TriggerDefinition = z.infer<typeof triggerSchema>;
+// Política de reintentos de un step, ya sin el `undefined` del `.optional()`.
+export type RetryPolicy = NonNullable<z.infer<typeof retrySchema>>;
 
 // Acciones implementadas por el propio motor (no necesitan handler externo).
 export const ENGINE_ACTIONS = [
   'delay',
   'wait_for_event',
+  'wait_for_condition',
   'branch',
   'context.set',
   'event.emit',

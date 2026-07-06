@@ -7,6 +7,7 @@ import {
   WorkflowDsl,
 } from '../../domain/dsl/workflow-dsl';
 import { parseDurationSeconds } from '../../domain/value-objects/duration.vo';
+import { nextPollAt } from '../../domain/wait';
 import { WorkflowRun } from '../../domain/entities/workflow-run.entity';
 import {
   EVENT_REPOSITORY,
@@ -84,6 +85,37 @@ export class EngineActionsExecutor {
           runAt: new Date(Date.now() + seconds * 1000),
         });
         return { kind: 'pause', output: { delayedSeconds: seconds } };
+      }
+
+      case 'wait_for_condition': {
+        const condition = (input.condition ?? null) as MatchExpression | null;
+
+        // Si ya se cumple, no espera: continúa por onMatch (o el siguiente).
+        if (run.isDryRun || evaluateMatch(condition, run.context)) {
+          return {
+            kind: 'continue',
+            nextStepKey: step.onMatch ?? next(),
+            output: run.isDryRun ? { simulated: true } : { met: true },
+          };
+        }
+
+        const timeout = input.timeout as string | number | undefined;
+        const deadlineAt =
+          timeout != null
+            ? new Date(Date.now() + parseDurationSeconds(timeout) * 1000)
+            : null;
+        await this.pending.create({
+          runId: run.id,
+          stepKey: step.key,
+          kind: 'WAIT_CONDITION',
+          matchExpression: condition,
+          runAt: nextPollAt(
+            input.pollInterval as string | number | undefined,
+            deadlineAt,
+          ),
+          deadlineAt,
+        });
+        return { kind: 'pause', output: { waitingCondition: true } };
       }
 
       case 'wait_for_event': {

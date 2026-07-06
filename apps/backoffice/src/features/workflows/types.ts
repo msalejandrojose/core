@@ -89,6 +89,7 @@ export type WorkflowDefinitionRow = Pick<
 export const ENGINE_ACTIONS = [
   'delay',
   'wait_for_event',
+  'wait_for_condition',
   'branch',
   'context.set',
   'event.emit',

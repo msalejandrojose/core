@@ -13,6 +13,7 @@ import { RequiresPermission } from '../../../iam/infrastructure/http/decorators/
 import { GetWorkflowRunUseCase } from '../../application/use-cases/get-workflow-run.use-case';
 import { ListWorkflowRunsUseCase } from '../../application/use-cases/list-workflow-runs.use-case';
 import { CancelWorkflowRunUseCase } from '../../application/use-cases/cancel-workflow-run.use-case';
+import { RetryWorkflowRunUseCase } from '../../application/use-cases/retry-workflow-run.use-case';
 import { ListRunsQueryDto } from './dto/list-runs.query.dto';
 import {
   WorkflowRunDetailResponseDto,
@@ -26,6 +27,7 @@ export class WorkflowRunsController {
     private readonly listRuns: ListWorkflowRunsUseCase,
     private readonly getRun: GetWorkflowRunUseCase,
     private readonly cancelRun: CancelWorkflowRunUseCase,
+    private readonly retryRun: RetryWorkflowRunUseCase,
   ) {}
 
   @Get()
@@ -70,5 +72,17 @@ export class WorkflowRunsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<WorkflowRunResponseDto> {
     return WorkflowRunResponseDto.fromDomain(await this.cancelRun.execute(id));
+  }
+
+  @Post(':id/retry')
+  @RequiresPermission('workflows', 'WRITE')
+  @ApiOperation({
+    summary: 'Reintentar un run fallido desde el step que falló.',
+  })
+  @ApiOkResponse({ type: WorkflowRunResponseDto })
+  async retry(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<WorkflowRunResponseDto> {
+    return WorkflowRunResponseDto.fromDomain(await this.retryRun.execute(id));
   }
 }

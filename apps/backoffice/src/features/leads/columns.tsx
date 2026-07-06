@@ -1,5 +1,9 @@
 import type { ColumnDef } from '@tanstack/react-table';
+import { Pencil } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { RowActions } from '@/components/data-table/RowActions';
+import { Button } from '@/components/ui/button';
+import { EditLeadDialog } from './components/EditLeadDialog';
 import { LeadSourceBadge } from './components/LeadSourceBadge';
 import { LeadStatusBadge } from './components/LeadStatusBadge';
 import { leadDisplayName, type LeadRow } from './types';
@@ -60,6 +64,30 @@ export const columns: ColumnDef<LeadRow>[] = [
       <span className="text-muted-foreground tabular-nums">
         {dateFmt(row.original.createdAt)}
       </span>
+    ),
+  },
+  {
+    id: 'actions',
+    enableSorting: false,
+    cell: ({ row }) => (
+      <RowActions
+        viewHref={`/leads/${row.original.id}`}
+        editTrigger={
+          <EditLeadDialog
+            lead={row.original}
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                title="Editar"
+              >
+                <Pencil size={14} />
+              </Button>
+            }
+          />
+        }
+      />
     ),
   },
 ];
