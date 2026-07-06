@@ -3,6 +3,7 @@ import type { NotificationChannel } from '@core/shared-types';
 import type {
   ChannelDispatcherPort,
   DispatchAccount,
+  DispatchResult,
   RenderedMessage,
 } from '../../application/ports/channel-dispatcher.port';
 import { ChannelDispatcher } from '../../application/ports/channel-dispatcher.decorator';
@@ -17,12 +18,15 @@ export class SmsChannelDispatcher implements ChannelDispatcherPort {
   readonly channel: NotificationChannel = 'SMS';
   private readonly logger = new Logger('notifications.channel.sms');
 
-  dispatch(account: DispatchAccount, message: RenderedMessage): Promise<void> {
+  dispatch(
+    account: DispatchAccount,
+    message: RenderedMessage,
+  ): Promise<DispatchResult> {
     this.logger.warn(
       `[stub SMS] cuenta "${account.name}" → ${message.to}: ${contentField(
         message.content.body,
       )}`,
     );
-    return Promise.resolve();
+    return Promise.resolve({});
   }
 }

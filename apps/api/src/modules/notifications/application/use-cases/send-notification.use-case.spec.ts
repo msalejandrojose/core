@@ -10,7 +10,16 @@ import type {
 } from '../ports/channel-dispatcher.port';
 import type { ChannelDispatcherRegistryPort } from '../ports/channel-dispatcher-registry.port';
 import type { MessageTypeRepositoryPort } from '../ports/message-type-repository.port';
+import type { NotificationDelivery } from '../../domain/entities/notification-delivery.entity';
 import { SendNotificationUseCase } from './send-notification.use-case';
+
+interface DeliveriesMock {
+  create: jest.Mock;
+  update: jest.Mock;
+  findById: jest.Mock;
+  findByProviderMessageId: jest.Mock;
+  list: jest.Mock;
+}
 
 function buildMessageType(overrides: Partial<MessageType> = {}): MessageType {
   const now = new Date();
@@ -51,10 +60,37 @@ function buildMessageType(overrides: Partial<MessageType> = {}): MessageType {
   };
 }
 
+function buildDelivery(
+  overrides: Partial<NotificationDelivery> = {},
+): NotificationDelivery {
+  const now = new Date();
+  return {
+    id: 'del1',
+    messageTypeId: 'mt1',
+    messageTypeKey: 'welcome_email',
+    accountId: 'acc1',
+    channel: 'EMAIL',
+    provider: 'resend',
+    toAddress: 'user@x.com',
+    subject: null,
+    status: 'pending',
+    providerMessageId: null,
+    error: null,
+    events: [],
+    sentAt: null,
+    deliveredAt: null,
+    lastEventAt: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
 describe('SendNotificationUseCase', () => {
   let repo: jest.Mocked<MessageTypeRepositoryPort>;
   let dispatch: jest.Mock;
   let registry: ChannelDispatcherRegistryPort;
+  let deliveries: DeliveriesMock;
   let useCase: SendNotificationUseCase;
 
   beforeEach(() => {
@@ -62,13 +98,21 @@ describe('SendNotificationUseCase', () => {
       findByKey: jest.fn(),
       findById: jest.fn(),
     } as unknown as jest.Mocked<MessageTypeRepositoryPort>;
-    dispatch = jest.fn().mockResolvedValue(undefined);
+    dispatch = jest.fn().mockResolvedValue({ providerMessageId: 'prov-1' });
     const dispatcher: ChannelDispatcherPort = { channel: 'EMAIL', dispatch };
     registry = { get: jest.fn().mockReturnValue(dispatcher) };
+    deliveries = {
+      create: jest.fn().mockResolvedValue(buildDelivery()),
+      update: jest.fn().mockResolvedValue(buildDelivery()),
+      findById: jest.fn(),
+      findByProviderMessageId: jest.fn(),
+      list: jest.fn(),
+    };
     useCase = new SendNotificationUseCase(
       repo,
       registry,
       new NullSecretCipher(),
+      deliveries,
     );
   });
 
@@ -144,6 +188,51 @@ describe('SendNotificationUseCase', () => {
     expect(html).toContain('Hola Ana');
     expect(html).not.toContain('{{');
     expect(message.content.text).toContain('Hola Ana');
+  });
+
+  it('registra la delivery (pending → sent) y correlaciona el providerMessageId', async () => {
+    repo.findByKey.mockResolvedValue(buildMessageType());
+    const result = await useCase.executeByKey('welcome_email', {
+      to: 'user@x.com',
+      variables: { firstName: 'Ana' },
+    });
+
+    expect(deliveries.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageTypeKey: 'welcome_email',
+        channel: 'EMAIL',
+        toAddress: 'user@x.com',
+        status: 'pending',
+      }),
+    );
+    // el deliveryId se pasa al dispatcher (para el custom_arg del webhook)
+    const dispatchArgs = dispatch.mock.calls[0] as [
+      unknown,
+      unknown,
+      { deliveryId?: string },
+    ];
+    expect(dispatchArgs[2]).toEqual({ deliveryId: 'del1' });
+    // se marca como enviada con el id del proveedor
+    expect(deliveries.update).toHaveBeenCalledWith(
+      'del1',
+      expect.objectContaining({ status: 'sent', providerMessageId: 'prov-1' }),
+    );
+    expect(result.deliveryId).toBe('del1');
+  });
+
+  it('marca la delivery como fallida si el dispatcher falla', async () => {
+    repo.findByKey.mockResolvedValue(buildMessageType());
+    dispatch.mockRejectedValue(new Error('boom'));
+    await expect(
+      useCase.executeByKey('welcome_email', {
+        to: 'user@x.com',
+        variables: { firstName: 'Ana' },
+      }),
+    ).rejects.toBeInstanceOf(NotificationDeliveryError);
+    expect(deliveries.update).toHaveBeenCalledWith(
+      'del1',
+      expect.objectContaining({ status: 'failed', error: 'boom' }),
+    );
   });
 
   it('omite (skip) si el tipo de mensaje está inactivo', async () => {

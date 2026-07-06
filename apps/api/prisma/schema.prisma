@@ -972,3 +972,34 @@ model MessageType {
   @@index([accountId])
   @@map("message_type")
 }
+
+/// Registro de un envío concreto (una fila por dispatch real, no dry-run ni
+/// skip). Sirve como log de entregabilidad: se crea al despachar y se va
+/// actualizando con los eventos del proveedor (webhook de SendGrid:
+/// delivered/bounce/open/click/spamreport…). No lleva FKs a message_type /
+/// sending_account a propósito: es un log que debe sobrevivir a su borrado.
+model NotificationDelivery {
+  id                String              @id @default(uuid()) @db.Char(36)
+  messageTypeId     String?             @map("message_type_id") @db.Char(36)
+  messageTypeKey    String              @map("message_type_key") @db.VarChar(120)
+  accountId         String?             @map("account_id") @db.Char(36)
+  channel           NotificationChannel
+  provider          String              @db.VarChar(60)
+  toAddress         String              @map("to_address") @db.VarChar(320)
+  subject           String?             @db.VarChar(500)
+  status            String              @db.VarChar(40) // pending, sent, delivered, bounced…
+  providerMessageId String?             @map("provider_message_id") @db.VarChar(255) // correlación con el webhook
+  error             String?             @db.Text
+  events            Json? // histórico [{ type, at, reason? }]
+  sentAt            DateTime?           @map("sent_at")
+  deliveredAt       DateTime?           @map("delivered_at")
+  lastEventAt       DateTime?           @map("last_event_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  @@index([messageTypeKey])
+  @@index([providerMessageId])
+  @@index([status])
+  @@index([toAddress])
+  @@map("notification_delivery")
+}

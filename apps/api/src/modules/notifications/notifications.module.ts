@@ -6,6 +6,7 @@ import { MailerModule } from '../mailer/mailer.module';
 import { SENDING_ACCOUNT_TYPE_REPOSITORY } from './application/ports/sending-account-type-repository.port';
 import { SENDING_ACCOUNT_REPOSITORY } from './application/ports/sending-account-repository.port';
 import { MESSAGE_TYPE_REPOSITORY } from './application/ports/message-type-repository.port';
+import { NOTIFICATION_DELIVERY_REPOSITORY } from './application/ports/notification-delivery-repository.port';
 import { CHANNEL_DISPATCHER_REGISTRY } from './application/ports/channel-dispatcher-registry.port';
 import { SECRET_CIPHER } from './application/ports/secret-cipher.port';
 import { CreateSendingAccountTypeUseCase } from './application/use-cases/create-sending-account-type.use-case';
@@ -22,9 +23,13 @@ import { GetMessageTypeUseCase } from './application/use-cases/get-message-type.
 import { ListMessageTypesUseCase } from './application/use-cases/list-message-types.use-case';
 import { DeleteMessageTypeUseCase } from './application/use-cases/delete-message-type.use-case';
 import { SendNotificationUseCase } from './application/use-cases/send-notification.use-case';
+import { IngestSendgridEventsUseCase } from './application/use-cases/ingest-sendgrid-events.use-case';
+import { ListDeliveriesUseCase } from './application/use-cases/list-deliveries.use-case';
+import { GetDeliveryUseCase } from './application/use-cases/get-delivery.use-case';
 import { PrismaSendingAccountTypeRepository } from './infrastructure/persistence/prisma-sending-account-type.repository';
 import { PrismaSendingAccountRepository } from './infrastructure/persistence/prisma-sending-account.repository';
 import { PrismaMessageTypeRepository } from './infrastructure/persistence/prisma-message-type.repository';
+import { PrismaNotificationDeliveryRepository } from './infrastructure/persistence/prisma-notification-delivery.repository';
 import { NestChannelDispatcherRegistry } from './infrastructure/channels/nest-channel-dispatcher.registry';
 import { EmailChannelDispatcher } from './infrastructure/channels/email-channel.dispatcher';
 import { SmsChannelDispatcher } from './infrastructure/channels/sms-channel.dispatcher';
@@ -36,6 +41,12 @@ import { SendingAccountTypesController } from './infrastructure/http/sending-acc
 import { SendingAccountsController } from './infrastructure/http/sending-accounts.controller';
 import { MessageTypesController } from './infrastructure/http/message-types.controller';
 import { EmailTemplatesController } from './infrastructure/http/email-templates.controller';
+import { DeliveriesController } from './infrastructure/http/deliveries.controller';
+import { SendgridWebhookController } from './infrastructure/http/sendgrid-webhook.controller';
+import {
+  SENDGRID_SIGNATURE_VERIFIER,
+  SendgridSignatureVerifier,
+} from './infrastructure/webhook/sendgrid-signature.verifier';
 
 @Module({
   imports: [IamModule, MailerModule, DiscoveryModule],
@@ -44,6 +55,8 @@ import { EmailTemplatesController } from './infrastructure/http/email-templates.
     SendingAccountsController,
     MessageTypesController,
     EmailTemplatesController,
+    DeliveriesController,
+    SendgridWebhookController,
   ],
   providers: [
     // Ports → Adapters
@@ -57,8 +70,22 @@ import { EmailTemplatesController } from './infrastructure/http/email-templates.
     },
     { provide: MESSAGE_TYPE_REPOSITORY, useClass: PrismaMessageTypeRepository },
     {
+      provide: NOTIFICATION_DELIVERY_REPOSITORY,
+      useClass: PrismaNotificationDeliveryRepository,
+    },
+    {
       provide: CHANNEL_DISPATCHER_REGISTRY,
       useClass: NestChannelDispatcherRegistry,
+    },
+    {
+      // Verificador de firma del webhook de SendGrid. Sin
+      // `SENDGRID_WEBHOOK_PUBLIC_KEY` la verificación queda desactivada (dev/CI).
+      provide: SENDGRID_SIGNATURE_VERIFIER,
+      useFactory: (config: ConfigService) =>
+        new SendgridSignatureVerifier(
+          config.get<string>('SENDGRID_WEBHOOK_PUBLIC_KEY'),
+        ),
+      inject: [ConfigService],
     },
     {
       // Cifrado de secretos en reposo. Sin `NOTIFICATIONS_ENC_KEY` cae a un
@@ -101,6 +128,11 @@ import { EmailTemplatesController } from './infrastructure/http/email-templates.
 
     // Envío (usado por el preview y por el action handler de workflows).
     SendNotificationUseCase,
+
+    // Deliverability: ingesta de eventos del webhook + lectura del log.
+    IngestSendgridEventsUseCase,
+    ListDeliveriesUseCase,
+    GetDeliveryUseCase,
 
     // Action handler de workflows (lo descubre el registry de workflows).
     NotificationsSendHandler,

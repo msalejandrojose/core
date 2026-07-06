@@ -9,6 +9,8 @@ import {
 import type {
   ChannelDispatcherPort,
   DispatchAccount,
+  DispatchOptions,
+  DispatchResult,
   RenderedMessage,
 } from '../../application/ports/channel-dispatcher.port';
 import { ChannelDispatcher } from '../../application/ports/channel-dispatcher.decorator';
@@ -38,6 +40,9 @@ interface EmailPayload {
 // Si la cuenta no trae `apiKey` propia (típico en dev/CI, donde el cipher nulo
 // deja la config sin secretos reales), delega en el `MailerPort` global (Resend
 // por env o NullMailer), para no bloquear el flujo.
+//
+// Devuelve el `providerMessageId` del proveedor para correlacionar los eventos
+// del webhook con la delivery persistida.
 @Injectable()
 @ChannelDispatcher()
 export class EmailChannelDispatcher implements ChannelDispatcherPort {
@@ -49,7 +54,8 @@ export class EmailChannelDispatcher implements ChannelDispatcherPort {
   async dispatch(
     account: DispatchAccount,
     message: RenderedMessage,
-  ): Promise<void> {
+    options?: DispatchOptions,
+  ): Promise<DispatchResult> {
     const config = account.config as EmailConfig;
     const fromEmail = config.fromEmail ?? '';
     const payload: EmailPayload = {
@@ -64,11 +70,9 @@ export class EmailChannelDispatcher implements ChannelDispatcherPort {
 
     switch (resolveEmailProvider(config)) {
       case 'sendgrid':
-        await this.sendWithSendgrid(config.apiKey!, payload);
-        return;
+        return this.sendWithSendgrid(config.apiKey!, payload, options);
       case 'resend':
-        await this.sendWithResend(config.apiKey!, payload);
-        return;
+        return this.sendWithResend(config.apiKey!, payload);
       case 'fallback':
         this.logger.debug(
           `Cuenta "${account.name}" sin apiKey propia → envío vía MailerPort global.`,
@@ -79,12 +83,15 @@ export class EmailChannelDispatcher implements ChannelDispatcherPort {
           html: payload.html,
           text: payload.text,
         });
-        return;
+        return {};
     }
   }
 
-  private async sendWithResend(apiKey: string, p: EmailPayload): Promise<void> {
-    const { error } = await new Resend(apiKey).emails.send({
+  private async sendWithResend(
+    apiKey: string,
+    p: EmailPayload,
+  ): Promise<DispatchResult> {
+    const { data, error } = await new Resend(apiKey).emails.send({
       from: p.from,
       to: p.to,
       subject: p.subject,
@@ -92,22 +99,33 @@ export class EmailChannelDispatcher implements ChannelDispatcherPort {
       text: p.text,
     });
     if (error) throw new Error(error.message);
+    return { providerMessageId: data?.id };
   }
 
   private async sendWithSendgrid(
     apiKey: string,
     p: EmailPayload,
-  ): Promise<void> {
+    options?: DispatchOptions,
+  ): Promise<DispatchResult> {
     // Instancia por-cuenta (no el singleton global) para no compartir apiKey
     // entre cuentas concurrentes.
     const client = new MailService();
     client.setApiKey(apiKey);
-    await client.send({
+    const [response] = await client.send({
       to: p.to,
       from: p.fromName ? { email: p.fromEmail, name: p.fromName } : p.fromEmail,
       subject: p.subject,
       html: p.html,
       ...(p.text ? { text: p.text } : {}),
+      // custom_args se devuelven en cada evento del webhook → correlación.
+      ...(options?.deliveryId
+        ? { customArgs: { deliveryId: options.deliveryId } }
+        : {}),
     });
+    const headers = (response as { headers?: Record<string, unknown> }).headers;
+    const headerId = headers?.['x-message-id'];
+    return {
+      providerMessageId: typeof headerId === 'string' ? headerId : undefined,
+    };
   }
 }

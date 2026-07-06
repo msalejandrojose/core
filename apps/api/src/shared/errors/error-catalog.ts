@@ -276,6 +276,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Tipo de mensaje no encontrado.',
   },
+  DELIVERY_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Envío no encontrado.',
+  },
   INVALID_ACCOUNT_CONFIG: {
     httpStatus: 422,
     level: 'warn',
