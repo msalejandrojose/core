@@ -111,6 +111,11 @@ function RenderField({ field, control, values, t }: RenderFieldProps) {
       return <h3 className={cn('text-base', className)}>{t(field.text)}</h3>;
     }
 
+    case 'paragraph':
+      return (
+        <p className="text-muted-foreground text-sm">{t(field.text)}</p>
+      );
+
     case 'divider':
       return <hr className="border-border" />;
 

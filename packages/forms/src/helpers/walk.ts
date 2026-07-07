@@ -1,12 +1,11 @@
 import type { DataField, Field } from '../types/field.ts';
 
+/** Tipos estructurales / de UI que NO producen valor (no tienen `name`). */
+const NON_DATA_TYPES = new Set(['group', 'heading', 'paragraph', 'divider']);
+
 /** ¿Es un campo que produce valor (tiene `name`)? */
 export function isDataField(field: Field): field is DataField {
-  return (
-    field.type !== 'group' &&
-    field.type !== 'heading' &&
-    field.type !== 'divider'
-  );
+  return !NON_DATA_TYPES.has(field.type);
 }
 
 /**

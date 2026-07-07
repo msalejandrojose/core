@@ -8,24 +8,40 @@ mobile); los renderers viven en cada plataforma.
 > un subconjunto acotado de tipos de campo validado contra un caso real (el alta
 > de usuario del backoffice).
 
-## Qué incluye la v1
+## Qué incluye
 
-- **Tipos de campo** (`types/`): `text`, `textarea`, `email`, `password`,
-  `number`, `select`, `multiselect`, `checkbox`, `toggle`, `date`, `hidden`,
-  `group` + helpers `heading` / `divider`. Unión discriminada **forward-compatible**:
-  los renderers ignoran tipos desconocidos en lugar de romper.
+- **Catálogo completo de tipos de campo** (`types/field.ts`): las 11 familias del
+  [`SPEC.md`](./SPEC.md) (~50 tipos) — texto/contenido (`text`, `textarea`,
+  `richtext`, `email`, `url`, `slug`, `color`, `password` con `PasswordPolicy`),
+  numérico (`number`, `currency`, `percentage`, `range`, `rating`), fecha/tiempo
+  (`date`, `time`, `datetime`, `month`, `year`, `timezone`, `dateRange`,
+  `dateRangeTime`), selección (`select`, `multiselect`, `radio`, `checkbox`,
+  `toggle`, `tags`, `autocomplete`, `treeSelect`, `cascader`), identidad
+  (`phone`, `otp`, `username`), localización (`address`, `coordinates`,
+  `country`, `locale`, `postalCode`), archivos (`file`, `image`, `avatar`,
+  `signature`), legales/financieros (`taxId`, `iban`, `bankAccount`,
+  `creditCard`), estructurales (`group`, `array`, `keyValue`, `json`, `hidden`)
+  y helpers de UI (`heading`, `paragraph`, `divider`, `consent`). Unión
+  discriminada **forward-compatible**: los renderers ignoran tipos desconocidos
+  en lugar de romper.
 - **Validación** (`validation/`): catálogo cerrado (`required`, `minLength`,
-  `maxLength`, `min`, `max`, `pattern`, `email`, `custom.ref`) + evaluador puro
-  `validateForm(schema, values, options?)`.
+  `maxLength`, `min`, `max`, `pattern`, `email`, `url`, `integer`, `phone`,
+  `iban`, `taxId`, `creditCard`, `custom.ref`) + evaluador puro
+  `validateForm(schema, values, options?)`. Los validadores de formato (IBAN
+  mod-97, NIF/NIE/CIF, Luhn, teléfono, URL) están en `validation/formats.ts` y
+  se exportan sueltos (`isIban`, `isTaxId`, `isLuhnValid`…).
 - **Condiciones** (`conditions/`): `visibleWhen` / `enabledWhen` con operadores
   simples (`eq`, `ne`, `in`, `nin`, `truthy`, `falsy`, `gt/gte/lt/lte`) y
   combinadores `all` / `any` / `not`. Evaluador puro.
 - **Helpers** (`helpers/`): `defineForm` (identidad tipada con inferencia),
-  `getDefaultValues`, `collectDataFields`, `findDataField`, e `InferFormValues<S>`.
+  `getDefaultValues` (con fallback por tipo para cada value object),
+  `collectDataFields`, `findDataField`, e `InferFormValues<S>`.
 
-Fuera de la v1 (ver spec): catálogo completo (~40 tipos), endpoint backend
-`/api/forms/repository/:entity` + `@FormRepository`, validación async y el
-package `forms-react` separado (el renderer vive de momento en el backoffice).
+Todavía pendiente (ver spec): **renderers** de los tipos avanzados en cada
+plataforma (el backoffice pinta hoy el subconjunto base; el resto cae al
+_default_ forward-compatible), endpoint backend `/api/forms/repository/:entity`
++ `@FormRepository`, validación **async** (`{ kind: 'async', ref }`) y el
+package `forms-react` separado.
 
 ## Uso
 
