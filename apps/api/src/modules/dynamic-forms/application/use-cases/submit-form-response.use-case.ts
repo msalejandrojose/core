@@ -4,7 +4,10 @@ import { FormResponse } from '../../domain/entities/form-response.entity';
 import { FormInstanceClosedError } from '../../domain/errors/form-instance-closed.error';
 import { FormInstanceNotFoundError } from '../../domain/errors/form-instance-not-found.error';
 import { FormResponseDuplicateError } from '../../domain/errors/form-response-duplicate.error';
+import { FormResponseInvalidError } from '../../domain/errors/form-response-invalid.error';
 import { FormResponseLimitReachedError } from '../../domain/errors/form-response-limit-reached.error';
+import { validateFormAnswers } from '../validators/form-answers.validator';
+import type { PersistedFormSchema } from '../validators/field-spec';
 import {
   FORM_INSTANCE_REPOSITORY,
   type FormInstanceRepositoryPort,
@@ -52,6 +55,16 @@ export class SubmitFormResponseUseCase {
 
     if (isClosed) throw new FormInstanceClosedError(input.hash);
 
+    // Validar las respuestas contra el schema actual del formulario. Red de
+    // seguridad autoritativa: no confiamos en la validación de cliente. Se hace
+    // antes de contar/persistir para rechazar rápido sin efectos secundarios.
+    const form = await this.forms.findById(instance.formId);
+    const result = validateFormAnswers(
+      form!.schema as PersistedFormSchema,
+      input.answers,
+    );
+    if (!result.valid) throw new FormResponseInvalidError(result.errors);
+
     // Verificar cap global
     if (instance.maxResponses !== null) {
       const count = await this.instances.countResponses(instance.id);
@@ -78,9 +91,6 @@ export class SubmitFormResponseUseCase {
         if (exists) throw new FormResponseDuplicateError();
       }
     }
-
-    // Obtener schema actual para snapshot
-    const form = await this.forms.findById(instance.formId);
 
     const response = await this.responses.create({
       formInstanceId: instance.id,
