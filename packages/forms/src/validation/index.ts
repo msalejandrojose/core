@@ -6,6 +6,10 @@ export type {
 } from './validate.ts';
 export { defaultMessage } from './messages.ts';
 export {
+  collectAsyncValidations,
+  type AsyncValidationRef,
+} from './async.ts';
+export {
   isUrl,
   isInteger,
   isPhone,

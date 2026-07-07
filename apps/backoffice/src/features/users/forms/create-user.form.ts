@@ -12,7 +12,13 @@ export const createUserForm = defineForm({
       type: 'email',
       name: 'email',
       label: 'Email',
-      validations: [{ kind: 'required' }, { kind: 'email' }],
+      helpText: 'Se comprueba en vivo que no esté ya registrado.',
+      validations: [
+        { kind: 'required' },
+        { kind: 'email' },
+        // Disponibilidad comprobada contra el backend (POST /forms/validate/:ref).
+        { kind: 'async', ref: 'email-available' },
+      ],
     },
     {
       type: 'password',

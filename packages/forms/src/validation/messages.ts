@@ -35,6 +35,8 @@ export function defaultMessage(validation: Validation): string {
       return 'El número de tarjeta no es válido';
     case 'custom':
       return 'Valor no válido';
+    case 'async':
+      return 'Valor no válido';
     default:
       return 'Valor no válido';
   }

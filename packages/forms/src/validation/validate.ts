@@ -118,6 +118,10 @@ function runValidation(
       if (result == null) return null;
       return result === '' ? message : result;
     }
+    case 'async':
+      // No evaluable síncronamente (requiere I/O). Se resuelve aparte contra
+      // `POST /forms/validate/:ref`; aquí se considera válida.
+      return null;
     default:
       return null;
   }

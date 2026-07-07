@@ -99,7 +99,10 @@ packages/forms/
 - [x] Catálogo completo de tipos de campo (11 familias) en `types/field.ts`
 - [x] Validaciones built-in de formato (`url`, `phone`, `iban`, `taxId`, `creditCard`, `integer`) en `validation/`
 - [x] Renderer React base en el backoffice (subconjunto de tipos)
-- [ ] Renderers de los tipos avanzados (`richtext`, `array`, `address`, `file`, `signature`, `treeSelect`, `cascader`, `coordinates`…) por plataforma
-- [ ] Endpoint genérico `/api/forms/repository/:entity` con el decorator `@FormRepository`
-- [ ] Validación async (`{ kind: 'async', ref }`) con endpoint `/api/forms/validate/:ref`
+- [x] Renderer del backoffice ampliado a casi todo el catálogo (faltan `richtext`, `file`/`image`/`avatar`/`signature`, `treeSelect`, `cascader`, `array`)
+- [x] Endpoint genérico `GET /forms/repository/:entity` con registro de repositorios (`FieldOptionsRegistry` + repos `Role` y `Country`)
+- [x] Validación async (`{ kind: 'async', ref }`) con endpoint `POST /forms/validate/:ref` (`AsyncValidatorRegistry` + validador `email-available`)
+- [x] Resolución async en el cliente: `coreFormsResolver` llama a `/forms/validate/:ref` (helper `collectAsyncValidations`); el alta de usuario comprueba `email-available` en vivo
+- [x] Renderers de `file` / `image` / `avatar` (suben al módulo de storage → `FileRef`)
+- [x] Renderers de `richtext` (contentEditable + toolbar), `signature` (canvas), `treeSelect` / `cascader` (jerárquico) y `array` (repetidor anidado) — **catálogo completo renderizado**
 - [ ] Extraer el renderer a `packages/forms-react/` cuando exista `@core/ui`
