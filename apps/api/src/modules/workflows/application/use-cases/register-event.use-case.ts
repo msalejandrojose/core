@@ -16,6 +16,7 @@ import {
 } from '../ports/workflow-trigger-repository.port';
 import { TargetDescriptor } from '../ports/target-resolver.port';
 import { StartWorkflowRunsUseCase } from './start-workflow-runs.use-case';
+import { ResumeDuePendingActionsUseCase } from './resume-due-pending-actions.use-case';
 
 export interface RegisterEventInput {
   type: string;
@@ -38,6 +39,7 @@ export class RegisterEventUseCase {
     @Inject(WORKFLOW_DEFINITION_REPOSITORY)
     private readonly definitions: WorkflowDefinitionRepositoryPort,
     private readonly start: StartWorkflowRunsUseCase,
+    private readonly resume: ResumeDuePendingActionsUseCase,
   ) {}
 
   async execute(input: RegisterEventInput): Promise<WorkflowEvent> {
@@ -65,6 +67,10 @@ export class RegisterEventUseCase {
         target: (trigger.target ?? null) as TargetDescriptor | null,
       });
     }
+
+    // Además de arrancar runs nuevos, reanuda los que esperaban ESTE evento
+    // (steps wait_for_event) avanzando por su rama onMatch.
+    await this.resume.resumeMatchingWaitEvents(event);
 
     return event;
   }

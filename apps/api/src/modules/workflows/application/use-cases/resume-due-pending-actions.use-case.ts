@@ -6,6 +6,7 @@ import {
   WorkflowDsl,
 } from '../../domain/dsl/workflow-dsl';
 import { PendingAction } from '../../domain/entities/pending-action.entity';
+import { WorkflowEvent } from '../../domain/entities/event.entity';
 import { WorkflowRun } from '../../domain/entities/workflow-run.entity';
 import { evaluateMatch } from '../../domain/match/match-evaluator';
 import { MatchExpression } from '../../domain/match/match-expression';
@@ -37,7 +38,9 @@ const DEFAULT_BATCH = 50;
 //   - WAIT_CONDITION: reevalúa la condición sobre el contexto. Si se cumple, sigue
 //     por onMatch; si venció el deadline, por onTimeout; si no, reprograma el
 //     siguiente poll y el run sigue en WAITING.
-// `wait_for_event` (reanudación por llegada de evento) es otra iteración.
+//   - WAIT_EVENT: si vence su runAt sin llegar el evento → timeout (onTimeout).
+//     La reanudación por LLEGADA de evento la dispara register-event vía
+//     `resumeMatchingWaitEvents` (avanza por onMatch).
 @Injectable()
 export class ResumeDuePendingActionsUseCase {
   private readonly logger = new Logger(ResumeDuePendingActionsUseCase.name);
@@ -59,7 +62,7 @@ export class ResumeDuePendingActionsUseCase {
   ): Promise<number> {
     const due = await this.pending.findDue({
       now,
-      kinds: ['DELAY', 'RETRY', 'WAIT_CONDITION'],
+      kinds: ['DELAY', 'RETRY', 'WAIT_CONDITION', 'WAIT_EVENT'],
       limit,
     });
 
@@ -101,10 +104,63 @@ export class ResumeDuePendingActionsUseCase {
       return this.resumeWaitCondition(action, run, now, definition?.dsl, step);
     }
 
+    if (action.kind === 'WAIT_EVENT') {
+      // Vencido por runAt sin que llegara el evento → timeout: rama onTimeout.
+      const fallback =
+        definition && step
+          ? resolveNextStepKey(definition.dsl, step.key)
+          : null;
+      await this.transition(run.id, step?.onTimeout ?? fallback);
+      return true;
+    }
+
     // DELAY: avanzar al step siguiente al del delay antes de continuar.
     const nextKey =
       definition && step ? resolveNextStepKey(definition.dsl, step.key) : null;
     await this.transition(run.id, nextKey);
+    return true;
+  }
+
+  // Reanuda los runs que esperaban un evento (wait_for_event) al llegar `event`:
+  // consume la acción WAIT_EVENT cuyo eventType y match casen y avanza por
+  // onMatch. Lo invoca el registro de eventos (register-event). Devuelve cuántos
+  // runs se reanudaron.
+  async resumeMatchingWaitEvents(event: WorkflowEvent): Promise<number> {
+    const pendings = await this.pending.findPendingWaitEvents(event.type);
+    let resumed = 0;
+    for (const action of pendings) {
+      const match = action.matchExpression as MatchExpression | null;
+      if (!evaluateMatch(match, event.payload)) continue;
+      try {
+        if (await this.resumeOnEvent(action, event)) resumed++;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `WAIT_EVENT ${action.id} falló al reanudar por evento ${event.id}: ${message}`,
+        );
+      }
+    }
+    return resumed;
+  }
+
+  private async resumeOnEvent(
+    action: PendingAction,
+    event: WorkflowEvent,
+  ): Promise<boolean> {
+    // Reclama la acción atándola al evento que la consumió (idempotencia).
+    const claimed = await this.pending.markConsumed(action.id, event.id);
+    if (!claimed || !action.runId) return false;
+
+    const run = await this.runs.findById(action.runId);
+    if (!run || run.status !== 'WAITING') return false;
+
+    const definition = await this.definitions.findById(run.definitionId);
+    const step = definition
+      ? findStep(definition.dsl, action.stepKey ?? run.currentStepKey)
+      : null;
+    const fallback =
+      definition && step ? resolveNextStepKey(definition.dsl, step.key) : null;
+    await this.transition(run.id, step?.onMatch ?? fallback);
     return true;
   }
 
