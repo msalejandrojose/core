@@ -2,15 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { PrismaService } from '../infrastructure/database/prisma/prisma.service';
 
-// Seed idempotente de la jerarquía de localización de España:
-//   País (España) → Comunidades autónomas (19) → Provincias (52) →
-//   una muestra de municipios y códigos postales para poder recorrer la
-//   cadena completa en el backoffice desde el primer arranque.
+// Seed idempotente de la jerarquía de localización:
+//   Países (catálogo mundial con prefijo telefónico) y, para España en
+//   detalle: Comunidades autónomas (19) → Provincias (52) → una muestra de
+//   municipios y códigos postales para poder recorrer la cadena completa en
+//   el backoffice desde el primer arranque.
 //
-// Los códigos son los oficiales: ISO 3166-1 para el país e INE para el
-// desglose interno. El grueso de municipios y códigos postales (~8.100 y
-// ~11.000) se importa por separado; aquí solo se siembran unas capitales de
-// ejemplo.
+// Los códigos son los oficiales: ISO 3166-1 para el país (+ prefijo E.164) e
+// INE para el desglose interno. El grueso de municipios y códigos postales
+// (~8.100 y ~11.000) se importa por separado; aquí solo se siembran unas
+// capitales de ejemplo.
 
 const COUNTRY = {
   iso2: 'ES',
@@ -20,6 +21,213 @@ const COUNTRY = {
   nativeName: 'España',
   phoneCode: '+34',
 };
+
+// Catálogo de países con su prefijo telefónico internacional (ITU-T E.164).
+// Formato: [iso2, iso3, nombre, prefijo]. Se siembran todos con `phoneCode`
+// puesto; España lleva además numericCode/nativeName (ver constante COUNTRY).
+const COUNTRIES: ReadonlyArray<[string, string, string, string]> = [
+  // Europa
+  ['AD', 'AND', 'Andorra', '+376'],
+  ['AL', 'ALB', 'Albania', '+355'],
+  ['AT', 'AUT', 'Austria', '+43'],
+  ['BA', 'BIH', 'Bosnia y Herzegovina', '+387'],
+  ['BE', 'BEL', 'Bélgica', '+32'],
+  ['BG', 'BGR', 'Bulgaria', '+359'],
+  ['BY', 'BLR', 'Bielorrusia', '+375'],
+  ['CH', 'CHE', 'Suiza', '+41'],
+  ['CY', 'CYP', 'Chipre', '+357'],
+  ['CZ', 'CZE', 'Chequia', '+420'],
+  ['DE', 'DEU', 'Alemania', '+49'],
+  ['DK', 'DNK', 'Dinamarca', '+45'],
+  ['EE', 'EST', 'Estonia', '+372'],
+  ['ES', 'ESP', 'España', '+34'],
+  ['FI', 'FIN', 'Finlandia', '+358'],
+  ['FR', 'FRA', 'Francia', '+33'],
+  ['GB', 'GBR', 'Reino Unido', '+44'],
+  ['GR', 'GRC', 'Grecia', '+30'],
+  ['HR', 'HRV', 'Croacia', '+385'],
+  ['HU', 'HUN', 'Hungría', '+36'],
+  ['IE', 'IRL', 'Irlanda', '+353'],
+  ['IS', 'ISL', 'Islandia', '+354'],
+  ['IT', 'ITA', 'Italia', '+39'],
+  ['LI', 'LIE', 'Liechtenstein', '+423'],
+  ['LT', 'LTU', 'Lituania', '+370'],
+  ['LU', 'LUX', 'Luxemburgo', '+352'],
+  ['LV', 'LVA', 'Letonia', '+371'],
+  ['MC', 'MCO', 'Mónaco', '+377'],
+  ['MD', 'MDA', 'Moldavia', '+373'],
+  ['ME', 'MNE', 'Montenegro', '+382'],
+  ['MK', 'MKD', 'Macedonia del Norte', '+389'],
+  ['MT', 'MLT', 'Malta', '+356'],
+  ['NL', 'NLD', 'Países Bajos', '+31'],
+  ['NO', 'NOR', 'Noruega', '+47'],
+  ['PL', 'POL', 'Polonia', '+48'],
+  ['PT', 'PRT', 'Portugal', '+351'],
+  ['RO', 'ROU', 'Rumanía', '+40'],
+  ['RS', 'SRB', 'Serbia', '+381'],
+  ['RU', 'RUS', 'Rusia', '+7'],
+  ['SE', 'SWE', 'Suecia', '+46'],
+  ['SI', 'SVN', 'Eslovenia', '+386'],
+  ['SK', 'SVK', 'Eslovaquia', '+421'],
+  ['SM', 'SMR', 'San Marino', '+378'],
+  ['UA', 'UKR', 'Ucrania', '+380'],
+  ['VA', 'VAT', 'Ciudad del Vaticano', '+39'],
+  ['XK', 'XKX', 'Kosovo', '+383'],
+  // América
+  ['AG', 'ATG', 'Antigua y Barbuda', '+1'],
+  ['AR', 'ARG', 'Argentina', '+54'],
+  ['BB', 'BRB', 'Barbados', '+1'],
+  ['BO', 'BOL', 'Bolivia', '+591'],
+  ['BR', 'BRA', 'Brasil', '+55'],
+  ['BS', 'BHS', 'Bahamas', '+1'],
+  ['BZ', 'BLZ', 'Belice', '+501'],
+  ['CA', 'CAN', 'Canadá', '+1'],
+  ['CL', 'CHL', 'Chile', '+56'],
+  ['CO', 'COL', 'Colombia', '+57'],
+  ['CR', 'CRI', 'Costa Rica', '+506'],
+  ['CU', 'CUB', 'Cuba', '+53'],
+  ['DM', 'DMA', 'Dominica', '+1'],
+  ['DO', 'DOM', 'República Dominicana', '+1'],
+  ['EC', 'ECU', 'Ecuador', '+593'],
+  ['GD', 'GRD', 'Granada', '+1'],
+  ['GT', 'GTM', 'Guatemala', '+502'],
+  ['GY', 'GUY', 'Guyana', '+592'],
+  ['HN', 'HND', 'Honduras', '+504'],
+  ['HT', 'HTI', 'Haití', '+509'],
+  ['JM', 'JAM', 'Jamaica', '+1'],
+  ['KN', 'KNA', 'San Cristóbal y Nieves', '+1'],
+  ['LC', 'LCA', 'Santa Lucía', '+1'],
+  ['MX', 'MEX', 'México', '+52'],
+  ['NI', 'NIC', 'Nicaragua', '+505'],
+  ['PA', 'PAN', 'Panamá', '+507'],
+  ['PE', 'PER', 'Perú', '+51'],
+  ['PY', 'PRY', 'Paraguay', '+595'],
+  ['SR', 'SUR', 'Surinam', '+597'],
+  ['SV', 'SLV', 'El Salvador', '+503'],
+  ['TT', 'TTO', 'Trinidad y Tobago', '+1'],
+  ['US', 'USA', 'Estados Unidos', '+1'],
+  ['UY', 'URY', 'Uruguay', '+598'],
+  ['VC', 'VCT', 'San Vicente y las Granadinas', '+1'],
+  ['VE', 'VEN', 'Venezuela', '+58'],
+  // Asia
+  ['AE', 'ARE', 'Emiratos Árabes Unidos', '+971'],
+  ['AF', 'AFG', 'Afganistán', '+93'],
+  ['AM', 'ARM', 'Armenia', '+374'],
+  ['AZ', 'AZE', 'Azerbaiyán', '+994'],
+  ['BD', 'BGD', 'Bangladés', '+880'],
+  ['BH', 'BHR', 'Baréin', '+973'],
+  ['BN', 'BRN', 'Brunéi', '+673'],
+  ['BT', 'BTN', 'Bután', '+975'],
+  ['CN', 'CHN', 'China', '+86'],
+  ['GE', 'GEO', 'Georgia', '+995'],
+  ['ID', 'IDN', 'Indonesia', '+62'],
+  ['IL', 'ISR', 'Israel', '+972'],
+  ['IN', 'IND', 'India', '+91'],
+  ['IQ', 'IRQ', 'Irak', '+964'],
+  ['IR', 'IRN', 'Irán', '+98'],
+  ['JO', 'JOR', 'Jordania', '+962'],
+  ['JP', 'JPN', 'Japón', '+81'],
+  ['KG', 'KGZ', 'Kirguistán', '+996'],
+  ['KH', 'KHM', 'Camboya', '+855'],
+  ['KP', 'PRK', 'Corea del Norte', '+850'],
+  ['KR', 'KOR', 'Corea del Sur', '+82'],
+  ['KW', 'KWT', 'Kuwait', '+965'],
+  ['KZ', 'KAZ', 'Kazajistán', '+7'],
+  ['LA', 'LAO', 'Laos', '+856'],
+  ['LB', 'LBN', 'Líbano', '+961'],
+  ['LK', 'LKA', 'Sri Lanka', '+94'],
+  ['MM', 'MMR', 'Myanmar', '+95'],
+  ['MN', 'MNG', 'Mongolia', '+976'],
+  ['MV', 'MDV', 'Maldivas', '+960'],
+  ['MY', 'MYS', 'Malasia', '+60'],
+  ['NP', 'NPL', 'Nepal', '+977'],
+  ['OM', 'OMN', 'Omán', '+968'],
+  ['PH', 'PHL', 'Filipinas', '+63'],
+  ['PK', 'PAK', 'Pakistán', '+92'],
+  ['QA', 'QAT', 'Catar', '+974'],
+  ['SA', 'SAU', 'Arabia Saudí', '+966'],
+  ['SG', 'SGP', 'Singapur', '+65'],
+  ['SY', 'SYR', 'Siria', '+963'],
+  ['TH', 'THA', 'Tailandia', '+66'],
+  ['TJ', 'TJK', 'Tayikistán', '+992'],
+  ['TL', 'TLS', 'Timor Oriental', '+670'],
+  ['TM', 'TKM', 'Turkmenistán', '+993'],
+  ['TR', 'TUR', 'Turquía', '+90'],
+  ['TW', 'TWN', 'Taiwán', '+886'],
+  ['UZ', 'UZB', 'Uzbekistán', '+998'],
+  ['VN', 'VNM', 'Vietnam', '+84'],
+  ['YE', 'YEM', 'Yemen', '+967'],
+  // África
+  ['AO', 'AGO', 'Angola', '+244'],
+  ['BF', 'BFA', 'Burkina Faso', '+226'],
+  ['BI', 'BDI', 'Burundi', '+257'],
+  ['BJ', 'BEN', 'Benín', '+229'],
+  ['BW', 'BWA', 'Botsuana', '+267'],
+  ['CD', 'COD', 'República Democrática del Congo', '+243'],
+  ['CF', 'CAF', 'República Centroafricana', '+236'],
+  ['CG', 'COG', 'Congo', '+242'],
+  ['CI', 'CIV', 'Costa de Marfil', '+225'],
+  ['CM', 'CMR', 'Camerún', '+237'],
+  ['CV', 'CPV', 'Cabo Verde', '+238'],
+  ['DJ', 'DJI', 'Yibuti', '+253'],
+  ['DZ', 'DZA', 'Argelia', '+213'],
+  ['EG', 'EGY', 'Egipto', '+20'],
+  ['ER', 'ERI', 'Eritrea', '+291'],
+  ['ET', 'ETH', 'Etiopía', '+251'],
+  ['GA', 'GAB', 'Gabón', '+241'],
+  ['GH', 'GHA', 'Ghana', '+233'],
+  ['GM', 'GMB', 'Gambia', '+220'],
+  ['GN', 'GIN', 'Guinea', '+224'],
+  ['GQ', 'GNQ', 'Guinea Ecuatorial', '+240'],
+  ['GW', 'GNB', 'Guinea-Bisáu', '+245'],
+  ['KE', 'KEN', 'Kenia', '+254'],
+  ['KM', 'COM', 'Comoras', '+269'],
+  ['LR', 'LBR', 'Liberia', '+231'],
+  ['LS', 'LSO', 'Lesoto', '+266'],
+  ['LY', 'LBY', 'Libia', '+218'],
+  ['MA', 'MAR', 'Marruecos', '+212'],
+  ['MG', 'MDG', 'Madagascar', '+261'],
+  ['ML', 'MLI', 'Malí', '+223'],
+  ['MR', 'MRT', 'Mauritania', '+222'],
+  ['MU', 'MUS', 'Mauricio', '+230'],
+  ['MW', 'MWI', 'Malaui', '+265'],
+  ['MZ', 'MOZ', 'Mozambique', '+258'],
+  ['NA', 'NAM', 'Namibia', '+264'],
+  ['NE', 'NER', 'Níger', '+227'],
+  ['NG', 'NGA', 'Nigeria', '+234'],
+  ['RW', 'RWA', 'Ruanda', '+250'],
+  ['SC', 'SYC', 'Seychelles', '+248'],
+  ['SD', 'SDN', 'Sudán', '+249'],
+  ['SL', 'SLE', 'Sierra Leona', '+232'],
+  ['SN', 'SEN', 'Senegal', '+221'],
+  ['SO', 'SOM', 'Somalia', '+252'],
+  ['SS', 'SSD', 'Sudán del Sur', '+211'],
+  ['ST', 'STP', 'Santo Tomé y Príncipe', '+239'],
+  ['SZ', 'SWZ', 'Esuatini', '+268'],
+  ['TD', 'TCD', 'Chad', '+235'],
+  ['TG', 'TGO', 'Togo', '+228'],
+  ['TN', 'TUN', 'Túnez', '+216'],
+  ['TZ', 'TZA', 'Tanzania', '+255'],
+  ['UG', 'UGA', 'Uganda', '+256'],
+  ['ZA', 'ZAF', 'Sudáfrica', '+27'],
+  ['ZM', 'ZMB', 'Zambia', '+260'],
+  ['ZW', 'ZWE', 'Zimbabue', '+263'],
+  // Oceanía
+  ['AU', 'AUS', 'Australia', '+61'],
+  ['FJ', 'FJI', 'Fiyi', '+679'],
+  ['FM', 'FSM', 'Micronesia', '+691'],
+  ['KI', 'KIR', 'Kiribati', '+686'],
+  ['MH', 'MHL', 'Islas Marshall', '+692'],
+  ['NR', 'NRU', 'Nauru', '+674'],
+  ['NZ', 'NZL', 'Nueva Zelanda', '+64'],
+  ['PG', 'PNG', 'Papúa Nueva Guinea', '+675'],
+  ['PW', 'PLW', 'Palaos', '+680'],
+  ['SB', 'SLB', 'Islas Salomón', '+677'],
+  ['TO', 'TON', 'Tonga', '+676'],
+  ['TV', 'TUV', 'Tuvalu', '+688'],
+  ['VU', 'VUT', 'Vanuatu', '+678'],
+  ['WS', 'WSM', 'Samoa', '+685'],
+];
 
 // Comunidades autónomas — [código INE, nombre]
 const REGIONS: ReadonlyArray<[string, string]> = [
@@ -116,7 +324,18 @@ async function bootstrap() {
   });
   const prisma = app.get(PrismaService);
 
-  console.log('→ Sembrando país (España)...');
+  console.log(
+    `→ Sembrando ${COUNTRIES.length} países con su prefijo telefónico...`,
+  );
+  for (const [iso2, iso3, name, phoneCode] of COUNTRIES) {
+    await prisma.country.upsert({
+      where: { iso2 },
+      create: { iso2, iso3, name, phoneCode, isActive: true },
+      update: { iso3, name, phoneCode },
+    });
+  }
+
+  console.log('→ Completando detalle de España...');
   const country = await prisma.country.upsert({
     where: { iso2: COUNTRY.iso2 },
     create: { ...COUNTRY, isActive: true },
@@ -181,8 +400,9 @@ async function bootstrap() {
 
   console.log('');
   console.log(
-    `✓ Seed de localización completado: 1 país, ${REGIONS.length} comunidades, ` +
-      `${PROVINCES.length} provincias, ${MUNICIPALITIES.length} municipios, ${cpCount} códigos postales.`,
+    `✓ Seed de localización completado: ${COUNTRIES.length} países (con prefijo), ` +
+      `${REGIONS.length} comunidades, ${PROVINCES.length} provincias, ` +
+      `${MUNICIPALITIES.length} municipios, ${cpCount} códigos postales.`,
   );
   await app.close();
 }
