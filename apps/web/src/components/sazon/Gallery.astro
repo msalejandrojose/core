@@ -1,41 +1,55 @@
 ---
-interface Props {
-  images?: { src: string; alt: string }[];
-}
-const { images = [] } = Astro.props;
-const [big, top, bottom] = images;
+import { Image } from 'astro:assets';
+import sunflowers from '../../assets/land/sunflowers.png';
+import wheat from '../../assets/land/wheat-pivot.png';
+import olive from '../../assets/land/olive-grove.jpeg';
 ---
 <section class="py-24 md:py-36 px-5 md:px-10 bg-white border-t border-mist-dark/50">
   <div class="max-w-[1280px] mx-auto">
     <div class="max-w-[640px] mb-14 md:mb-20 reveal">
-      <p class="eyebrow mb-4">El producto</p>
       <h2 class="font-sazon text-[clamp(28px,3.8vw,46px)] leading-[1.08] [letter-spacing:var(--tracking-tighter)] font-medium">
-        Lo que termina en tu mesa.
+        De aquí, y de esta temporada.
       </h2>
+      <p class="mt-5 text-[17px] md:text-[18px] leading-[1.55] text-ink/65 max-w-[460px]">
+        La tierra que tenemos al lado. Girasol, olivo, campo de Albacete.
+      </p>
     </div>
 
     <div class="grid md:grid-cols-12 gap-3 md:gap-4">
-      <div class="md:col-span-8 reveal">
-        {big ? (
-          <img src={big.src} alt={big.alt} class="w-full aspect-[16/11] object-cover rounded-sm" loading="lazy" />
-        ) : (
-          <div class="img-ph aspect-[16/11] rounded-sm" aria-hidden="true"></div>
-        )}
-      </div>
-      <div class="md:col-span-4 grid grid-rows-2 gap-3 md:gap-4">
-        <div class="reveal" style="transition-delay: .1s">
-          {top ? (
-            <img src={top.src} alt={top.alt} class="w-full h-full aspect-[4/3] md:aspect-auto object-cover rounded-sm" loading="lazy" />
-          ) : (
-            <div class="img-ph aspect-[4/3] md:aspect-auto md:h-full rounded-sm" aria-hidden="true"></div>
-          )}
+      <div class="md:col-span-8 reveal scene">
+        <div data-tilt data-tilt-max="4" class="parallax relative rounded-xl overflow-hidden shadow-[0_30px_60px_-40px_rgba(31,37,25,0.5)]">
+          <Image
+            src={sunflowers}
+            alt="Campo de girasoles en flor en la provincia de Albacete"
+            widths={[560, 840, 1120]}
+            sizes="(min-width: 768px) 62vw, 100vw"
+            class="parallax-media w-full aspect-[16/11] object-cover"
+            loading="lazy"
+          />
+          <div class="glare rounded-xl"></div>
         </div>
-        <div class="reveal" style="transition-delay: .2s">
-          {bottom ? (
-            <img src={bottom.src} alt={bottom.alt} class="w-full h-full aspect-[4/3] md:aspect-auto object-cover rounded-sm" loading="lazy" />
-          ) : (
-            <div class="img-ph aspect-[4/3] md:aspect-auto md:h-full rounded-sm" aria-hidden="true"></div>
-          )}
+      </div>
+
+      <div class="md:col-span-4 grid grid-rows-2 gap-3 md:gap-4">
+        <div class="reveal parallax relative rounded-xl overflow-hidden shadow-[0_24px_50px_-40px_rgba(31,37,25,0.5)]" style="transition-delay: .1s">
+          <Image
+            src={wheat}
+            alt="Cultivo regado en círculo, visto desde el aire, en Albacete"
+            widths={[360, 560, 720]}
+            sizes="(min-width: 768px) 30vw, 100vw"
+            class="parallax-media w-full h-full aspect-[4/3] md:aspect-auto object-cover"
+            loading="lazy"
+          />
+        </div>
+        <div class="reveal parallax relative rounded-xl overflow-hidden shadow-[0_24px_50px_-40px_rgba(31,37,25,0.5)]" style="transition-delay: .2s">
+          <Image
+            src={olive}
+            alt="Detalle de un olivar de Albacete visto desde el aire"
+            widths={[360, 560, 720]}
+            sizes="(min-width: 768px) 30vw, 100vw"
+            class="parallax-media w-full h-full aspect-[4/3] md:aspect-auto object-cover"
+            loading="lazy"
+          />
         </div>
       </div>
     </div>

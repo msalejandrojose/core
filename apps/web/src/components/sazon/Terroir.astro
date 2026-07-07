@@ -1,0 +1,26 @@
+---
+import { Image } from 'astro:assets';
+import wheat from '../../assets/land/wheat-pivot.png';
+---
+<section class="relative isolate min-h-[70vh] md:min-h-[78vh] flex items-end overflow-hidden parallax parallax-deep">
+  <Image
+    src={wheat}
+    alt="Campo de cultivo de Albacete regado en círculo, visto desde el aire"
+    widths={[768, 1200, 1600]}
+    sizes="100vw"
+    class="parallax-media absolute inset-0 w-full h-full object-cover -z-10"
+    loading="lazy"
+  />
+  <div class="absolute inset-0 -z-10 bg-gradient-to-t from-forest/85 via-forest/35 to-forest/15" aria-hidden="true"></div>
+
+  <div class="relative w-full max-w-[1280px] mx-auto px-5 md:px-10 py-16 md:py-24">
+    <div class="max-w-[640px] reveal">
+      <h2 class="font-sazon text-cream text-[clamp(30px,4.4vw,54px)] leading-[1.05] [letter-spacing:var(--tracking-tightest)] font-medium">
+        Cerca de casa.<br />De temporada. De aquí.
+      </h2>
+      <p class="mt-5 text-[17px] md:text-[18px] leading-[1.55] text-cream/80 max-w-[460px]">
+        Trabajamos con lo que da la tierra de Albacete en cada momento del año. Lo que está en su punto, cuando lo está.
+      </p>
+    </div>
+  </div>
+</section>

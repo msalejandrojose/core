@@ -18,6 +18,7 @@
   --font-sazon:    "Geist", system-ui, sans-serif;
   --font-sans:     "Inter", system-ui, sans-serif;
   --font-mono:     "Geist Mono", ui-monospace, monospace;
+  --font-serif:    "Fraunces", Georgia, "Times New Roman", serif;
 
   --tracking-tightest: -0.04em;
   --tracking-tighter:  -0.025em;
@@ -105,6 +106,85 @@
 
   .card-hover { transition: transform .3s cubic-bezier(.2,0,0,1), background-color .3s; }
   .card-hover:hover { transform: translateY(-2px); background-color: var(--color-cream); }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Profundidad 3D — tilt con puntero + parallax con scroll.
+   Todo gateado por prefers-reduced-motion (el tilt, además, sólo
+   se activa en JS para punteros finos). Sólo transform/opacity.
+   ───────────────────────────────────────────────────────────── */
+@layer utilities {
+  .scene { perspective: 1400px; perspective-origin: 50% 40%; }
+
+  [data-tilt] {
+    --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%;
+    transform: rotateX(var(--rx)) rotateY(var(--ry));
+    transform-style: preserve-3d;
+    transition: transform .5s cubic-bezier(.2,0,0,1);
+    will-change: transform;
+  }
+  [data-tilt].tilting { transition: transform .1s linear; }
+
+  /* Capas a distinta profundidad dentro de una tarjeta que hace tilt */
+  .depth-1 { transform: translateZ(28px); }
+  .depth-2 { transform: translateZ(56px); }
+  .depth-3 { transform: translateZ(90px); }
+
+  /* Brillo que sigue al cursor sobre superficies con tilt */
+  .glare {
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(260px circle at var(--mx) var(--my), rgba(255,255,255,.30), transparent 62%);
+    opacity: 0; transition: opacity .35s; mix-blend-mode: soft-light;
+  }
+  [data-tilt]:hover .glare { opacity: 1; }
+
+  /* Marco que recorta para el parallax de imagen */
+  .parallax { overflow: hidden; }
+  .parallax > .parallax-media { transform: translateY(0) scale(1.12); will-change: transform; }
+
+  /* Vidrio esmerilado cálido para chips/tarjetas flotantes */
+  .glass {
+    background: color-mix(in srgb, var(--color-cream) 62%, transparent);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border: 1px solid color-mix(in srgb, var(--color-cream) 55%, rgba(255,255,255,.5));
+    box-shadow: 0 20px 50px -24px rgba(31,37,25,.45), inset 0 1px 0 rgba(255,255,255,.5);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .parallax > .parallax-media {
+      animation: parallax-rise linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+    @keyframes parallax-rise {
+      from { transform: translateY(6%)  scale(1.12); }
+      to   { transform: translateY(-6%) scale(1.12); }
+    }
+    /* Fondos full-bleed: recorrido un poco mayor */
+    .parallax-deep > .parallax-media {
+      animation: parallax-deep linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+    @keyframes parallax-deep {
+      from { transform: translateY(-9%) scale(1.2); }
+      to   { transform: translateY(9%)  scale(1.2); }
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tilt] { transform: none !important; }
+  .parallax > .parallax-media,
+  .parallax-deep > .parallax-media { transform: scale(1.02) !important; animation: none !important; }
+  .glare { display: none; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass { background: var(--color-cream); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
