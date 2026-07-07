@@ -37,10 +37,14 @@ mobile); los renderers viven en cada plataforma.
   `getDefaultValues` (con fallback por tipo para cada value object),
   `collectDataFields`, `findDataField`, e `InferFormValues<S>`.
 
-Todavía pendiente (ver spec): **renderers** de los tipos avanzados en cada
-plataforma (el backoffice pinta hoy el subconjunto base; el resto cae al
-_default_ forward-compatible), endpoint backend `/api/forms/repository/:entity`
-+ `@FormRepository`, validación **async** (`{ kind: 'async', ref }`) y el
+Ya implementado además del núcleo: el **endpoint de opciones por repositorio**
+(`GET /forms/repository/:entity`, con repos `Role`/`Country`), la **validación
+async** (`{ kind: 'async', ref }` + `POST /forms/validate/:ref`, resuelta desde
+el resolver del backoffice) y **renderers** de casi todo el catálogo en el
+backoffice, incluidos `file`/`image`/`avatar` (suben al módulo de storage).
+
+Todavía pendiente (ver spec): renderers de `richtext`, `signature`, `treeSelect`,
+`cascader` y `array` (necesitan widgets dedicados), y extraer el renderer a un
 package `forms-react` separado.
 
 ## Uso

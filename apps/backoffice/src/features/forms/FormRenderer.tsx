@@ -6,11 +6,12 @@ import {
   type DataField,
   type DateRangeValue,
   type Field,
+  type FileRef,
   type FormSchema,
   type KeyValueEntry,
 } from '@core/forms';
-import { Plus, Star, X } from 'lucide-react';
-import { useState, type ComponentProps } from 'react';
+import { Plus, Star, Upload, X } from 'lucide-react';
+import { useRef, useState, type ComponentProps } from 'react';
 import {
   Controller,
   useWatch,
@@ -18,6 +19,7 @@ import {
   type ControllerRenderProps,
   type FieldValues,
 } from 'react-hook-form';
+import { uploadFormFile } from './upload';
 import { FieldWrapper } from '@/components/forms/FieldWrapper';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -535,10 +537,39 @@ function renderControl(
     case 'json':
       return <JsonControl rhf={rhf} disabled={disabled} ph={placeholder} />;
 
+    // --- Archivos (suben al módulo de storage → FileRef) ------------------
+    case 'file':
+      return (
+        <FileControl
+          rhf={rhf}
+          disabled={disabled}
+          accept={field.accept}
+          multiple={field.multiple ?? false}
+        />
+      );
+    case 'image':
+      return (
+        <FileControl
+          rhf={rhf}
+          disabled={disabled}
+          accept={field.accept ?? ['image/*']}
+          multiple={field.multiple ?? false}
+        />
+      );
+    case 'avatar':
+      return (
+        <FileControl
+          rhf={rhf}
+          disabled={disabled}
+          accept={['image/*']}
+          multiple={false}
+        />
+      );
+
     default:
-      // Tipos que aún requieren un widget dedicado (richtext, file, image,
-      // avatar, signature, treeSelect, cascader, array). Forward-compatible:
-      // avisamos en dev y no renderizamos nada en lugar de romper.
+      // Tipos que aún requieren un widget dedicado (richtext, signature,
+      // treeSelect, cascader, array). Forward-compatible: avisamos en dev y no
+      // renderizamos nada en lugar de romper.
       if (import.meta.env.DEV) {
         console.warn(
           `[forms] tipo de campo sin renderer todavía: "${field.type}"`,
@@ -909,6 +940,97 @@ function KeyValueControl({ rhf, disabled }: { rhf: Rhf; disabled: boolean }) {
         <Plus size={14} />
         Añadir
       </Button>
+    </div>
+  );
+}
+
+function FileControl({
+  rhf,
+  disabled,
+  accept,
+  multiple,
+}: {
+  rhf: Rhf;
+  disabled: boolean;
+  accept?: string[];
+  multiple: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const files: FileRef[] = multiple
+    ? Array.isArray(rhf.value)
+      ? (rhf.value as FileRef[])
+      : []
+    : rhf.value
+      ? [rhf.value as FileRef]
+      : [];
+
+  const onPick = async (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const uploaded = await Promise.all(
+        Array.from(list).map((f) => uploadFormFile(f)),
+      );
+      rhf.onChange(multiple ? [...files, ...uploaded] : uploaded[0]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al subir el archivo');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeAt = (i: number) =>
+    rhf.onChange(multiple ? files.filter((_, idx) => idx !== i) : null);
+
+  return (
+    <div className="space-y-2">
+      {files.length > 0 && (
+        <ul className="space-y-1">
+          {files.map((f, i) => (
+            <li
+              key={f.id ?? i}
+              className="bg-muted flex items-center justify-between gap-2 rounded px-2 py-1 text-sm"
+            >
+              <span className="truncate">{f.name ?? f.id}</span>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => removeAt(i)}
+                className="text-muted-foreground hover:text-foreground shrink-0"
+              >
+                <X size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        accept={accept?.join(',')}
+        multiple={multiple}
+        disabled={disabled || busy}
+        onChange={(e) => {
+          void onPick(e.target.files);
+          e.target.value = '';
+        }}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={disabled || busy}
+        onClick={() => inputRef.current?.click()}
+      >
+        <Upload size={14} />
+        {busy ? 'Subiendo…' : multiple ? 'Añadir archivo' : 'Subir archivo'}
+      </Button>
+      {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   );
 }

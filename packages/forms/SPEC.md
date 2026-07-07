@@ -103,5 +103,6 @@ packages/forms/
 - [x] Endpoint genérico `GET /forms/repository/:entity` con registro de repositorios (`FieldOptionsRegistry` + repos `Role` y `Country`)
 - [x] Validación async (`{ kind: 'async', ref }`) con endpoint `POST /forms/validate/:ref` (`AsyncValidatorRegistry` + validador `email-available`)
 - [x] Resolución async en el cliente: `coreFormsResolver` llama a `/forms/validate/:ref` (helper `collectAsyncValidations`); el alta de usuario comprueba `email-available` en vivo
-- [ ] Renderers de los tipos que faltan (necesitan editor rico / subida de archivos / widget jerárquico)
+- [x] Renderers de `file` / `image` / `avatar` (suben al módulo de storage → `FileRef`)
+- [ ] Renderers de `richtext` (editor rico), `signature` (canvas), `treeSelect` / `cascader` (jerárquico) y `array` (repetidor anidado)
 - [ ] Extraer el renderer a `packages/forms-react/` cuando exista `@core/ui`
