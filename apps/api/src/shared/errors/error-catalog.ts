@@ -209,6 +209,16 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Las respuestas del formulario no son válidas.',
   },
+  FIELD_OPTIONS_ENTITY_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'No existe un repositorio de opciones para esa entidad.',
+  },
+  FIELD_OPTION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Opción no encontrada.',
+  },
   FORM_INSTANCE_CLOSED: {
     httpStatus: 410,
     level: 'warn',

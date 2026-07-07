@@ -99,7 +99,8 @@ packages/forms/
 - [x] Catálogo completo de tipos de campo (11 familias) en `types/field.ts`
 - [x] Validaciones built-in de formato (`url`, `phone`, `iban`, `taxId`, `creditCard`, `integer`) en `validation/`
 - [x] Renderer React base en el backoffice (subconjunto de tipos)
-- [ ] Renderers de los tipos avanzados (`richtext`, `array`, `address`, `file`, `signature`, `treeSelect`, `cascader`, `coordinates`…) por plataforma
-- [ ] Endpoint genérico `/api/forms/repository/:entity` con el decorator `@FormRepository`
+- [x] Renderer del backoffice ampliado a casi todo el catálogo (faltan `richtext`, `file`/`image`/`avatar`/`signature`, `treeSelect`, `cascader`, `array`)
+- [x] Endpoint genérico `GET /forms/repository/:entity` con registro de repositorios (`FieldOptionsRegistry` + repos `Role` y `Country`)
+- [ ] Renderers de los tipos que faltan (necesitan editor rico / subida de archivos / widget jerárquico)
 - [ ] Validación async (`{ kind: 'async', ref }`) con endpoint `/api/forms/validate/:ref`
 - [ ] Extraer el renderer a `packages/forms-react/` cuando exista `@core/ui`
