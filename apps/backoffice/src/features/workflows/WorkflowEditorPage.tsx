@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { WorkflowCanvas } from './components/WorkflowCanvas';
 import { StepEditor } from './editor/StepEditor';
 import { TriggersEditor } from './editor/TriggersEditor';
+import { ValidationPanel } from './editor/ValidationPanel';
+import { hasBlockingErrors, validateWorkflow } from './editor/validate';
 import {
   editorStateToDsl,
   stateFromDefinition,
@@ -75,13 +77,12 @@ function WorkflowEditor({ initial, isEdit }: { initial?: EditorState; isEdit: bo
   const selectedIndex = state.steps.findIndex((s) => s.key === state.selectedStepKey);
   const selectedStep = selectedIndex >= 0 ? state.steps[selectedIndex] : null;
 
+  const issues = validateWorkflow(state);
+  const blocked = hasBlockingErrors(issues);
+
   const handlePublish = () => {
-    if (!state.key.trim() || !state.name.trim()) {
-      toast.error('El workflow necesita key y nombre.');
-      return;
-    }
-    if (state.steps.length === 0) {
-      toast.error('Añade al menos un step.');
+    if (blocked) {
+      toast.error('Corrige los errores marcados antes de publicar.');
       return;
     }
     publish.mutate(dsl);
@@ -106,7 +107,10 @@ function WorkflowEditor({ initial, isEdit }: { initial?: EditorState; isEdit: bo
               />
               Activar al publicar
             </label>
-            <Button onClick={handlePublish} disabled={publish.isPending}>
+            <Button
+              onClick={handlePublish}
+              disabled={publish.isPending || blocked}
+            >
               {publish.isPending ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
@@ -129,6 +133,7 @@ function WorkflowEditor({ initial, isEdit }: { initial?: EditorState; isEdit: bo
           <p className="text-muted-foreground text-xs">
             Clica un step del lienzo para editarlo en el panel.
           </p>
+          <ValidationPanel issues={issues} />
         </div>
 
         <div className="max-h-[72vh] space-y-6 overflow-y-auto rounded-lg border p-4">

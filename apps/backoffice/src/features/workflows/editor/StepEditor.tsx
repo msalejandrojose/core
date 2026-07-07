@@ -37,7 +37,9 @@ export function StepEditor({
   const actionOptions = Array.from(
     new Set<string>([...ENGINE_ACTIONS, ...handlerKeys, step.action].filter(Boolean)),
   );
-  const isWait = step.action === 'wait_for_event';
+  const isWaitEvent = step.action === 'wait_for_event';
+  const isWaitCondition = step.action === 'wait_for_condition';
+  const usesWaitBranches = isWaitEvent || isWaitCondition;
 
   const nextValue = step.next === undefined ? SEQ : step.next === null ? END : step.next;
   const setNext = (v: string) =>
@@ -126,10 +128,14 @@ export function StepEditor({
         </Select>
       </div>
 
-      {isWait && (
+      {usesWaitBranches && (
         <div className="grid grid-cols-2 gap-3">
           <StepRefSelect
-            label="Al llegar evento (onMatch)"
+            label={
+              isWaitCondition
+                ? 'Al cumplirse (onMatch)'
+                : 'Al llegar evento (onMatch)'
+            }
             value={step.onMatch}
             options={otherStepKeys}
             onChange={(v) => onUpdate(step.key, { onMatch: v })}
