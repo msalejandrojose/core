@@ -28,13 +28,77 @@ const SECTIONS: ReadonlyArray<{
   parent: string | null;
   description: string | null;
 }> = [
-  { code: 'root', name: 'Root', parent: null, description: 'Sección raíz de toda la API.' },
-  { code: 'iam', name: 'IAM', parent: 'root', description: 'Identity & Access Management.' },
+  {
+    code: 'root',
+    name: 'Root',
+    parent: null,
+    description: 'Sección raíz de toda la API.',
+  },
+  {
+    code: 'iam',
+    name: 'IAM',
+    parent: 'root',
+    description: 'Identity & Access Management.',
+  },
   { code: 'iam.users', name: 'IAM · Users', parent: 'iam', description: null },
   { code: 'iam.roles', name: 'IAM · Roles', parent: 'iam', description: null },
-  { code: 'iam.api_sections', name: 'IAM · API Sections', parent: 'iam', description: null },
-  { code: 'iam.permissions', name: 'IAM · Permissions', parent: 'iam', description: null },
-  { code: 'forms', name: 'Dynamic Forms', parent: 'root', description: 'Formularios dinámicos.' },
+  {
+    code: 'iam.api_sections',
+    name: 'IAM · API Sections',
+    parent: 'iam',
+    description: null,
+  },
+  {
+    code: 'iam.permissions',
+    name: 'IAM · Permissions',
+    parent: 'iam',
+    description: null,
+  },
+  {
+    code: 'forms',
+    name: 'Dynamic Forms',
+    parent: 'root',
+    description: 'Formularios dinámicos.',
+  },
+  // Localización / geografía. Cuelgan de `root` para que el rol admin herede
+  // el permiso ADMIN sin registros explícitos por sección.
+  {
+    code: 'geo',
+    name: 'Localización',
+    parent: 'root',
+    description:
+      'Países, comunidades, provincias, municipios y códigos postales.',
+  },
+  {
+    code: 'geo.countries',
+    name: 'Localización · Países',
+    parent: 'geo',
+    description: null,
+  },
+  {
+    code: 'geo.regions',
+    name: 'Localización · Comunidades autónomas',
+    parent: 'geo',
+    description: null,
+  },
+  {
+    code: 'geo.provinces',
+    name: 'Localización · Provincias',
+    parent: 'geo',
+    description: null,
+  },
+  {
+    code: 'geo.municipalities',
+    name: 'Localización · Municipios',
+    parent: 'geo',
+    description: null,
+  },
+  {
+    code: 'geo.postal_codes',
+    name: 'Localización · Códigos postales',
+    parent: 'geo',
+    description: null,
+  },
 ];
 
 async function bootstrap() {
@@ -50,7 +114,7 @@ async function bootstrap() {
   for (const s of SECTIONS) {
     let row = await prisma.apiSection.findUnique({ where: { code: s.code } });
     if (!row) {
-      const parentId = s.parent ? idByCode.get(s.parent) ?? null : null;
+      const parentId = s.parent ? (idByCode.get(s.parent) ?? null) : null;
       row = await prisma.apiSection.create({
         data: {
           id: randomUUID(),
@@ -104,7 +168,9 @@ async function bootstrap() {
     process.env.SEED_ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD;
 
   console.log(`→ Sembrando usuario admin (${adminEmail})...`);
-  let adminUser = await prisma.user.findUnique({ where: { email: adminEmail } });
+  let adminUser = await prisma.user.findUnique({
+    where: { email: adminEmail },
+  });
   let createdUser = false;
   if (!adminUser) {
     const passwordHash = await hasher.hash(adminPassword);

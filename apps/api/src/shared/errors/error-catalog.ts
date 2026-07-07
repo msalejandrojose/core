@@ -286,6 +286,60 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Envío no encontrado.',
   },
+
+  // Localización / Geografía (módulo `geo`)
+  COUNTRY_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'País no encontrado.',
+  },
+  COUNTRY_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un país con ese código ISO.',
+  },
+  REGION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Comunidad autónoma no encontrada.',
+  },
+  REGION_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage:
+      'Ya existe una comunidad autónoma con ese código en el país.',
+  },
+  PROVINCE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Provincia no encontrada.',
+  },
+  PROVINCE_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe una provincia con ese código en el país.',
+  },
+  MUNICIPALITY_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Municipio no encontrado.',
+  },
+  MUNICIPALITY_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un municipio con ese código en la provincia.',
+  },
+  POSTAL_CODE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Código postal no encontrado.',
+  },
+  POSTAL_CODE_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe ese código postal en el municipio.',
+  },
+
   INVALID_ACCOUNT_CONFIG: {
     httpStatus: 422,
     level: 'warn',

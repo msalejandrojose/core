@@ -100,6 +100,49 @@ const BACKOFFICE_TREE: SeedNode[] = [
     order: 5,
   },
   {
+    code: 'geo',
+    name: 'Localización',
+    icon: 'MapPin',
+    order: 7,
+    children: [
+      {
+        code: 'geo.countries',
+        name: 'Países',
+        icon: 'Globe',
+        route: '/geo/countries',
+        order: 0,
+      },
+      {
+        code: 'geo.regions',
+        name: 'Comunidades',
+        icon: 'Map',
+        route: '/geo/regions',
+        order: 1,
+      },
+      {
+        code: 'geo.provinces',
+        name: 'Provincias',
+        icon: 'Map',
+        route: '/geo/provinces',
+        order: 2,
+      },
+      {
+        code: 'geo.municipalities',
+        name: 'Municipios',
+        icon: 'Building2',
+        route: '/geo/municipalities',
+        order: 3,
+      },
+      {
+        code: 'geo.postalCodes',
+        name: 'Códigos postales',
+        icon: 'Mailbox',
+        route: '/geo/postal-codes',
+        order: 4,
+      },
+    ],
+  },
+  {
     code: 'workflows',
     name: 'Workflows',
     icon: 'Workflow',
@@ -147,7 +190,7 @@ async function bootstrap() {
     const existing = await prisma.section.findUnique({
       where: { code_scope: { code: node.code, scope: SCOPE } },
     });
-    const parentId = parentCode ? idByCode.get(parentCode) ?? null : null;
+    const parentId = parentCode ? (idByCode.get(parentCode) ?? null) : null;
     const row = existing
       ? await prisma.section.update({
           where: { id: existing.id },
