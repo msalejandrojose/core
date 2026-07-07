@@ -22,6 +22,10 @@ export type Validation =
   | { kind: 'iban'; message?: I18nKey }
   | { kind: 'taxId'; country?: string; message?: I18nKey }
   | { kind: 'creditCard'; message?: I18nKey }
-  | { kind: 'custom'; ref: string; message?: I18nKey };
+  | { kind: 'custom'; ref: string; message?: I18nKey }
+  // Validación asíncrona resuelta fuera del validador puro (requiere I/O):
+  // el cliente la comprueba contra `POST /forms/validate/:ref`. `validateForm`
+  // la ignora; ver `AsyncValidator` en el backend.
+  | { kind: 'async'; ref: string; message?: I18nKey };
 
 export type ValidationKind = Validation['kind'];

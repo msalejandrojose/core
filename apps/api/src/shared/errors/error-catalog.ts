@@ -219,6 +219,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Opción no encontrada.',
   },
+  ASYNC_VALIDATOR_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'No existe ese validador asíncrono.',
+  },
   FORM_INSTANCE_CLOSED: {
     httpStatus: 410,
     level: 'warn',

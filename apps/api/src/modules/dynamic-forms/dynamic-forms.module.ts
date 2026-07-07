@@ -6,6 +6,8 @@ import { FORM_INSTANCE_REPOSITORY } from './application/ports/form-instance-repo
 import { FORM_RESPONSE_REPOSITORY } from './application/ports/form-response-repository.port';
 import { FIELD_OPTIONS_REPOSITORIES } from './application/ports/field-options-repository.port';
 import { FieldOptionsRegistry } from './application/services/field-options-registry.service';
+import { ASYNC_VALIDATORS } from './application/ports/async-validator.port';
+import { AsyncValidatorRegistry } from './application/services/async-validator-registry.service';
 import { CreateFormUseCase } from './application/use-cases/create-form.use-case';
 import { UpdateFormUseCase } from './application/use-cases/update-form.use-case';
 import { DeleteFormUseCase } from './application/use-cases/delete-form.use-case';
@@ -24,11 +26,13 @@ import { PrismaFormInstanceRepository } from './infrastructure/persistence/prism
 import { PrismaFormResponseRepository } from './infrastructure/persistence/prisma-form-response.repository';
 import { RoleOptionsRepository } from './infrastructure/persistence/role-options.repository';
 import { CountryOptionsRepository } from './infrastructure/persistence/country-options.repository';
+import { EmailAvailableValidator } from './infrastructure/validators/email-available.validator';
 import { FormsController } from './infrastructure/http/forms.controller';
 import { FormInstancesController } from './infrastructure/http/form-instances.controller';
 import { FormResponsesController } from './infrastructure/http/form-responses.controller';
 import { PublicFormsController } from './infrastructure/http/public-forms.controller';
 import { FieldOptionsController } from './infrastructure/http/field-options.controller';
+import { AsyncValidatorsController } from './infrastructure/http/async-validators.controller';
 
 @Module({
   imports: [IamModule, WorkflowsModule],
@@ -38,6 +42,7 @@ import { FieldOptionsController } from './infrastructure/http/field-options.cont
     FormResponsesController,
     PublicFormsController,
     FieldOptionsController,
+    AsyncValidatorsController,
   ],
   providers: [
     // Ports → Adapters
@@ -87,6 +92,16 @@ import { FieldOptionsController } from './infrastructure/http/field-options.cont
       inject: [RoleOptionsRepository, CountryOptionsRepository],
     },
     FieldOptionsRegistry,
+
+    // Validación async (§ SPEC): registro + validadores concretos. Mismo patrón
+    // de factory-array que los repositorios de opciones.
+    EmailAvailableValidator,
+    {
+      provide: ASYNC_VALIDATORS,
+      useFactory: (email: EmailAvailableValidator) => [email],
+      inject: [EmailAvailableValidator],
+    },
+    AsyncValidatorRegistry,
   ],
   // GetFormResponseUseCase se exporta para que otros módulos (leads) lean una
   // respuesta por id sin acoplarse a la persistencia de dynamic-forms.

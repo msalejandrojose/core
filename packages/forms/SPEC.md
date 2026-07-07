@@ -101,6 +101,7 @@ packages/forms/
 - [x] Renderer React base en el backoffice (subconjunto de tipos)
 - [x] Renderer del backoffice ampliado a casi todo el catálogo (faltan `richtext`, `file`/`image`/`avatar`/`signature`, `treeSelect`, `cascader`, `array`)
 - [x] Endpoint genérico `GET /forms/repository/:entity` con registro de repositorios (`FieldOptionsRegistry` + repos `Role` y `Country`)
+- [x] Validación async (`{ kind: 'async', ref }`) con endpoint `POST /forms/validate/:ref` (`AsyncValidatorRegistry` + validador `email-available`)
 - [ ] Renderers de los tipos que faltan (necesitan editor rico / subida de archivos / widget jerárquico)
-- [ ] Validación async (`{ kind: 'async', ref }`) con endpoint `/api/forms/validate/:ref`
+- [ ] Resolución async en el cliente (llamar a `/forms/validate/:ref` desde el resolver de react-hook-form)
 - [ ] Extraer el renderer a `packages/forms-react/` cuando exista `@core/ui`
