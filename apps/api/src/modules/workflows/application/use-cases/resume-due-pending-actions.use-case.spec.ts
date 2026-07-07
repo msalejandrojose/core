@@ -11,6 +11,7 @@ describe('ResumeDuePendingActionsUseCase', () => {
     findDue: jest.Mock;
     markConsumed: jest.Mock;
     create: jest.Mock;
+    findPendingWaitEvents: jest.Mock;
   };
   let runs: { findById: jest.Mock; update: jest.Mock };
   let definitions: { findById: jest.Mock };
@@ -30,6 +31,7 @@ describe('ResumeDuePendingActionsUseCase', () => {
       findDue: jest.fn().mockResolvedValue([]),
       markConsumed: jest.fn().mockResolvedValue(true),
       create: jest.fn().mockResolvedValue({ id: 'pa-new' }),
+      findPendingWaitEvents: jest.fn().mockResolvedValue([]),
     };
     runs = {
       findById: jest.fn().mockResolvedValue(waitingRun()),
@@ -50,7 +52,7 @@ describe('ResumeDuePendingActionsUseCase', () => {
     await useCase.execute(now, 25);
     expect(pending.findDue).toHaveBeenCalledWith({
       now,
-      kinds: ['DELAY', 'RETRY', 'WAIT_CONDITION'],
+      kinds: ['DELAY', 'RETRY', 'WAIT_CONDITION', 'WAIT_EVENT'],
       limit: 25,
     });
   });
@@ -220,6 +222,97 @@ describe('ResumeDuePendingActionsUseCase', () => {
       }),
     );
     expect(resumed).toBe(0);
+  });
+
+  const waitEventDsl = () =>
+    dsl([
+      { key: 's1', action: 'wait_for_event', onMatch: 's2', onTimeout: 's3' },
+      { key: 's2', action: 'log' },
+      { key: 's3', action: 'log' },
+    ]);
+
+  it('WAIT_EVENT vencido (sin llegar el evento): sigue por onTimeout', async () => {
+    pending.findDue.mockResolvedValue([
+      { id: 'pa-e1', runId: 'run-1', kind: 'WAIT_EVENT', stepKey: 's1' },
+    ]);
+    definitions.findById.mockResolvedValue(waitEventDsl());
+
+    const resumed = await useCase.execute();
+
+    expect(runs.update).toHaveBeenCalledWith('run-1', {
+      currentStepKey: 's3',
+      status: 'RUNNING',
+    });
+    expect(advance.execute).toHaveBeenCalledWith('run-1');
+    expect(resumed).toBe(1);
+  });
+
+  describe('resumeMatchingWaitEvents', () => {
+    const event = {
+      id: 'ev-1',
+      type: 'order.paid',
+      payload: { orderId: 'o-1' },
+    } as never;
+
+    it('evento que casa: consume la acción y avanza por onMatch', async () => {
+      pending.findPendingWaitEvents.mockResolvedValue([
+        {
+          id: 'pa-w1',
+          runId: 'run-1',
+          kind: 'WAIT_EVENT',
+          stepKey: 's1',
+          matchExpression: { orderId: 'o-1' },
+        },
+      ]);
+      definitions.findById.mockResolvedValue(waitEventDsl());
+
+      const resumed = await useCase.resumeMatchingWaitEvents(event);
+
+      expect(pending.markConsumed).toHaveBeenCalledWith('pa-w1', 'ev-1');
+      expect(runs.update).toHaveBeenCalledWith('run-1', {
+        currentStepKey: 's2',
+        status: 'RUNNING',
+      });
+      expect(advance.execute).toHaveBeenCalledWith('run-1');
+      expect(resumed).toBe(1);
+    });
+
+    it('evento que NO casa el match: no consume ni avanza', async () => {
+      pending.findPendingWaitEvents.mockResolvedValue([
+        {
+          id: 'pa-w2',
+          runId: 'run-1',
+          kind: 'WAIT_EVENT',
+          stepKey: 's1',
+          matchExpression: { orderId: 'otro' },
+        },
+      ]);
+
+      const resumed = await useCase.resumeMatchingWaitEvents(event);
+
+      expect(pending.markConsumed).not.toHaveBeenCalled();
+      expect(advance.execute).not.toHaveBeenCalled();
+      expect(resumed).toBe(0);
+    });
+
+    it('run que ya no espera: se descarta (0 reanudados)', async () => {
+      pending.findPendingWaitEvents.mockResolvedValue([
+        {
+          id: 'pa-w3',
+          runId: 'run-1',
+          kind: 'WAIT_EVENT',
+          stepKey: 's1',
+          matchExpression: null,
+        },
+      ]);
+      runs.findById.mockResolvedValue(waitingRun({ status: 'COMPLETED' }));
+      definitions.findById.mockResolvedValue(waitEventDsl());
+
+      const resumed = await useCase.resumeMatchingWaitEvents(event);
+
+      expect(advance.execute).not.toHaveBeenCalled();
+      expect(resumed).toBe(0);
+    });
   });
 
   it('un fallo al reanudar una acción no corta el resto del lote', async () => {

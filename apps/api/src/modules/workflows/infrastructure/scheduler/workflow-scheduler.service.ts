@@ -50,8 +50,7 @@ export class WorkflowSchedulerService {
     let fired = 0;
     for (const trigger of due) {
       try {
-        await this.fire(trigger, now);
-        fired++;
+        if (await this.fire(trigger, now)) fired++;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         this.logger.warn(`Trigger cron ${trigger.id} falló: ${message}`);
@@ -69,18 +68,21 @@ export class WorkflowSchedulerService {
     return { fired, resumed };
   }
 
-  private async fire(trigger: WorkflowTrigger, now: Date): Promise<void> {
-    if (!trigger.cronExpression) return;
+  // Devuelve true si ESTA instancia disparó el trigger (reclamó su slot).
+  private async fire(trigger: WorkflowTrigger, now: Date): Promise<boolean> {
+    if (!trigger.cronExpression) return false;
 
-    // Reprograma primero (reserva el slot) para no re-disparar en el próximo
-    // tick si el fan-out tarda.
-    await this.triggers.updateNextFireAt(
+    // Reclama el slot de forma atómica (reprograma solo si nextFireAt no cambió).
+    // Si otra instancia lo reclamó primero, no dispares: evita el doble disparo.
+    const claimed = await this.triggers.claimCronSlot(
       trigger.id,
+      trigger.nextFireAt ?? null,
       this.cron.next(trigger.cronExpression, now),
     );
+    if (!claimed) return false;
 
     const definition = await this.definitions.findById(trigger.definitionId);
-    if (!definition) return;
+    if (!definition) return false;
 
     const event = await this.events.create({
       type: `workflow.cron.${definition.key}`,
@@ -93,5 +95,6 @@ export class WorkflowSchedulerService {
       triggerKind: 'cron',
       target: (trigger.target ?? null) as TargetDescriptor | null,
     });
+    return true;
   }
 }

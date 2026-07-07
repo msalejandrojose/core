@@ -16,7 +16,7 @@ const cronTrigger: WorkflowTrigger = {
 describe('WorkflowSchedulerService', () => {
   let triggers: {
     findDueCronTriggers: jest.Mock;
-    updateNextFireAt: jest.Mock;
+    claimCronSlot: jest.Mock;
   };
   let definitions: { findById: jest.Mock };
   let events: { create: jest.Mock };
@@ -28,7 +28,7 @@ describe('WorkflowSchedulerService', () => {
   beforeEach(() => {
     triggers = {
       findDueCronTriggers: jest.fn().mockResolvedValue([cronTrigger]),
-      updateNextFireAt: jest.fn().mockResolvedValue(undefined),
+      claimCronSlot: jest.fn().mockResolvedValue(true),
     };
     definitions = {
       findById: jest.fn().mockResolvedValue({ id: 'def-1', key: 'welcome' }),
@@ -59,9 +59,10 @@ describe('WorkflowSchedulerService', () => {
     expect(fired).toBe(1);
     // Cada tick también intenta reanudar delay/retry vencidos.
     expect(resume.execute).toHaveBeenCalledTimes(1);
-    // Reprograma con el siguiente instante calculado.
-    expect(triggers.updateNextFireAt).toHaveBeenCalledWith(
+    // Reclama el slot atómicamente: (id, nextFireAt esperado, próximo disparo).
+    expect(triggers.claimCronSlot).toHaveBeenCalledWith(
       'trig-1',
+      new Date('2026-07-04T09:00:00.000Z'),
       new Date('2026-07-05T09:00:00.000Z'),
     );
     // Emite un evento sintético workflow.cron.<key> con el cronPayload.
@@ -83,15 +84,25 @@ describe('WorkflowSchedulerService', () => {
   it('un trigger que falla no impide procesar el resto', async () => {
     const bad: WorkflowTrigger = { ...cronTrigger, id: 'trig-bad' };
     triggers.findDueCronTriggers.mockResolvedValue([bad, cronTrigger]);
-    // El primero falla al reprogramar; el segundo debe seguir.
-    triggers.updateNextFireAt
+    // El primero falla al reclamar el slot; el segundo debe seguir.
+    triggers.claimCronSlot
       .mockRejectedValueOnce(new Error('db down'))
-      .mockResolvedValue(undefined);
+      .mockResolvedValue(true);
 
     const { fired } = await scheduler.tick();
 
     expect(fired).toBe(1);
     expect(start.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('slot ya reclamado por otra instancia: no dispara (evita doble disparo)', async () => {
+    triggers.claimCronSlot.mockResolvedValue(false);
+
+    const { fired } = await scheduler.tick();
+
+    expect(fired).toBe(0);
+    expect(start.execute).not.toHaveBeenCalled();
+    expect(events.create).not.toHaveBeenCalled();
   });
 
   it('reanuda los delay/retry vencidos y reporta el conteo', async () => {

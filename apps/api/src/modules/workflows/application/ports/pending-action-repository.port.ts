@@ -30,6 +30,9 @@ export interface PendingActionRepositoryPort {
   // Acciones PENDING (de los `kinds` indicados) con `runAt <= now`, más antigua
   // primero. Para el resumer del scheduler (delay/retry vencidos).
   findDue(opts: FindDuePendingActionsOptions): Promise<PendingAction[]>;
+  // Acciones WAIT_EVENT PENDING que esperan un evento de `eventType` (para
+  // reanudar por llegada de evento, con match sobre el payload aparte).
+  findPendingWaitEvents(eventType: string): Promise<PendingAction[]>;
   // Marca la acción como CONSUMED de forma atómica. Devuelve `true` solo si ESTA
   // llamada la reclamó (estaba PENDING); `false` si ya la consumió otro (idempotencia).
   markConsumed(id: string, consumedEventId?: string | null): Promise<boolean>;

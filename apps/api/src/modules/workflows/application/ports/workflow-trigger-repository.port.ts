@@ -23,6 +23,13 @@ export interface WorkflowTriggerRepositoryPort {
   // Triggers CRON de definiciones activas cuyo `nextFireAt` ya venció (o es
   // NULL = aún no programado). Los consume el scheduler.
   findDueCronTriggers(now: Date): Promise<WorkflowTrigger[]>;
-  // Reprograma el próximo disparo de un trigger CRON.
-  updateNextFireAt(id: string, nextFireAt: Date): Promise<void>;
+  // Reprograma (reserva) el slot de un trigger CRON de forma ATÓMICA: solo
+  // reprograma si su `nextFireAt` sigue siendo `expected` (el valor leído). Así,
+  // con varias instancias corriendo el scheduler, solo UNA reclama el slot y
+  // dispara — evita el doble disparo. Devuelve `true` si esta llamada lo reclamó.
+  claimCronSlot(
+    id: string,
+    expected: Date | null,
+    nextFireAt: Date,
+  ): Promise<boolean>;
 }

@@ -58,6 +58,15 @@ export class PrismaPendingActionRepository implements PendingActionRepositoryPor
     return rows.map((r) => PendingActionMapper.toDomain(r));
   }
 
+  async findPendingWaitEvents(eventType: string): Promise<PendingAction[]> {
+    const rows = await this.prisma.pendingAction.findMany({
+      where: { status: 'PENDING', kind: 'WAIT_EVENT', eventType },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    });
+    return rows.map((r) => PendingActionMapper.toDomain(r));
+  }
+
   async markConsumed(
     id: string,
     consumedEventId?: string | null,

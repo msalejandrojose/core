@@ -59,10 +59,18 @@ export class PrismaWorkflowTriggerRepository implements WorkflowTriggerRepositor
     return rows.map((r) => WorkflowTriggerMapper.toDomain(r));
   }
 
-  async updateNextFireAt(id: string, nextFireAt: Date): Promise<void> {
-    await this.prisma.workflowTrigger.update({
-      where: { id },
+  async claimCronSlot(
+    id: string,
+    expected: Date | null,
+    nextFireAt: Date,
+  ): Promise<boolean> {
+    // updateMany con guard sobre `nextFireAt = expected`: solo una instancia
+    // reclama el slot (las demás verán 0 filas afectadas). `expected = null`
+    // se traduce a `IS NULL` (trigger recién creado, aún sin programar).
+    const { count } = await this.prisma.workflowTrigger.updateMany({
+      where: { id, nextFireAt: expected },
       data: { nextFireAt },
     });
+    return count > 0;
   }
 }
