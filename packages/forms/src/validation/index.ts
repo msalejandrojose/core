@@ -5,3 +5,12 @@ export type {
   ValidationResult,
 } from './validate.ts';
 export { defaultMessage } from './messages.ts';
+export {
+  isUrl,
+  isInteger,
+  isPhone,
+  isLuhnValid,
+  isIban,
+  isSpanishTaxId,
+  isTaxId,
+} from './formats.ts';

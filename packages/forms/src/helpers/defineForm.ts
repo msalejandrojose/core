@@ -1,7 +1,12 @@
 import type {
+  AddressValue,
+  CoordinatesValue,
   DataField,
+  DateRangeValue,
   Field,
+  FileRef,
   GroupField,
+  KeyValueEntry,
 } from '../types/field.ts';
 import type { FormSchema, FormValues } from '../types/form.ts';
 import type { JsonValue } from '../types/json.ts';
@@ -20,15 +25,37 @@ export function defineForm<const S extends FormSchema>(schema: S): S {
 function fallbackDefault(field: DataField): JsonValue {
   switch (field.type) {
     case 'multiselect':
+    case 'tags':
+    case 'array':
+    case 'cascader':
+    case 'keyValue':
       return [];
     case 'checkbox':
     case 'toggle':
+    case 'consent':
       return false;
+    // Numéricos: vacío (null) en vez de 0 para no forzar un valor engañoso.
     case 'number':
-      // Vacío en vez de 0 para no forzar un valor inicial engañoso.
+    case 'currency':
+    case 'percentage':
+    case 'range':
+    case 'rating':
+    case 'year':
       return null;
+    // Objetos / referencias sin valor inicial.
     case 'hidden':
+    case 'json':
+    case 'file':
+    case 'image':
+    case 'avatar':
+    case 'signature':
+    case 'coordinates':
       return null;
+    case 'dateRange':
+    case 'dateRangeTime':
+      return { from: null, to: null };
+    case 'address':
+      return {};
     default:
       return '';
   }
@@ -53,15 +80,33 @@ export function getDefaultValues(schema: FormSchema): FormValues {
 // --- Inferencia de tipos ----------------------------------------------------
 
 /** Valor TS asociado a un campo de datos según su `type`. */
-type FieldValue<F> = F extends { type: 'number' }
+type FieldValue<F> = F extends {
+  type: 'number' | 'currency' | 'percentage' | 'range' | 'rating' | 'year';
+}
   ? number | null
-  : F extends { type: 'checkbox' | 'toggle' }
+  : F extends { type: 'checkbox' | 'toggle' | 'consent' }
     ? boolean
-    : F extends { type: 'multiselect' }
+    : F extends { type: 'multiselect' | 'tags' | 'cascader' }
       ? string[]
-      : F extends { type: 'hidden' }
-        ? JsonValue
-        : string;
+      : F extends { type: 'keyValue' }
+        ? KeyValueEntry[]
+        : F extends { type: 'array' }
+          ? Record<string, JsonValue>[]
+          : F extends { type: 'dateRange' | 'dateRangeTime' }
+            ? DateRangeValue
+            : F extends { type: 'coordinates' }
+              ? CoordinatesValue | null
+              : F extends { type: 'address' }
+                ? AddressValue
+                : F extends { type: 'avatar' | 'signature' }
+                  ? FileRef | null
+                  : F extends { type: 'file' | 'image' }
+                    ? FileRef | FileRef[] | null
+                    : F extends { type: 'treeSelect' }
+                      ? string | string[]
+                      : F extends { type: 'hidden' | 'json' }
+                        ? JsonValue
+                        : string;
 
 /**
  * Aplana la unión de campos entrando un nivel en los grupos (que no anidan

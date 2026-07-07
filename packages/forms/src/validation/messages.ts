@@ -21,6 +21,18 @@ export function defaultMessage(validation: Validation): string {
       return 'El formato no es válido';
     case 'email':
       return 'Email inválido';
+    case 'url':
+      return 'La URL no es válida';
+    case 'integer':
+      return 'Debe ser un número entero';
+    case 'phone':
+      return 'El teléfono no es válido';
+    case 'iban':
+      return 'El IBAN no es válido';
+    case 'taxId':
+      return 'El identificador fiscal no es válido';
+    case 'creditCard':
+      return 'El número de tarjeta no es válido';
     case 'custom':
       return 'Valor no válido';
     default:

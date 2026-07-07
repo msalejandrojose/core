@@ -204,6 +204,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'El schema del formulario no es válido.',
   },
+  FORM_RESPONSE_INVALID: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'Las respuestas del formulario no son válidas.',
+  },
   FORM_INSTANCE_CLOSED: {
     httpStatus: 410,
     level: 'warn',

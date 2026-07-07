@@ -1,8 +1,10 @@
 # Spec: @core/forms — schema declarativo de formularios
 
-> **Estado:** v1 implementada (TASK-79) — núcleo + renderer React en el backoffice +
-> migración del alta de usuario. Esta spec describe el diseño completo; ver
-> [`README.md`](./README.md) para el alcance concreto de la v1 y lo que queda para v2.
+> **Estado:** núcleo + **catálogo completo de tipos** (11 familias) y sus
+> validaciones ya implementados en `types/field.ts` y `validation/`. Lo que
+> queda es de plataforma/infra (renderers por app, endpoint de repositorio,
+> validación async). Ver [`README.md`](./README.md) para el detalle de qué está
+> hecho y qué no.
 
 ## Objetivo
 
@@ -93,7 +95,11 @@ packages/forms/
 
 ## Próximos pasos
 
-- [ ] Validar el spec contra el form de alta de usuario (email, password, role selector desde `Role` entity, locale, timezone)
-- [ ] Scaffold del package `@core/forms` con solo los tipos y `defineForm`
-- [ ] Primer renderer en `packages/forms-react/` para el backoffice
+- [x] Scaffold del package `@core/forms` con los tipos y `defineForm`
+- [x] Catálogo completo de tipos de campo (11 familias) en `types/field.ts`
+- [x] Validaciones built-in de formato (`url`, `phone`, `iban`, `taxId`, `creditCard`, `integer`) en `validation/`
+- [x] Renderer React base en el backoffice (subconjunto de tipos)
+- [ ] Renderers de los tipos avanzados (`richtext`, `array`, `address`, `file`, `signature`, `treeSelect`, `cascader`, `coordinates`…) por plataforma
 - [ ] Endpoint genérico `/api/forms/repository/:entity` con el decorator `@FormRepository`
+- [ ] Validación async (`{ kind: 'async', ref }`) con endpoint `/api/forms/validate/:ref`
+- [ ] Extraer el renderer a `packages/forms-react/` cuando exista `@core/ui`

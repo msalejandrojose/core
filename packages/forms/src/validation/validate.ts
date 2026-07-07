@@ -3,6 +3,14 @@ import { collectDataFields } from '../helpers/walk.ts';
 import type { DataField } from '../types/field.ts';
 import type { FormSchema, FormValues } from '../types/form.ts';
 import type { Validation } from '../types/validation.ts';
+import {
+  isIban,
+  isInteger,
+  isLuhnValid,
+  isPhone,
+  isTaxId,
+  isUrl,
+} from './formats.ts';
 import { defaultMessage } from './messages.ts';
 
 /**
@@ -78,6 +86,24 @@ function runValidation(
     case 'email':
       if (isEmpty(value)) return null;
       return EMAIL_RE.test(asString(value)) ? null : message;
+    case 'url':
+      if (isEmpty(value)) return null;
+      return isUrl(asString(value)) ? null : message;
+    case 'integer':
+      if (isEmpty(value)) return null;
+      return isInteger(value) ? null : message;
+    case 'phone':
+      if (isEmpty(value)) return null;
+      return isPhone(asString(value)) ? null : message;
+    case 'iban':
+      if (isEmpty(value)) return null;
+      return isIban(asString(value)) ? null : message;
+    case 'taxId':
+      if (isEmpty(value)) return null;
+      return isTaxId(asString(value), validation.country) ? null : message;
+    case 'creditCard':
+      if (isEmpty(value)) return null;
+      return isLuhnValid(asString(value)) ? null : message;
     case 'custom': {
       const fn = options.validators?.[validation.ref];
       if (!fn) {

@@ -16,6 +16,12 @@ export type Validation =
   | { kind: 'max'; value: number; message?: I18nKey }
   | { kind: 'pattern'; value: string; flags?: string; message?: I18nKey }
   | { kind: 'email'; message?: I18nKey }
+  | { kind: 'url'; message?: I18nKey }
+  | { kind: 'integer'; message?: I18nKey }
+  | { kind: 'phone'; message?: I18nKey }
+  | { kind: 'iban'; message?: I18nKey }
+  | { kind: 'taxId'; country?: string; message?: I18nKey }
+  | { kind: 'creditCard'; message?: I18nKey }
   | { kind: 'custom'; ref: string; message?: I18nKey };
 
 export type ValidationKind = Validation['kind'];
