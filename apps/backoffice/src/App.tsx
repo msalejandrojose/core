@@ -83,6 +83,31 @@ const TagsPage = lazy(() =>
 const FilesPage = lazy(() =>
   import('@/features/files/FilesPage').then((m) => ({ default: m.FilesPage })),
 );
+const CountriesPage = lazy(() =>
+  import('@/features/geo/countries/CountriesPage').then((m) => ({
+    default: m.CountriesPage,
+  })),
+);
+const RegionsPage = lazy(() =>
+  import('@/features/geo/regions/RegionsPage').then((m) => ({
+    default: m.RegionsPage,
+  })),
+);
+const ProvincesPage = lazy(() =>
+  import('@/features/geo/provinces/ProvincesPage').then((m) => ({
+    default: m.ProvincesPage,
+  })),
+);
+const MunicipalitiesPage = lazy(() =>
+  import('@/features/geo/municipalities/MunicipalitiesPage').then((m) => ({
+    default: m.MunicipalitiesPage,
+  })),
+);
+const PostalCodesPage = lazy(() =>
+  import('@/features/geo/postal-codes/PostalCodesPage').then((m) => ({
+    default: m.PostalCodesPage,
+  })),
+);
 const LeadsPage = lazy(() =>
   import('@/features/leads/LeadsPage').then((m) => ({ default: m.LeadsPage })),
 );
@@ -172,6 +197,11 @@ export default function App() {
               <Route path="/leads" element={<LeadsPage />} />
               <Route path="/leads/:id" element={<LeadDetailPage />} />
               <Route path="/files" element={<FilesPage />} />
+              <Route path="/geo/countries" element={<CountriesPage />} />
+              <Route path="/geo/regions" element={<RegionsPage />} />
+              <Route path="/geo/provinces" element={<ProvincesPage />} />
+              <Route path="/geo/municipalities" element={<MunicipalitiesPage />} />
+              <Route path="/geo/postal-codes" element={<PostalCodesPage />} />
               <Route path="/forms" element={<FormsListPage />} />
               <Route path="/forms/nuevo" element={<FormDetailPage />} />
               <Route path="/forms/:id" element={<FormDetailPage />} />

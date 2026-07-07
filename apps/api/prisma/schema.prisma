@@ -1007,3 +1007,117 @@ model NotificationDelivery {
   @@index([toAddress])
   @@map("notification_delivery")
 }
+
+// ---------------------------------------------------------------------------
+// Localización / Geografía (módulo `geo`)
+// ---------------------------------------------------------------------------
+// Jerarquía administrativa descendente, modelada como 1-N:
+//
+//   Country → Region (Comunidad Autónoma) → Province → Municipality → PostalCode
+//
+// Los códigos oficiales (ISO 3166 para países, INE para el desglose de España)
+// se guardan como claves naturales junto al uuid interno. Cada nivel referencia
+// a su padre por FK; el borrado cascadea hacia abajo (borrar un país arrastra
+// sus comunidades, provincias, municipios y códigos postales).
+//
+// Nota sobre `PostalCode`: en la realidad un CP puede solapar varios municipios
+// y un municipio tiene varios CPs (relación N-M). Aquí se simplifica a 1-N (un
+// CP pertenece a un municipio), que cubre el caso de uso de la app. Si en el
+// futuro se necesita el solape real, se introduce una tabla puente
+// `postal_code_municipality` sin tocar el resto de la jerarquía.
+
+/// País. Clave natural: códigos ISO 3166-1 (alpha-2 / alpha-3).
+model Country {
+  id          String   @id @default(uuid()) @db.Char(36)
+  iso2        String   @unique @db.Char(2) // ISO 3166-1 alpha-2 ("ES")
+  iso3        String   @unique @db.Char(3) // ISO 3166-1 alpha-3 ("ESP")
+  numericCode String?  @map("numeric_code") @db.Char(3) // ISO 3166-1 numeric ("724")
+  name        String   @db.VarChar(120)
+  nativeName  String?  @map("native_name") @db.VarChar(120)
+  phoneCode   String?  @map("phone_code") @db.VarChar(8) // prefijo telefónico ("+34")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  regions   Region[]
+  provinces Province[]
+
+  @@index([name])
+  @@map("country")
+}
+
+/// Comunidad Autónoma (nivel superior del desglose de España). Código INE de
+/// 2 dígitos ("13" = Madrid), único dentro de cada país.
+model Region {
+  id        String   @id @default(uuid()) @db.Char(36)
+  code      String   @db.VarChar(10) // código INE de CCAA ("13")
+  name      String   @db.VarChar(120)
+  countryId String   @map("country_id") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  country   Country    @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  provinces Province[]
+
+  @@unique([countryId, code])
+  @@index([countryId])
+  @@index([name])
+  @@map("region")
+}
+
+/// Provincia. Código INE de 2 dígitos ("28" = Madrid), único dentro del país.
+/// `regionId` es opcional para admitir países sin desglose de comunidades.
+model Province {
+  id        String   @id @default(uuid()) @db.Char(36)
+  code      String   @db.VarChar(10) // código INE de provincia ("28")
+  name      String   @db.VarChar(120)
+  countryId String   @map("country_id") @db.Char(36)
+  regionId  String?  @map("region_id") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  country        Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  region         Region?        @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  municipalities Municipality[]
+
+  @@unique([countryId, code])
+  @@index([countryId])
+  @@index([regionId])
+  @@index([name])
+  @@map("province")
+}
+
+/// Municipio. Código INE de 5 dígitos ("28079" = Madrid capital), único dentro
+/// de su provincia.
+model Municipality {
+  id         String   @id @default(uuid()) @db.Char(36)
+  code       String   @db.VarChar(10) // código INE de municipio ("28079")
+  name       String   @db.VarChar(160)
+  provinceId String   @map("province_id") @db.Char(36)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  province    Province     @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+  postalCodes PostalCode[]
+
+  @@unique([provinceId, code])
+  @@index([provinceId])
+  @@index([name])
+  @@map("municipality")
+}
+
+/// Código postal. Cinco dígitos ("28001"), único dentro de su municipio.
+model PostalCode {
+  id             String   @id @default(uuid()) @db.Char(36)
+  code           String   @db.VarChar(10) // 5 dígitos ("28001")
+  municipalityId String   @map("municipality_id") @db.Char(36)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  municipality Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+
+  @@unique([municipalityId, code])
+  @@index([municipalityId])
+  @@index([code])
+  @@map("postal_code")
+}

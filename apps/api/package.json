@@ -25,8 +25,9 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:format": "prisma format",
-    "seed": "pnpm build && node dist/seeds/seed-iam.js && node dist/seeds/seed-sections.js",
+    "seed": "pnpm build && node dist/seeds/seed-iam.js && node dist/seeds/seed-sections.js && node dist/seeds/seed-geo.js",
     "seed:sections": "pnpm build && node dist/seeds/seed-sections.js",
+    "seed:geo": "pnpm build && node dist/seeds/seed-geo.js",
     "seed:leads": "pnpm build && node dist/seeds/seed-leads-capture.js",
     "seed:notifications": "pnpm build && node dist/seeds/seed-notifications.js",
     "sync:sections": "pnpm build && node dist/seeds/sync-api-sections.js"
