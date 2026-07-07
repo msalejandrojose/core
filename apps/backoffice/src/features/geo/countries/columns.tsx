@@ -3,12 +3,24 @@ import { Pencil } from 'lucide-react';
 import { RowActions } from '@/components/data-table/RowActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { flagEmoji } from '../flag';
 import type { CountryRow } from '../types';
 import { CountryFormDialog } from './CountryFormDialog';
 import { useDeleteCountry } from './hooks/use-country-mutations';
 
 export const columns: ColumnDef<CountryRow>[] = [
-  { accessorKey: 'name', header: 'Nombre' },
+  {
+    accessorKey: 'name',
+    header: 'Nombre',
+    cell: ({ row }) => (
+      <span className="flex items-center gap-2">
+        <span className="text-base leading-none" aria-hidden>
+          {flagEmoji(row.original.iso2)}
+        </span>
+        {row.original.name}
+      </span>
+    ),
+  },
   {
     accessorKey: 'iso2',
     header: 'ISO',

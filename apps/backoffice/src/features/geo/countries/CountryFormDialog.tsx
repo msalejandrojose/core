@@ -25,7 +25,11 @@ const schema = z.object({
   iso3: z.string().length(3, '3 letras').toUpperCase(),
   numericCode: z.string().max(3).optional().or(z.literal('')),
   nativeName: z.string().max(120).optional().or(z.literal('')),
-  phoneCode: z.string().max(8).optional().or(z.literal('')),
+  phoneCode: z
+    .string()
+    .min(1, 'Obligatorio')
+    .max(8)
+    .regex(/^\+\d{1,4}$/, 'Formato: +34'),
   isActive: z.enum(['true', 'false']),
 });
 
@@ -75,7 +79,7 @@ export function CountryFormDialog({ trigger, country }: Props) {
         iso3: v.iso3,
         numericCode: v.numericCode?.trim() ? v.numericCode.trim() : null,
         nativeName: v.nativeName?.trim() ? v.nativeName.trim() : null,
-        phoneCode: v.phoneCode?.trim() ? v.phoneCode.trim() : null,
+        phoneCode: v.phoneCode.trim(),
         isActive,
       });
     } else {
@@ -85,7 +89,7 @@ export function CountryFormDialog({ trigger, country }: Props) {
         iso3: v.iso3,
         numericCode: v.numericCode?.trim() || undefined,
         nativeName: v.nativeName?.trim() || undefined,
-        phoneCode: v.phoneCode?.trim() || undefined,
+        phoneCode: v.phoneCode.trim(),
         isActive,
       });
     }

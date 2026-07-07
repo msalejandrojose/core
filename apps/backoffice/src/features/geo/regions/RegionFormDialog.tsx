@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { flagEmoji } from '../flag';
 import type { RegionRow } from '../types';
 import { useCountries } from '../countries/hooks/use-countries';
 import { useCreateRegion, useUpdateRegion } from './hooks/use-region-mutations';
@@ -83,7 +84,7 @@ export function RegionFormDialog({ trigger, region }: Props) {
                 <SelectContent>
                   {countries.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.name}
+                      {flagEmoji(c.iso2)} {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
