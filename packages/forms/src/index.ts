@@ -111,6 +111,8 @@ export {
 export {
   validateForm,
   defaultMessage,
+  collectAsyncValidations,
+  type AsyncValidationRef,
   isUrl,
   isInteger,
   isPhone,
