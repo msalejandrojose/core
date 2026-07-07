@@ -40,12 +40,12 @@ mobile); los renderers viven en cada plataforma.
 Ya implementado además del núcleo: el **endpoint de opciones por repositorio**
 (`GET /forms/repository/:entity`, con repos `Role`/`Country`), la **validación
 async** (`{ kind: 'async', ref }` + `POST /forms/validate/:ref`, resuelta desde
-el resolver del backoffice) y **renderers** de casi todo el catálogo en el
-backoffice, incluidos `file`/`image`/`avatar` (suben al módulo de storage).
+el resolver del backoffice) y **renderers del catálogo completo** en el
+backoffice, incluidos `file`/`image`/`avatar` (subida a storage), `richtext`,
+`signature` (canvas), `treeSelect`/`cascader` y `array` (repetidor).
 
-Todavía pendiente (ver spec): renderers de `richtext`, `signature`, `treeSelect`,
-`cascader` y `array` (necesitan widgets dedicados), y extraer el renderer a un
-package `forms-react` separado.
+Todavía pendiente (ver spec): extraer el renderer a un package `forms-react`
+separado cuando exista `@core/ui`.
 
 ## Uso
 

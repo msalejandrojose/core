@@ -1,7 +1,9 @@
 import {
+  collectDataFields,
   isFieldEnabled,
   isFieldVisible,
   type AddressValue,
+  type ArrayField,
   type CoordinatesValue,
   type DataField,
   type DateRangeValue,
@@ -9,9 +11,15 @@ import {
   type FileRef,
   type FormSchema,
   type KeyValueEntry,
+  type TreeOption,
 } from '@core/forms';
-import { Plus, Star, Upload, X } from 'lucide-react';
-import { useRef, useState, type ComponentProps } from 'react';
+import { Bold, Eraser, Italic, List, Plus, Star, Upload, X } from 'lucide-react';
+import {
+  useRef,
+  useState,
+  type ComponentProps,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import {
   Controller,
   useWatch,
@@ -167,7 +175,7 @@ function DataControl({ field, control, values, t }: DataControlProps) {
 
   return (
     <FieldWrapper control={control} name={field.name} label={label}>
-      {(rhf) => renderControl(field, rhf, { disabled, placeholder })}
+      {(rhf) => renderControl(field, rhf, { disabled, placeholder, t })}
     </FieldWrapper>
   );
 }
@@ -175,12 +183,13 @@ function DataControl({ field, control, values, t }: DataControlProps) {
 interface ControlExtras {
   disabled: boolean;
   placeholder: string | undefined;
+  t: Translate;
 }
 
 function renderControl(
   field: DataField,
   rhf: ControllerRenderProps<FieldValues, string>,
-  { disabled, placeholder }: ControlExtras,
+  { disabled, placeholder, t }: ControlExtras,
 ) {
   switch (field.type) {
     case 'text':
@@ -566,10 +575,33 @@ function renderControl(
         />
       );
 
+    // --- Contenido rico / firma ------------------------------------------
+    case 'richtext':
+      return <RichtextControl rhf={rhf} disabled={disabled} />;
+    case 'signature':
+      return <SignatureControl rhf={rhf} disabled={disabled} />;
+
+    // --- Jerárquicos ------------------------------------------------------
+    case 'treeSelect':
+      return (
+        <TreeSelectControl
+          rhf={rhf}
+          disabled={disabled}
+          options={field.options}
+          multiple={field.multiple ?? false}
+        />
+      );
+    case 'cascader':
+      return (
+        <CascaderControl rhf={rhf} disabled={disabled} options={field.options} />
+      );
+
+    // --- Repetidor --------------------------------------------------------
+    case 'array':
+      return <ArrayControl rhf={rhf} disabled={disabled} field={field} t={t} />;
+
     default:
-      // Tipos que aún requieren un widget dedicado (richtext, signature,
-      // treeSelect, cascader, array). Forward-compatible: avisamos en dev y no
-      // renderizamos nada en lugar de romper.
+      // Forward-compatible: cualquier tipo futuro desconocido no rompe.
       if (import.meta.env.DEV) {
         console.warn(
           `[forms] tipo de campo sin renderer todavía: "${field.type}"`,
@@ -936,6 +968,344 @@ function KeyValueControl({ rhf, disabled }: { rhf: Rhf; disabled: boolean }) {
         size="sm"
         disabled={disabled}
         onClick={() => rhf.onChange([...rows, { key: '', value: '' }])}
+      >
+        <Plus size={14} />
+        Añadir
+      </Button>
+    </div>
+  );
+}
+
+function RichtextControl({ rhf, disabled }: { rhf: Rhf; disabled: boolean }) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [initial] = useState(() => (rhf.value as string) ?? '');
+  const sync = () => rhf.onChange(editorRef.current?.innerHTML ?? '');
+  const exec = (cmd: string) => {
+    document.execCommand(cmd);
+    editorRef.current?.focus();
+    sync();
+  };
+  const btn = 'hover:bg-muted rounded p-1 disabled:opacity-50';
+  return (
+    <div className="border-border rounded-md border">
+      <div className="border-border flex gap-1 border-b p-1">
+        <button
+          type="button"
+          disabled={disabled}
+          className={btn}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec('bold');
+          }}
+        >
+          <Bold size={14} />
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          className={btn}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec('italic');
+          }}
+        >
+          <Italic size={14} />
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          className={btn}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            exec('insertUnorderedList');
+          }}
+        >
+          <List size={14} />
+        </button>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable={!disabled}
+        suppressContentEditableWarning
+        onInput={sync}
+        onBlur={rhf.onBlur}
+        className="min-h-24 px-3 py-2 text-sm focus:outline-none"
+        dangerouslySetInnerHTML={{ __html: initial }}
+      />
+    </div>
+  );
+}
+
+function SignatureControl({ rhf, disabled }: { rhf: Rhf; disabled: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawing = useRef(false);
+  const hasValue = rhf.value != null;
+
+  const at = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+  const start = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (disabled) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    drawing.current = true;
+    const p = at(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  };
+  const move = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!drawing.current) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const p = at(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  };
+  const end = () => {
+    if (!drawing.current) return;
+    drawing.current = false;
+    const url = canvasRef.current?.toDataURL('image/png');
+    if (url) {
+      rhf.onChange({ url, name: 'signature.png', mimeType: 'image/png' });
+    }
+  };
+  const clear = () => {
+    const canvas = canvasRef.current;
+    canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    rhf.onChange(null);
+  };
+  return (
+    <div className="space-y-2">
+      <canvas
+        ref={canvasRef}
+        width={400}
+        height={150}
+        className="border-border w-full max-w-sm touch-none rounded-md border bg-white"
+        onPointerDown={start}
+        onPointerMove={move}
+        onPointerUp={end}
+        onPointerLeave={end}
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        disabled={disabled || !hasValue}
+        onClick={clear}
+      >
+        <Eraser size={14} />
+        Borrar firma
+      </Button>
+    </div>
+  );
+}
+
+function flattenTree(
+  options: TreeOption[],
+  depth = 0,
+): { opt: TreeOption; depth: number }[] {
+  const out: { opt: TreeOption; depth: number }[] = [];
+  for (const opt of options) {
+    out.push({ opt, depth });
+    if (opt.children?.length) out.push(...flattenTree(opt.children, depth + 1));
+  }
+  return out;
+}
+
+function TreeSelectControl({
+  rhf,
+  disabled,
+  options,
+  multiple,
+}: {
+  rhf: Rhf;
+  disabled: boolean;
+  options: TreeOption[];
+  multiple: boolean;
+}) {
+  const rows = flattenTree(options);
+  if (multiple) {
+    const selected = Array.isArray(rhf.value) ? (rhf.value as string[]) : [];
+    const toggle = (value: string, checked: boolean) =>
+      rhf.onChange(
+        checked ? [...selected, value] : selected.filter((v) => v !== value),
+      );
+    return (
+      <div className="space-y-1">
+        {rows.map(({ opt, depth }) => {
+          const id = `${rhf.name}-${opt.value}`;
+          return (
+            <div
+              key={opt.value}
+              className="flex items-center gap-2"
+              style={{ paddingLeft: `${depth * 16}px` }}
+            >
+              <Checkbox
+                id={id}
+                checked={selected.includes(opt.value)}
+                disabled={disabled || opt.disabled}
+                onCheckedChange={(c) => toggle(opt.value, c === true)}
+              />
+              <Label htmlFor={id} className="font-normal">
+                {opt.label}
+              </Label>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+  return (
+    <RadioGroup
+      value={(rhf.value as string) ?? ''}
+      onValueChange={rhf.onChange}
+      disabled={disabled}
+    >
+      {rows.map(({ opt, depth }) => {
+        const id = `${rhf.name}-${opt.value}`;
+        return (
+          <div
+            key={opt.value}
+            className="flex items-center gap-2"
+            style={{ paddingLeft: `${depth * 16}px` }}
+          >
+            <RadioGroupItem id={id} value={opt.value} disabled={opt.disabled} />
+            <Label htmlFor={id} className="font-normal">
+              {opt.label}
+            </Label>
+          </div>
+        );
+      })}
+    </RadioGroup>
+  );
+}
+
+function CascaderControl({
+  rhf,
+  disabled,
+  options,
+}: {
+  rhf: Rhf;
+  disabled: boolean;
+  options: TreeOption[];
+}) {
+  const path = Array.isArray(rhf.value) ? (rhf.value as string[]) : [];
+  const levels: TreeOption[][] = [options];
+  let current = options;
+  for (const val of path) {
+    const found = current.find((o) => o.value === val);
+    if (found?.children?.length) {
+      current = found.children;
+      levels.push(current);
+    } else break;
+  }
+  const setLevel = (i: number, value: string) =>
+    rhf.onChange([...path.slice(0, i), value]);
+  return (
+    <div className="flex flex-wrap gap-2">
+      {levels.map((opts, i) => (
+        <Select
+          key={i}
+          value={path[i] ?? ''}
+          onValueChange={(v) => setLevel(i, v)}
+          disabled={disabled}
+        >
+          <SelectTrigger className="min-w-40">
+            <SelectValue placeholder="Selecciona" />
+          </SelectTrigger>
+          <SelectContent>
+            {opts.map((o) => (
+              <SelectItem key={o.value} value={o.value} disabled={o.disabled}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ))}
+    </div>
+  );
+}
+
+/** rhf sintético para bindear un control a un valor arbitrario (repetidor). */
+function syntheticRhf(
+  name: string,
+  value: unknown,
+  onChange: (v: unknown) => void,
+): Rhf {
+  return {
+    name,
+    value,
+    onChange,
+    onBlur: () => {},
+    ref: () => {},
+  } as unknown as Rhf;
+}
+
+function ArrayControl({
+  rhf,
+  disabled,
+  field,
+  t,
+}: {
+  rhf: Rhf;
+  disabled: boolean;
+  field: ArrayField;
+  t: Translate;
+}) {
+  const items = Array.isArray(rhf.value)
+    ? (rhf.value as Record<string, unknown>[])
+    : [];
+  const children = collectDataFields(field.fields);
+  const setItems = (next: Record<string, unknown>[]) => rhf.onChange(next);
+  const canAdd = field.max == null || items.length < field.max;
+  const canRemove = field.min == null || items.length > field.min;
+
+  return (
+    <div className="space-y-3">
+      {items.map((item, i) => (
+        <div key={i} className="border-border space-y-2 rounded-md border p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-xs">#{i + 1}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-destructive size-7"
+              disabled={disabled || !canRemove}
+              onClick={() => setItems(items.filter((_, idx) => idx !== i))}
+            >
+              <X size={14} />
+            </Button>
+          </div>
+          {children.map((child) => {
+            const label = child.label ? t(child.label) : child.name;
+            const synthetic = syntheticRhf(child.name, item[child.name], (v) =>
+              setItems(
+                items.map((it, idx) =>
+                  idx === i ? { ...it, [child.name]: v } : it,
+                ),
+              ),
+            );
+            return (
+              <div key={child.name} className="grid gap-1">
+                {label && <Label className="text-xs">{label}</Label>}
+                {renderControl(child, synthetic, {
+                  disabled,
+                  placeholder: child.placeholder ? t(child.placeholder) : undefined,
+                  t,
+                })}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={disabled || !canAdd}
+        onClick={() => setItems([...items, {}])}
       >
         <Plus size={14} />
         Añadir
