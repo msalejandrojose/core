@@ -14,15 +14,20 @@
     "cap:add:android": "cap add android"
   },
   "dependencies": {
+    "@core/api-client": "workspace:*",
+    "@core/sections": "workspace:*",
     "@capacitor/app": "^6.0.2",
     "@capacitor/core": "^6.2.0",
     "@capacitor/haptics": "^6.0.2",
     "@capacitor/preferences": "^6.0.3",
     "@capacitor/status-bar": "^6.0.2",
     "@ionic/react": "^8.5.0",
+    "@ionic/react-router": "^8.5.0",
     "ionicons": "^7.4.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-router": "^5.3.4",
+    "react-router-dom": "^5.3.4",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
@@ -30,6 +35,8 @@
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/react-router": "^5.1.20",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^6.0.1",
     "typescript": "~6.0.2",
     "vite": "^8.0.12"

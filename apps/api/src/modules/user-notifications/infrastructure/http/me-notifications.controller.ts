@@ -62,7 +62,13 @@ export class MeNotificationsController {
   @ApiOperation({
     summary: 'Número de notificaciones no leídas (para el badge).',
   })
-  @ApiOkResponse({ schema: { example: { count: 3 } } })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: { count: { type: 'integer', example: 3 } },
+      required: ['count'],
+    },
+  })
   async unreadCount(
     @CurrentUser() current: AccessTokenPayload,
   ): Promise<{ count: number }> {
@@ -84,7 +90,13 @@ export class MeNotificationsController {
   @Post('read-all')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Marcar todas mis notificaciones como leídas.' })
-  @ApiOkResponse({ schema: { example: { updated: 5 } } })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: { updated: { type: 'integer', example: 5 } },
+      required: ['updated'],
+    },
+  })
   async readAll(
     @CurrentUser() current: AccessTokenPayload,
   ): Promise<{ updated: number }> {

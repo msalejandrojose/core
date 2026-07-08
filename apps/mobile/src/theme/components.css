@@ -1,31 +1,128 @@
-/* Overrides de componentes Ionic con los tokens de Core. Se hace por CSS (no por
- * `style` inline) porque es la vía idiomática para las CSS custom props de Ionic. */
+/* ============================================================================
+ * Core DS → recetas de componentes (app mobile)  ·  MOB-02
+ * ----------------------------------------------------------------------------
+ * Overrides de componentes Ionic + clases utilitarias con los tokens de
+ * tokens.css. Se hace por CSS (no por `style` inline) porque es la vía idiomática
+ * para las CSS custom props de Ionic y para no repetir estilos por pantalla.
+ * ========================================================================== */
 
+/* ---- Botones: radio del DS, sin sombra, sin uppercase ---- */
 ion-button {
-  --border-radius: var(--core-radius);
+  --border-radius: var(--core-radius-md);
   --box-shadow: none;
   text-transform: none;
   font-weight: 500;
   letter-spacing: -0.01em;
 }
 
+/* ---- Inputs inset ---- */
 ion-input.core-field {
-  --border-radius: var(--core-radius);
+  --border-radius: var(--core-radius-md);
   --highlight-color-focused: var(--ion-color-primary);
   margin-top: 2px;
+}
+
+/* ---- Tab bar / toolbar: hairline sutil + safe-area ---- */
+ion-tab-bar {
+  --border: 0.5px solid var(--core-border);
+}
+ion-toolbar {
+  --border-color: var(--core-border);
+}
+
+/* ============================ Tipografía ================================== */
+
+/* Wordmark / display serif (pantallas de marca, login). DS §3. */
+.core-display {
+  font-family: var(--core-font-serif);
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--ion-text-color);
+  margin: 0;
+}
+
+/* Título de pantalla grande (saludo, cabecera editorial). */
+.core-title {
+  font-family: var(--core-font-serif);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ion-text-color);
+  margin: 0;
+}
+
+/* Subtítulo / caption bajo un título. */
+.core-subtitle {
+  font-size: 15px;
+  color: var(--core-muted);
+  margin: 0;
 }
 
 /* Cabecera de sección tipo iOS (Ajustes): minúsculas, muted, sin mayúsculas. */
 .core-section-label {
   font-size: 14px;
+  font-weight: 400;
   color: var(--core-muted);
   margin: 0 0 8px 4px;
 }
 
-/* Bloque de filas agrupadas sobre el fondo (tarjeta redondeada). */
+/* ============================ Superficies ================================= */
+
+/* Bloque de filas agrupadas sobre el fondo (tarjeta redondeada, elevación 1). */
 .core-group {
   background: var(--core-surface);
   border-radius: var(--core-radius);
   box-shadow: var(--core-elevation-1);
   overflow: hidden;
+}
+
+/* Tarjeta suelta (elevación 1, radio grande). */
+.core-card {
+  background: var(--core-surface);
+  border-radius: var(--core-radius);
+  box-shadow: var(--core-elevation-1);
+  padding: 16px;
+}
+
+/* Avatar de icono con tinte de categoría (DS §7 / patterns §5). Envuelve un
+ * IonIcon: fondo tintado al 12% + icono al color pleno. */
+.core-tint-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--core-radius-md);
+  background: var(--core-tint-clay);
+  color: var(--core-clay);
+  flex: 0 0 auto;
+}
+.core-tint-icon.core-tint-icon--purple {
+  background: var(--core-tint-purple);
+  color: var(--core-purple);
+}
+.core-tint-icon ion-icon {
+  font-size: 20px;
+}
+
+/* ============================ Segmented / pills =========================== */
+
+/* Segmented control tipo pill (DS §8 / patterns §4). La activa es superficie
+ * sólida oscura sobre el track inset. */
+ion-segment.core-segment {
+  --background: var(--core-surface-inset);
+  border-radius: var(--core-radius);
+  padding: 3px;
+}
+ion-segment.core-segment ion-segment-button {
+  --background-checked: var(--ion-text-color);
+  --color: var(--core-muted);
+  --color-checked: var(--ion-background-color);
+  --indicator-color: var(--ion-text-color);
+  --border-radius: var(--core-radius-md);
+  min-height: 34px;
+  text-transform: none;
+  font-weight: 500;
 }
