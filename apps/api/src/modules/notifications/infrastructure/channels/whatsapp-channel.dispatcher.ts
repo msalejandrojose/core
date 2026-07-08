@@ -17,10 +17,33 @@ interface WhatsappConfig {
 }
 
 const DEFAULT_API_VERSION = 'v21.0';
+const DEFAULT_TEMPLATE_LANGUAGE = 'es_ES';
 
-// Entrega por WhatsApp vía Meta WhatsApp Cloud API (Graph API). Envía un mensaje
-// de texto al número `message.to` (formato E.164 sin '+', p.ej. 34600111222) y
-// devuelve el `wamid` como providerMessageId para correlacionar con el webhook.
+// Cuerpo del mensaje que se manda a la Cloud API, según el modo:
+//   - texto libre (`type: 'text'`): válido solo dentro de la ventana de 24h.
+//   - plantilla (`type: 'template'`): único modo para iniciar conversación.
+type WhatsappMessagePayload =
+  | { type: 'text'; text: { preview_url: boolean; body: string } }
+  | {
+      type: 'template';
+      template: {
+        name: string;
+        language: { code: string };
+        components?: Array<{
+          type: 'body';
+          parameters: Array<{ type: 'text'; text: string }>;
+        }>;
+      };
+    };
+
+// Entrega por WhatsApp vía Meta WhatsApp Cloud API (Graph API). Soporta dos modos
+// según el contenido del mensaje:
+//   - `templateName` presente → mensaje de PLANTILLA (`type: template`), con su
+//     idioma y variables de cuerpo. Es el único modo que permite INICIAR una
+//     conversación (Meta lo exige fuera de la ventana de 24h).
+//   - si no → mensaje de TEXTO libre (`type: text`), válido solo dentro de la
+//     ventana de 24h de una conversación abierta por el usuario.
+// Devuelve el `wamid` como providerMessageId para correlacionar con el webhook.
 //
 // Si la cuenta no trae `accessToken`/`phoneNumberId` (típico en dev/CI, donde el
 // cipher nulo deja la config sin secretos), no llama a Meta: registra el intento
@@ -36,11 +59,18 @@ export class WhatsappChannelDispatcher implements ChannelDispatcherPort {
     message: RenderedMessage,
   ): Promise<DispatchResult> {
     const config = account.config as WhatsappConfig;
-    const body = contentField(message.content.body);
+    const templateName = contentField(message.content.templateName);
+    const isTemplate = templateName.trim() !== '';
+    const payload = isTemplate
+      ? this.buildTemplatePayload(message, templateName)
+      : this.buildTextPayload(message);
 
     if (!config.accessToken || !config.phoneNumberId) {
+      const preview = isTemplate
+        ? `plantilla "${templateName}"`
+        : contentField(message.content.body);
       this.logger.warn(
-        `[stub WhatsApp] cuenta "${account.name}" sin credenciales → ${message.to}: ${body}`,
+        `[stub WhatsApp] cuenta "${account.name}" sin credenciales → ${message.to}: ${preview}`,
       );
       return {};
     }
@@ -58,21 +88,59 @@ export class WhatsappChannelDispatcher implements ChannelDispatcherPort {
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
         to: message.to,
-        type: 'text',
-        text: { preview_url: false, body },
+        ...payload,
       }),
     });
 
-    const payload = (await res.json().catch(() => null)) as {
+    const resBody = (await res.json().catch(() => null)) as {
       messages?: { id?: string }[];
       error?: { message?: string };
     } | null;
 
     if (!res.ok) {
-      const detail = payload?.error?.message ?? `HTTP ${res.status}`;
+      const detail = resBody?.error?.message ?? `HTTP ${res.status}`;
       throw new Error(`WhatsApp Cloud API falló: ${detail}`);
     }
 
-    return { providerMessageId: payload?.messages?.[0]?.id };
+    return { providerMessageId: resBody?.messages?.[0]?.id };
+  }
+
+  private buildTextPayload(message: RenderedMessage): WhatsappMessagePayload {
+    return {
+      type: 'text',
+      text: { preview_url: false, body: contentField(message.content.body) },
+    };
+  }
+
+  private buildTemplatePayload(
+    message: RenderedMessage,
+    templateName: string,
+  ): WhatsappMessagePayload {
+    const language =
+      contentField(message.content.templateLanguage).trim() ||
+      DEFAULT_TEMPLATE_LANGUAGE;
+    // Una variable por línea, en orden. Se ignoran líneas vacías.
+    const params = contentField(message.content.templateParams)
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line !== '');
+
+    return {
+      type: 'template',
+      template: {
+        name: templateName,
+        language: { code: language },
+        ...(params.length > 0
+          ? {
+              components: [
+                {
+                  type: 'body',
+                  parameters: params.map((text) => ({ type: 'text', text })),
+                },
+              ],
+            }
+          : {}),
+      },
+    };
   }
 }

@@ -27,5 +27,17 @@ export function validateMessageContent(
     }
   }
 
+  // WHATSAPP: o texto libre (`body`) o una plantilla aprobada (`templateName`).
+  // La plantilla es el único modo que permite INICIAR una conversación en Meta.
+  if (channel === 'WHATSAPP' && typeof content === 'object' && content !== null) {
+    const c = content as Record<string, unknown>;
+    const hasBody = typeof c.body === 'string' && c.body.trim() !== '';
+    const hasTemplate =
+      typeof c.templateName === 'string' && c.templateName.trim() !== '';
+    if (!hasBody && !hasTemplate) {
+      return 'un mensaje de WhatsApp debe tener "body" o "templateName"';
+    }
+  }
+
   return null;
 }

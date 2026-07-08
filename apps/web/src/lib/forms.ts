@@ -76,3 +76,57 @@ export function submitPublicForm(
     body: JSON.stringify({ answers }),
   });
 }
+
+// --- Captura pública de leads (dispara `lead.created` en el motor de workflows) ---
+
+export interface CaptureLeadInput {
+  email?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  customFields?: Record<string, unknown>;
+  consentGiven?: boolean;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+}
+
+export interface CaptureLeadResult {
+  id: string;
+  status: string;
+}
+
+/** ¿El texto parece un email? Enruta el campo libre "contacto" a email o phone. */
+export function looksLikeEmail(value: string): boolean {
+  return /.+@.+\..+/.test(value.trim());
+}
+
+/**
+ * Lee los parámetros UTM de una query string (por defecto la de la URL actual)
+ * para atribuir el lead a su campaña de origen.
+ */
+export function readUtmParams(
+  search = typeof window !== 'undefined' ? window.location.search : '',
+): Pick<CaptureLeadInput, 'utmSource' | 'utmMedium' | 'utmCampaign'> {
+  const params = new URLSearchParams(search);
+  const clean = (v: string | null) =>
+    v && v.trim() ? v.trim().slice(0, 120) : undefined;
+  return {
+    utmSource: clean(params.get('utm_source')),
+    utmMedium: clean(params.get('utm_medium')),
+    utmCampaign: clean(params.get('utm_campaign')),
+  };
+}
+
+/**
+ * Captura un lead público (`POST /public/leads`). El backend publica el evento
+ * `lead.created`, que a su vez dispara los workflows suscritos (bienvenida por
+ * email/SMS/push, notificación interna, etc.). Marca la fuente como WEB_FORM.
+ */
+export function captureLead(input: CaptureLeadInput): Promise<CaptureLeadResult> {
+  return request<CaptureLeadResult>('/public/leads', {
+    method: 'POST',
+    body: JSON.stringify({ source: 'WEB_FORM', ...input }),
+  });
+}

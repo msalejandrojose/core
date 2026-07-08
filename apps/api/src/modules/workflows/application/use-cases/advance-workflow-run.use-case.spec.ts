@@ -149,4 +149,30 @@ describe('AdvanceWorkflowRunUseCase · reintentos', () => {
       expect.objectContaining({ status: 'FAILED' }),
     );
   });
+
+  it('handler colgado: al vencer timeoutSeconds falla el intento y entra en retry', async () => {
+    jest.useFakeTimers();
+    // Handler que nunca resuelve.
+    registry.resolve.mockReturnValue({
+      inputSchema: { parse: (x: unknown) => x },
+      execute: jest.fn().mockReturnValue(new Promise(() => {})),
+    });
+    const def = makeDefinition({ maxAttempts: 2, baseSeconds: 30 });
+    (def.dsl.steps[0] as { timeoutSeconds?: number }).timeoutSeconds = 5;
+    definitions.findById.mockResolvedValue(def);
+    steps.countAttempts.mockResolvedValue(0);
+
+    const run = useCase.execute('run-1');
+    await jest.advanceTimersByTimeAsync(5000);
+    await run;
+    jest.useRealTimers();
+
+    expect(steps.fail).toHaveBeenCalledWith(
+      'exec-1',
+      expect.stringContaining('timeout de 5s'),
+    );
+    expect(pending.create).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'RETRY' }),
+    );
+  });
 });

@@ -11,7 +11,10 @@
     "preview:backoffice": "pnpm --filter @core/backoffice preview",
     "dev:web": "pnpm --filter @core/web dev",
     "build:web": "pnpm --filter @core/web build",
-    "preview:web": "pnpm --filter @core/web preview"
+    "preview:web": "pnpm --filter @core/web preview",
+    "dev:mobile": "pnpm --filter @core/mobile dev",
+    "build:mobile": "pnpm --filter @core/mobile build",
+    "preview:mobile": "pnpm --filter @core/mobile preview"
   },
   "engines": {
     "node": ">=20",

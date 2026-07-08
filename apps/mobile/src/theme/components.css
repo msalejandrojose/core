@@ -1,0 +1,31 @@
+/* Overrides de componentes Ionic con los tokens de Core. Se hace por CSS (no por
+ * `style` inline) porque es la vía idiomática para las CSS custom props de Ionic. */
+
+ion-button {
+  --border-radius: var(--core-radius);
+  --box-shadow: none;
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+ion-input.core-field {
+  --border-radius: var(--core-radius);
+  --highlight-color-focused: var(--ion-color-primary);
+  margin-top: 2px;
+}
+
+/* Cabecera de sección tipo iOS (Ajustes): minúsculas, muted, sin mayúsculas. */
+.core-section-label {
+  font-size: 14px;
+  color: var(--core-muted);
+  margin: 0 0 8px 4px;
+}
+
+/* Bloque de filas agrupadas sobre el fondo (tarjeta redondeada). */
+.core-group {
+  background: var(--core-surface);
+  border-radius: var(--core-radius);
+  box-shadow: var(--core-elevation-1);
+  overflow: hidden;
+}

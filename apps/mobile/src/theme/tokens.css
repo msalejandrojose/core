@@ -1,0 +1,92 @@
+/* ============================================================================
+ * Core Design System → variables de Ionic (app mobile)
+ * ----------------------------------------------------------------------------
+ * Paleta greige cálida + acento clay/terracota, muestreada de la app de Claude
+ * (ver skill core-design-system). Los valores canónicos del DS están en oklch;
+ * aquí se mapean a las variables de Ionic en hex/rgb para compatibilidad con su
+ * composición interna (rgba con los *-rgb). El lenguaje visual manda sobre los
+ * defaults de Ionic.
+ * ========================================================================== */
+
+:root {
+  /* Superficies */
+  --ion-background-color: #f0efec; /* fondo app, greige cálido */
+  --ion-background-color-rgb: 240, 239, 236;
+  --ion-text-color: #2a2a27; /* near-black cálido (nunca negro puro) */
+  --ion-text-color-rgb: 42, 42, 39;
+  --ion-border-color: #e5e2db; /* hairline */
+
+  --ion-toolbar-background: #f0efec;
+  --ion-item-background: #f9f9f7; /* superficie elevada (card) */
+  --ion-card-background: #f9f9f7;
+  --ion-tab-bar-background: #f9f9f7;
+
+  /* Primary = clay (marca) */
+  --ion-color-primary: #bc6a4a;
+  --ion-color-primary-rgb: 188, 106, 74;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #a85638; /* pressed */
+  --ion-color-primary-tint: #c37a5c;
+
+  /* Danger = brick (cerrar sesión, borrar) */
+  --ion-color-danger: #a4453b;
+  --ion-color-danger-rgb: 164, 69, 59;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #903d34;
+  --ion-color-danger-tint: #ad584f;
+
+  /* Medium = greige muted (metadatos, captions) */
+  --ion-color-medium: #9a968c;
+  --ion-color-medium-rgb: 154, 150, 140;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #88847b;
+  --ion-color-medium-tint: #a4a097;
+
+  /* Tokens propios de Core (para componentes a medida) */
+  --core-surface: #f9f9f7;
+  --core-surface-inset: #eceae4;
+  --core-muted: #9a968c;
+  --core-radius: 1rem; /* tarjetas redondeadas (DS §5) */
+  --core-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
+
+  --ion-font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Oscuro CÁLIDO (no zinc azulado). Se activa por preferencia del sistema. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ion-background-color: #1c1b19;
+    --ion-background-color-rgb: 28, 27, 25;
+    --ion-text-color: #f2f1ec;
+    --ion-text-color-rgb: 242, 241, 236;
+    --ion-border-color: #38362f;
+
+    --ion-toolbar-background: #1c1b19;
+    --ion-item-background: #262523;
+    --ion-card-background: #262523;
+    --ion-tab-bar-background: #262523;
+
+    --ion-color-primary: #d08763; /* clay on dark */
+    --ion-color-primary-rgb: 208, 135, 99;
+    --ion-color-primary-contrast: #1c1b19;
+    --ion-color-primary-contrast-rgb: 28, 27, 25;
+    --ion-color-primary-shade: #b7764f;
+    --ion-color-primary-tint: #d69373;
+
+    --ion-color-danger: #d9745f; /* brick on dark */
+    --ion-color-danger-rgb: 217, 116, 95;
+    --ion-color-danger-contrast: #1c1b19;
+    --ion-color-danger-contrast-rgb: 28, 27, 25;
+
+    --ion-color-medium: #a19d93;
+    --ion-color-medium-rgb: 161, 157, 147;
+
+    --core-surface: #262523;
+    --core-surface-inset: #2f2e2b;
+    --core-muted: #a19d93;
+    --core-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 1px rgba(0, 0, 0, 0.18);
+  }
+}

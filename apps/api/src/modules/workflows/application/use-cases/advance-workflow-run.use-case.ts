@@ -7,6 +7,10 @@ import {
 } from '../../domain/dsl/workflow-dsl';
 import { canRetry, computeBackoffSeconds } from '../../domain/retry';
 import {
+  DEFAULT_STEP_TIMEOUT_SECONDS,
+  withTimeout,
+} from '../../domain/timeout';
+import {
   PENDING_ACTION_REPOSITORY,
   type PendingActionRepositoryPort,
 } from '../ports/pending-action-repository.port';
@@ -149,17 +153,25 @@ export class AdvanceWorkflowRunUseCase {
         // Handler externo: validar input contra su Zod schema y ejecutar.
         const handler = this.registry.resolve(step.action);
         const parsed = handler.inputSchema.parse(input);
-        const output = await handler.execute(
-          {
-            runId,
-            definitionKey: definition.key,
-            triggerEvent: triggerEvent
-              ? { type: triggerEvent.type, payload: triggerEvent.payload }
-              : null,
-            context: run.context,
-            dryRun: run.isDryRun,
-          },
-          parsed,
+        // Timeout de seguridad: un handler externo colgado no debe bloquear el
+        // run. Al vencer, el StepTimeoutError cae en el catch de abajo y sigue la
+        // ruta normal de retry/fail.
+        const timeoutSeconds =
+          step.timeoutSeconds ?? DEFAULT_STEP_TIMEOUT_SECONDS;
+        const output = await withTimeout(
+          handler.execute(
+            {
+              runId,
+              definitionKey: definition.key,
+              triggerEvent: triggerEvent
+                ? { type: triggerEvent.type, payload: triggerEvent.payload }
+                : null,
+              context: run.context,
+              dryRun: run.isDryRun,
+            },
+            parsed,
+          ),
+          timeoutSeconds,
         );
         await this.steps.complete(exec.id, output ?? null);
 
