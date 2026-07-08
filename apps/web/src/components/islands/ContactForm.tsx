@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
-import { getApiUrl } from '../../lib/api';
+import { captureLead, readUtmParams } from '../../lib/forms';
 
 interface FormData {
   name: string;
@@ -27,16 +27,23 @@ export default function ContactForm() {
     setErrorMsg('');
 
     try {
-      // Smoke test end-to-end: verifica conectividad CORS con la API.
-      // Sustituir por el endpoint real de contacto cuando se implemente en la API.
-      const res = await fetch(getApiUrl(), { method: 'GET' });
-      console.info('[ContactForm] API smoke test →', res.status);
+      // Captura el lead vía POST /public/leads → dispara el evento `lead.created`
+      // en el motor de workflows (bienvenida, notificación interna, etc.).
+      await captureLead({
+        firstName: form.name.trim() || undefined,
+        email: form.email.trim() || undefined,
+        consentGiven: true,
+        customFields: form.message.trim()
+          ? { message: form.message.trim() }
+          : undefined,
+        ...readUtmParams(),
+      });
       setStatus('success');
     } catch (err) {
       setStatus('error');
       setErrorMsg(
         err instanceof Error
-          ? `No se pudo conectar con la API: ${err.message}`
+          ? `No se pudo enviar: ${err.message}`
           : 'Error desconocido',
       );
     }

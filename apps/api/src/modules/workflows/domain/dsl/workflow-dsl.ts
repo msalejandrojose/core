@@ -51,6 +51,10 @@ const stepSchema = z.object({
   onMatch: z.string().max(120).optional(),
   onTimeout: z.string().max(120).optional(),
   retry: retrySchema,
+  // Tope de duración del handler externo (segundos). Si se omite, el motor usa
+  // DEFAULT_STEP_TIMEOUT_SECONDS. No aplica a las acciones de motor (delay/wait…),
+  // que gestionan su propia espera.
+  timeoutSeconds: z.number().int().positive().max(24 * 60 * 60).optional(),
 });
 
 export const workflowDslSchema = z

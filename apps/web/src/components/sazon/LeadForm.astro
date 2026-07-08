@@ -52,12 +52,39 @@ const idCp = `cp${idSuffix}`;
 </form>
 
 <script>
+  import { captureLead, looksLikeEmail, readUtmParams } from '../../lib/forms';
+
   document.querySelectorAll<HTMLFormElement>('form[data-lead-form]').forEach(form => {
+    // Si el form declara `action`, se gestiona con POST nativo fuera de aquí.
     if (form.getAttribute('action')) return;
-    form.addEventListener('submit', (e) => {
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = form.querySelector<HTMLButtonElement>('button[type=submit]');
-      if (btn) { btn.innerText = 'Recibido — te avisamos pronto'; btn.disabled = true; }
+      const data = new FormData(form);
+      const nombre = String(data.get('nombre') ?? '').trim();
+      const contacto = String(data.get('contacto') ?? '').trim();
+      const cp = String(data.get('cp') ?? '').trim();
+
+      if (btn) { btn.disabled = true; btn.innerText = 'Enviando…'; }
+
+      try {
+        await captureLead({
+          firstName: nombre || undefined,
+          // El campo "contacto" es libre: puede ser email o teléfono.
+          ...(looksLikeEmail(contacto)
+            ? { email: contacto }
+            : { phone: contacto }),
+          consentGiven: true,
+          customFields: cp ? { postalCode: cp } : undefined,
+          ...readUtmParams(),
+        });
+        if (btn) btn.innerText = 'Recibido — te avisamos pronto';
+        form.querySelectorAll('input').forEach((i) => (i.disabled = true));
+      } catch (err) {
+        if (btn) { btn.disabled = false; btn.innerText = 'Reintentar'; }
+        console.error('[LeadForm] no se pudo capturar el lead', err);
+      }
     });
   });
 </script>
