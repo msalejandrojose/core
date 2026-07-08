@@ -1,0 +1,11 @@
+{
+  "name": "Core",
+  "short_name": "Core",
+  "description": "App móvil de Core",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F0EFEC",
+  "theme_color": "#F0EFEC",
+  "icons": []
+}

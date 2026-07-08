@@ -1,0 +1,23 @@
+# deps
+node_modules
+
+# build
+dist
+dist-ssr
+
+# capacitor native platforms (se generan con `cap add`, no se versionan aquí)
+/ios
+/android
+
+# env (convención Vite: .env.local es local/secreto)
+.env
+.env.local
+.env.*.local
+
+# logs / editor
+*.log
+.DS_Store
+.vite
+
+# TS build info
+*.tsbuildinfo

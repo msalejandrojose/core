@@ -119,12 +119,36 @@ export const CHANNEL_CATALOG: Record<NotificationChannel, ChannelDefinition> = {
         help: 'Versión del Graph API (por defecto v21.0).',
       },
     ],
+    // Dos modos de mensaje (la regla "body o plantilla" la aplica
+    // `validateMessageContent`):
+    //   - Texto libre (`body`): solo válido DENTRO de la ventana de 24h de una
+    //     conversación ya abierta por el usuario.
+    //   - Plantilla (`templateName`+…): único modo permitido por Meta para
+    //     INICIAR una conversación. Debe estar aprobada en Meta.
     message: [
       {
         key: 'body',
         label: 'Texto del mensaje',
         type: 'textarea',
-        required: true,
+        help: 'Mensaje de texto libre. Solo se entrega dentro de la ventana de 24h de una conversación abierta. Para iniciar conversación usa una plantilla.',
+      },
+      {
+        key: 'templateName',
+        label: 'Nombre de la plantilla',
+        type: 'text',
+        help: 'Nombre exacto de una plantilla aprobada en Meta. Si se rellena, el mensaje se envía como plantilla (permite iniciar conversación).',
+      },
+      {
+        key: 'templateLanguage',
+        label: 'Idioma de la plantilla',
+        type: 'text',
+        help: 'Código de idioma de la plantilla (p.ej. es, es_ES, en_US). Por defecto es_ES.',
+      },
+      {
+        key: 'templateParams',
+        label: 'Variables de la plantilla',
+        type: 'textarea',
+        help: 'Una variable por línea, en el orden {{1}}, {{2}}… del cuerpo de la plantilla. Admite placeholders {{ var }}.',
       },
     ],
   },
