@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiClient } from '@/api/client';
 
 /**
  * Solicita el reset de contraseña: `POST /auth/request-password-reset`.
@@ -15,10 +15,14 @@ export function useRequestPasswordReset() {
     setLoading(true);
     setError(null);
     try {
-      await apiFetch('/auth/request-password-reset', {
-        method: 'POST',
-        body: JSON.stringify({ email }),
-      });
+      const { error: apiError } = await apiClient.POST(
+        '/auth/request-password-reset',
+        { body: { email } },
+      );
+      if (apiError) {
+        setError('No se pudo enviar la solicitud. Inténtalo de nuevo.');
+        return;
+      }
       setDone(true);
     } catch {
       setError('No se pudo enviar la solicitud. Inténtalo de nuevo.');

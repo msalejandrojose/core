@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ApiError, apiFetch } from '@/lib/api';
+import { apiClient } from '@/api/client';
 
 /** Aplica el reset con el token recibido por email: `POST /auth/reset-password`. */
 export function useResetPassword() {
@@ -11,17 +11,24 @@ export function useResetPassword() {
     setLoading(true);
     setError(null);
     try {
-      await apiFetch('/auth/reset-password', {
-        method: 'POST',
-        body: JSON.stringify({ token, password }),
-      });
-      setDone(true);
-    } catch (err) {
-      setError(
-        err instanceof ApiError && err.status === 400
-          ? 'El enlace no es válido o ha caducado. Solicita uno nuevo.'
-          : 'No se pudo restablecer la contraseña. Inténtalo de nuevo.',
+      const { error: apiError, response } = await apiClient.POST(
+        '/auth/reset-password',
+        { body: { token, password } },
       );
+      // La API no declara respuestas de error en el OpenAPI; leemos el status del
+      // `response` fuera del guard (openapi-fetch sí rellena error en runtime).
+      const status = response.status;
+      if (apiError || status >= 400) {
+        setError(
+          status === 400
+            ? 'El enlace no es válido o ha caducado. Solicita uno nuevo.'
+            : 'No se pudo restablecer la contraseña. Inténtalo de nuevo.',
+        );
+        return;
+      }
+      setDone(true);
+    } catch {
+      setError('No se pudo restablecer la contraseña. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }

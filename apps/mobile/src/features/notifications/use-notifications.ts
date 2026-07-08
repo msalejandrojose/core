@@ -1,28 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/api';
+import type { components } from '@core/api-client';
+import { apiClient } from '@/api/client';
 import { useUnreadStore } from './notifications.store';
 
 /** Una notificación in-app tal como la devuelve `GET /me/notifications`. */
-export interface Notification {
-  id: string;
-  kind: string;
-  title: string;
-  body: string | null;
-  data: unknown;
-  readAt: string | null;
-  createdAt: string;
-}
-
-interface CursorMeta {
-  limit: number;
-  nextCursor: string | null;
-  hasMore: boolean;
-}
-
-interface Paginated<T> {
-  data: T[];
-  meta: CursorMeta;
-}
+export type Notification = components['schemas']['UserNotificationResponseDto'];
 
 type Status = 'loading' | 'ready' | 'error';
 
@@ -46,11 +28,15 @@ export function useNotifications() {
   const load = useCallback(async () => {
     setStatus('loading');
     try {
-      const page = await apiFetch<Paginated<Notification>>(
-        '/me/notifications?limit=20',
-      );
-      setItems(page.data);
-      setNextCursor(page.meta.hasMore ? page.meta.nextCursor : null);
+      const { data, error } = await apiClient.GET('/me/notifications', {
+        params: { query: { limit: 20 } },
+      });
+      if (error || !data) {
+        setStatus('error');
+        return;
+      }
+      setItems(data.data);
+      setNextCursor(data.meta.hasMore ? (data.meta.nextCursor ?? null) : null);
       setStatus('ready');
       void refreshUnread();
     } catch {
@@ -61,11 +47,12 @@ export function useNotifications() {
   const loadMore = useCallback(async () => {
     if (!nextCursor) return;
     try {
-      const page = await apiFetch<Paginated<Notification>>(
-        `/me/notifications?limit=20&cursor=${encodeURIComponent(nextCursor)}`,
-      );
-      setItems((prev) => [...prev, ...page.data]);
-      setNextCursor(page.meta.hasMore ? page.meta.nextCursor : null);
+      const { data } = await apiClient.GET('/me/notifications', {
+        params: { query: { limit: 20, cursor: nextCursor } },
+      });
+      if (!data) return;
+      setItems((prev) => [...prev, ...data.data]);
+      setNextCursor(data.meta.hasMore ? (data.meta.nextCursor ?? null) : null);
     } catch {
       // Silencioso: el usuario puede reintentar el scroll.
     }
@@ -85,7 +72,9 @@ export function useNotifications() {
     );
     if (wasUnread) decrementUnread();
     try {
-      await apiFetch(`/me/notifications/${id}/read`, { method: 'PATCH' });
+      await apiClient.PATCH('/me/notifications/{id}/read', {
+        params: { path: { id } },
+      });
     } catch {
       void load(); // Revertir al estado real del servidor si falla.
     }
@@ -98,7 +87,7 @@ export function useNotifications() {
     );
     resetUnread();
     try {
-      await apiFetch('/me/notifications/read-all', { method: 'POST' });
+      await apiClient.POST('/me/notifications/read-all');
     } catch {
       void load();
     }

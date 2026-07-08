@@ -21,18 +21,24 @@ Copia `.env.example` a `.env` y ajusta `VITE_API_URL` a la URL de la API
 
 ## Arquitectura
 
-- `src/lib/api.ts` — wrapper `fetch` tipado contra la API. Migrará a
-  `@core/api-client` cuando su schema OpenAPI esté generado (igual que el
-  backoffice). **La app nunca emite eventos de workflows por su cuenta**: llama a
-  endpoints de dominio de la API y es la API quien publica el evento.
+- `src/api/client.ts` — cliente HTTP **tipado** contra el OpenAPI de `@core/api`
+  (`@core/api-client` + openapi-fetch), igual que el backoffice. Inyecta el
+  `Bearer` desde el auth store y cierra sesión ante un 401 con sesión activa.
+  **La app nunca emite eventos de workflows por su cuenta**: llama a endpoints de
+  dominio de la API y es la API quien publica el evento.
 - `src/store/auth.store.ts` — sesión (token + usuario) con Zustand, persistida en
-  `localStorage`.
-- `src/features/auth/` — login (`POST /auth/login`).
-- `src/features/home/` — home protegida (`GET /auth/me`, cierre de sesión).
+  almacenamiento seguro (`@capacitor/preferences`; `localStorage` en web) con
+  auto-login diferido.
+- `src/features/auth/` — login, recuperar/restablecer contraseña, verificar email.
+- `src/features/home/`, `src/features/notifications/`, `src/features/settings/` —
+  raíces de las pestañas del área autenticada.
+- `src/app/TabsShell.tsx` — shell de navegación (IonReactRouter + IonTabs).
 - `src/theme/` — tokens del design system mapeados a variables de Ionic.
 
-Con solo dos pantallas, la navegación se resuelve por estado de sesión (sin
-router). Al crecer, migrar a `@ionic/react-router`.
+> El schema tipado de `@core/api-client` (`src/generated/schema.d.ts`) está
+> **gitignored**: se genera desde la API viva (o con `generate-openapi` sin DB).
+> Igual que el backoffice, el build del mobile requiere generarlo antes (lo hará
+> el CI en MOB-19).
 
 ## Builds nativos (Capacitor)
 

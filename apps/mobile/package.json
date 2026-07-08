@@ -14,6 +14,7 @@
     "cap:add:android": "cap add android"
   },
   "dependencies": {
+    "@core/api-client": "workspace:*",
     "@capacitor/app": "^6.0.2",
     "@capacitor/core": "^6.2.0",
     "@capacitor/haptics": "^6.0.2",

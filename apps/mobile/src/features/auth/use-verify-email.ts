@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiClient } from '@/api/client';
 
 export type VerifyStatus = 'idle' | 'verifying' | 'ok' | 'error';
 
@@ -20,9 +20,10 @@ export function useVerifyEmail(token: string): VerifyStatus {
     }
     let active = true;
     setStatus('verifying');
-    apiFetch(`/auth/verify-email?token=${encodeURIComponent(token)}`)
-      .then(() => {
-        if (active) setStatus('ok');
+    apiClient
+      .GET('/auth/verify-email', { params: { query: { token } } })
+      .then(({ error }) => {
+        if (active) setStatus(error ? 'error' : 'ok');
       })
       .catch(() => {
         if (active) setStatus('error');

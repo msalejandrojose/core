@@ -351,6 +351,9 @@ importers:
       '@capacitor/status-bar':
         specifier: ^6.0.2
         version: 6.0.3(@capacitor/core@6.2.1)
+      '@core/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@ionic/react':
         specifier: ^8.5.0
         version: 8.8.13(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

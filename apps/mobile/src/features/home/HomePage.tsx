@@ -6,12 +6,12 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import { apiFetch } from '@/lib/api';
-import { useAuthStore, type AuthUser } from '@/store/auth.store';
+import { apiClient } from '@/api/client';
+import { useAuthStore } from '@/store/auth.store';
 
 /**
  * Home protegida (raíz de tab). Al montar valida la sesión contra `GET /auth/me`
- * y refresca el usuario. Si el token ya no vale, `apiFetch` cierra sesión de
+ * y refresca el usuario. Si el token ya no vale, el cliente cierra sesión de
  * forma central (401 con token). De momento es un saludo editorial; el
  * dashboard real con KPIs y accesos llega en MOB-11.
  */
@@ -21,12 +21,13 @@ export default function HomePage() {
 
   useEffect(() => {
     let active = true;
-    apiFetch<AuthUser>('/auth/me')
-      .then((me) => {
-        if (active) setUser(me);
+    apiClient
+      .GET('/auth/me')
+      .then(({ data }) => {
+        if (active && data) setUser(data);
       })
       .catch(() => {
-        // Un 401 ya lo maneja apiFetch (logout); el resto es best-effort.
+        // Un 401 ya lo maneja el cliente (logout); el resto es best-effort.
       });
     return () => {
       active = false;

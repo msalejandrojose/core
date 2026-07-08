@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { apiFetch } from '@/lib/api';
+import { apiClient } from '@/api/client';
 
 /**
  * Contador de notificaciones sin leer, compartido entre el badge del tab bar y
@@ -26,10 +26,8 @@ export const useUnreadStore = create<UnreadState>((set, get) => ({
   reset: () => set({ unread: 0 }),
   refresh: async () => {
     try {
-      const res = await apiFetch<{ count: number }>(
-        '/me/notifications/unread-count',
-      );
-      set({ unread: Math.max(0, res.count) });
+      const { data } = await apiClient.GET('/me/notifications/unread-count');
+      if (data) set({ unread: Math.max(0, data.count) });
     } catch {
       // El badge es best-effort; si falla, se conserva el valor anterior.
     }
