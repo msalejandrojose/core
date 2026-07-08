@@ -1,4 +1,4 @@
-import { getAuthToken } from '@/store/auth.store';
+import { getAuthToken, useAuthStore } from '@/store/auth.store';
 
 // Wrapper `fetch` tipado contra la API de Core. Ligero a propósito: cuando
 // `@core/api-client` tenga su schema generado (contra la API viva), migrar a él
@@ -39,6 +39,14 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
 
   if (!res.ok) {
+    // Sesión expirada/invalidada: si la petición llevaba token y la API
+    // responde 401, la sesión ya no vale → cerramos sesión de forma central
+    // (logout robusto), en vez de que cada pantalla lo gestione a mano. Las
+    // peticiones públicas (login, reset…) no llevan token, así que un 401 suyo
+    // —credenciales inválidas— no dispara esto.
+    if (res.status === 401 && token) {
+      useAuthStore.getState().logout();
+    }
     const body = (await res.json().catch(() => null)) as {
       code?: string;
       message?: string;

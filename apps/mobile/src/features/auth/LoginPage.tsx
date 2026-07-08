@@ -84,6 +84,15 @@ export default function LoginPage() {
             >
               {loading ? <IonSpinner name="crescent" /> : 'Entrar'}
             </IonButton>
+
+            <IonButton
+              routerLink="/forgot"
+              fill="clear"
+              size="small"
+              style={{ marginTop: 4, justifySelf: 'center' }}
+            >
+              ¿Olvidaste tu contraseña?
+            </IonButton>
           </form>
         </div>
       </IonContent>
