@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { ErrorLogService } from '../../infrastructure/error-log/error-log.service';
 import { logStructuredError } from '../../infrastructure/logger/structured-logger';
+import { getRequestId } from '../../infrastructure/logger/request-context';
 import { AppException } from '../exceptions/app.exception';
 import { DomainError } from '../errors/domain-error';
 import {
@@ -52,6 +53,7 @@ export class AppExceptionFilter implements ExceptionFilter {
 
     const resolved = this.resolve(exception);
     const timestamp = new Date().toISOString();
+    const requestId = getRequestId();
 
     response.status(resolved.httpStatus).json({
       errorId: resolved.errorId,
@@ -60,6 +62,7 @@ export class AppExceptionFilter implements ExceptionFilter {
       level: resolved.level,
       timestamp,
       path: request.url,
+      requestId,
     });
 
     const userId = (request as Request & { user?: { id?: string } }).user?.id;
@@ -79,6 +82,7 @@ export class AppExceptionFilter implements ExceptionFilter {
         path: request.url,
         method: request.method,
         userId,
+        requestId,
         stack,
       },
       resolved.message,

@@ -26,6 +26,7 @@ export interface StructuredErrorLogPayload {
   path?: string;
   method?: string;
   userId?: string;
+  requestId?: string;
   stack?: string;
 }
 

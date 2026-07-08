@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_FILTER, DiscoveryModule } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, DiscoveryModule } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
+import { LoggerModule } from './infrastructure/logger/logger.module';
 import { IamModule } from './modules/iam/iam.module';
 import { SectionsModule } from './modules/sections/sections.module';
 import { StorageModule } from './modules/storage/storage.module';
@@ -33,6 +35,21 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     DiscoveryModule,
     // Scheduler (cron) del módulo de workflows.
     ScheduleModule.forRoot(),
+    // Rate limiting global (in-memory). Ventana y tope configurables por env;
+    // los endpoints públicos sensibles aprietan el límite con `@Throttle`, y
+    // los probes de salud lo saltan con `@SkipThrottle`.
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: Number(config.get('THROTTLE_TTL_MS') ?? 60_000),
+            limit: Number(config.get('THROTTLE_LIMIT') ?? 120),
+          },
+        ],
+      }),
+    }),
+    LoggerModule,
     PrismaModule,
     IamModule,
     SectionsModule,
@@ -52,6 +69,11 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     {
       provide: APP_FILTER,
       useClass: AppExceptionFilter,
+    },
+    // Guard global de rate limiting. Corre junto al JwtAuthGuard global.
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

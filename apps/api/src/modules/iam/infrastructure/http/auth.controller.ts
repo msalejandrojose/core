@@ -13,6 +13,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
 import { GetCurrentUserUseCase } from '../../application/use-cases/get-current-user.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
@@ -33,6 +34,11 @@ import { RequestResetDto } from './dto/request-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
+// Límite estricto para los endpoints públicos sensibles a fuerza bruta
+// (login, register, reset): 10 peticiones/minuto por IP, por encima del límite
+// global (más laxo). Anti brute-force / abuso de envío de emails.
+const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -48,7 +54,10 @@ export class AuthController {
 
   @Post('register')
   @Public()
-  @ApiOperation({ summary: 'Crear un usuario nuevo (público). Envía email de verificación.' })
+  @Throttle(AUTH_THROTTLE)
+  @ApiOperation({
+    summary: 'Crear un usuario nuevo (público). Envía email de verificación.',
+  })
   @ApiCreatedResponse({ type: UserResponseDto })
   async register(@Body() dto: RegisterDto): Promise<UserResponseDto> {
     const user = await this.registerUser.execute(dto);
@@ -57,8 +66,11 @@ export class AuthController {
 
   @Post('login')
   @Public()
+  @Throttle(AUTH_THROTTLE)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login con email + password. Devuelve un access token.' })
+  @ApiOperation({
+    summary: 'Login con email + password. Devuelve un access token.',
+  })
   @ApiOkResponse({ type: LoginResponseDto })
   async loginAction(@Body() dto: LoginDto): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.login.execute(dto);
@@ -69,7 +81,9 @@ export class AuthController {
   @Auth()
   @ApiOperation({ summary: 'Devuelve el usuario autenticado.' })
   @ApiOkResponse({ type: UserResponseDto })
-  async me(@CurrentUser() current: AccessTokenPayload): Promise<UserResponseDto> {
+  async me(
+    @CurrentUser() current: AccessTokenPayload,
+  ): Promise<UserResponseDto> {
     const user = await this.getCurrentUser.execute(current.sub);
     return UserResponseDto.fromUser(user);
   }
@@ -78,31 +92,56 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verifica el token de email y activa la cuenta.' })
-  @ApiOkResponse({ schema: { example: { message: 'Email verificado correctamente.' } } })
-  async verifyEmailAction(@Query() dto: VerifyEmailDto): Promise<{ message: string }> {
+  @ApiOkResponse({
+    schema: { example: { message: 'Email verificado correctamente.' } },
+  })
+  async verifyEmailAction(
+    @Query() dto: VerifyEmailDto,
+  ): Promise<{ message: string }> {
     await this.verifyEmail.execute(dto.token);
     return { message: 'Email verificado correctamente.' };
   }
 
   @Post('request-password-reset')
   @Public()
+  @Throttle(AUTH_THROTTLE)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Solicita el reset de contraseña. Envía email si la cuenta existe.' })
-  @ApiOkResponse({ schema: { example: { message: 'Si el email existe recibirás instrucciones.' } } })
+  @ApiOperation({
+    summary:
+      'Solicita el reset de contraseña. Envía email si la cuenta existe.',
+  })
+  @ApiOkResponse({
+    schema: {
+      example: { message: 'Si el email existe recibirás instrucciones.' },
+    },
+  })
   async requestPasswordResetAction(
     @Body() dto: RequestResetDto,
   ): Promise<{ message: string }> {
     await this.requestPasswordReset.execute(dto.email);
-    return { message: 'Si el email existe recibirás instrucciones para restablecer tu contraseña.' };
+    return {
+      message:
+        'Si el email existe recibirás instrucciones para restablecer tu contraseña.',
+    };
   }
 
   @Post('reset-password')
   @Public()
+  @Throttle(AUTH_THROTTLE)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Aplica el reset de contraseña con el token recibido por email.' })
-  @ApiOkResponse({ schema: { example: { message: 'Contraseña actualizada correctamente.' } } })
-  async resetPasswordAction(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
-    await this.resetPassword.execute({ token: dto.token, password: dto.password });
+  @ApiOperation({
+    summary: 'Aplica el reset de contraseña con el token recibido por email.',
+  })
+  @ApiOkResponse({
+    schema: { example: { message: 'Contraseña actualizada correctamente.' } },
+  })
+  async resetPasswordAction(
+    @Body() dto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
+    await this.resetPassword.execute({
+      token: dto.token,
+      password: dto.password,
+    });
     return { message: 'Contraseña actualizada correctamente.' };
   }
 

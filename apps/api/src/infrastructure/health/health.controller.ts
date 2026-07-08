@@ -12,14 +12,17 @@ import {
   HealthCheckService,
   PrismaHealthIndicator,
 } from '@nestjs/terminus';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Public } from '../../modules/iam/infrastructure/http/decorators/public.decorator';
 import { PrismaService } from '../database/prisma/prisma.service';
 
 // Endpoints de salud para los probes del cloud (Cloud Run, ECS, Fly…).
 // Van marcados con `@Public()` porque el `JwtAuthGuard` global deja privada
-// toda la API por defecto; los probes llegan sin token.
+// toda la API por defecto; los probes llegan sin token. `@SkipThrottle()` los
+// exime del rate limiting: los probes son frecuentes y no deben consumir cupo.
 @ApiTags('health')
 @Controller('health')
+@SkipThrottle()
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
