@@ -1,4 +1,4 @@
-import { IonApp, IonRouterOutlet } from '@ionic/react';
+import { IonApp, IonRouterOutlet, IonSpinner } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { Redirect, Route } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
@@ -20,7 +20,27 @@ import TabsShell from '@/app/TabsShell';
  */
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const home = '/tabs/home';
+
+  // La sesión se rehidrata de forma asíncrona (Capacitor Preferences). Hasta que
+  // termina mostramos un splash: así el auto-login no parpadea el login primero.
+  if (!hasHydrated) {
+    return (
+      <IonApp>
+        <div
+          style={{
+            display: 'grid',
+            placeItems: 'center',
+            height: '100%',
+            background: 'var(--ion-background-color)',
+          }}
+        >
+          <IonSpinner name="crescent" />
+        </div>
+      </IonApp>
+    );
+  }
 
   return (
     <IonApp>
