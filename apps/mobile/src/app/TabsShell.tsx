@@ -17,6 +17,8 @@ import {
 import HomePage from '@/features/home/HomePage';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import SettingsPage from '@/features/settings/SettingsPage';
+import ProfilePage from '@/features/profile/ProfilePage';
+import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
 
 /**
@@ -41,6 +43,12 @@ export default function TabsShell() {
         <Route exact path="/tabs/home" component={HomePage} />
         <Route exact path="/tabs/notifications" component={NotificationsPage} />
         <Route exact path="/tabs/settings" component={SettingsPage} />
+        <Route exact path="/tabs/settings/profile" component={ProfilePage} />
+        <Route
+          exact
+          path="/tabs/settings/change-password"
+          component={ChangePasswordPage}
+        />
         <Route exact path="/tabs">
           <Redirect to="/tabs/home" />
         </Route>

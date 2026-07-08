@@ -45,7 +45,13 @@ export default function SettingsPage() {
           <>
             <p className="core-section-label">Cuenta</p>
             <IonList inset className="core-group">
-              <IonItem detail lines="inset">
+              <IonItem
+                button
+                detail
+                lines="inset"
+                routerLink="/tabs/settings/profile"
+                routerDirection="forward"
+              >
                 <span slot="start" className="core-tint-icon" aria-hidden="true">
                   <IonIcon icon={personOutline} />
                 </span>
