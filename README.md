@@ -128,8 +128,17 @@ Con `./run.sh --setup-hosts` las añade automáticamente (con `sudo`).
 | `./run.sh api` | MySQL + API dockerizada + proxy. |
 | `./run.sh backoffice` | MySQL + proxy (el backoffice se sirve desde el host). |
 | `./run.sh --setup-hosts` | Añade a `/etc/hosts` los subdominios que falten. |
+| `./dev.sh` | Arranca el stack Docker (`run.sh full`) **y** abre un panel/terminal por pieza habilitada. |
+| `./dev.sh --mode terminal` | Igual, pero en ventanas nativas (macOS Terminal.app / Linux gnome-terminal…) en vez de tmux. |
+| `./dev.sh --no-docker` | Solo abre los paneles de las piezas (no relanza Docker). |
 
 > Requiere [`jq`](https://jqlang.github.io/jq/) para leer `stack.config.json`.
+>
+> `dev.sh` levanta la API dockerizada y, por cada pieza en `runMode: host`
+> (backoffice, web, mobile…), abre un panel siguiendo sus logs o corriendo su
+> `pnpm … dev`. Por defecto usa **tmux** (una ventana con paneles en mosaico);
+> `--mode terminal` abre ventanas nativas. Para incluir la app **mobile**, ponla
+> como `"enabled": true` en `stack.config.json`.
 
 ---
 
