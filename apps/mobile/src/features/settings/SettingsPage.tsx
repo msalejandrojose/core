@@ -46,7 +46,9 @@ export default function SettingsPage() {
             <p className="core-section-label">Cuenta</p>
             <IonList inset className="core-group">
               <IonItem detail lines="inset">
-                <IonIcon slot="start" icon={personOutline} aria-hidden="true" />
+                <span slot="start" className="core-tint-icon" aria-hidden="true">
+                  <IonIcon icon={personOutline} />
+                </span>
                 <IonLabel>
                   <div>Perfil</div>
                   <div style={{ fontSize: 13, color: 'var(--core-muted)' }}>
@@ -56,11 +58,13 @@ export default function SettingsPage() {
               </IonItem>
 
               <IonItem detail lines="none">
-                <IonIcon
+                <span
                   slot="start"
-                  icon={colorPaletteOutline}
+                  className="core-tint-icon core-tint-icon--purple"
                   aria-hidden="true"
-                />
+                >
+                  <IonIcon icon={colorPaletteOutline} />
+                </span>
                 <IonLabel>Apariencia</IonLabel>
               </IonItem>
             </IonList>

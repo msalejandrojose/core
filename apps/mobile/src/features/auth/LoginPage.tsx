@@ -38,25 +38,10 @@ export default function LoginPage() {
             paddingBottom: '10vh',
           }}
         >
-          <h1
-            style={{
-              fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: 40,
-              fontWeight: 600,
-              letterSpacing: '-0.02em',
-              color: 'var(--ion-text-color)',
-              margin: '0 0 6px',
-            }}
-          >
+          <h1 className="core-display" style={{ marginBottom: 6 }}>
             Core
           </h1>
-          <p
-            style={{
-              fontSize: 15,
-              color: 'var(--core-muted)',
-              margin: '0 0 28px',
-            }}
-          >
+          <p className="core-subtitle" style={{ marginBottom: 28 }}>
             Inicia sesión para continuar
           </p>
 

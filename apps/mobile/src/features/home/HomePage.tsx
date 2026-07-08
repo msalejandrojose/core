@@ -45,19 +45,10 @@ export default function HomePage() {
       </IonHeader>
 
       <IonContent className="ion-padding">
-        <h2
-          style={{
-            fontFamily: 'Georgia, "Times New Roman", serif',
-            fontSize: 28,
-            fontWeight: 600,
-            letterSpacing: '-0.02em',
-            color: 'var(--ion-text-color)',
-            margin: '8px 4px 4px',
-          }}
-        >
+        <h2 className="core-title" style={{ margin: '8px 4px 4px' }}>
           {greetingName}
         </h2>
-        <p style={{ color: 'var(--core-muted)', margin: '0 4px 24px', fontSize: 15 }}>
+        <p className="core-subtitle" style={{ margin: '0 4px 24px' }}>
           {user?.email ?? 'Sesión iniciada'}
         </p>
       </IonContent>
