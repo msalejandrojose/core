@@ -1,32 +1,31 @@
-import { useState } from 'react';
-import { IonApp } from '@ionic/react';
+import { IonApp, IonRouterOutlet } from '@ionic/react';
+import { IonReactRouter } from '@ionic/react-router';
+import { Redirect, Route } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
 import LoginPage from '@/features/auth/LoginPage';
-import HomePage from '@/features/home/HomePage';
-import NotificationsPage from '@/features/notifications/NotificationsPage';
-
-/** Pantallas del área autenticada. */
-type Screen = 'home' | 'notifications';
+import TabsShell from '@/app/TabsShell';
 
 /**
- * Navegación del área autenticada. Con pocas pantallas se resuelve con un
- * estado local en vez de arrastrar `@ionic/react-router`; cuando el árbol de
- * navegación crezca (varios niveles, deep-linking), migrar a IonReactRouter.
- */
-function AuthedApp() {
-  const [screen, setScreen] = useState<Screen>('home');
-
-  if (screen === 'notifications') {
-    return <NotificationsPage onBack={() => setScreen('home')} />;
-  }
-  return <HomePage onOpenNotifications={() => setScreen('notifications')} />;
-}
-
-/**
- * Esqueleto de navegación de la app. El estado de sesión decide login vs área
- * autenticada; dentro de esta, `AuthedApp` gestiona la pantalla activa.
+ * Raíz de la app. El estado de sesión decide qué árbol de rutas se monta: el
+ * shell de tabs (área autenticada) o el flujo de login. Ambos viven bajo un
+ * único `IonReactRouter`, así que al autenticarse/cerrar sesión el outlet se
+ * intercambia con la transición nativa de Ionic.
  */
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  return <IonApp>{isAuthenticated ? <AuthedApp /> : <LoginPage />}</IonApp>;
+
+  return (
+    <IonApp>
+      <IonReactRouter>
+        {isAuthenticated ? (
+          <TabsShell />
+        ) : (
+          <IonRouterOutlet>
+            <Route exact path="/login" component={LoginPage} />
+            <Route render={() => <Redirect to="/login" />} />
+          </IonRouterOutlet>
+        )}
+      </IonReactRouter>
+    </IonApp>
+  );
 }

@@ -17,13 +17,9 @@ import {
   IonToolbar,
   type RefresherEventDetail,
 } from '@ionic/react';
-import { chevronBack, notificationsOffOutline } from 'ionicons/icons';
+import { notificationsOffOutline } from 'ionicons/icons';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useNotifications, type Notification } from './use-notifications';
-
-interface Props {
-  onBack: () => void;
-}
 
 /** Tiempo relativo compacto tipo iOS: "ahora", "5 min", "2 h", "3 d", o fecha. */
 function relativeTime(iso: string): string {
@@ -98,9 +94,10 @@ function NotificationRow({
  * Pantalla del inbox in-app. Lista las notificaciones del usuario (paginadas),
  * con pull-to-refresh, scroll infinito, marcar-como-leída al tocar y
  * "Marcar todo". Estados de carga / error / vacío cuidados (skeleton sobre
- * superficie, nunca spinner a pantalla completa).
+ * superficie, nunca spinner a pantalla completa). Es una raíz de tab, así que
+ * no lleva botón de volver.
  */
-export default function NotificationsPage({ onBack }: Props) {
+export default function NotificationsPage() {
   const {
     items,
     status,
@@ -130,11 +127,6 @@ export default function NotificationsPage({ onBack }: Props) {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonButtons slot="start">
-            <IonButton onClick={onBack} aria-label="Volver">
-              <IonIcon slot="icon-only" icon={chevronBack} />
-            </IonButton>
-          </IonButtons>
           <IonTitle>Notificaciones</IonTitle>
           <IonButtons slot="end">
             {unread > 0 ? (

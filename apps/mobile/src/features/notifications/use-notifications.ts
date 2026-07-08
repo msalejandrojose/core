@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import { useUnreadStore } from './notifications.store';
 
 /** Una notificación in-app tal como la devuelve `GET /me/notifications`. */
 export interface Notification {
@@ -34,18 +35,13 @@ export function useNotifications() {
   const [items, setItems] = useState<Notification[]>([]);
   const [status, setStatus] = useState<Status>('loading');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [unread, setUnread] = useState(0);
 
-  const refreshUnread = useCallback(async () => {
-    try {
-      const res = await apiFetch<{ count: number }>(
-        '/me/notifications/unread-count',
-      );
-      setUnread(res.count);
-    } catch {
-      // El badge es best-effort; si falla, no rompemos la pantalla.
-    }
-  }, []);
+  // El contador de no leídas vive en un store compartido para que el badge del
+  // tab bar y esta pantalla no se desincronicen.
+  const unread = useUnreadStore((s) => s.unread);
+  const refreshUnread = useUnreadStore((s) => s.refresh);
+  const decrementUnread = useUnreadStore((s) => s.decrement);
+  const resetUnread = useUnreadStore((s) => s.reset);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -87,26 +83,26 @@ export function useNotifications() {
         return n;
       }),
     );
-    if (wasUnread) setUnread((c) => Math.max(0, c - 1));
+    if (wasUnread) decrementUnread();
     try {
       await apiFetch(`/me/notifications/${id}/read`, { method: 'PATCH' });
     } catch {
       void load(); // Revertir al estado real del servidor si falla.
     }
-  }, [load]);
+  }, [load, decrementUnread]);
 
   const markAllRead = useCallback(async () => {
     const now = new Date().toISOString();
     setItems((prev) =>
       prev.map((n) => (n.readAt ? n : { ...n, readAt: now })),
     );
-    setUnread(0);
+    resetUnread();
     try {
       await apiFetch('/me/notifications/read-all', { method: 'POST' });
     } catch {
       void load();
     }
-  }, [load]);
+  }, [load, resetUnread]);
 
   useEffect(() => {
     void load();
