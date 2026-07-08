@@ -354,6 +354,9 @@ importers:
       '@core/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@core/sections':
+        specifier: workspace:*
+        version: link:../../packages/sections
       '@ionic/react':
         specifier: ^8.5.0
         version: 8.8.13(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

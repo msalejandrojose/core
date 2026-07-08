@@ -15,6 +15,7 @@ import {
   settingsOutline,
 } from 'ionicons/icons';
 import HomePage from '@/features/home/HomePage';
+import SectionScreen from '@/features/sections/SectionScreen';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import SettingsPage from '@/features/settings/SettingsPage';
 import ProfilePage from '@/features/profile/ProfilePage';
@@ -41,6 +42,7 @@ export default function TabsShell() {
     <IonTabs>
       <IonRouterOutlet>
         <Route exact path="/tabs/home" component={HomePage} />
+        <Route exact path="/tabs/home/s/:code" component={SectionScreen} />
         <Route exact path="/tabs/notifications" component={NotificationsPage} />
         <Route exact path="/tabs/settings" component={SettingsPage} />
         <Route exact path="/tabs/settings/profile" component={ProfilePage} />
