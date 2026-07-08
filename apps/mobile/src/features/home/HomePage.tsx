@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   IonButton,
   IonContent,
@@ -21,23 +21,21 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { ApiError, apiFetch } from '@/lib/api';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 
-// Filas de ajustes de ejemplo (esqueleto). Cuando existan las pantallas reales,
-// cada una navegará a su detalle.
-const SETTINGS_ROWS = [
-  { icon: personOutline, label: 'Perfil' },
-  { icon: notificationsOutline, label: 'Notificaciones' },
-  { icon: colorPaletteOutline, label: 'Apariencia' },
-] as const;
+interface Props {
+  onOpenNotifications: () => void;
+}
 
 /**
  * Home protegida (esqueleto). Al montar valida la sesión contra `GET /auth/me`
  * (y refresca el usuario); si el token ya no vale, cierra sesión. Muestra un
- * saludo, un bloque de ajustes de ejemplo y el cierre de sesión.
+ * saludo, un bloque de ajustes y el cierre de sesión. La fila "Notificaciones"
+ * abre el inbox in-app y muestra el número de no leídas.
  */
-export default function HomePage() {
+export default function HomePage({ onOpenNotifications }: Props) {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const logout = useAuthStore((s) => s.logout);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -53,6 +51,20 @@ export default function HomePage() {
       active = false;
     };
   }, [setUser, logout]);
+
+  useEffect(() => {
+    let active = true;
+    apiFetch<{ count: number }>('/me/notifications/unread-count')
+      .then((res) => {
+        if (active) setUnread(res.count);
+      })
+      .catch(() => {
+        // El badge es best-effort; si falla, no rompemos la home.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function onLogout() {
     try {
@@ -92,18 +104,48 @@ export default function HomePage() {
 
         <p className="core-section-label">Ajustes</p>
         <IonList inset className="core-group">
-          {SETTINGS_ROWS.map((row) => (
-            <IonItem key={row.label} button detail={false} lines="inset">
-              <IonIcon slot="start" icon={row.icon} aria-hidden="true" />
-              <IonLabel>{row.label}</IonLabel>
-              <IonIcon
+          <IonItem button detail={false} lines="inset" onClick={onOpenNotifications}>
+            <IonIcon slot="start" icon={notificationsOutline} aria-hidden="true" />
+            <IonLabel>Notificaciones</IonLabel>
+            {unread > 0 ? (
+              <span
                 slot="end"
-                icon={chevronForward}
-                aria-hidden="true"
-                style={{ color: 'var(--core-muted)', fontSize: 16 }}
-              />
-            </IonItem>
-          ))}
+                aria-label={`${unread} sin leer`}
+                style={{
+                  minWidth: 20,
+                  height: 20,
+                  padding: '0 6px',
+                  borderRadius: '9999px',
+                  background: 'var(--ion-color-primary)',
+                  color: 'var(--ion-color-primary-contrast)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginInlineEnd: 8,
+                }}
+              >
+                {unread > 99 ? '99+' : unread}
+              </span>
+            ) : null}
+            <IonIcon
+              slot="end"
+              icon={chevronForward}
+              aria-hidden="true"
+              style={{ color: 'var(--core-muted)', fontSize: 16 }}
+            />
+          </IonItem>
+
+          <IonItem detail={false} lines="inset">
+            <IonIcon slot="start" icon={personOutline} aria-hidden="true" />
+            <IonLabel>Perfil</IonLabel>
+          </IonItem>
+
+          <IonItem detail={false} lines="none">
+            <IonIcon slot="start" icon={colorPaletteOutline} aria-hidden="true" />
+            <IonLabel>Apariencia</IonLabel>
+          </IonItem>
         </IonList>
 
         <IonButton

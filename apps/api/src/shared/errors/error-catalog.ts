@@ -380,6 +380,11 @@ export const ERROR_CATALOG = {
     level: 'error',
     defaultMessage: 'No se pudo entregar la notificación.',
   },
+  NOTIFICATION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Notificación no encontrada.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;
