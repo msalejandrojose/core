@@ -11,12 +11,13 @@ import { useAuthStore } from '@/store/auth.store';
 import { useSectionsStore } from '@/features/sections/sections.store';
 import SectionMenu from '@/features/sections/SectionMenu';
 import { SkeletonList, ErrorState, EmptyState } from '@/components/ux';
+import { KpiTiles } from './KpiTiles';
 
 /**
- * Home protegida (raíz de tab). Saluda al usuario y muestra el menú de accesos
- * a sus secciones (navegación dinámica por permisos, MOB-07). Refresca
- * `/auth/me` al montar; si el token ya no vale, el cliente cierra sesión de
- * forma central. Los KPIs del dashboard llegan en MOB-11.
+ * Home protegida (raíz de tab). Saluda al usuario, muestra un resumen de KPIs
+ * (dashboard, MOB-11) y el menú de accesos a sus secciones (navegación dinámica
+ * por permisos, MOB-07). Refresca `/auth/me` al montar; si el token ya no vale,
+ * el cliente cierra sesión de forma central.
  */
 export default function HomePage() {
   const user = useAuthStore((s) => s.user);
@@ -61,6 +62,8 @@ export default function HomePage() {
         <p className="core-subtitle" style={{ margin: '0 4px 24px' }}>
           {user?.email ?? 'Sesión iniciada'}
         </p>
+
+        <KpiTiles />
 
         <p className="core-section-label">Secciones</p>
 
