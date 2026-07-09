@@ -143,6 +143,35 @@ const BACKOFFICE_TREE: SeedNode[] = [
     ],
   },
   {
+    code: 'notifications',
+    name: 'Notificaciones',
+    icon: 'Bell',
+    order: 8,
+    children: [
+      {
+        code: 'notifications.accounts',
+        name: 'Cuentas de envío',
+        icon: 'Send',
+        route: '/notifications/accounts',
+        order: 0,
+      },
+      {
+        code: 'notifications.messageTypes',
+        name: 'Tipos de mensaje',
+        icon: 'MessageSquare',
+        route: '/notifications/message-types',
+        order: 1,
+      },
+      {
+        code: 'notifications.accountTypes',
+        name: 'Tipos de cuenta',
+        icon: 'Layers',
+        route: '/notifications/account-types',
+        order: 2,
+      },
+    ],
+  },
+  {
     code: 'workflows',
     name: 'Workflows',
     icon: 'Workflow',

@@ -23,7 +23,7 @@ export default defineConfig([
     // Componentes shadcn/ui (exportan variantes cva junto al componente) y los
     // ficheros de columnas (exportan el array `columns` + el componente de
     // acciones de fila): patrón intencional, no afecta a fast-refresh en build.
-    files: ['src/components/ui/**/*.{ts,tsx}', 'src/**/columns.tsx'],
+    files: ['src/components/ui/**/*.{ts,tsx}', 'src/**/*columns.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },
