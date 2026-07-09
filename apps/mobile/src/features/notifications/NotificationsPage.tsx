@@ -15,6 +15,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useNotifications, type Notification } from './use-notifications';
 import { useUnreadStore } from './notifications.store';
 import { CursorList } from '@/components/list';
+import { toast } from '@/lib/toast';
 
 /** Tiempo relativo compacto tipo iOS: "ahora", "5 min", "2 h", "3 d", o fecha. */
 function relativeTime(iso: string): string {
@@ -112,6 +113,7 @@ export default function NotificationsPage() {
       // La háptica no existe en web/PWA; no es un error.
     }
     void markAllRead();
+    toast.success('Notificaciones marcadas como leídas');
   }
 
   return (
