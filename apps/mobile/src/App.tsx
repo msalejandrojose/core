@@ -7,6 +7,7 @@ import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage';
 import VerifyEmailPage from '@/features/auth/VerifyEmailPage';
 import TabsShell from '@/app/TabsShell';
+import { ErrorBoundary, OfflineBanner } from '@/components/ux';
 
 /**
  * Raíz de rutas de la app. El estado de sesión gatea el acceso mediante
@@ -44,47 +45,54 @@ export default function App() {
 
   return (
     <IonApp>
-      <IonReactRouter>
-        <IonRouterOutlet>
-          {/* Públicas (enlaces de email): válidas con o sin sesión. */}
-          <Route exact path="/verify-email" component={VerifyEmailPage} />
-          <Route exact path="/reset-password" component={ResetPasswordPage} />
+      <ErrorBoundary>
+        <IonReactRouter>
+          <IonRouterOutlet>
+            {/* Públicas (enlaces de email): válidas con o sin sesión. */}
+            <Route exact path="/verify-email" component={VerifyEmailPage} />
+            <Route exact path="/reset-password" component={ResetPasswordPage} />
 
-          {/* Solo sin sesión. */}
-          <Route
-            exact
-            path="/login"
-            render={() =>
-              isAuthenticated ? <Redirect to={home} /> : <LoginPage />
-            }
-          />
-          <Route
-            exact
-            path="/forgot"
-            render={() =>
-              isAuthenticated ? <Redirect to={home} /> : <ForgotPasswordPage />
-            }
-          />
+            {/* Solo sin sesión. */}
+            <Route
+              exact
+              path="/login"
+              render={() =>
+                isAuthenticated ? <Redirect to={home} /> : <LoginPage />
+              }
+            />
+            <Route
+              exact
+              path="/forgot"
+              render={() =>
+                isAuthenticated ? (
+                  <Redirect to={home} />
+                ) : (
+                  <ForgotPasswordPage />
+                )
+              }
+            />
 
-          {/* Área autenticada. */}
-          <Route
-            path="/tabs"
-            render={() =>
-              isAuthenticated ? <TabsShell /> : <Redirect to="/login" />
-            }
-          />
+            {/* Área autenticada. */}
+            <Route
+              path="/tabs"
+              render={() =>
+                isAuthenticated ? <TabsShell /> : <Redirect to="/login" />
+              }
+            />
 
-          {/* Entrada y fallback. */}
-          <Route
-            exact
-            path="/"
-            render={() => <Redirect to={isAuthenticated ? home : '/login'} />}
-          />
-          <Route
-            render={() => <Redirect to={isAuthenticated ? home : '/login'} />}
-          />
-        </IonRouterOutlet>
-      </IonReactRouter>
+            {/* Entrada y fallback. */}
+            <Route
+              exact
+              path="/"
+              render={() => <Redirect to={isAuthenticated ? home : '/login'} />}
+            />
+            <Route
+              render={() => <Redirect to={isAuthenticated ? home : '/login'} />}
+            />
+          </IonRouterOutlet>
+        </IonReactRouter>
+        <OfflineBanner />
+      </ErrorBoundary>
     </IonApp>
   );
 }

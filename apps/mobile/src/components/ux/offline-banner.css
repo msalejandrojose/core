@@ -1,0 +1,42 @@
+/* Banner de sin conexión: fijo abajo, sobre la tab bar, respetando safe-area. */
+.core-offline-banner {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(64px + var(--ion-safe-area-bottom, 0px));
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--core-radius);
+  background: var(--ion-text-color);
+  color: var(--ion-background-color);
+  box-shadow: var(--core-elevation-2);
+  font-size: 14px;
+  font-weight: 500;
+
+  animation: core-offline-in 0.2s ease;
+}
+
+.core-offline-banner ion-icon {
+  font-size: 18px;
+}
+
+@keyframes core-offline-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .core-offline-banner {
+    animation: none;
+  }
+}

@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import {
-  IonButton,
   IonContent,
   IonHeader,
   IonPage,
@@ -11,6 +10,7 @@ import { apiClient } from '@/api/client';
 import { useAuthStore } from '@/store/auth.store';
 import { useSectionsStore } from '@/features/sections/sections.store';
 import SectionMenu from '@/features/sections/SectionMenu';
+import { SkeletonList, ErrorState, EmptyState } from '@/components/ux';
 
 /**
  * Home protegida (raíz de tab). Saluda al usuario y muestra el menú de accesos
@@ -65,35 +65,14 @@ export default function HomePage() {
         <p className="core-section-label">Secciones</p>
 
         {status === 'loading' || status === 'idle' ? (
-          <div className="core-group" style={{ padding: '4px 0' }}>
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{
-                  height: 18,
-                  margin: '18px 16px',
-                  borderRadius: 6,
-                  background: 'var(--core-surface-inset)',
-                  opacity: 0.7,
-                }}
-              />
-            ))}
-          </div>
+          <SkeletonList rows={3} />
         ) : status === 'error' ? (
-          <div style={{ textAlign: 'center', padding: '32px 24px' }}>
-            <p style={{ color: 'var(--core-muted)', marginBottom: 12 }}>
-              No se pudieron cargar tus secciones.
-            </p>
-            <IonButton fill="clear" onClick={() => void loadSections(true)}>
-              Reintentar
-            </IonButton>
-          </div>
+          <ErrorState
+            message="No se pudieron cargar tus secciones."
+            onRetry={() => void loadSections(true)}
+          />
         ) : tree.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 24px' }}>
-            <p style={{ color: 'var(--core-muted)' }}>
-              No tienes secciones disponibles todavía.
-            </p>
-          </div>
+          <EmptyState title="No tienes secciones disponibles todavía." />
         ) : (
           <SectionMenu nodes={tree} />
         )}
