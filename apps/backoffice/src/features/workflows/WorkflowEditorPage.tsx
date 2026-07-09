@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { WorkflowCanvas } from './components/WorkflowCanvas';
 import { StepEditor } from './editor/StepEditor';
 import { TriggersEditor } from './editor/TriggersEditor';

@@ -17,6 +17,7 @@ import { S3StorageAdapter } from './infrastructure/adapters/s3-storage.adapter';
 import { GcsStorageAdapter } from './infrastructure/adapters/gcs-storage.adapter';
 import { PrismaStoredFileRepository } from './infrastructure/persistence/prisma-stored-file.repository';
 import { FilesController } from './infrastructure/http/files.controller';
+import { FileViewTokenService } from './infrastructure/http/file-view-token.service';
 
 @Module({
   imports: [JwtModule.register({})],
@@ -73,6 +74,7 @@ import { FilesController } from './infrastructure/http/files.controller';
     GetFileSignedUrlUseCase,
     CreateSignedUploadUseCase,
     ConfirmUploadUseCase,
+    FileViewTokenService,
   ],
   exports: [STORAGE_PORT, STORED_FILE_REPOSITORY],
 })

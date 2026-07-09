@@ -139,6 +139,13 @@ import {
     // Action handler de workflows (lo descubre el registry de workflows).
     NotificationsSendHandler,
   ],
-  exports: [SendNotificationUseCase],
+  exports: [
+    SendNotificationUseCase,
+    // Reutilizados por el módulo `whatsapp` (bandeja de conversaciones): la
+    // resolución/descifrado de cuentas WHATSAPP y el envío por Meta Cloud API.
+    SENDING_ACCOUNT_REPOSITORY,
+    SECRET_CIPHER,
+    WhatsappChannelDispatcher,
+  ],
 })
 export class NotificationsModule {}
