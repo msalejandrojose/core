@@ -18,11 +18,10 @@ export interface PushHandlers {
 }
 
 /**
- * Registra el token del dispositivo contra la API (best-effort). El endpoint de
- * registro de dispositivos todavía no existe en el backend (tarea pendiente:
- * modelo Device + `POST /me/devices`); mientras tanto la llamada falla en
- * silencio para no romper la app. El schema OpenAPI tampoco lo tipa aún, de ahí
- * el acceso con cast puntual.
+ * Registra el token del dispositivo contra la API (best-effort). El backend ya
+ * expone `POST /me/devices` (modelo Device + upsert del token del usuario), pero
+ * el api-client tipado todavía no se ha regenerado desde el OpenAPI, de ahí el
+ * acceso con cast puntual. La llamada falla en silencio para no romper la app.
  */
 async function registerDeviceToken(token: string): Promise<void> {
   try {

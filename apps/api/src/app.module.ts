@@ -16,6 +16,7 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { GeoModule } from './modules/geo/geo.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
+import { DevicesModule } from './modules/devices/devices.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
 import { ErrorLogModule } from './infrastructure/error-log/error-log.module';
 import { HealthModule } from './infrastructure/health/health.module';
@@ -63,6 +64,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     GeoModule,
     NotificationsModule,
     UserNotificationsModule,
+    DevicesModule,
     WhatsappModule,
     ErrorLogModule,
     HealthModule,
