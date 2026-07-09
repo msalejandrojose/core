@@ -1,0 +1,130 @@
+name: Deploy
+
+# Pipeline de despliegue del monorepo. Se dispara en cada push/merge a `main`
+# (un merge a main es, a efectos de GitHub, un push a main) y también a mano
+# desde la pestaña Actions (workflow_dispatch).
+#
+# De momento sólo la WEB (Astro SSG) tiene despliegue REAL: se construye y se
+# publica en Cloudflare Pages (Direct Upload vía wrangler). El resto de piezas
+# (api, backoffice, mobile) son placeholders: por ahora sólo ejecutan sus tests
+# como puerta de calidad y dejan un paso "Deploy" simbólico. Su despliegue real
+# se irá añadiendo aquí sustituyendo esos echos.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# No cancelamos despliegues en curso; un push nuevo encola otro deploy.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # --- API (placeholder): tests unitarios (jest). Deploy real: TODO ---
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        # Los specs compilan contra el cliente generado (gitignored).
+        run: pnpm --filter @core/api prisma:generate
+
+      - name: Test API
+        run: pnpm --filter @core/api test
+
+      - name: Deploy API
+        run: echo "🚧 Despliegue de la API todavía no configurado (placeholder)."
+
+  # --- Backoffice (placeholder): aún sin tests. Deploy real: TODO ---
+  backoffice:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test backoffice
+        # El backoffice todavía no tiene suite de tests. El lint/type-check/build
+        # real vive en backoffice-ci.yml (corre en cada PR/push).
+        run: echo "🚧 Backoffice sin tests todavía (placeholder)."
+
+      - name: Deploy backoffice
+        run: echo "🚧 Despliegue del backoffice todavía no configurado (placeholder)."
+
+  # --- Mobile (placeholder): tests unitarios (vitest). Deploy real: TODO ---
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test mobile
+        run: pnpm --filter @core/mobile test
+
+      - name: Deploy mobile
+        run: echo "🚧 Despliegue de la mobile todavía no configurado (placeholder)."
+
+  # --- Web (REAL): build Astro estático + deploy a Cloudflare Pages ---
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web (astro check + build)
+        run: pnpm build:web
+        env:
+          # Opcionales: si no defines estas Variables en el repo, Astro usa sus
+          # fallbacks (site → https://aj.es). Recomendado fijarlas para el sitemap/OG.
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
+
+      - name: Deploy to Cloudflare Pages
+        if: github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # El proyecto de Pages "core-web" debe existir en Cloudflare (ver README/setup).
+          # --branch=main marca el deploy como PRODUCCIÓN (rama de producción del proyecto).
+          command: pages deploy apps/web/dist --project-name=core-web --branch=main
