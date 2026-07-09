@@ -83,6 +83,11 @@ const TagsPage = lazy(() =>
 const FilesPage = lazy(() =>
   import('@/features/files/FilesPage').then((m) => ({ default: m.FilesPage })),
 );
+const WhatsappPage = lazy(() =>
+  import('@/features/whatsapp/WhatsappPage').then((m) => ({
+    default: m.WhatsappPage,
+  })),
+);
 const CountriesPage = lazy(() =>
   import('@/features/geo/countries/CountriesPage').then((m) => ({
     default: m.CountriesPage,
@@ -197,6 +202,7 @@ export default function App() {
               <Route path="/leads" element={<LeadsPage />} />
               <Route path="/leads/:id" element={<LeadDetailPage />} />
               <Route path="/files" element={<FilesPage />} />
+              <Route path="/whatsapp" element={<WhatsappPage />} />
               <Route path="/geo/countries" element={<CountriesPage />} />
               <Route path="/geo/regions" element={<RegionsPage />} />
               <Route path="/geo/provinces" element={<ProvincesPage />} />
