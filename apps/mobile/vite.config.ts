@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
@@ -11,5 +12,13 @@ export default defineConfig({
   server: {
     port: 4400,
     host: true,
+  },
+  test: {
+    // jsdom para poder montar componentes React/Ionic y hooks con DOM.
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 });
