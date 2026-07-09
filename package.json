@@ -27,5 +27,8 @@
       "@prisma/client",
       "@prisma/engines"
     ]
+  },
+  "devDependencies": {
+    "wrangler": "^4.110.0"
   }
 }
