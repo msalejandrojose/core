@@ -3,7 +3,6 @@ import {
   IonButtons,
   IonContent,
   IonHeader,
-  IonIcon,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
   IonLabel,
@@ -20,6 +19,7 @@ import {
 import { notificationsOffOutline } from 'ionicons/icons';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useNotifications, type Notification } from './use-notifications';
+import { SkeletonList, ErrorState, EmptyState } from '@/components/ux';
 
 /** Tiempo relativo compacto tipo iOS: "ahora", "5 min", "2 h", "3 d", o fecha. */
 function relativeTime(iso: string): string {
@@ -75,7 +75,9 @@ function NotificationRow({
           {notification.title}
         </div>
         {notification.body ? (
-          <div style={{ fontSize: 14, color: 'var(--core-muted)', marginTop: 2 }}>
+          <div
+            style={{ fontSize: 14, color: 'var(--core-muted)', marginTop: 2 }}
+          >
             {notification.body}
           </div>
         ) : null}
@@ -142,45 +144,26 @@ export default function NotificationsPage() {
         </IonRefresher>
 
         {status === 'loading' ? (
-          <div className="core-group" style={{ padding: '4px 0' }}>
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  height: 18,
-                  margin: '18px 16px',
-                  borderRadius: 6,
-                  background: 'var(--core-surface-inset)',
-                  opacity: 0.7,
-                }}
-              />
-            ))}
-          </div>
+          <SkeletonList rows={4} />
         ) : status === 'error' ? (
-          <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-            <p style={{ color: 'var(--core-muted)', marginBottom: 16 }}>
-              No se pudieron cargar las notificaciones.
-            </p>
-            <IonButton fill="clear" onClick={() => void reload()}>
-              Reintentar
-            </IonButton>
-          </div>
+          <ErrorState
+            message="No se pudieron cargar las notificaciones."
+            onRetry={() => void reload()}
+          />
         ) : items.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '64px 24px' }}>
-            <IonIcon
-              icon={notificationsOffOutline}
-              style={{ fontSize: 40, color: 'var(--core-muted)' }}
-              aria-hidden="true"
-            />
-            <p style={{ color: 'var(--core-muted)', marginTop: 12 }}>
-              No tienes notificaciones.
-            </p>
-          </div>
+          <EmptyState
+            icon={notificationsOffOutline}
+            title="No tienes notificaciones."
+          />
         ) : (
           <>
             <IonList inset className="core-group">
               {items.map((n) => (
-                <NotificationRow key={n.id} notification={n} onRead={markRead} />
+                <NotificationRow
+                  key={n.id}
+                  notification={n}
+                  onRead={markRead}
+                />
               ))}
             </IonList>
 

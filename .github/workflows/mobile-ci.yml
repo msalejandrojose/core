@@ -1,0 +1,62 @@
+name: Mobile CI
+
+# Lint + type-check + build + tests de la app mobile (Ionic + React) en cada
+# PR/push que toque el front mobile, la API o el api-client. El schema tipado de
+# `@core/api-client` se genera en el propio pipeline desde el OpenAPI de la API
+# (sin Docker ni base de datos), igual que en el CI del backoffice, para que el
+# type-check corra contra el contrato real. Espejo de BO-26.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/mobile-ci.yml'
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/mobile-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build API
+        # `prebuild` ejecuta `prisma generate`; necesario para compilar la API.
+        run: pnpm build:api
+
+      - name: Generate OpenAPI spec (offline, sin DB)
+        run: node apps/api/dist/generate-openapi.js "$GITHUB_WORKSPACE/openapi.json"
+
+      - name: Generate api-client schema
+        run: >-
+          pnpm --filter @core/api-client exec openapi-typescript
+          "$GITHUB_WORKSPACE/openapi.json"
+          --default-non-nullable false
+          -o "$GITHUB_WORKSPACE/packages/api-client/src/generated/schema.d.ts"
+
+      - name: Lint mobile
+        run: pnpm --filter @core/mobile lint
+
+      - name: Test mobile
+        run: pnpm --filter @core/mobile test
+
+      - name: Type-check + build mobile
+        run: pnpm build:mobile

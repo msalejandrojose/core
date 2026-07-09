@@ -9,6 +9,7 @@ import {
   IonTabs,
 } from '@ionic/react';
 import { Redirect, Route } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   homeOutline,
   notificationsOutline,
@@ -18,6 +19,7 @@ import HomePage from '@/features/home/HomePage';
 import SectionScreen from '@/features/sections/SectionScreen';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import SettingsPage from '@/features/settings/SettingsPage';
+import AppearancePage from '@/features/settings/AppearancePage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
@@ -29,6 +31,7 @@ import { useUnreadStore } from '@/features/notifications/notifications.store';
  * reconocida (p. ej. venir de `/login` tras autenticarse).
  */
 export default function TabsShell() {
+  const { t } = useTranslation();
   const unread = useUnreadStore((s) => s.unread);
   const refreshUnread = useUnreadStore((s) => s.refresh);
 
@@ -45,6 +48,11 @@ export default function TabsShell() {
         <Route exact path="/tabs/home/s/:code" component={SectionScreen} />
         <Route exact path="/tabs/notifications" component={NotificationsPage} />
         <Route exact path="/tabs/settings" component={SettingsPage} />
+        <Route
+          exact
+          path="/tabs/settings/appearance"
+          component={AppearancePage}
+        />
         <Route exact path="/tabs/settings/profile" component={ProfilePage} />
         <Route
           exact
@@ -60,18 +68,18 @@ export default function TabsShell() {
       <IonTabBar slot="bottom">
         <IonTabButton tab="home" href="/tabs/home">
           <IonIcon icon={homeOutline} aria-hidden="true" />
-          <IonLabel>Inicio</IonLabel>
+          <IonLabel>{t('tabs.home')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="notifications" href="/tabs/notifications">
           <IonIcon icon={notificationsOutline} aria-hidden="true" />
-          <IonLabel>Notificaciones</IonLabel>
+          <IonLabel>{t('tabs.notifications')}</IonLabel>
           {unread > 0 ? (
             <IonBadge color="primary">{unread > 99 ? '99+' : unread}</IonBadge>
           ) : null}
         </IonTabButton>
         <IonTabButton tab="settings" href="/tabs/settings">
           <IonIcon icon={settingsOutline} aria-hidden="true" />
-          <IonLabel>Ajustes</IonLabel>
+          <IonLabel>{t('tabs.settings')}</IonLabel>
         </IonTabButton>
       </IonTabBar>
     </IonTabs>

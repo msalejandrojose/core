@@ -1,0 +1,232 @@
+/* ============================================================================
+ * Renderer de formularios (@core/forms → Ionic)  ·  MOB-08
+ * Campos como bloques editoriales: label arriba, control inset, ayuda/error
+ * debajo. Los controles Ionic heredan el look del DS (inset, radio md).
+ * ========================================================================== */
+
+.core-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.core-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.core-form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+  padding-inline-start: 2px;
+}
+.core-form-label .core-form-req {
+  color: var(--core-clay);
+  margin-inline-start: 2px;
+}
+
+.core-form-help {
+  margin: 0;
+  font-size: 13px;
+  color: var(--core-muted);
+  padding-inline-start: 2px;
+}
+.core-form-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ion-color-danger);
+  padding-inline-start: 2px;
+}
+
+/* Controles de texto inset (IonInput / IonTextarea / IonSelect). */
+.core-form-field ion-input.core-control,
+.core-form-field ion-textarea.core-control,
+.core-form-field ion-select.core-control {
+  --background: var(--core-surface-inset);
+  --color: var(--ion-text-color);
+  --placeholder-color: var(--core-muted);
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  --border-radius: var(--core-radius-md);
+  border-radius: var(--core-radius-md);
+  min-height: 48px; /* área táctil iOS */
+}
+.core-form-field ion-select.core-control {
+  width: 100%;
+}
+.core-form-field ion-input.core-control.has-error,
+.core-form-field ion-textarea.core-control.has-error,
+.core-form-field ion-select.core-control.has-error {
+  --background: rgba(164, 69, 59, 0.08);
+}
+
+/* Input nativo (color, file oculto) y grupos compuestos. */
+.core-form-native {
+  background: var(--core-surface-inset);
+  border: none;
+  border-radius: var(--core-radius-md);
+  color: var(--ion-text-color);
+  font: inherit;
+  padding: 12px 14px;
+  min-height: 48px;
+  width: 100%;
+}
+.core-form-native[type='color'] {
+  padding: 6px;
+  width: 64px;
+  height: 44px;
+}
+
+/* Filas de opciones (radio / checkbox list). */
+.core-form-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--core-surface-inset);
+  border-radius: var(--core-radius-md);
+  padding: 4px 12px;
+}
+.core-form-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+.core-form-option ion-label {
+  font-size: 15px;
+}
+
+/* Fila inline (toggle / checkbox único con label a la derecha). */
+.core-form-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--core-surface-inset);
+  border-radius: var(--core-radius-md);
+  padding: 10px 14px;
+  min-height: 48px;
+}
+.core-form-inline .core-form-inline-label {
+  font-size: 15px;
+  color: var(--ion-text-color);
+}
+
+/* Encabezados / párrafos / divisor dentro del formulario. */
+.core-form-heading {
+  margin: 8px 0 0;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+.core-form-paragraph {
+  margin: 0;
+  font-size: 14px;
+  color: var(--core-muted);
+}
+.core-form-divider {
+  border: none;
+  border-top: 1px solid var(--core-border);
+  margin: 6px 0;
+}
+
+/* Chips (tags) y estrellas (rating). */
+.core-form-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.core-form-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--core-surface-row);
+  color: var(--ion-text-color);
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 14px;
+}
+.core-form-chip button {
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  color: var(--core-muted);
+  padding: 0;
+}
+.core-form-stars {
+  display: flex;
+  gap: 4px;
+}
+.core-form-stars button {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--core-muted);
+  font-size: 26px;
+  line-height: 1;
+}
+.core-form-stars button.on {
+  color: var(--core-clay);
+}
+
+/* Repetidor (array) y bloques compuestos. */
+.core-form-item {
+  background: var(--core-surface);
+  border: 1px solid var(--core-border);
+  border-radius: var(--core-radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.core-form-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.core-form-item-index {
+  font-size: 12px;
+  color: var(--core-muted);
+}
+.core-form-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Lista de archivos subidos. */
+.core-form-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.core-form-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--core-surface-inset);
+  border-radius: var(--core-radius-sm);
+  padding: 8px 12px;
+  font-size: 14px;
+}
+.core-form-file span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Firma (canvas táctil). */
+.core-form-signature {
+  width: 100%;
+  max-width: 360px;
+  height: 150px;
+  background: #ffffff;
+  border: 1px solid var(--core-border);
+  border-radius: var(--core-radius-md);
+  touch-action: none;
+}

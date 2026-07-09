@@ -17,6 +17,9 @@ apps/api/src/generated/
 # api-client — schema generado desde OpenAPI (regenerar con: API_URL=http://localhost:3000 pnpm --filter @core/api-client generate)
 packages/api-client/src/generated/schema.d.ts
 
+# OpenAPI spec generado offline (artefacto de build/CI para tipar el api-client)
+/openapi.json
+
 # Storage module — ficheros subidos en local (driver LOCAL), nunca se commitean
 apps/api/.storage/
 

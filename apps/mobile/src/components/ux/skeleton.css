@@ -1,0 +1,29 @@
+/* Shimmer del skeleton (DS §1b: rendimiento percibido sobre superficie card).
+ * Gradiente que recorre la barra; se detiene con prefers-reduced-motion. */
+.core-skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--core-surface-inset) 25%,
+    var(--core-surface-row) 37%,
+    var(--core-surface-inset) 63%
+  );
+  background-size: 400% 100%;
+  animation: core-skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes core-skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .core-skeleton {
+    animation: none;
+    opacity: 0.7;
+  }
+}
