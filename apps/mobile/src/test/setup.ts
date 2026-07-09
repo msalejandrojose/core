@@ -7,6 +7,22 @@ afterEach(() => {
   cleanup();
 });
 
+// jsdom no implementa matchMedia; el ThemeProvider lo usa para resolver el tema
+// `system`. Stub por defecto: el sistema NO prefiere oscuro.
+if (!window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList;
+}
+
 // Capacitor Preferences no existe fuera del WebView; el auth store lo usa como
 // backend de persistencia. Lo stubbeamos con un almacén en memoria para que los
 // tests que tocan el store no fallen al hidratar.

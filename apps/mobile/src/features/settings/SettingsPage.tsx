@@ -11,6 +11,7 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import { colorPaletteOutline, personOutline } from 'ionicons/icons';
+import { useTranslation } from 'react-i18next';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -20,6 +21,7 @@ import { useAuthStore } from '@/store/auth.store';
  * sesión. Filas tipo ajustes iOS sobre superficie agrupada (DS §1b).
  */
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
@@ -43,7 +45,7 @@ export default function SettingsPage() {
       <IonContent className="ion-padding">
         {user ? (
           <>
-            <p className="core-section-label">Cuenta</p>
+            <p className="core-section-label">{t('settings.account')}</p>
             <IonList inset className="core-group">
               <IonItem
                 button
@@ -52,18 +54,28 @@ export default function SettingsPage() {
                 routerLink="/tabs/settings/profile"
                 routerDirection="forward"
               >
-                <span slot="start" className="core-tint-icon" aria-hidden="true">
+                <span
+                  slot="start"
+                  className="core-tint-icon"
+                  aria-hidden="true"
+                >
                   <IonIcon icon={personOutline} />
                 </span>
                 <IonLabel>
-                  <div>Perfil</div>
+                  <div>{t('settings.profile')}</div>
                   <div style={{ fontSize: 13, color: 'var(--core-muted)' }}>
                     {user.email}
                   </div>
                 </IonLabel>
               </IonItem>
 
-              <IonItem detail lines="none">
+              <IonItem
+                button
+                detail
+                lines="none"
+                routerLink="/tabs/settings/appearance"
+                routerDirection="forward"
+              >
                 <span
                   slot="start"
                   className="core-tint-icon core-tint-icon--purple"
@@ -71,7 +83,7 @@ export default function SettingsPage() {
                 >
                   <IonIcon icon={colorPaletteOutline} />
                 </span>
-                <IonLabel>Apariencia</IonLabel>
+                <IonLabel>{t('settings.appearance')}</IonLabel>
               </IonItem>
             </IonList>
           </>
@@ -84,7 +96,7 @@ export default function SettingsPage() {
           onClick={onLogout}
           style={{ marginTop: 24 }}
         >
-          Cerrar sesión
+          {t('settings.logout')}
         </IonButton>
       </IonContent>
     </IonPage>

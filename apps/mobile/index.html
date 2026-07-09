@@ -14,6 +14,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Aplica el tema persistido antes del primer paint (sin parpadeo). El
+         store lo mantiene después; ver theme.store / ThemeProvider (MOB-17). -->
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('core-mobile-theme');
+          var theme = raw ? JSON.parse(raw).state.theme : 'system';
+          if (theme === 'light' || theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', theme);
+          }
+        } catch (e) {
+          /* sin preferencia guardada: manda prefers-color-scheme */
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

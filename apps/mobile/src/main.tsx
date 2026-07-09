@@ -2,6 +2,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { setupIonicReact } from '@ionic/react';
 import App from './App';
+import { ThemeProvider } from './theme/ThemeProvider';
+import './i18n';
 
 /* CSS base de Ionic (mínimo necesario para el layout y la tipografía). */
 import '@ionic/react/css/core.css';
@@ -24,6 +26,8 @@ if (!container) throw new Error('No se encontró el elemento #root');
 
 createRoot(container).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </React.StrictMode>,
 );

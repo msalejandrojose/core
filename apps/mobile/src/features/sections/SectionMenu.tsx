@@ -2,6 +2,7 @@ import { IonIcon, IonItem, IonLabel, IonList } from '@ionic/react';
 import { chevronForward } from 'ionicons/icons';
 import type { SectionTreeNode } from '@core/sections';
 import { resolveSectionIcon } from '@/lib/icons';
+import { useSectionLabel } from '@/i18n/use-section-label';
 
 /** Ordena por el campo `order` del DS de secciones. */
 function byOrder(nodes: SectionTreeNode[]): SectionTreeNode[] {
@@ -14,6 +15,7 @@ function byOrder(nodes: SectionTreeNode[]): SectionTreeNode[] {
  * una hoja (pantalla de sección). Reutilizable en la home y en submenús.
  */
 export default function SectionMenu({ nodes }: { nodes: SectionTreeNode[] }) {
+  const sectionLabel = useSectionLabel();
   const ordered = byOrder(nodes);
   return (
     <IonList inset className="core-group">
@@ -29,7 +31,7 @@ export default function SectionMenu({ nodes }: { nodes: SectionTreeNode[] }) {
           <span slot="start" className="core-tint-icon" aria-hidden="true">
             <IonIcon icon={resolveSectionIcon(node.icon)} />
           </span>
-          <IonLabel>{node.name}</IonLabel>
+          <IonLabel>{sectionLabel(node.code, node.name)}</IonLabel>
           <IonIcon
             slot="end"
             icon={chevronForward}
