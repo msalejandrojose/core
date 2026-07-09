@@ -23,6 +23,7 @@ import AppearancePage from '@/features/settings/AppearancePage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
+import { usePushNotifications } from '@/features/notifications/use-push-notifications';
 
 /**
  * Shell del área autenticada: tab bar inferior (Inicio / Notificaciones /
@@ -34,6 +35,10 @@ export default function TabsShell() {
   const { t } = useTranslation();
   const unread = useUnreadStore((s) => s.unread);
   const refreshUnread = useUnreadStore((s) => s.refresh);
+
+  // Push nativas: registra el dispositivo y engancha recepción/tap (no-op en
+  // web/PWA). Vive aquí para arrancar una vez al entrar al área autenticada.
+  usePushNotifications();
 
   // Contador del badge al entrar en el área autenticada; el inbox lo mantiene
   // en sync a partir de aquí (marcar leídas actualiza el store compartido).
