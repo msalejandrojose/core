@@ -1,6 +1,6 @@
 import { Check, Copy, DoorClosed, DoorOpen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

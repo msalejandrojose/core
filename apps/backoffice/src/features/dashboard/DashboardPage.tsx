@@ -8,7 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
