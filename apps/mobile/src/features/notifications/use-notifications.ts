@@ -1,23 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import type { components } from '@core/api-client';
 import { apiClient } from '@/api/client';
+import { useCursorList, type CursorFetcher } from '@/components/list';
 import { useUnreadStore } from './notifications.store';
 
 /** Una notificación in-app tal como la devuelve `GET /me/notifications`. */
 export type Notification = components['schemas']['UserNotificationResponseDto'];
 
-type Status = 'loading' | 'ready' | 'error';
-
 /**
- * Inbox de notificaciones del usuario. Encapsula la paginación por cursor de
- * `GET /me/notifications`, el contador de no leídas y las mutaciones (marcar
- * una / todas como leídas) con actualización optimista del estado local.
+ * Inbox de notificaciones del usuario. La paginación por cursor se delega en el
+ * primitivo `useCursorList` (MOB-09); aquí solo vive lo específico de
+ * notificaciones: el contador de no leídas (store compartido con el badge del
+ * tab bar) y las mutaciones (marcar una / todas como leídas) con actualización
+ * optimista del estado local.
  */
 export function useNotifications() {
-  const [items, setItems] = useState<Notification[]>([]);
-  const [status, setStatus] = useState<Status>('loading');
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-
   // El contador de no leídas vive en un store compartido para que el badge del
   // tab bar y esta pantalla no se desincronicen.
   const unread = useUnreadStore((s) => s.unread);
@@ -25,84 +22,77 @@ export function useNotifications() {
   const decrementUnread = useUnreadStore((s) => s.decrement);
   const resetUnread = useUnreadStore((s) => s.reset);
 
-  const load = useCallback(async () => {
-    setStatus('loading');
-    try {
+  const fetcher = useCallback<CursorFetcher<Notification>>(
+    async ({ cursor, limit }) => {
       const { data, error } = await apiClient.GET('/me/notifications', {
-        params: { query: { limit: 20 } },
+        params: { query: { limit, cursor: cursor ?? undefined } },
       });
-      if (error || !data) {
-        setStatus('error');
-        return;
+      if (error || !data) return null;
+      return { data: data.data, meta: data.meta };
+    },
+    [],
+  );
+
+  const {
+    items,
+    status,
+    hasMore,
+    reload: reloadList,
+    loadMore,
+    setItems,
+  } = useCursorList<Notification>(fetcher, { limit: 20 });
+
+  // Recargar la lista (pull-to-refresh) reconcilia también el contador con el
+  // servidor. La reconciliación al abrir la pestaña la hace la pantalla
+  // (view-enter) y TabsShell al montar; el hook solo aplica los cambios
+  // optimistas de marcar-como-leída para no pisarlos con una relectura tardía.
+  const reload = useCallback(async () => {
+    await reloadList();
+    void refreshUnread();
+  }, [reloadList, refreshUnread]);
+
+  const markRead = useCallback(
+    async (id: string) => {
+      // Determina si estaba sin leer con los items actuales (síncrono), no dentro
+      // del updater de setState —que React puede ejecutar más tarde—.
+      const wasUnread = items.some((n) => n.id === id && n.readAt === null);
+      if (!wasUnread) return;
+
+      // Optimista: marca localmente y decrementa el contador antes del round-trip.
+      setItems((prev) =>
+        prev.map((n) =>
+          n.id === id ? { ...n, readAt: new Date().toISOString() } : n,
+        ),
+      );
+      decrementUnread();
+      try {
+        await apiClient.PATCH('/me/notifications/{id}/read', {
+          params: { path: { id } },
+        });
+      } catch {
+        void reload(); // Revertir al estado real del servidor si falla.
       }
-      setItems(data.data);
-      setNextCursor(data.meta.hasMore ? (data.meta.nextCursor ?? null) : null);
-      setStatus('ready');
-      void refreshUnread();
-    } catch {
-      setStatus('error');
-    }
-  }, [refreshUnread]);
-
-  const loadMore = useCallback(async () => {
-    if (!nextCursor) return;
-    try {
-      const { data } = await apiClient.GET('/me/notifications', {
-        params: { query: { limit: 20, cursor: nextCursor } },
-      });
-      if (!data) return;
-      setItems((prev) => [...prev, ...data.data]);
-      setNextCursor(data.meta.hasMore ? (data.meta.nextCursor ?? null) : null);
-    } catch {
-      // Silencioso: el usuario puede reintentar el scroll.
-    }
-  }, [nextCursor]);
-
-  const markRead = useCallback(async (id: string) => {
-    // Optimista: marca localmente y decrementa el contador antes del round-trip.
-    let wasUnread = false;
-    setItems((prev) =>
-      prev.map((n) => {
-        if (n.id === id && n.readAt === null) {
-          wasUnread = true;
-          return { ...n, readAt: new Date().toISOString() };
-        }
-        return n;
-      }),
-    );
-    if (wasUnread) decrementUnread();
-    try {
-      await apiClient.PATCH('/me/notifications/{id}/read', {
-        params: { path: { id } },
-      });
-    } catch {
-      void load(); // Revertir al estado real del servidor si falla.
-    }
-  }, [load, decrementUnread]);
+    },
+    [items, setItems, decrementUnread, reload],
+  );
 
   const markAllRead = useCallback(async () => {
     const now = new Date().toISOString();
-    setItems((prev) =>
-      prev.map((n) => (n.readAt ? n : { ...n, readAt: now })),
-    );
+    setItems((prev) => prev.map((n) => (n.readAt ? n : { ...n, readAt: now })));
     resetUnread();
     try {
       await apiClient.POST('/me/notifications/read-all');
     } catch {
-      void load();
+      void reload();
     }
-  }, [load, resetUnread]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  }, [setItems, resetUnread, reload]);
 
   return {
     items,
     status,
     unread,
-    hasMore: nextCursor !== null,
-    reload: load,
+    hasMore,
+    reload,
     loadMore,
     markRead,
     markAllRead,
