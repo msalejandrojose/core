@@ -354,6 +354,9 @@ importers:
       '@core/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@core/forms':
+        specifier: workspace:*
+        version: link:../../packages/forms
       '@core/sections':
         specifier: workspace:*
         version: link:../../packages/sections
