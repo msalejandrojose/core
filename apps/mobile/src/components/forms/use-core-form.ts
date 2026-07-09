@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   collectAsyncValidations,
   getDefaultValues,
@@ -66,10 +66,13 @@ export function useCoreForm({
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Mantén una ref con los últimos valores para las validaciones async, que se
-  // resuelven fuera del ciclo de render.
+  // Mantén una ref con los últimos valores para leerlos desde los handlers
+  // (blur/submit) sin cerrarlos sobre un valor obsoleto. Se sincroniza en un
+  // efecto (no en render) porque los handlers siempre corren tras el commit.
   const valuesRef = useRef(values);
-  valuesRef.current = values;
+  useEffect(() => {
+    valuesRef.current = values;
+  }, [values]);
 
   const asyncRefs = useMemo(() => collectAsyncValidations(schema), [schema]);
 
