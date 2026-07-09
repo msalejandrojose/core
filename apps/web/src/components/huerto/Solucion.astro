@@ -1,0 +1,48 @@
+---
+---
+<section class="py-24 md:py-40 px-5 md:px-10 bg-stone-50">
+  <div class="max-w-[1280px] mx-auto grid md:grid-cols-2 gap-14 md:gap-24 items-center">
+
+    <!-- Imagen -->
+    <div class="reveal order-2 md:order-1">
+      <img
+        src="https://picsum.photos/seed/huerto-orange-tree-morning-light/720/520"
+        alt="Naranjas en el árbol, en su punto óptimo de maduración, con luz de mañana"
+        width="720"
+        height="520"
+        class="w-full rounded-xl object-cover"
+        loading="lazy"
+      />
+    </div>
+
+    <!-- Texto -->
+    <div class="reveal reveal-delay-1 order-1 md:order-2">
+      <h2 class="font-huerto text-[clamp(26px,3.6vw,48px)] font-bold leading-[1.05] tracking-[-0.03em] text-ink mb-6">
+        La diferencia está en el origen.
+      </h2>
+      <p class="text-[16px] md:text-[17px] leading-[1.65] text-ink/58 mb-10 max-w-[460px]">
+        Cuando la fruta sale del árbol en su momento justo y llega a ti con el menor tiempo posible,
+        el resultado es completamente diferente. No se trata de fruta premium. Se trata de fruta real.
+      </p>
+
+      <ul class="space-y-5" role="list">
+        {[
+          { label: 'Agricultores seleccionados',  desc: 'Trabajamos con agricultores comprometidos con la calidad del producto.' },
+          { label: 'Solo fruta de temporada',      desc: 'Lo que está en su mejor momento, nunca forzado fuera de temporada.' },
+          { label: 'Menos intermediarios',          desc: 'Del campo directamente a tu puerta, sin eslabones innecesarios.' },
+          { label: 'Recogida cerca del envío',     desc: 'La fruta no espera semanas en almacenes antes de salir hacia ti.' },
+          { label: 'Más sabor. Más frescura.',     desc: 'El resultado es fruta que sabe como debería saber siempre.' },
+        ].map((item) => (
+          <li class="flex gap-4 items-start group">
+            <span class="shrink-0 mt-[8px] w-1.5 h-1.5 rounded-full bg-olive" aria-hidden="true"></span>
+            <div>
+              <p class="font-semibold text-[15px] text-ink mb-0.5 group-hover:text-olive transition-colors duration-150">{item.label}</p>
+              <p class="text-[13px] leading-relaxed text-ink/50">{item.desc}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+  </div>
+</section>

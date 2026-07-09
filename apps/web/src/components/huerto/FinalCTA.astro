@@ -1,0 +1,28 @@
+---
+import LeadForm from './LeadForm.astro';
+---
+<section id="contacto" class="py-24 md:py-40 px-5 md:px-10 bg-stone-50">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[520px] mx-auto text-center">
+
+      <div class="reveal">
+        <h2 class="font-huerto text-[clamp(28px,4vw,52px)] font-bold leading-[1.05] tracking-[-0.03em] text-ink mb-5">
+          ¿Quieres ser el primero en enterarte?
+        </h2>
+        <p class="text-[16px] leading-[1.65] text-ink/55 mb-10">
+          Déjanos tu correo y te avisaremos cuando el servicio esté disponible.
+        </p>
+      </div>
+
+      <div class="text-left reveal reveal-delay-1">
+        <LeadForm
+          idSuffix="-cta"
+          showName={true}
+          showCity={true}
+          buttonLabel="Quiero unirme"
+        />
+      </div>
+
+    </div>
+  </div>
+</section>

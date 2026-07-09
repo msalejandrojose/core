@@ -1,0 +1,36 @@
+---
+import CosechaLayout from '../../layouts/CosechaLayout.astro';
+import SiteHeader    from '../../components/cosecha/SiteHeader.astro';
+import Hero          from '../../components/cosecha/Hero.astro';
+import Problema      from '../../components/cosecha/Problema.astro';
+import MomentoSensorial from '../../components/cosecha/MomentoSensorial.astro';
+import Comparativa   from '../../components/cosecha/Comparativa.astro';
+import Solucion      from '../../components/cosecha/Solucion.astro';
+import Beneficios    from '../../components/cosecha/Beneficios.astro';
+import ComoFunciona  from '../../components/cosecha/ComoFunciona.astro';
+import Agricultores  from '../../components/cosecha/Agricultores.astro';
+import Frutas        from '../../components/cosecha/Frutas.astro';
+import FAQ           from '../../components/cosecha/FAQ.astro';
+import FinalCTA      from '../../components/cosecha/FinalCTA.astro';
+import SiteFooter    from '../../components/cosecha/SiteFooter.astro';
+import DevTemplateBadge from '../../components/DevTemplateBadge.astro';
+---
+<CosechaLayout>
+  <DevTemplateBadge name="Cosecha" />
+  <div id="cosecha-sentinel" aria-hidden="true" class="absolute top-0 h-px w-full pointer-events-none"></div>
+  <SiteHeader />
+  <main>
+    <Hero />
+    <Problema />
+    <MomentoSensorial />
+    <Comparativa />
+    <Solucion />
+    <Beneficios />
+    <ComoFunciona />
+    <Agricultores />
+    <Frutas />
+    <FAQ />
+    <FinalCTA />
+  </main>
+  <SiteFooter />
+</CosechaLayout>

@@ -1,0 +1,120 @@
+---
+import '../styles/maria.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+}
+
+const {
+  title       = 'María — La fruta que aún sabe a fruta',
+  description = 'Cultivamos fruta respetando los tiempos del árbol. Recolección en su punto óptimo, agricultura responsable y el sabor auténtico que nunca debimos perder.',
+  canonical   = Astro.url.href,
+} = Astro.props;
+
+const siteName = 'María';
+const ogImage  = new URL('/media/maria/hero.jpg', Astro.site ?? Astro.url).href;
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <meta name="theme-color" content="#2E4726" />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <meta property="og:type"        content="website" />
+  <meta property="og:locale"      content="es_ES" />
+  <meta property="og:site_name"   content={siteName} />
+  <meta property="og:title"       content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url"         content={canonical} />
+  <meta property="og:image"       content={ogImage} />
+
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image"       content={ogImage} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Caveat:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "María",
+    "url": Astro.site?.href ?? Astro.url.origin,
+    "slogan": "La fruta que aún sabe a fruta.",
+    "description": "Empresa familiar que cultiva y recolecta fruta en su punto óptimo de maduración, respetando los tiempos de la naturaleza."
+  })} />
+</head>
+<body>
+  <slot />
+
+  <script>
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ── Scroll reveal ─────────────────────────────────
+    if (reduceMotion) {
+      document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+    } else {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        }
+      }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+      document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+    }
+
+    // ── Header: transparente → sólido al hacer scroll ─
+    const sentinel = document.getElementById('maria-sentinel');
+    const header   = document.getElementById('maria-header');
+    if (sentinel && header) {
+      new IntersectionObserver(([entry]) => {
+        header.classList.toggle('scrolled', !entry.isIntersecting);
+      }, { threshold: 0 }).observe(sentinel);
+    }
+
+    // ── Parallax muy ligero ───────────────────────────
+    if (!reduceMotion) {
+      const layers = Array.from(document.querySelectorAll<HTMLElement>('[data-parallax]'));
+      let ticking = false;
+
+      const update = () => {
+        const vh = window.innerHeight;
+        for (const el of layers) {
+          const rect = el.getBoundingClientRect();
+          if (rect.bottom < -200 || rect.top > vh + 200) continue;
+          const speed = parseFloat(el.dataset.parallax || '0.08');
+          const progress = (rect.top + rect.height / 2 - vh / 2) / vh; // -1..1 aprox
+          const y = (-progress * speed * 100).toFixed(2);
+          // El scale(1.14) debe ir aquí: un transform inline sobrescribe el de la clase,
+          // así que sin él la imagen perdería el margen de recorte y asomaría el borde.
+          el.style.transform = `translate3d(0, ${y}px, 0) scale(1.14)`;
+        }
+        ticking = false;
+      };
+
+      const onScroll = () => {
+        if (!ticking) { ticking = true; requestAnimationFrame(update); }
+      };
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+      update();
+    }
+  </script>
+</body>
+</html>

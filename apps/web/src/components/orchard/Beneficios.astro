@@ -1,0 +1,51 @@
+---
+const items = [
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="currentColor" stroke-width="1.6"/><path d="M9 14.5l3.5 3.5 6.5-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    title:  '100% natural',
+    desc:   'Sin conservantes, sin ceras, sin maduración forzada. Lo que ves es lo que hay.',
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="currentColor" stroke-width="1.6"/><path d="M14 8v6l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    title:  'Recogida hoy',
+    desc:   'Todas las mañanas nuestros agricultores recolectan. El mismo día sale hacia tu casa.',
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="currentColor" stroke-width="1.6"/><path d="M8 14h12M17 11l3 3-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    title:  'Entrega rápida',
+    desc:   'En 24 horas en la Península. No tienes que planificar con días de antelación.',
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="currentColor" stroke-width="1.6"/><path d="M10 14c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 10V8M14 20v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+    title:  'Sin intermediarios',
+    desc:   'Del agricultor directamente a ti. Precio justo para los dos y fruta con todo su sabor.',
+  },
+] as const;
+---
+<section id="beneficios" class="py-20 md:py-32 px-6 md:px-12 bg-white">
+  <div class="max-w-[1340px] mx-auto">
+
+    <div class="text-center mb-14 md:mb-20 reveal">
+      <p class="font-body text-[12px] font-medium uppercase tracking-[0.14em] text-fresh mb-3">Por qué elegirnos</p>
+      <h2
+        class="font-display font-bold text-ink leading-[1.1] tracking-tight"
+        style="font-size: clamp(28px, 3.5vw, 46px);"
+      >
+        Fruta que sabe como<br class="hidden md:block"/> tiene que saber.
+      </h2>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {items.map((item, i) => (
+        <article class={`card-natural p-7 reveal reveal-delay-${i + 1}`}>
+          <div class="w-12 h-12 rounded-xl bg-fresh/10 flex items-center justify-center text-leaf mb-5">
+            <Fragment set:html={item.icon} />
+          </div>
+          <h3 class="font-display font-bold text-[17px] text-ink mb-2">{item.title}</h3>
+          <p class="font-body text-[14px] leading-[1.7] text-dust">{item.desc}</p>
+        </article>
+      ))}
+    </div>
+
+  </div>
+</section>

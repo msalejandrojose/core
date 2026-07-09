@@ -1,0 +1,93 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import MariaLayout      from '../../layouts/MariaLayout.astro';
+import SiteHeader       from '../../components/maria/SiteHeader.astro';
+import Hero             from '../../components/maria/Hero.astro';
+import Imagen           from '../../components/maria/Imagen.astro';
+import Diptico          from '../../components/maria/Diptico.astro';
+import Filosofia        from '../../components/maria/Filosofia.astro';
+import Diferencia       from '../../components/maria/Diferencia.astro';
+import SiteFooter       from '../../components/maria/SiteFooter.astro';
+import DevTemplateBadge from '../../components/DevTemplateBadge.astro';
+
+/* ────────────────────────────────────────────────────────────
+   MEDIA — coloca tus archivos en:  apps/web/public/media/maria/
+
+   Detección automática: si el archivo existe, se usa; si no, se
+   muestra un marcador. No hace falta tocar nada más — suelta los
+   archivos con estos nombres y aparecen solos al recargar.
+
+     hero.jpg / hero.mp4  → Hero (huerto de árboles, aéreo)
+     girasoles.jpg        → Sección 2 (girasoles)
+     cereal.jpg           → Díptico izquierda (cereal con riego)
+     huerta-detalle.jpg   → Díptico derecha (huerta, detalle)
+     huerta.jpg           → Sección 4 (huerta en hileras, a todo ancho)
+   ──────────────────────────────────────────────────────────── */
+const pubDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../public');
+const local = (rel: string, fallback: string) =>
+  fs.existsSync(path.join(pubDir, rel.replace(/^\//, ''))) ? rel : fallback;
+
+const HERO_VIDEO   = local('/media/maria/hero.mp4',        '');
+const HERO_POSTER  = local('/media/maria/hero.jpg',        'https://picsum.photos/seed/maria-olivar-aereo/1920/1080');
+const IMG_SOL      = local('/media/maria/girasoles.jpg',    'https://picsum.photos/seed/maria-girasoles/1680/1120');
+const IMG_CEREAL   = local('/media/maria/cereal.jpg',       'https://picsum.photos/seed/maria-cereal-riego/1200/1500');
+const IMG_DETALLE  = local('/media/maria/huerta-detalle.jpg','https://picsum.photos/seed/maria-huerta-detalle/1200/1500');
+const IMG_HUERTA   = local('/media/maria/huerta.jpg',       'https://picsum.photos/seed/maria-huerta-hileras/1920/1080');
+---
+<MariaLayout>
+  <DevTemplateBadge name="María" />
+
+  <!-- Sentinel para el cambio de estado del header -->
+  <div id="maria-sentinel" aria-hidden="true" class="absolute top-[70vh] h-px w-full pointer-events-none"></div>
+
+  <SiteHeader />
+
+  <main>
+    <!-- 1 · Hero (vídeo o imagen del huerto) -->
+    <Hero video={HERO_VIDEO} poster={HERO_POSTER} />
+
+    <!-- 2 · Imagen protagonista -->
+    <Imagen
+      id="fruta"
+      src={IMG_SOL}
+      alt="Campo de girasoles en plena floración visto desde el aire"
+      caption="Campos que siguen al sol · Cultivo de temporada"
+      ratio="16 / 9"
+    />
+
+    <!-- 3 · Bloque de texto: filosofía -->
+    <Filosofia />
+
+    <!-- 4 · Díptico editorial: la tierra y sus cultivos -->
+    <Diptico
+      left={{
+        src: IMG_CEREAL,
+        alt: 'Campo de cereal con un sistema de riego circular, visto desde el aire',
+        caption: 'Cada cultivo, a su tiempo y con su agua',
+      }}
+      right={{
+        src: IMG_DETALLE,
+        alt: 'Huerta de temporada con calabazas, sandías y hortalizas en hileras',
+        caption: 'Variedad de temporada, hilera a hilera',
+      }}
+    />
+
+    <!-- 5 · Segunda imagen protagonista (a todo el ancho) -->
+    <Imagen
+      src={IMG_HUERTA}
+      alt="Huerta ecológica en hileras vista desde el aire, con hortalizas y frutos de temporada"
+      caption="Del huerto a tu mesa, sin rodeos"
+      bleed
+      ratio="21 / 9"
+    />
+
+    <!-- 6 · Bloque de texto: diferencia + invitación -->
+    <Diferencia />
+  </main>
+
+  <!-- 7 · Footer -->
+  <SiteFooter />
+</MariaLayout>

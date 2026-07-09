@@ -1,0 +1,80 @@
+---
+const frutas = [
+  { nombre: 'Melocotón de viña',     temporada: 'Julio — Agosto',     origen: 'Murcia',    nota: 'Piel aterciopelada. Carne anaranjada con venas rojas.' },
+  { nombre: 'Albaricoque del Bajo Segura', temporada: 'Mayo — Junio', origen: 'Alicante',  nota: 'Naranja intenso. Hueso que se desprende solo.' },
+  { nombre: 'Ciruela reina claudia', temporada: 'Julio — Septiembre', origen: 'Extremadura', nota: 'Verde dorada al tacto. La ciruela que más azúcar concentra.' },
+  { nombre: 'Pera conferencia',      temporada: 'Septiembre — Octubre', origen: 'Lleida',   nota: 'Alargada, con cuello. Textura mantecosa.' },
+  { nombre: 'Naranja navel tardía',  temporada: 'Diciembre — Marzo',  origen: 'Valencia',  nota: 'Dulce y sin semillas. La mejor de temporada baja.' },
+  { nombre: 'Higo negro',            temporada: 'Agosto — Octubre',   origen: 'Andalucía', nota: 'Recogido maduro. No viaja bien, por eso rara vez llega bueno.' },
+] as const;
+---
+<section id="frutas" class="py-24 md:py-44 px-6 md:px-12">
+  <div class="max-w-[1340px] mx-auto">
+
+    <!-- Imagen editorial de cabecera -->
+    <div class="mb-16 md:mb-28 reveal">
+      <img
+        src="https://picsum.photos/seed/cosecha-fruits-still-life-editorial/1340/560"
+        alt="Bodegón de frutas de temporada sobre superficie de madera natural"
+        width="1340"
+        height="560"
+        class="w-full object-cover rounded-sm"
+        style="aspect-ratio: 1340/560"
+        loading="lazy"
+      />
+    </div>
+
+    <!-- Encabezado de sección -->
+    <div class="flex items-end justify-between mb-12 md:mb-16 reveal">
+      <h2 class="font-display text-[clamp(28px,4vw,54px)] font-light italic leading-[1.05] tracking-[-0.025em] text-charcoal">
+        Lo que ofrecemos.
+      </h2>
+      <p class="font-mono text-[10px] uppercase tracking-[0.14em] text-brown-faint hidden md:block">
+        Solo lo que está en temporada
+      </p>
+    </div>
+
+    <!-- Lista editorial de frutas -->
+    <div class="space-y-0 reveal">
+      {frutas.map((fruta, i) => (
+        <div class={`grid md:grid-cols-12 gap-4 md:gap-8 items-baseline py-6 md:py-8 border-t border-paper-dark ${i === frutas.length - 1 ? 'border-b' : ''}`}>
+
+          <!-- Número + nombre -->
+          <div class="md:col-span-5 flex items-baseline gap-5">
+            <span class="font-mono text-[10px] text-brown-faint/60 tracking-[0.1em] shrink-0 w-6">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <h3 class="font-display text-[20px] md:text-[26px] font-light tracking-[-0.02em] text-charcoal leading-none">
+              {fruta.nombre}
+            </h3>
+          </div>
+
+          <!-- Temporada -->
+          <div class="md:col-span-3 pl-11 md:pl-0">
+            <p class="font-mono text-[11px] text-brown-light uppercase tracking-[0.1em]">
+              {fruta.temporada}
+            </p>
+          </div>
+
+          <!-- Origen -->
+          <div class="md:col-span-1 hidden md:block">
+            <p class="font-body text-[13px] text-brown/50">{fruta.origen}</p>
+          </div>
+
+          <!-- Nota organoléptica -->
+          <div class="md:col-span-3 pl-11 md:pl-0">
+            <p class="font-body text-[13px] leading-[1.6] text-brown/60 italic">
+              {fruta.nota}
+            </p>
+          </div>
+
+        </div>
+      ))}
+    </div>
+
+    <p class="mt-8 font-body text-[13px] text-brown-faint reveal">
+      El catálogo cambia cada semana según la cosecha. Únete a la lista para ver qué hay disponible.
+    </p>
+
+  </div>
+</section>

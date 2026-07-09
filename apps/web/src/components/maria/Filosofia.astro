@@ -1,0 +1,63 @@
+---
+const principios = [
+  {
+    n: '01',
+    titulo: 'Respeto por la naturaleza',
+    texto: 'Trabajamos con el calendario del campo, no contra él. Cada árbol da fruto cuando le toca, y ese tiempo no se puede acelerar.',
+  },
+  {
+    n: '02',
+    titulo: 'Recolección en su punto',
+    texto: 'Esperamos al punto exacto de maduración. Recogemos a mano, fruta a fruta, solo cuando está lista de verdad.',
+  },
+  {
+    n: '03',
+    titulo: 'Agricultura responsable',
+    texto: 'Cuidamos la tierra que nos da de comer. Menos prisa, menos intermediarios y decisiones que la tierra pueda sostener.',
+  },
+];
+---
+<section id="filosofia" class="py-28 md:py-48">
+  <div class="wrap">
+
+    <p class="eyebrow reveal">Nuestra filosofía</p>
+
+    <!-- Enunciado principal -->
+    <h2 class="mt-7 md:mt-9 max-w-[15ch] sm:max-w-[22ch] text-[clamp(32px,5.2vw,68px)] font-bold leading-[1.06] tracking-[-0.03em] text-ink reveal reveal-d1">
+      Dejamos que cada fruta madure
+      <span class="hand text-olive text-[1.24em] leading-none">a su ritmo.</span>
+    </h2>
+
+    <!-- Texto de apoyo, en columna estrecha desplazada -->
+    <div class="mt-14 md:mt-20 grid md:grid-cols-12 gap-y-10 gap-x-8">
+      <div class="md:col-span-4">
+        <p class="text-[15px] leading-[1.7] text-ink-soft reveal">
+          No forzamos ni una cosecha. Preferimos una caja menos a una caja que no
+          sepa como debe. Esa es toda nuestra receta.
+        </p>
+      </div>
+
+      <div class="md:col-span-7 md:col-start-6">
+        <p class="text-[19px] md:text-[23px] leading-[1.6] text-ink reveal">
+          Durante años nos acostumbramos a una fruta bonita por fuera y sin nada
+          dentro. Recogida verde, madurada en cámara, pensada para durar y no para
+          <span class="italic">saber</span>. Nosotros hacemos justo lo contrario:
+          respetamos el tiempo del árbol para que vuelva ese sabor que reconoces
+          en cuanto lo pruebas.
+        </p>
+      </div>
+    </div>
+
+    <!-- Principios -->
+    <div class="mt-20 md:mt-28 grid md:grid-cols-3 gap-px bg-[color-mix(in_srgb,var(--color-ink)_10%,transparent)] rounded-md overflow-hidden">
+      {principios.map((p, i) => (
+        <div class={`bg-cream p-7 md:p-9 reveal reveal-d${i + 1}`}>
+          <span class="font-hand text-[26px] text-olive-soft leading-none">{p.n}</span>
+          <h3 class="mt-4 text-[19px] font-bold tracking-[-0.01em] text-ink">{p.titulo}</h3>
+          <p class="mt-2.5 text-[14.5px] leading-[1.65] text-ink-soft">{p.texto}</p>
+        </div>
+      ))}
+    </div>
+
+  </div>
+</section>

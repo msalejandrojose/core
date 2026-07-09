@@ -1,0 +1,80 @@
+---
+interface Props {
+  idSuffix?:    string;
+  showName?:    boolean;
+  showCity?:    boolean;
+  buttonLabel?: string;
+  dark?:        boolean;
+}
+
+const {
+  idSuffix    = '',
+  showName    = false,
+  showCity    = false,
+  buttonLabel = 'Quiero ser de los primeros',
+  dark        = false,
+} = Astro.props;
+
+const labelClass = dark
+  ? 'block font-huerto-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-paper/45 mb-2'
+  : 'block font-huerto-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/45 mb-2';
+
+const fieldClass = dark
+  ? 'field border-paper/20 text-paper placeholder:text-paper/30 focus:border-paper/60'
+  : 'field';
+---
+<form class="space-y-5" action="#" method="post" novalidate>
+
+  {showName && (
+    <div>
+      <label for={`nombre${idSuffix}`} class={labelClass}>Nombre</label>
+      <input
+        type="text"
+        id={`nombre${idSuffix}`}
+        name="nombre"
+        class={fieldClass}
+        placeholder="Tu nombre"
+        autocomplete="given-name"
+      />
+    </div>
+  )}
+
+  <div>
+    <label for={`email${idSuffix}`} class={labelClass}>Correo electrónico</label>
+    <input
+      type="email"
+      id={`email${idSuffix}`}
+      name="email"
+      class={fieldClass}
+      placeholder="tu@correo.com"
+      required
+      autocomplete="email"
+    />
+  </div>
+
+  {showCity && (
+    <div>
+      <label for={`ciudad${idSuffix}`} class={labelClass}>
+        Ciudad
+        <span class="ml-1 normal-case tracking-normal text-ink/28 font-normal">(opcional)</span>
+      </label>
+      <input
+        type="text"
+        id={`ciudad${idSuffix}`}
+        name="ciudad"
+        class={fieldClass}
+        placeholder="Madrid"
+        autocomplete="address-level2"
+      />
+    </div>
+  )}
+
+  <button type="submit" class="btn-primary w-full mt-2">
+    {buttonLabel}
+  </button>
+
+  <p class={`text-[12px] text-center leading-relaxed ${dark ? 'text-paper/30' : 'text-ink/30'}`}>
+    Sin spam. Solo te avisamos cuando abramos.
+  </p>
+
+</form>

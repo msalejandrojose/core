@@ -1,0 +1,59 @@
+---
+---
+<section class="py-24 md:py-44 px-6 md:px-12 bg-paper">
+  <div class="max-w-[1340px] mx-auto">
+
+    <div class="mb-14 md:mb-20 reveal">
+      <h2 class="font-display text-[clamp(28px,4vw,56px)] font-light italic leading-[1.05] tracking-[-0.025em] text-charcoal">
+        La diferencia no está en el precio.
+      </h2>
+      <p class="font-body text-[16px] text-brown mt-4 max-w-[480px]">Está en el tiempo entre el árbol y tu mesa.</p>
+    </div>
+
+    <!-- Asimétrico: 40/60 — Supermercado (estrecho) vs Nosotros (ancho) -->
+    <div class="grid md:grid-cols-10 gap-4 md:gap-6 items-start">
+
+      <!-- Supermercado — 4 columnas, tratamiento apagado -->
+      <div class="md:col-span-4 bg-warm-white/70 border border-paper-dark rounded-sm p-7 md:p-9 reveal">
+        <p class="font-mono text-[10px] uppercase tracking-[0.14em] text-brown-faint mb-7">Supermercado</p>
+        <ul class="space-y-5" role="list">
+          {[
+            ['Recogida', 'Antes de madurar, para aguantar el transporte'],
+            ['Almacenamiento', 'Días o semanas en cámaras frigoríficas'],
+            ['Intermediarios', 'Mayoristas, distribuidores, plataformas'],
+            ['Tiempo', 'Hasta 2 semanas desde el árbol'],
+            ['Sabor', 'Reducido por maduración artificial'],
+          ].map(([label, desc]) => (
+            <li>
+              <p class="font-display text-[13px] font-semibold tracking-[-0.01em] text-brown/50 mb-0.5 line-through decoration-brown/25">{label}</p>
+              <p class="font-body text-[13px] text-brown/40">{desc}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Nosotros — 6 columnas, destacado -->
+      <div class="md:col-span-6 bg-charcoal rounded-sm p-7 md:p-10 reveal reveal-delay-2">
+        <p class="font-mono text-[10px] uppercase tracking-[0.14em] text-warm-white/35 mb-7">Cosecha</p>
+        <ul class="space-y-6" role="list">
+          {[
+            ['Recogida', 'En su punto de madurez natural, cuando el sabor es máximo'],
+            ['Frescura', 'Enviada 24-48h después de la recolección'],
+            ['Directo', 'Del agricultor al consumidor, sin almacenes intermedios'],
+            ['Tiempo', 'El mínimo posible entre el árbol y tu mesa'],
+            ['Sabor', 'Intacto, como siempre debió llegar a tu casa'],
+          ].map(([label, desc]) => (
+            <li class="flex gap-4 items-start">
+              <span class="shrink-0 mt-1.5 w-1 h-1 rounded-full bg-fruit" aria-hidden="true"></span>
+              <div>
+                <p class="font-display text-[14px] font-semibold tracking-[-0.01em] text-warm-white mb-0.5">{label}</p>
+                <p class="font-body text-[13px] text-warm-white/55 leading-relaxed">{desc}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>

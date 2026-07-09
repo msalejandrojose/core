@@ -1,0 +1,114 @@
+---
+import '../styles/cosecha.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+}
+
+const {
+  title       = 'Fruta Directa del Huerto | Más sabor, mejor calidad y mejor precio',
+  description = 'Descubre una nueva forma de comprar fruta fresca directamente del agricultor. Más sabor, mayor calidad y sin intermediarios. Apúntate para conocer el lanzamiento.',
+  canonical   = Astro.url.href,
+} = Astro.props;
+
+const siteName = 'Cosecha';
+const ogImage  = new URL('/og.jpg', Astro.site ?? Astro.url).href;
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <meta name="theme-color" content="#F7F3EE" />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <meta property="og:type"        content="website" />
+  <meta property="og:locale"      content="es_ES" />
+  <meta property="og:site_name"   content={siteName} />
+  <meta property="og:title"       content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url"         content={canonical} />
+  <meta property="og:image"       content={ogImage} />
+
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image"       content={ogImage} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet" />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "Cosecha",
+        "url": Astro.site?.href ?? Astro.url.origin,
+        "description": "Fruta fresca directamente del agricultor al consumidor, recién recolectada y con todo su sabor."
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "¿Ya puedo pedir fruta?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Todavía no. Estamos preparando el lanzamiento. Apúntate y serás de los primeros en saber cuándo abrimos." }
+          },
+          {
+            "@type": "Question",
+            "name": "¿A qué zonas de España enviáis?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Inicialmente enviamos a toda España peninsular. Islas y Canarias en una segunda fase." }
+          },
+          {
+            "@type": "Question",
+            "name": "¿Cómo me avisáis cuando abráis?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Por correo electrónico. Sin spam, solo te escribimos cuando tengamos algo que contarte." }
+          },
+          {
+            "@type": "Question",
+            "name": "¿Trabajáis con fruta ecológica?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Trabajamos con agricultores que priorizan la calidad del producto. Algunos tienen certificación ecológica, otros no, pero todos comparten nuestros criterios de calidad y temporada." }
+          }
+        ]
+      }
+    ]
+  })} />
+</head>
+<body>
+  <slot />
+
+  <script>
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduceMotion) {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+    } else {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        }
+      }, { threshold: 0.06, rootMargin: '0px 0px -4% 0px' });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    }
+
+    const sentinel = document.getElementById('cosecha-sentinel');
+    const header   = document.getElementById('cosecha-header');
+    if (sentinel && header) {
+      new IntersectionObserver(([entry]) => {
+        header.classList.toggle('scrolled', !entry.isIntersecting);
+      }).observe(sentinel);
+    }
+  </script>
+</body>
+</html>

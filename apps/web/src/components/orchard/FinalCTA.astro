@@ -1,0 +1,59 @@
+---
+---
+<section id="pedir" class="py-20 md:py-32 px-6 md:px-12 relative overflow-hidden">
+
+  <!-- Fondo degradado naranja/mango -->
+  <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(135deg, #FF8F00 0%, #FFC107 45%, #FFD54F 100%);"></div>
+
+  <!-- Decorative fruit circles -->
+  <div class="absolute top-[-60px] right-[-60px] w-[280px] h-[280px] rounded-full bg-white/8 pointer-events-none" aria-hidden="true"></div>
+  <div class="absolute bottom-[-80px] left-[5%] w-[220px] h-[220px] rounded-full bg-white/6 pointer-events-none" aria-hidden="true"></div>
+  <div class="absolute top-[20%] left-[40%] w-[120px] h-[120px] rounded-full bg-white/5 pointer-events-none" aria-hidden="true"></div>
+
+  <div class="relative z-10 max-w-[760px] mx-auto text-center">
+
+    <p class="font-body text-[12px] font-semibold uppercase tracking-[0.16em] text-white/70 mb-5 reveal">
+      Empieza hoy
+    </p>
+
+    <h2
+      class="font-display font-extrabold text-white leading-[1.05] tracking-tight mb-5 reveal reveal-delay-1"
+      style="font-size: clamp(34px, 5vw, 68px); text-shadow: 0 2px 20px rgba(0,0,0,0.12);"
+    >
+      Tu primera caja de fruta,<br class="hidden md:block"/> recogida esta mañana.
+    </h2>
+
+    <p class="font-body text-[17px] text-white/80 leading-[1.65] mb-12 max-w-[520px] mx-auto reveal reveal-delay-2">
+      Dinos dónde entregamos y recibirás fruta de temporada directamente del huerto, sin compromisos.
+    </p>
+
+    <!-- Form -->
+    <form
+      class="flex flex-col sm:flex-row gap-3 max-w-[520px] mx-auto reveal reveal-delay-3"
+      onsubmit="return false;"
+      novalidate
+    >
+      <input
+        type="email"
+        name="email"
+        placeholder="Tu correo electrónico"
+        required
+        autocomplete="email"
+        class="flex-1 field text-[15px]"
+        style="border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.92);"
+      />
+      <button
+        type="submit"
+        class="btn-leaf shrink-0 text-[15px] px-7 py-3"
+        style="background: var(--color-leaf); box-shadow: 0 4px 16px rgba(27,94,32,0.35);"
+      >
+        Pedir ahora
+      </button>
+    </form>
+
+    <p class="mt-5 font-body text-[12px] text-white/55 reveal reveal-delay-4">
+      Sin permanencias · Cancela cuando quieras · Primer pedido sin compromiso
+    </p>
+
+  </div>
+</section>

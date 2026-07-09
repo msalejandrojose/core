@@ -1,0 +1,33 @@
+---
+import HuertoLayout    from '../../layouts/HuertoLayout.astro';
+import SiteHeader      from '../../components/huerto/SiteHeader.astro';
+import Hero            from '../../components/huerto/Hero.astro';
+import Problema        from '../../components/huerto/Problema.astro';
+import Solucion        from '../../components/huerto/Solucion.astro';
+import Beneficios      from '../../components/huerto/Beneficios.astro';
+import ComoFunciona    from '../../components/huerto/ComoFunciona.astro';
+import Frutas          from '../../components/huerto/Frutas.astro';
+import Comparativa     from '../../components/huerto/Comparativa.astro';
+import Confianza       from '../../components/huerto/Confianza.astro';
+import FAQ             from '../../components/huerto/FAQ.astro';
+import FinalCTA        from '../../components/huerto/FinalCTA.astro';
+import SiteFooter      from '../../components/huerto/SiteFooter.astro';
+import DevTemplateBadge from '../../components/DevTemplateBadge.astro';
+---
+<HuertoLayout>
+  <DevTemplateBadge name="Huerto" />
+  <SiteHeader />
+  <main>
+    <Hero />
+    <Problema />
+    <Solucion />
+    <Beneficios />
+    <ComoFunciona />
+    <Frutas />
+    <Comparativa />
+    <Confianza />
+    <FAQ />
+    <FinalCTA />
+  </main>
+  <SiteFooter />
+</HuertoLayout>

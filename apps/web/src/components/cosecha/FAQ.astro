@@ -1,0 +1,68 @@
+---
+const preguntas = [
+  {
+    q: '¿Qué significa estar en lista de espera?',
+    a: 'Que serás de los primeros en recibir fruta cuando abramos. No te cobramos nada ahora. Solo te pedimos el correo para avisarte antes de que el servicio sea público.',
+  },
+  {
+    q: '¿Con qué frecuencia llegan los pedidos?',
+    a: 'Estamos diseñando un modelo semanal o quincenal según la temporada. La fruta no puede esperar — cuando la cosecha está lista, enviamos. Te lo comunicamos con antelación suficiente.',
+  },
+  {
+    q: '¿Puedo elegir qué fruta recibo?',
+    a: 'La selección la hacemos nosotros. Trabajamos con la mejor fruta disponible de temporada. Podrás indicar intolerancias o preferencias básicas al confirmar tu pedido.',
+  },
+  {
+    q: '¿Cómo se garantiza la frescura durante el envío?',
+    a: 'Embalaje pensado para fruta delicada, sin cámaras de frío artificiales. El secreto está en reducir el tiempo de tránsito al mínimo. No compensamos con tecnología lo que resolvemos con rapidez.',
+  },
+  {
+    q: '¿Puedo cancelar cuando quiera?',
+    a: 'Sí. Sin permanencias, sin penalizaciones. El servicio funciona bajo confianza mutua — si no estás satisfecho, no tiene sentido que sigas.',
+  },
+  {
+    q: '¿Dónde repartís?',
+    a: 'Empezamos con cobertura en la Península Ibérica. Las islas y otros destinos están en el plan, pero no podemos confirmar fechas todavía. Apúntate y te avisamos cuando tu zona esté disponible.',
+  },
+] as const;
+---
+<section id="faq" class="py-24 md:py-44 px-6 md:px-12 bg-paper">
+  <div class="max-w-[1340px] mx-auto">
+
+    <div class="grid md:grid-cols-12 gap-12 md:gap-20">
+
+      <!-- Cabecera -->
+      <div class="md:col-span-4 reveal">
+        <p class="font-mono text-[10px] uppercase tracking-[0.14em] text-brown-faint mb-6">Preguntas frecuentes</p>
+        <h2 class="font-display text-[clamp(26px,3.2vw,44px)] font-light italic leading-[1.1] tracking-[-0.025em] text-charcoal">
+          Todo lo que necesitas saber.
+        </h2>
+      </div>
+
+      <!-- Acordeón -->
+      <div class="md:col-span-8 reveal reveal-delay-1">
+        {preguntas.map((item) => (
+          <details class="faq-item group border-t border-paper-dark last:border-b">
+            <summary class="flex items-center justify-between gap-6 py-6 cursor-pointer list-none select-none">
+              <span class="font-display text-[17px] md:text-[19px] font-light tracking-[-0.015em] text-charcoal pr-4">
+                {item.q}
+              </span>
+              <span class="faq-icon shrink-0 w-5 h-5 rounded-full border border-paper-dark flex items-center justify-center text-brown-light transition-transform duration-200 group-open:rotate-45" aria-hidden="true">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <line x1="5.5" y1="1" x2="5.5" y2="10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                  <line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </summary>
+            <div class="pb-7 pr-11">
+              <p class="font-body text-[15px] leading-[1.8] text-brown">
+                {item.a}
+              </p>
+            </div>
+          </details>
+        ))}
+      </div>
+
+    </div>
+  </div>
+</section>

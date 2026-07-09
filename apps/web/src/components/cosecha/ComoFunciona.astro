@@ -1,0 +1,46 @@
+---
+const steps = [
+  {
+    n:     '01',
+    title: 'Te apuntas',
+    desc:  'Nos dejas tu correo. Nada más. Te añadimos a la lista de espera.',
+  },
+  {
+    n:     '02',
+    title: 'Seleccionamos',
+    desc:  'Elegimos la mejor fruta de temporada con los agricultores de la red.',
+  },
+  {
+    n:     '03',
+    title: 'Llega a casa',
+    desc:  'Recién recolectada. En el menor tiempo posible entre el árbol y tu puerta.',
+  },
+] as const;
+---
+<section id="como-funciona" class="py-24 md:py-44 px-6 md:px-12">
+  <div class="max-w-[1340px] mx-auto">
+
+    <div class="mb-16 md:mb-28 reveal">
+      <h2 class="font-display text-[clamp(28px,4vw,54px)] font-light italic leading-[1.05] tracking-[-0.025em] text-charcoal">
+        Así de sencillo.
+      </h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-paper-dark">
+      {steps.map((step, i) => (
+        <div class={`py-10 md:py-0 md:px-12 first:md:pl-0 last:md:pr-0 reveal ${i === 1 ? 'reveal-delay-2' : i === 2 ? 'reveal-delay-3' : ''}`}>
+          <p class="font-display text-[clamp(56px,7vw,96px)] font-light leading-none tracking-[-0.04em] text-paper-dark mb-7 select-none" aria-hidden="true">
+            {step.n}
+          </p>
+          <h3 class="font-display text-[20px] md:text-[22px] font-semibold tracking-[-0.02em] text-charcoal mb-3">
+            {step.title}
+          </h3>
+          <p class="font-body text-[14px] leading-[1.75] text-brown max-w-[280px]">
+            {step.desc}
+          </p>
+        </div>
+      ))}
+    </div>
+
+  </div>
+</section>

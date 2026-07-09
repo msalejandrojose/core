@@ -1,0 +1,57 @@
+---
+const items = [
+  {
+    q: '¿Ya puedo comprar?',
+    a: 'Todavía no. Estamos preparando el lanzamiento del servicio. Apúntate y te avisamos en cuanto abramos.',
+  },
+  {
+    q: '¿Dónde realizaréis envíos?',
+    a: 'Inicialmente dentro de España. Iremos ampliando la cobertura según la demanda.',
+  },
+  {
+    q: '¿Cómo sabré cuándo estará disponible?',
+    a: 'Recibirás un correo en cuanto abramos el servicio. Solo te escribiremos cuando haya algo que contarte.',
+  },
+  {
+    q: '¿Habrá fruta todo el año?',
+    a: 'Trabajaremos principalmente con fruta de temporada. Cuando una fruta no está en su mejor momento, no la ofrecemos.',
+  },
+  {
+    q: '¿Tiene algún coste apuntarse?',
+    a: 'No. Apuntarte a la lista de espera es completamente gratuito y sin ningún compromiso.',
+  },
+] as const;
+---
+<section id="faq" class="py-24 md:py-40 px-5 md:px-10">
+  <div class="max-w-[1280px] mx-auto grid md:grid-cols-12 gap-12 md:gap-16">
+
+    <div class="md:col-span-4 reveal">
+      <h2 class="font-huerto text-[clamp(24px,3vw,40px)] font-bold leading-[1.1] tracking-[-0.03em] text-ink">
+        Preguntas frecuentes
+      </h2>
+    </div>
+
+    <div class="md:col-span-8 reveal reveal-delay-1">
+      <dl class="divide-y divide-stone-200">
+        {items.map((item) => (
+          <details class="faq-item py-6 group">
+            <summary class="flex items-start justify-between gap-6 cursor-pointer">
+              <dt class="font-huerto text-[16px] font-semibold text-ink tracking-[-0.01em] leading-snug">
+                {item.q}
+              </dt>
+              <span class="faq-toggle shrink-0 mt-0.5 w-5 h-5 border border-stone-300 rounded-full flex items-center justify-center text-stone-400" aria-hidden="true">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M5 2v6M2 5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </summary>
+            <dd class="faq-body pt-4 pr-11">
+              <p class="text-[15px] leading-relaxed text-ink/55">{item.a}</p>
+            </dd>
+          </details>
+        ))}
+      </dl>
+    </div>
+
+  </div>
+</section>

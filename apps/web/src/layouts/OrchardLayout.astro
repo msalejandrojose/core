@@ -1,0 +1,104 @@
+---
+import '../styles/orchard.css';
+
+interface Props {
+  title?:       string;
+  description?: string;
+  canonical?:   string;
+}
+
+const {
+  title       = 'Fruta Fresca a Domicilio | Del huerto a tu mesa en horas',
+  description = 'Fruta natural recogida esta mañana y entregada en horas. Sin intermediarios, sin cámaras frigoríficas. Sabor real de huerto.',
+  canonical   = Astro.url.href,
+} = Astro.props;
+
+const siteName = 'Orchard';
+const ogImage  = new URL('/og.jpg', Astro.site ?? Astro.url).href;
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <meta name="theme-color" content="#FFF8E1" />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <meta property="og:type"        content="website" />
+  <meta property="og:locale"      content="es_ES" />
+  <meta property="og:site_name"   content={siteName} />
+  <meta property="og:title"       content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url"         content={canonical} />
+  <meta property="og:image"       content={ogImage} />
+
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image"       content={ogImage} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "Orchard",
+        "url": Astro.site?.href ?? Astro.url.origin,
+        "description": "Fruta fresca directa del agricultor. Recogida hoy, entregada hoy."
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "¿Cómo de fresca es la fruta?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Toda la fruta se recoge en las horas previas a la entrega. No usamos cámaras frigoríficas ni aceleradores de maduración." }
+          },
+          {
+            "@type": "Question",
+            "name": "¿En cuánto tiempo llega la fruta?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Entregamos en 24 horas desde la recolección en la España peninsular." }
+          }
+        ]
+      }
+    ]
+  })} />
+</head>
+<body>
+  <slot />
+
+  <script>
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduceMotion) {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+    } else {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        }
+      }, { threshold: 0.06, rootMargin: '0px 0px -4% 0px' });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    }
+
+    const sentinel = document.getElementById('orchard-sentinel');
+    const header   = document.getElementById('orchard-header');
+    if (sentinel && header) {
+      new IntersectionObserver(([entry]) => {
+        header.classList.toggle('scrolled', !entry.isIntersecting);
+      }).observe(sentinel);
+    }
+  </script>
+</body>
+</html>

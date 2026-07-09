@@ -1,0 +1,77 @@
+---
+const valores = [
+  { n: '01', palabra: 'Calidad',    texto: 'Solo sale de aquí lo que pondríamos en nuestra propia mesa. Sin excepciones.' },
+  { n: '02', palabra: 'Cercanía',   texto: 'Detrás de cada caja hay nombres y apellidos. Nos puedes escribir cuando quieras.' },
+  { n: '03', palabra: 'Tradición',  texto: 'Métodos que pasan de padres a hijos, con la paciencia de toda la vida.' },
+  { n: '04', palabra: 'Compromiso', texto: 'Con el agricultor, con la tierra y con quien nos abre la puerta de su cocina.' },
+  { n: '05', palabra: 'Frescura',   texto: 'Del árbol a tu casa en el menor tiempo posible. Sin almacenes interminables.' },
+];
+---
+<section id="historia" class="bg-cream-2 py-28 md:py-48">
+  <div class="wrap">
+
+    <div class="grid md:grid-cols-12 gap-x-8 gap-y-8 items-end">
+      <div class="md:col-span-7">
+        <p class="eyebrow reveal">Por qué somos diferentes</p>
+        <h2 class="mt-7 md:mt-9 text-[clamp(32px,5.2vw,66px)] font-bold leading-[1.05] tracking-[-0.03em] text-ink reveal reveal-d1">
+          No es solo fruta.
+          <span class="block hand text-cherry text-[1.18em] leading-[0.9] mt-1">Es cómo la cuidamos.</span>
+        </h2>
+      </div>
+      <div class="md:col-span-5">
+        <p class="text-[17px] md:text-[18px] leading-[1.65] text-ink-soft reveal reveal-d2">
+          Somos una familia que lleva media vida entre árboles. No competimos en
+          precio ni en tamaño: competimos en sabor. Y ese sabor solo aparece
+          cuando alguien cuida cada detalle como si la fruta fuera para los suyos.
+        </p>
+      </div>
+    </div>
+
+    <!-- Lista de valores -->
+    <div class="mt-16 md:mt-24 reveal">
+      {valores.map((v, i) => (
+        <div class={`grid md:grid-cols-12 items-baseline gap-3 md:gap-8 py-6 md:py-7 border-t border-[color-mix(in_srgb,var(--color-ink)_12%,transparent)] ${i === valores.length - 1 ? 'border-b' : ''}`}>
+          <div class="md:col-span-5 flex items-baseline gap-5">
+            <span class="font-hand text-[22px] text-olive-soft leading-none w-7 shrink-0">{v.n}</span>
+            <h3 class="text-[26px] md:text-[34px] font-bold tracking-[-0.02em] text-ink leading-none">{v.palabra}</h3>
+          </div>
+          <div class="md:col-span-6 md:col-start-7 pl-12 md:pl-0">
+            <p class="text-[15px] leading-[1.6] text-ink-soft">{v.texto}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Invitación final -->
+    <div id="descubre" class="mt-20 md:mt-28 reveal">
+      <div class="relative overflow-hidden rounded-[22px] bg-leaf text-cream px-8 py-14 md:px-16 md:py-20">
+        <!-- Halo cálido decorativo -->
+        <div class="absolute -top-24 -right-16 w-[420px] h-[420px] rounded-full pointer-events-none"
+             style="background: radial-gradient(circle, color-mix(in srgb, var(--color-mango) 26%, transparent), transparent 68%)"
+             aria-hidden="true"></div>
+
+        <div class="relative max-w-[760px]">
+          <p class="eyebrow eyebrow-light">La invitación</p>
+          <h3 class="mt-6 text-[clamp(28px,4.4vw,52px)] font-bold leading-[1.08] tracking-[-0.02em]">
+            ¿Preparado para volver a probar
+            <span class="hand text-mango text-[1.16em] leading-none">la fruta de verdad?</span>
+          </h3>
+          <p class="mt-6 max-w-[520px] text-cream/75 text-[16.5px] leading-[1.6]">
+            Cuéntanos qué buscas y te enseñamos lo que hay en temporada. Sin
+            compromiso, sin prisa. Como se hacían antes las cosas.
+          </p>
+          <div class="mt-9 flex flex-col sm:flex-row gap-3.5">
+            <a href="#contacto" class="btn btn-cream">
+              Descubre nuestra fruta
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+            <a href="#contacto" class="btn btn-line-light">Escríbenos</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

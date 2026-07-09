@@ -1,0 +1,20 @@
+---
+interface Props {
+  name: string;
+}
+const { name } = Astro.props;
+const isDev = import.meta.env.DEV;
+---
+
+{isDev && (
+  <a
+    href="/"
+    class="fixed bottom-4 left-4 z-[9999] flex items-center gap-2 rounded-full bg-black/80 px-3 py-1.5 text-xs font-medium text-white backdrop-blur hover:bg-black transition-colors"
+    aria-label="Volver al selector de plantillas"
+  >
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+      <path d="M7.5 1.5 2.5 6l5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    {name}
+  </a>
+)}

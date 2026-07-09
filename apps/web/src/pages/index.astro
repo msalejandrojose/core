@@ -1,27 +1,132 @@
 ---
-import SazonLayout  from '../layouts/SazonLayout.astro';
-import SiteHeader   from '../components/sazon/SiteHeader.astro';
-import Hero         from '../components/sazon/Hero.astro';
-import HowItWorks   from '../components/sazon/HowItWorks.astro';
-import Benefits     from '../components/sazon/Benefits.astro';
-import Audience     from '../components/sazon/Audience.astro';
-import Gallery      from '../components/sazon/Gallery.astro';
-import FAQ          from '../components/sazon/FAQ.astro';
-import FinalCTA     from '../components/sazon/FinalCTA.astro';
-import SiteFooter   from '../components/sazon/SiteFooter.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 
-const seasonal = ['cerezas', 'paraguayo', 'melocotón'];
+const templates = [
+  {
+    id: 'maria',
+    href: '/templates/maria',
+    name: 'María',
+    tagline: 'Landing premium de fruta — «La fruta que aún sabe a fruta»',
+    palette: ['#FBF8F1', '#2E4726', '#6D7B4C', '#EDAE39', '#BF3B22'],
+    sections: ['Hero vídeo', 'Imagen protagonista', 'Filosofía', 'Segunda imagen', 'Diferencia', 'Footer'],
+    font: 'Hanken Grotesk + Caveat',
+    mood: 'Editorial · Natural · Emotivo',
+  },
+  {
+    id: 'sazon',
+    href: '/templates/sazon',
+    name: 'Sazón',
+    tagline: 'Landing de validación para producto de consumo local',
+    palette: ['#2A3924', '#FAF6EC', '#E8D58A', '#5A6B3B', '#ECE6D6'],
+    sections: ['Hero estacional', 'Cómo funciona', 'Beneficios', 'Audiencia', 'Galería', 'FAQ', 'CTA Final'],
+    font: 'Geist + Inter',
+    mood: 'Orgánico · Editorial · Cálido',
+  },
+  {
+    id: 'marketing',
+    href: '/templates/marketing',
+    name: 'Marketing',
+    tagline: 'Plantilla genérica para producto o servicio digital',
+    palette: ['oklch(0.58 0.12 40)', 'oklch(0.98 0.008 80)', 'oklch(0.18 0.02 60)', 'oklch(0.94 0.012 80)', 'oklch(0.86 0.014 80)'],
+    sections: ['Hero con CTA doble'],
+    font: 'Fraunces + Inter',
+    mood: 'Limpio · Greige · Editorial',
+  },
+  {
+    id: 'huerto',
+    href: '/templates/huerto',
+    name: 'Huerto',
+    tagline: 'Landing de lista de espera para fruta directa del agricultor',
+    palette: ['#2C3D1E', '#FAFAF7', '#F0EBE0', '#4A5E30', '#C4551A'],
+    sections: ['Hero', 'Problema', 'Solución', 'Beneficios', 'Cómo funciona', 'Frutas', 'Comparativa', 'Confianza', 'FAQ', 'CTA Final'],
+    font: 'Manrope + System Mono',
+    mood: 'Natural · Editorial · Premium',
+  },
+  {
+    id: 'cosecha',
+    href: '/templates/cosecha',
+    name: 'Cosecha',
+    tagline: 'Landing sensorial de lista de espera — fruta directa del agricultor',
+    palette: ['#F7F3EE', '#EDE7DE', '#1C1C1C', '#E67A3A', '#5E6B4F'],
+    sections: ['Hero', 'Problema', 'Momento Sensorial', 'Comparativa', 'Solución', 'Beneficios', 'Cómo funciona', 'Agricultores', 'Frutas', 'FAQ', 'CTA Final'],
+    font: 'Fraunces + DM Sans',
+    mood: 'Sensorial · Orgánico · Editorial',
+  },
+  {
+    id: 'orchard',
+    href: '/templates/orchard',
+    name: 'Orchard',
+    tagline: 'Landing vibrante para servicio de fruta fresca a domicilio',
+    palette: ['#FFF8E1', '#2E7D32', '#FF8F00', '#FFC107', '#E53935'],
+    sections: ['Hero', 'Beneficios', 'Catálogo de frutas', 'Historia del huerto', 'CTA Final'],
+    font: 'Poppins + Inter',
+    mood: 'Vibrante · Natural · Fresco',
+  },
+];
 ---
-<SazonLayout>
-  <SiteHeader />
-  <main>
-    <Hero seasonal={seasonal} />
-    <HowItWorks />
-    <Benefits />
-    <Audience />
-    <Gallery />
-    <FAQ />
-    <FinalCTA />
-  </main>
-  <SiteFooter />
-</SazonLayout>
+
+<BaseLayout title="Selector de plantillas — Core Web" description="Elige una plantilla para previsualizar.">
+  <div class="min-h-dvh bg-[oklch(0.12_0.01_60)] text-white px-6 py-16 lg:py-24">
+    <div class="mx-auto max-w-5xl">
+
+      <header class="mb-14">
+        <p class="text-xs font-medium tracking-widest text-[oklch(0.55_0.02_60)] uppercase mb-3">Core Web</p>
+        <h1 class="text-4xl lg:text-5xl font-display font-semibold tracking-tight text-white leading-[1.1]">
+          Selector de plantillas
+        </h1>
+        <p class="mt-3 text-[oklch(0.6_0.02_60)] text-base max-w-md">
+          Elige una plantilla para abrirla. Solo visible en desarrollo.
+        </p>
+      </header>
+
+      <ul class="grid gap-5 sm:grid-cols-2" role="list">
+        {templates.map((t) => (
+          <li>
+            <a
+              href={t.href}
+              class="group relative flex flex-col justify-between gap-8 rounded-xl border border-white/8 bg-white/4 p-7 transition-all duration-200 hover:border-white/16 hover:bg-white/6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            >
+              <div>
+                <div class="flex items-start justify-between gap-4 mb-5">
+                  <div>
+                    <p class="text-xs text-[oklch(0.5_0.02_60)] mb-1">{t.mood}</p>
+                    <h2 class="text-2xl font-display font-semibold text-white tracking-tight">{t.name}</h2>
+                    <p class="mt-1 text-sm text-[oklch(0.58_0.02_60)] leading-snug">{t.tagline}</p>
+                  </div>
+                  <span class="mt-1 shrink-0 text-[oklch(0.4_0.02_60)] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path d="M4.5 13.5 13.5 4.5M13.5 4.5H7M13.5 4.5V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+
+                <div class="flex gap-1.5 mb-6" aria-label="Paleta de color">
+                  {t.palette.map((color) => (
+                    <span
+                      class="size-4 rounded-full border border-white/10"
+                      style={`background:${color}`}
+                    />
+                  ))}
+                </div>
+
+                <ul class="flex flex-wrap gap-1.5" role="list" aria-label="Secciones">
+                  {t.sections.map((s) => (
+                    <li class="rounded-full border border-white/8 bg-white/4 px-2.5 py-0.5 text-[11px] text-[oklch(0.55_0.02_60)]">
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-[oklch(0.45_0.02_60)]">
+                <span>{t.font}</span>
+                <span class="text-[oklch(0.35_0.02_60)]">/templates/{t.id}</span>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+
+    </div>
+  </div>
+</BaseLayout>

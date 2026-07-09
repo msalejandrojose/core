@@ -1,0 +1,24 @@
+---
+import OrchardLayout   from '../../layouts/OrchardLayout.astro';
+import SiteHeader      from '../../components/orchard/SiteHeader.astro';
+import Hero            from '../../components/orchard/Hero.astro';
+import Beneficios      from '../../components/orchard/Beneficios.astro';
+import Frutas          from '../../components/orchard/Frutas.astro';
+import Historia        from '../../components/orchard/Historia.astro';
+import FinalCTA        from '../../components/orchard/FinalCTA.astro';
+import SiteFooter      from '../../components/orchard/SiteFooter.astro';
+import DevTemplateBadge from '../../components/DevTemplateBadge.astro';
+---
+<OrchardLayout>
+  <DevTemplateBadge name="Orchard" />
+  <div id="orchard-sentinel" aria-hidden="true" class="absolute top-0 h-px w-full pointer-events-none"></div>
+  <SiteHeader />
+  <main>
+    <Hero />
+    <Beneficios />
+    <Frutas />
+    <Historia />
+    <FinalCTA />
+  </main>
+  <SiteFooter />
+</OrchardLayout>

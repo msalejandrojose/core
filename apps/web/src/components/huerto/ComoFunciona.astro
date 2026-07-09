@@ -1,0 +1,36 @@
+---
+const steps = [
+  { num: '1', title: 'Te apuntas',      desc: 'Nos dejas tu correo y te añadimos a la lista de espera.' },
+  { num: '2', title: 'Seleccionamos',   desc: 'Elegimos la mejor fruta de temporada con los agricultores.' },
+  { num: '3', title: 'La recogemos',    desc: 'La fruta se recolecta cerca del momento del envío.' },
+  { num: '4', title: 'La recibes',      desc: 'Llega a tu puerta con toda su frescura intacta.' },
+] as const;
+---
+<section id="como-funciona" class="py-24 md:py-40 px-5 md:px-10 bg-stone-50">
+  <div class="max-w-[1280px] mx-auto">
+
+    <div class="mb-16 md:mb-24 reveal">
+      <h2 class="font-huerto text-[clamp(26px,3.6vw,48px)] font-bold leading-[1.05] tracking-[-0.03em] text-ink">
+        Así de sencillo.
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 md:gap-6">
+      {steps.map((step, i) => (
+        <div class={`reveal ${i === 1 ? 'reveal-delay-1' : i === 2 ? 'reveal-delay-2' : i === 3 ? 'reveal-delay-3' : ''}`}>
+          <div class="flex items-center gap-4 mb-5">
+            <div class="w-10 h-10 rounded-full border-2 border-olive flex items-center justify-center shrink-0">
+              <span class="font-huerto-mono text-[13px] font-bold text-olive">{step.num}</span>
+            </div>
+            {i < 3 && (
+              <div class="hidden md:block flex-1 h-px bg-stone-200" aria-hidden="true"></div>
+            )}
+          </div>
+          <p class="font-huerto text-[17px] font-bold text-ink tracking-[-0.02em] mb-1.5">{step.title}</p>
+          <p class="text-[14px] leading-relaxed text-ink/50">{step.desc}</p>
+        </div>
+      ))}
+    </div>
+
+  </div>
+</section>

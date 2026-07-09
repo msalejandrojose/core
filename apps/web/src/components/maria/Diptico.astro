@@ -1,0 +1,65 @@
+---
+interface ImgItem { src: string; alt: string; caption?: string; }
+interface Props {
+  id?: string;
+  left: ImgItem;
+  right: ImgItem;
+  eyebrow?: string;
+  titulo?: string;
+}
+const { id, left, right, eyebrow = 'El origen', titulo = 'Todo empieza en la tierra.' } = Astro.props;
+---
+<section id={id} class="py-16 md:py-28">
+  <div class="wrap">
+
+    <div class="mb-10 md:mb-16 reveal">
+      <p class="eyebrow">{eyebrow}</p>
+      <h2 class="mt-5 max-w-[16ch] text-[clamp(26px,3.8vw,46px)] font-bold leading-[1.08] tracking-[-0.025em] text-ink">
+        {titulo}
+      </h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6 md:gap-8">
+      <figure class="reveal">
+        <div class="relative overflow-hidden rounded-md aspect-[4/5]">
+          <img
+            src={left.src}
+            alt={left.alt}
+            class="parallax absolute inset-0 w-full h-full object-cover scale-[1.14]"
+            data-parallax="0.07"
+            loading="lazy"
+            decoding="async"
+          />
+          <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 100px rgba(20,28,15,.16)" aria-hidden="true"></div>
+        </div>
+        {left.caption && (
+          <figcaption class="media-cap mt-4 flex items-center gap-2.5">
+            <span class="inline-block size-1.5 rounded-full bg-olive" aria-hidden="true"></span>
+            {left.caption}
+          </figcaption>
+        )}
+      </figure>
+
+      <figure class="reveal reveal-d2 md:mt-20">
+        <div class="relative overflow-hidden rounded-md aspect-[4/5]">
+          <img
+            src={right.src}
+            alt={right.alt}
+            class="parallax absolute inset-0 w-full h-full object-cover scale-[1.14]"
+            data-parallax="0.12"
+            loading="lazy"
+            decoding="async"
+          />
+          <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 100px rgba(20,28,15,.16)" aria-hidden="true"></div>
+        </div>
+        {right.caption && (
+          <figcaption class="media-cap mt-4 flex items-center gap-2.5">
+            <span class="inline-block size-1.5 rounded-full bg-cherry" aria-hidden="true"></span>
+            {right.caption}
+          </figcaption>
+        )}
+      </figure>
+    </div>
+
+  </div>
+</section>

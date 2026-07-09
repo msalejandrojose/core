@@ -1,0 +1,56 @@
+---
+interface Props {
+  id?: string;
+  src: string;
+  alt: string;
+  caption?: string;
+  bleed?: boolean;   // true → ocupa todo el ancho de la ventana
+  ratio?: string;    // aspect-ratio para desktop (p.ej. '16 / 9')
+}
+const {
+  id,
+  src,
+  alt,
+  caption,
+  bleed = false,
+  ratio = '16 / 10',
+} = Astro.props;
+
+const frameClass = bleed
+  ? 'relative w-screen left-1/2 -translate-x-1/2 overflow-hidden'
+  : 'wrap';
+---
+<section id={id} class="py-6 md:py-10">
+  <div class={frameClass}>
+
+    <figure class="reveal">
+      <div class={`img-frame relative overflow-hidden ${bleed ? '' : 'rounded-md'}`}>
+        <img
+          src={src}
+          alt={alt}
+          class="parallax absolute inset-0 w-full h-full object-cover scale-[1.14]"
+          data-parallax="0.1"
+          loading="lazy"
+          decoding="async"
+        />
+        <!-- Viñeteado mínimo para dar cohesión, sin tapar la imagen -->
+        <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 120px rgba(20,28,15,.14)" aria-hidden="true"></div>
+      </div>
+
+      {caption && (
+        <figcaption class={`media-cap mt-4 flex items-center gap-2.5 ${bleed ? 'wrap' : ''}`}>
+          <span class="inline-block size-1.5 rounded-full bg-mango" aria-hidden="true"></span>
+          {caption}
+        </figcaption>
+      )}
+    </figure>
+
+  </div>
+</section>
+
+<style define:vars={{ ratioSm: '4 / 5', ratioLg: ratio }}>
+  .img-frame { aspect-ratio: var(--ratioSm); }
+  @media (min-width: 768px) {
+    .img-frame { aspect-ratio: var(--ratioLg); }
+  }
+</style>

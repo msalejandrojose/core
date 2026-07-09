@@ -1,0 +1,60 @@
+---
+---
+<section class="py-24 md:py-40 px-5 md:px-10">
+  <div class="max-w-[1280px] mx-auto">
+
+    <div class="grid md:grid-cols-12 gap-12 md:gap-16 items-start">
+
+      <!-- Columna izquierda: titular + puntos -->
+      <div class="md:col-span-6 reveal">
+        <h2 class="font-huerto text-[clamp(26px,3.8vw,50px)] font-bold leading-[1.05] tracking-[-0.03em] text-ink mb-7">
+          ¿Por qué la fruta ya no sabe como antes?
+        </h2>
+
+        <p class="text-[16px] md:text-[17px] leading-[1.65] text-ink/58 mb-10 max-w-[500px]">
+          La fruta que llega al supermercado recorre un camino largo antes de estar en tu mesa.
+          Ese camino tiene un precio: sabor, frescura y nutrientes que se pierden por el camino.
+        </p>
+
+        <div class="space-y-6">
+          {[
+            { label: 'Recolectada antes de tiempo', desc: 'Se recoge verde para soportar los días de transporte y almacenamiento.' },
+            { label: 'Días en almacenes',           desc: 'Pasa tiempo en cámaras frigoríficas antes de llegar a la tienda.' },
+            { label: 'Numerosos intermediarios',    desc: 'Cada eslabón de la cadena alarga el tiempo y reduce la calidad.' },
+            { label: 'Fruta que ya no sabe a fruta', desc: 'Cuando llega a tu casa ha perdido sabor, aroma y frescura.' },
+          ].map((item) => (
+            <div class="flex gap-4 items-start">
+              <span class="shrink-0 mt-[7px] w-1.5 h-1.5 rounded-full bg-stone-300" aria-hidden="true"></span>
+              <div>
+                <p class="font-semibold text-[15px] text-ink mb-0.5">{item.label}</p>
+                <p class="text-[14px] leading-relaxed text-ink/50">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <blockquote class="mt-10 border-l-2 border-olive pl-5 py-0.5">
+          <p class="text-[16px] italic leading-relaxed text-ink/65">
+            "La fruta debería saber a fruta."
+          </p>
+        </blockquote>
+      </div>
+
+      <!-- Columna derecha: dos imágenes escalonadas -->
+      <div class="md:col-span-6 grid grid-cols-2 gap-3 md:gap-4 reveal reveal-delay-2">
+        <div class="img-ph aspect-[3/4] rounded-xl" aria-hidden="true"></div>
+        <div class="mt-10 md:mt-16">
+          <img
+            src="https://picsum.photos/seed/huerto-figs-harvest-natural/400/520"
+            alt="Higos recién recolectados del huerto con luz natural"
+            width="400"
+            height="520"
+            class="w-full aspect-[3/4] object-cover rounded-xl"
+            loading="lazy"
+          />
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>

@@ -1,0 +1,90 @@
+---
+interface Props {
+  video?: string;   // ruta del vídeo (mp4). Vacío → se muestra solo el póster.
+  poster: string;   // imagen de fondo / póster del vídeo
+}
+const { video = '', poster } = Astro.props;
+---
+<section id="inicio" class="relative min-h-[100svh] w-full overflow-hidden">
+
+  <!-- Base cálida por si el vídeo/imagen tarda o falla -->
+  <div class="absolute inset-0 bg-leaf-deep" aria-hidden="true"></div>
+
+  <!-- Fondo: vídeo a pantalla completa (autoplay · muted · loop) o póster -->
+  {video ? (
+    <video
+      class="absolute inset-0 w-full h-full object-cover"
+      autoplay
+      muted
+      loop
+      playsinline
+      poster={poster}
+      aria-hidden="true"
+    >
+      <source src={video} type="video/mp4" />
+    </video>
+  ) : (
+    <img
+      src={poster}
+      alt="Vista aérea de un huerto de árboles frutales bañado por la luz del atardecer"
+      class="absolute inset-0 w-full h-full object-cover"
+      fetchpriority="high"
+      loading="eager"
+      width="1920"
+      height="1080"
+    />
+  )}
+
+  <!-- Overlay oscuro para legibilidad -->
+  <div
+    class="absolute inset-0"
+    style="background:
+      linear-gradient(to bottom, rgba(24,32,18,.42) 0%, rgba(24,32,18,.18) 34%, rgba(24,32,18,.55) 74%, rgba(20,28,15,.86) 100%),
+      radial-gradient(120% 90% at 50% 15%, transparent 40%, rgba(20,28,15,.35) 100%)"
+    aria-hidden="true"
+  ></div>
+
+  <!-- Contenido -->
+  <div class="relative z-10 min-h-[100svh] flex items-center">
+    <div class="wrap w-full pt-28 pb-24">
+      <div class="max-w-[860px]">
+
+        <p class="eyebrow eyebrow-light reveal">Fruta de temporada · Recogida a mano</p>
+
+        <h1 class="mt-6 text-cream reveal reveal-d1">
+          <span class="block font-sans font-bold leading-[1.02] tracking-[-0.03em] text-[clamp(38px,6.4vw,86px)]">
+            La fruta que aún
+          </span>
+          <span class="hand block text-[clamp(60px,10vw,148px)] leading-[0.82] mt-1 md:mt-2 text-cream/95 [text-shadow:0_2px_30px_rgba(0,0,0,.25)]">
+            sabe a fruta.
+          </span>
+        </h1>
+
+        <p class="mt-7 md:mt-9 max-w-[480px] text-cream/75 text-[16.5px] md:text-[18px] leading-[1.6] reveal reveal-d2">
+          Cultivamos fruta respetando los tiempos del árbol para que vuelva el
+          sabor que nunca debimos perder.
+        </p>
+
+        <div class="mt-9 md:mt-11 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 reveal reveal-d3">
+          <a href="#fruta" class="btn btn-cream">
+            Descubre nuestra fruta
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="#historia" class="btn btn-line-light">
+            Nuestra historia
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicador de scroll -->
+  <div class="absolute bottom-7 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-3 reveal reveal-d4">
+    <span class="text-[11px] uppercase tracking-[0.24em] text-cream/55">Desliza</span>
+    <span class="scroll-cue" aria-hidden="true"></span>
+  </div>
+
+</section>

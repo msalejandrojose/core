@@ -1,0 +1,119 @@
+---
+const frutas = [
+  {
+    seed:    'orchard-apple-fuji-red-fresh',
+    nombre:  'Manzana Fuji',
+    origen:  'Girona',
+    desc:    'Crujiente, dulce y jugosa. Recogida en octubre, en su punto exacto.',
+    precio:  '2,95 €/kg',
+    badge:   'Temporada',
+    badgeColor: 'bg-fresh/15 text-leaf',
+  },
+  {
+    seed:    'orchard-orange-valencia-fresh-slice',
+    nombre:  'Naranja Valencia',
+    origen:  'Valencia',
+    desc:    'La reina de los cítricos. Sin semillas, con zumo abundante.',
+    precio:  '1,80 €/kg',
+    badge:   'Top ventas',
+    badgeColor: 'bg-citrus/15 text-citrus-dark',
+  },
+  {
+    seed:    'orchard-peach-summer-soft',
+    nombre:  'Melocotón de viña',
+    origen:  'Murcia',
+    desc:    'Recogido maduro. Piel aterciopelada, carne anaranjada con venas rojas.',
+    precio:  '3,20 €/kg',
+    badge:   'Nuevo',
+    badgeColor: 'bg-mango/15 text-mango-dark',
+  },
+  {
+    seed:    'orchard-strawberry-huelva-fresh-red',
+    nombre:  'Fresa de Huelva',
+    origen:  'Huelva',
+    desc:    'Las mejores del país. Dulces, grandes y con ese aroma que no olvidas.',
+    precio:  '4,50 €/kg',
+    badge:   'Limitada',
+    badgeColor: 'bg-berry/10 text-berry',
+  },
+  {
+    seed:    'orchard-pear-conference-green-natural',
+    nombre:  'Pera Conferencia',
+    origen:  'Lleida',
+    desc:    'Textura mantecosa y dulzor suave. La favorita de los que saben.',
+    precio:  '2,40 €/kg',
+    badge:   'Temporada',
+    badgeColor: 'bg-fresh/15 text-leaf',
+  },
+  {
+    seed:    'orchard-grape-muscatel-golden-bunch',
+    nombre:  'Uva Moscatel',
+    origen:  'Málaga',
+    desc:    'Aromática y muy dulce. Racimos apretados de grano dorado.',
+    precio:  '3,80 €/kg',
+    badge:   'Especial',
+    badgeColor: 'bg-mango/15 text-mango-dark',
+  },
+] as const;
+---
+<section id="frutas" class="py-20 md:py-32 px-6 md:px-12 bg-cream">
+  <div class="max-w-[1340px] mx-auto">
+
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-14 md:mb-20">
+      <div class="reveal">
+        <p class="font-body text-[12px] font-medium uppercase tracking-[0.14em] text-fresh mb-3">Lo que tenemos hoy</p>
+        <h2
+          class="font-display font-bold text-ink leading-[1.1] tracking-tight"
+          style="font-size: clamp(28px, 3.5vw, 46px);"
+        >
+          Fruta de temporada,<br class="hidden md:block"/> recogida esta mañana.
+        </h2>
+      </div>
+      <p class="font-body text-[14px] text-dust max-w-[260px] reveal reveal-delay-1">
+        El catálogo se actualiza cada semana según la cosecha disponible.
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {frutas.map((f, i) => (
+        <article class={`card-natural overflow-hidden reveal reveal-delay-${Math.min(i + 1, 4)}`}>
+
+          <!-- Imagen -->
+          <div class="relative overflow-hidden" style="aspect-ratio: 4/3;">
+            <img
+              src={`https://picsum.photos/seed/${f.seed}/480/360`}
+              alt={f.nombre}
+              width="480"
+              height="360"
+              class="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+            <div class={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-display font-semibold tracking-wide ${f.badgeColor}`}>
+              {f.badge}
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="p-5">
+            <div class="flex items-start justify-between gap-3 mb-1.5">
+              <h3 class="font-display font-bold text-[16px] text-ink leading-snug">{f.nombre}</h3>
+              <span class="font-display font-bold text-[15px] text-citrus shrink-0">{f.precio}</span>
+            </div>
+            <p class="font-body text-[12px] text-dust mb-1">{f.origen}</p>
+            <p class="font-body text-[13px] leading-[1.6] text-ink-soft mb-5">{f.desc}</p>
+
+            <button
+              type="button"
+              class="w-full btn-leaf text-[13px] px-4 py-2.5"
+            >
+              Añadir al pedido
+            </button>
+          </div>
+
+        </article>
+      ))}
+    </div>
+
+  </div>
+</section>

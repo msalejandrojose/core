@@ -1,0 +1,47 @@
+---
+---
+<section class="relative py-28 md:py-48 px-5 md:px-10 bg-forest overflow-hidden">
+
+  <!-- Imagen de fondo muy sutil -->
+  <div class="absolute inset-0 opacity-20" aria-hidden="true">
+    <img
+      src="https://picsum.photos/seed/huerto-orchard-rows-aerial/1400/700"
+      alt=""
+      width="1400"
+      height="700"
+      class="w-full h-full object-cover"
+      loading="lazy"
+    />
+    <div class="absolute inset-0 bg-gradient-to-b from-forest/60 to-forest/90"></div>
+  </div>
+
+  <div class="relative max-w-[1280px] mx-auto">
+    <div class="max-w-[740px] reveal">
+      <h2 class="font-huerto text-[clamp(28px,4vw,54px)] font-bold leading-[1.05] tracking-[-0.03em] text-paper mb-8">
+        Estamos preparando algo especial.
+      </h2>
+      <p class="text-[16px] md:text-[18px] leading-[1.7] text-paper/65 mb-8 max-w-[600px]">
+        Estamos seleccionando agricultores comprometidos con la calidad para ofrecer fruta excepcional directamente desde el campo.
+      </p>
+      <p class="text-[16px] md:text-[18px] leading-[1.7] text-paper/65 max-w-[600px]">
+        Queremos construir un servicio basado en la transparencia, la frescura y un precio justo tanto para el consumidor como para el productor.
+      </p>
+    </div>
+
+    <div class="mt-16 md:mt-20 hairline opacity-20"></div>
+
+    <div class="mt-12 md:mt-14 grid sm:grid-cols-3 gap-8 md:gap-12 reveal reveal-delay-2">
+      {[
+        { value: 'Directa',      label: 'Del agricultor a ti' },
+        { value: 'Temporada',    label: 'Solo en su mejor momento' },
+        { value: 'Transparente', label: 'Sabes de dónde viene' },
+      ].map((stat) => (
+        <div>
+          <p class="font-huerto text-[28px] md:text-[36px] font-bold text-paper tracking-[-0.03em] leading-none mb-2">{stat.value}</p>
+          <p class="font-huerto-mono text-[12px] uppercase tracking-[0.1em] text-paper/40">{stat.label}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+
+</section>

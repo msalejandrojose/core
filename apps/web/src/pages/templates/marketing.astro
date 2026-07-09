@@ -1,0 +1,14 @@
+---
+import MarketingLayout from '../../layouts/MarketingLayout.astro';
+import Hero from '../../components/sections/Hero.astro';
+import DevTemplateBadge from '../../components/DevTemplateBadge.astro';
+---
+<MarketingLayout title="Core — Plataforma digital" description="Plataforma digital para tu negocio.">
+  <DevTemplateBadge name="Marketing" />
+  <Hero
+    headline="Construye algo que importe."
+    subheadline="Una plataforma flexible para lanzar tu presencia digital con velocidad y sin fricción."
+    cta={{ label: 'Empezar ahora', href: '/contacto' }}
+    ctaSecondary={{ label: 'Saber más', href: '#' }}
+  />
+</MarketingLayout>
