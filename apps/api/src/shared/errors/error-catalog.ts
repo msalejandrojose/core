@@ -385,6 +385,23 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Notificación no encontrada.',
   },
+
+  // WhatsApp (bandeja de conversaciones)
+  WHATSAPP_CONVERSATION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Conversación de WhatsApp no encontrada.',
+  },
+  WHATSAPP_ACCOUNT_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Cuenta de WhatsApp no encontrada o sin configurar.',
+  },
+  WHATSAPP_SEND_FAILED: {
+    httpStatus: 502,
+    level: 'error',
+    defaultMessage: 'No se pudo enviar el mensaje de WhatsApp.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;

@@ -1010,6 +1010,65 @@ model NotificationDelivery {
 }
 
 // ---------------------------------------------------------------------------
+// WhatsApp — bandeja de conversaciones en tiempo real (módulo `whatsapp`)
+// ---------------------------------------------------------------------------
+// Bandeja de chats de WhatsApp sobre la Cloud API de Meta. El envío saliente
+// reutiliza el `WhatsappChannelDispatcher` del módulo `notifications`; aquí se
+// persiste la conversación bidireccional (entrantes vía webhook + salientes) y
+// se emite en tiempo real al backoffice por WebSocket.
+//
+// `account_id` referencia una `SendingAccount` de canal WHATSAPP (su config
+// tiene el `phoneNumberId` del número de negocio y el `accessToken`). No se
+// modela como FK a propósito, igual que `notification_delivery`: la bandeja es
+// un registro de mensajería que debe sobrevivir al borrado de la cuenta.
+
+/// Dirección de un mensaje de WhatsApp respecto al número de negocio.
+enum WhatsappMessageDirection {
+  INBOUND // del cliente hacia nosotros
+  OUTBOUND // de nosotros hacia el cliente
+}
+
+/// Conversación (hilo) entre un número de negocio (`account_id`) y un contacto
+/// (`contact_phone`, en formato E.164 sin '+'). Única por (cuenta, contacto).
+model WhatsappConversation {
+  id                 String                   @id @default(uuid()) @db.Char(36)
+  accountId          String                   @map("account_id") @db.Char(36)
+  contactPhone       String                   @map("contact_phone") @db.VarChar(32)
+  contactName        String?                  @map("contact_name") @db.VarChar(160)
+  lastMessageAt      DateTime                 @default(now()) @map("last_message_at")
+  lastMessagePreview String?                  @map("last_message_preview") @db.VarChar(500)
+  lastDirection      WhatsappMessageDirection @default(INBOUND) @map("last_direction")
+  unreadCount        Int                      @default(0) @map("unread_count")
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @updatedAt @map("updated_at")
+
+  messages WhatsappMessage[]
+
+  @@unique([accountId, contactPhone])
+  @@index([accountId, lastMessageAt])
+  @@map("whatsapp_conversation")
+}
+
+/// Mensaje individual dentro de una conversación. `wa_message_id` es el `wamid`
+/// de Meta; es único para hacer idempotente la ingesta del webhook (Meta puede
+/// reintentar). `status` sigue el ciclo received/sent/delivered/read/failed.
+model WhatsappMessage {
+  id             String                   @id @default(uuid()) @db.Char(36)
+  conversationId String                   @map("conversation_id") @db.Char(36)
+  direction      WhatsappMessageDirection
+  waMessageId    String?                  @unique @map("wa_message_id") @db.VarChar(255)
+  body           String                   @db.Text
+  status         String                   @db.VarChar(40)
+  timestamp      DateTime
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  conversation WhatsappConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, timestamp])
+  @@map("whatsapp_message")
+}
+
+// ---------------------------------------------------------------------------
 // Localización / Geografía (módulo `geo`)
 // ---------------------------------------------------------------------------
 // Jerarquía administrativa descendente, modelada como 1-N:
