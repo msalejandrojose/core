@@ -3,23 +3,18 @@ import {
   IonButtons,
   IonContent,
   IonHeader,
-  IonInfiniteScroll,
-  IonInfiniteScrollContent,
   IonLabel,
-  IonList,
   IonItem,
   IonPage,
-  IonRefresher,
-  IonRefresherContent,
-  IonSpinner,
   IonTitle,
   IonToolbar,
-  type RefresherEventDetail,
+  useIonViewWillEnter,
 } from '@ionic/react';
 import { notificationsOffOutline } from 'ionicons/icons';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useNotifications, type Notification } from './use-notifications';
-import { SkeletonList, ErrorState, EmptyState } from '@/components/ux';
+import { useUnreadStore } from './notifications.store';
+import { CursorList } from '@/components/list';
 
 /** Tiempo relativo compacto tipo iOS: "ahora", "5 min", "2 h", "3 d", o fecha. */
 function relativeTime(iso: string): string {
@@ -93,28 +88,22 @@ function NotificationRow({
 }
 
 /**
- * Pantalla del inbox in-app. Lista las notificaciones del usuario (paginadas),
- * con pull-to-refresh, scroll infinito, marcar-como-leída al tocar y
- * "Marcar todo". Estados de carga / error / vacío cuidados (skeleton sobre
- * superficie, nunca spinner a pantalla completa). Es una raíz de tab, así que
- * no lleva botón de volver.
+ * Pantalla del inbox in-app. Lista las notificaciones del usuario (paginadas
+ * sobre el primitivo `CursorList`, MOB-09), con pull-to-refresh, scroll
+ * infinito, marcar-como-leída al tocar y "Marcar todo". Al (re)entrar en la
+ * pestaña refresca el contador de no leídas para que el badge no quede obsoleto.
+ * Es una raíz de tab, así que no lleva botón de volver.
  */
 export default function NotificationsPage() {
-  const {
-    items,
-    status,
-    unread,
-    hasMore,
-    reload,
-    loadMore,
-    markRead,
-    markAllRead,
-  } = useNotifications();
+  const { items, status, unread, hasMore, reload, loadMore, markRead, markAllRead } =
+    useNotifications();
+  const refreshUnread = useUnreadStore((s) => s.refresh);
 
-  async function handleRefresh(e: CustomEvent<RefresherEventDetail>) {
-    await reload();
-    e.detail.complete();
-  }
+  // Al volver a la pestaña, reconcilia el badge sin forzar un skeleton en la
+  // lista (refresco silencioso; el usuario puede tirar para recargar el listado).
+  useIonViewWillEnter(() => {
+    void refreshUnread();
+  });
 
   async function onMarkAll() {
     try {
@@ -139,47 +128,18 @@ export default function NotificationsPage() {
       </IonHeader>
 
       <IonContent className="ion-padding">
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent />
-        </IonRefresher>
-
-        {status === 'loading' ? (
-          <SkeletonList rows={4} />
-        ) : status === 'error' ? (
-          <ErrorState
-            message="No se pudieron cargar las notificaciones."
-            onRetry={() => void reload()}
-          />
-        ) : items.length === 0 ? (
-          <EmptyState
-            icon={notificationsOffOutline}
-            title="No tienes notificaciones."
-          />
-        ) : (
-          <>
-            <IonList inset className="core-group">
-              {items.map((n) => (
-                <NotificationRow
-                  key={n.id}
-                  notification={n}
-                  onRead={markRead}
-                />
-              ))}
-            </IonList>
-
-            <IonInfiniteScroll
-              disabled={!hasMore}
-              onIonInfinite={async (e) => {
-                await loadMore();
-                await e.target.complete();
-              }}
-            >
-              <IonInfiniteScrollContent>
-                <IonSpinner name="dots" />
-              </IonInfiniteScrollContent>
-            </IonInfiniteScroll>
-          </>
-        )}
+        <CursorList
+          items={items}
+          status={status}
+          hasMore={hasMore}
+          onReload={reload}
+          onLoadMore={loadMore}
+          keyFor={(n) => n.id}
+          emptyIcon={notificationsOffOutline}
+          emptyTitle="No tienes notificaciones."
+          errorMessage="No se pudieron cargar las notificaciones."
+          renderItem={(n) => <NotificationRow notification={n} onRead={markRead} />}
+        />
       </IonContent>
     </IonPage>
   );
