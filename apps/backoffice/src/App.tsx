@@ -88,6 +88,21 @@ const WhatsappPage = lazy(() =>
     default: m.WhatsappPage,
   })),
 );
+const SendingAccountsPage = lazy(() =>
+  import('@/features/notifications/SendingAccountsPage').then((m) => ({
+    default: m.SendingAccountsPage,
+  })),
+);
+const MessageTypesPage = lazy(() =>
+  import('@/features/notifications/MessageTypesPage').then((m) => ({
+    default: m.MessageTypesPage,
+  })),
+);
+const AccountTypesPage = lazy(() =>
+  import('@/features/notifications/AccountTypesPage').then((m) => ({
+    default: m.AccountTypesPage,
+  })),
+);
 const CountriesPage = lazy(() =>
   import('@/features/geo/countries/CountriesPage').then((m) => ({
     default: m.CountriesPage,
@@ -203,6 +218,24 @@ export default function App() {
               <Route path="/leads/:id" element={<LeadDetailPage />} />
               <Route path="/files" element={<FilesPage />} />
               <Route path="/whatsapp" element={<WhatsappPage />} />
+              <Route
+                path="/notifications"
+                element={
+                  <Navigate to="/notifications/accounts" replace />
+                }
+              />
+              <Route
+                path="/notifications/accounts"
+                element={<SendingAccountsPage />}
+              />
+              <Route
+                path="/notifications/message-types"
+                element={<MessageTypesPage />}
+              />
+              <Route
+                path="/notifications/account-types"
+                element={<AccountTypesPage />}
+              />
               <Route path="/geo/countries" element={<CountriesPage />} />
               <Route path="/geo/regions" element={<RegionsPage />} />
               <Route path="/geo/provinces" element={<ProvincesPage />} />

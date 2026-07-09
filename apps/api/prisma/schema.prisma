@@ -236,6 +236,7 @@ model User {
   sectionAccess             UserSectionAccess[]
   dashboards                Dashboard[]
   notifications             UserNotification[]
+  devices                   Device[]
 
   @@map("user")
 }
@@ -1208,4 +1209,23 @@ model UserNotification {
   @@index([userId, createdAt])
   @@index([userId, readAt])
   @@map("user_notification")
+}
+
+/// Token de push de un dispositivo de un usuario (FCM). Un usuario puede tener
+/// varios dispositivos; el `token` es único globalmente (lo emite el proveedor).
+/// Al re-registrarse el mismo token se hace upsert y se refresca `lastSeenAt`
+/// (y se reasigna el `userId` si el dispositivo cambió de cuenta). Al hacer
+/// logout la app lo da de baja con `DELETE /me/devices/:token`.
+model Device {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String   @map("user_id") @db.Char(36)
+  token      String   @unique @db.VarChar(512)
+  platform   String   @db.VarChar(20) // 'ios' | 'android' | 'web'
+  createdAt  DateTime @default(now()) @map("created_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device")
 }

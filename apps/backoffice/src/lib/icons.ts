@@ -1,12 +1,16 @@
 import {
+  Bell,
   Circle,
   ClipboardList,
   Contact,
   Files,
+  Layers,
   LayoutDashboard,
   LayoutList,
+  MessageSquare,
   Newspaper,
   Play,
+  Send,
   Settings,
   Shield,
   SquareStack,
@@ -30,6 +34,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Workflow,
   Play,
   Zap,
+  Bell,
+  Send,
+  MessageSquare,
+  Layers,
   // Añadir según se creen secciones nuevas.
 };
 
