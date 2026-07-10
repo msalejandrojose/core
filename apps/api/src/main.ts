@@ -65,6 +65,12 @@ async function bootstrap() {
   // El filtro global de excepciones (`AppExceptionFilter`) se registra vía
   // `APP_FILTER` en `app.module.ts` para que reciba `ErrorLogService` por DI.
 
+  // Versionado path-based: toda la API vive bajo `/v1`. Los health checks
+  // quedan fuera porque los probes de infra (Cloud Run, ECS, LB) apuntan a
+  // rutas fijas sin versión. `/docs` y `/docs-json` no se ven afectados: por
+  // defecto `SwaggerModule.setup` ignora el prefijo global.
+  app.setGlobalPrefix('v1', { exclude: ['health', 'health/live'] });
+
   const config = new DocumentBuilder()
     .setTitle('Core API')
     .setDescription('Core API — API-first, OpenAPI spec served at /docs-json')

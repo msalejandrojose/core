@@ -26,6 +26,10 @@ async function generate(): Promise<void> {
     logger: false,
   });
 
+  // Mismo prefijo que en `main.ts`, para que el spec generado (usado en CI
+  // para tipar `@core/api-client`) refleje las rutas reales de la API viva.
+  app.setGlobalPrefix('v1', { exclude: ['health', 'health/live'] });
+
   const config = new DocumentBuilder()
     .setTitle('Core API')
     .setDescription('Core API — API-first, OpenAPI spec served at /docs-json')
