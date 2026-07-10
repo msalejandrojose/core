@@ -433,7 +433,57 @@ El `meta` lo construye el **controller**, no el use-case. Los use-cases devuelve
 
 `INVALID_CURSOR` (400 warn) está en `error-catalog.ts`. Se lanza automáticamente desde `cursor.codec.ts` cuando el cursor es inválido o ha sido manipulado.
 
-## 10. Si esta skill se queda desactualizada
+## 10. Sistema de proyectos por ramas (multi-tenant en el mismo repo)
+
+**Objetivo:** un único repo (`core`) aloja tanto el producto Core (IAM, workflows, notificaciones, packages compartidos…) como los proyectos de cliente (Plazza, peluquerías, coches…), en lugar de duplicar en N repos toda la infraestructura compartida. `main` es el tronco de Core y **no contiene código específico de ningún cliente**.
+
+### Naming de ramas
+
+- **Rama base de proyecto:** `{proyecto}-{entorno}` — ej. `plazza-dev`, `aj-assets-dev`, `peluquerias-pre`. Parte de `main` (o de la rama base del mismo proyecto en otro entorno, ej. `plazza-pre` desde `plazza-dev`) y contiene el proyecto completo para ese entorno.
+- **Rama de tarea:** `{proyecto}-{entorno}/{TASK-ID}-{slug}` — parte de la rama base de proyecto (no de `main` directamente) y se mergea de vuelta a ella. Esta es la misma convención que ya usa el skill `core-tareas` al mover una tarea de Notion a "En progreso".
+
+### Qué vive dónde
+
+| | `main` (Core) | `{proyecto}-{entorno}` |
+|---|---|---|
+| API | Módulos compartidos: IAM, workflows, notifications, storage, blog, forms, sections… | Módulos de dominio específicos del cliente (ej. `modules/parking` en `plazza-dev`) |
+| Frontends | `apps/backoffice`, `apps/web`, `apps/mobile` base | Vistas/páginas específicas del cliente sobre esa misma base |
+| Config | `packages/*`, `docker/`, plantilla de `stack.config.json` | Su propio `stack.config.json`/`.env` si diverge (subdominio, piezas habilitadas) |
+
+Regla general: si una pieza es útil para **todos** los proyectos, vive en `main` como módulo/paquete compartido. Si es específica de un cliente, vive solo en su rama — nunca se mergea de vuelta a `main`.
+
+### Crear una rama de proyecto nueva
+
+```bash
+git checkout main && git pull origin main
+git checkout -b plazza-dev
+git push -u origin plazza-dev
+```
+
+Registra la rama en la tarea de Notion correspondiente (propiedad `Rama`) para que quede trazado qué rama base usa cada proyecto.
+
+### Llevar cambios de `main` a un proyecto
+
+Por ahora este merge es **manual** (decisión explícita: evitar automatizar la sincronización hasta tener más de un proyecto real corriendo, para no arriesgar romper algo sin supervisión). Flujo recomendado:
+
+```bash
+git checkout plazza-dev && git pull origin plazza-dev
+git merge main
+# resolver conflictos si los hay, correr build + tests
+git push origin plazza-dev
+```
+
+Conviene hacerlo con cierta cadencia (no dejar que `main` se aleje demasiado) para minimizar conflictos. Automatizar esto (script o GitHub Action) queda **fuera de alcance** por ahora — es una mejora futura una vez el patrón se haya probado con un proyecto real.
+
+### Despliegue
+
+Cada rama de proyecto se despliega de forma independiente (su propio entorno/stack), aunque todas comparten la misma imagen Docker de la API (`apps/api/Dockerfile`); lo que cambia por entorno son las piezas habilitadas en `stack.config.json` y las variables de entorno.
+
+### Estado actual
+
+Todavía no existe ninguna rama de proyecto — el repo solo tiene `main`. El primer caso real será **Plazza** (marketplace de plazas de parking), que ya tiene ~13 tareas en Notion bajo `Proyecto: plazza`, `Entorno: dev` pendientes de una rama `plazza-dev`.
+
+## 11. Si esta skill se queda desactualizada
 
 Este archivo es un *snapshot vivo*. Si encuentras que la realidad del código diverge:
 
