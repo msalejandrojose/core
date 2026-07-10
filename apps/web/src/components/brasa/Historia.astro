@@ -1,0 +1,33 @@
+---
+const valores = ['Km 0', 'Brasa de encina', 'Carta de mercado', 'Producto de temporada'];
+---
+<section id="historia" class="py-24 md:py-36 px-5 md:px-10 border-t border-charcoal/10">
+  <div class="max-w-[1280px] mx-auto grid md:grid-cols-12 gap-10 md:gap-16 items-center">
+
+    <div class="md:col-span-6 order-2 md:order-1 reveal">
+      <p class="eyebrow mb-4">Nuestra historia</p>
+      <h2 class="font-brasa text-[clamp(28px,3.8vw,44px)] leading-[1.08] [letter-spacing:var(--tracking-tighter)] font-semibold mb-6">
+        Empezamos con una brasa y una idea sencilla.
+      </h2>
+      <p class="text-[16px] leading-[1.65] text-charcoal/65 mb-5 max-w-[480px]">
+        Brasa nació de la idea de volver a cocinar como antes: fuego real, producto local y una carta que respeta lo que da la temporada en cada momento.
+      </p>
+      <p class="text-[16px] leading-[1.65] text-charcoal/65 mb-8 max-w-[480px]">
+        Trabajamos con productores de la zona y cambiamos la carta según lo que llega fresco cada semana al mercado.
+      </p>
+
+      <div class="flex flex-wrap gap-2">
+        {valores.map((v) => (
+          <span class="text-[12px] font-mono uppercase tracking-[0.08em] text-ember-600 border border-ember-500/30 bg-ember-50 rounded-full px-3 py-1">
+            {v}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    <div class="md:col-span-6 order-1 md:order-2 reveal" style="transition-delay: .1s">
+      <div class="img-ph-light aspect-[4/5] rounded-sm w-full" aria-hidden="true"></div>
+    </div>
+
+  </div>
+</section>
