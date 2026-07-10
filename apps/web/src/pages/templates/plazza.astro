@@ -1,0 +1,27 @@
+---
+import PlazzaLayout   from '../../layouts/PlazzaLayout.astro';
+import SiteHeader     from '../../components/plazza/SiteHeader.astro';
+import Hero           from '../../components/plazza/Hero.astro';
+import SearchResults  from '../../components/plazza/SearchResults.astro';
+import FichaPlaza      from '../../components/plazza/FichaPlaza.astro';
+import ComoFunciona   from '../../components/plazza/ComoFunciona.astro';
+import Beneficios     from '../../components/plazza/Beneficios.astro';
+import FAQ            from '../../components/plazza/FAQ.astro';
+import FinalCTA       from '../../components/plazza/FinalCTA.astro';
+import SiteFooter     from '../../components/plazza/SiteFooter.astro';
+import DevTemplateBadge from '../../components/DevTemplateBadge.astro';
+---
+<PlazzaLayout>
+  <DevTemplateBadge name="Plazza" />
+  <SiteHeader />
+  <main>
+    <Hero />
+    <SearchResults />
+    <FichaPlaza />
+    <ComoFunciona />
+    <Beneficios />
+    <FAQ />
+    <FinalCTA />
+  </main>
+  <SiteFooter />
+</PlazzaLayout>

@@ -1,0 +1,54 @@
+---
+const drivers = [
+  { n: '01', title: 'Buscas', body: 'Indica dónde vas y a qué hora. Verás las plazas libres cerca, con precio y distancia.' },
+  { n: '02', title: 'Reservas', body: 'Eliges la plaza, pagas online y recibes las instrucciones de acceso al momento.' },
+  { n: '03', title: 'Aparcas', body: 'Entras con la app, sin llaves ni esperas. Cancelación gratuita hasta 24h antes.' },
+];
+const hosts = [
+  { n: '01', title: 'Publicas', body: 'Sube dirección, fotos e instrucciones de acceso de tu plaza libre. Verificamos que existe.' },
+  { n: '02', title: 'Defines disponibilidad', body: 'Marca los días y horas en los que puede usarse. Tú decides el precio.' },
+  { n: '03', title: 'Cobras', body: 'Recibes el pago tras cada reserva confirmada, directamente en tu cuenta.' },
+];
+---
+<section id="como-funciona" class="py-20 md:py-28 px-5 md:px-10 bg-white border-t border-ink/8">
+  <div class="max-w-[1280px] mx-auto">
+    <div class="max-w-[640px] mb-14 md:mb-20 reveal">
+      <p class="eyebrow mb-4">Cómo funciona</p>
+      <h2 class="font-plazza text-[clamp(26px,3.4vw,40px)] leading-[1.08] [letter-spacing:var(--tracking-tighter)] font-semibold">
+        Dos formas de usar Plazza.
+      </h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-12 md:gap-16">
+      <div>
+        <h3 class="font-plazza font-semibold text-[15px] uppercase tracking-[0.08em] text-amber-dark mb-8">Si buscas parking</h3>
+        <div class="space-y-8">
+          {drivers.map((s, i) => (
+            <div class="flex gap-5 reveal" style={`transition-delay: ${i * 0.08}s`}>
+              <span class="font-mono text-[11px] tracking-[0.16em] text-ink/40 pt-1">{s.n}</span>
+              <div>
+                <h4 class="font-plazza text-[18px] font-medium tracking-tight mb-1.5">{s.title}</h4>
+                <p class="text-[15px] leading-[1.55] text-ink/60">{s.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 class="font-plazza font-semibold text-[15px] uppercase tracking-[0.08em] text-amber-dark mb-8">Si tienes una plaza libre</h3>
+        <div class="space-y-8">
+          {hosts.map((s, i) => (
+            <div class="flex gap-5 reveal" style={`transition-delay: ${i * 0.08}s`}>
+              <span class="font-mono text-[11px] tracking-[0.16em] text-ink/40 pt-1">{s.n}</span>
+              <div>
+                <h4 class="font-plazza text-[18px] font-medium tracking-tight mb-1.5">{s.title}</h4>
+                <p class="text-[15px] leading-[1.55] text-ink/60">{s.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
