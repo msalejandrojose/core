@@ -1,0 +1,25 @@
+---
+import BrasaLayout from '../../layouts/BrasaLayout.astro';
+import SiteHeader from '../../components/brasa/SiteHeader.astro';
+import Hero from '../../components/brasa/Hero.astro';
+import Carta from '../../components/brasa/Carta.astro';
+import Reservas from '../../components/brasa/Reservas.astro';
+import Historia from '../../components/brasa/Historia.astro';
+import FAQ from '../../components/brasa/FAQ.astro';
+import FinalCTA from '../../components/brasa/FinalCTA.astro';
+import SiteFooter from '../../components/brasa/SiteFooter.astro';
+import DevTemplateBadge from '../../components/DevTemplateBadge.astro';
+---
+<BrasaLayout>
+  <DevTemplateBadge name="Brasa" />
+  <SiteHeader />
+  <main>
+    <Hero />
+    <Carta />
+    <Reservas />
+    <Historia />
+    <FAQ />
+    <FinalCTA />
+  </main>
+  <SiteFooter />
+</BrasaLayout>

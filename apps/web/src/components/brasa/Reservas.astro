@@ -1,0 +1,54 @@
+---
+import ReservaForm from './ReservaForm.astro';
+
+const horario = [
+  { dias: 'Martes — Jueves', horas: '13:00 – 16:00 · 20:00 – 23:00' },
+  { dias: 'Viernes — Sábado', horas: '13:00 – 16:30 · 20:00 – 00:30' },
+  { dias: 'Domingo', horas: '13:00 – 16:30' },
+  { dias: 'Lunes', horas: 'Cerrado' },
+];
+---
+<section id="reservas" class="py-24 md:py-36 px-5 md:px-10 bg-charcoal text-cream">
+  <div class="max-w-[1100px] mx-auto grid md:grid-cols-12 gap-10 md:gap-16">
+
+    <div class="md:col-span-6 reveal">
+      <p class="eyebrow-light mb-4">Reservas</p>
+      <h2 class="font-brasa text-[clamp(28px,4vw,44px)] leading-[1.06] [letter-spacing:var(--tracking-tighter)] font-semibold mb-6">
+        Guárdanos un hueco en la mesa.
+      </h2>
+      <p class="text-[16px] leading-[1.6] text-cream/65 mb-10 max-w-[440px]">
+        Estamos preparando la reserva online al instante. Mientras tanto, solicita tu mesa y te confirmamos en menos de 24 horas.
+      </p>
+
+      <div class="hairline-light mb-8"></div>
+
+      <div class="space-y-4">
+        <p class="font-mono text-[10px] tracking-[0.14em] uppercase text-cream/40">Horario</p>
+        <ul class="space-y-2.5" role="list">
+          {horario.map((h) => (
+            <li class="flex items-baseline justify-between gap-4 text-[14px]">
+              <span class="text-cream/75">{h.dias}</span>
+              <span class="font-mono text-cream/50">{h.horas}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="hairline-light my-8"></div>
+
+      <div class="space-y-1.5 text-[14px] text-cream/65">
+        <p>Calle Mayor, 12 — Albacete</p>
+        <p>
+          <a href="tel:+34000000000" class="hover:text-cream transition">+34 000 000 000</a>
+          {' · '}
+          <a href="mailto:reservas@brasa.es" class="hover:text-cream transition">reservas@brasa.es</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="md:col-span-6 reveal" style="transition-delay: .1s">
+      <ReservaForm idSuffix="-reservas" variant="inverse" />
+    </div>
+
+  </div>
+</section>

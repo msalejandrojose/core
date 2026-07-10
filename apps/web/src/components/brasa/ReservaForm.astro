@@ -1,0 +1,96 @@
+---
+interface Props {
+  idSuffix?: string;
+  variant?: 'card' | 'inverse';
+}
+
+const { idSuffix = '', variant = 'card' } = Astro.props;
+
+const wrapperClass = variant === 'card'
+  ? 'bg-cream border border-charcoal/12 rounded-lg p-6 md:p-7 max-w-[480px]'
+  : 'bg-charcoal-soft text-cream border border-cream/12 rounded-lg p-6 md:p-7 max-w-[480px]';
+
+const labelClass = variant === 'inverse' ? 'field-label text-cream/55' : 'field-label';
+const fieldClass = variant === 'inverse' ? 'field text-cream border-cream/25' : 'field';
+
+const idNombre = `nombre${idSuffix}`;
+const idContacto = `contacto${idSuffix}`;
+const idPersonas = `personas${idSuffix}`;
+const idFecha = `fecha${idSuffix}`;
+const idNotas = `notas${idSuffix}`;
+---
+<form class={wrapperClass} data-reserva-form>
+  <div class="space-y-3 mb-4">
+    <div>
+      <label class={labelClass} for={idNombre}>Nombre</label>
+      <input class={fieldClass} id={idNombre} name="nombre" type="text" required autocomplete="name" placeholder="Cómo te llamas" />
+    </div>
+    <div>
+      <label class={labelClass} for={idContacto}>Teléfono o email</label>
+      <input class={fieldClass} id={idContacto} name="contacto" type="text" required autocomplete="tel email" placeholder="Para confirmar tu reserva" />
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class={labelClass} for={idPersonas}>Comensales</label>
+        <input class={fieldClass} id={idPersonas} name="personas" type="number" min="1" max="20" required placeholder="2" />
+      </div>
+      <div>
+        <label class={labelClass} for={idFecha}>Fecha</label>
+        <input class={fieldClass} id={idFecha} name="fecha" type="date" required />
+      </div>
+    </div>
+    <div>
+      <label class={labelClass} for={idNotas}>
+        Notas <span class="normal-case tracking-normal opacity-60">— opcional</span>
+      </label>
+      <input class={fieldClass} id={idNotas} name="notas" type="text" placeholder="Alergias, ocasión especial..." />
+    </div>
+  </div>
+  <button type="submit" class="btn-primary w-full py-3.5 md:py-4 rounded-md font-medium text-[15px] md:text-[16px] tracking-tight">
+    Solicitar reserva →
+  </button>
+  <p class={`text-[12px] mt-3.5 leading-relaxed ${variant === 'inverse' ? 'text-cream/50' : 'text-charcoal/50'}`}>
+    Te confirmamos por teléfono o email en menos de 24 horas.
+  </p>
+</form>
+
+<script>
+  import { captureLead, looksLikeEmail, readUtmParams } from '../../lib/forms';
+
+  document.querySelectorAll<HTMLFormElement>('form[data-reserva-form]').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector<HTMLButtonElement>('button[type=submit]');
+      const data = new FormData(form);
+      const nombre = String(data.get('nombre') ?? '').trim();
+      const contacto = String(data.get('contacto') ?? '').trim();
+      const personas = String(data.get('personas') ?? '').trim();
+      const fecha = String(data.get('fecha') ?? '').trim();
+      const notas = String(data.get('notas') ?? '').trim();
+
+      if (btn) { btn.disabled = true; btn.innerText = 'Enviando…'; }
+
+      try {
+        await captureLead({
+          firstName: nombre || undefined,
+          ...(looksLikeEmail(contacto)
+            ? { email: contacto }
+            : { phone: contacto }),
+          consentGiven: true,
+          customFields: {
+            requestType: 'table_reservation',
+            partySize: personas || undefined,
+            preferredDate: fecha || undefined,
+            notes: notas || undefined,
+          },
+          ...readUtmParams(),
+        });
+        if (btn) btn.innerText = 'Solicitud recibida ✓';
+        form.querySelectorAll('input').forEach((i) => (i.disabled = true));
+      } catch (err) {
+        if (btn) { btn.disabled = false; btn.innerText = 'Reintentar'; }
+        console.error('[ReservaForm] no se pudo enviar la solicitud', err);
+      }
+    });
+  });
+</script>

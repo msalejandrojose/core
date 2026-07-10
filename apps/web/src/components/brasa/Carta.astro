@@ -1,0 +1,161 @@
+---
+const categories = [
+  {
+    id: 'entrantes',
+    label: 'Entrantes',
+    items: [
+      { name: 'Pan de masa madre y mantequilla ahumada', description: 'Horneado cada mañana, mantequilla ahumada en casa.', price: '4,50 €' },
+      { name: 'Croquetas de jamón ibérico', description: '6 unidades, bechamel de 24 horas.', price: '9,50 €' },
+      { name: 'Ensalada de tomate de temporada y ventresca', description: 'Tomate de huerta local, ventresca en aceite de oliva.', price: '12,00 €', tags: ['sin gluten'] },
+      { name: 'Tartar de atún rojo con aguacate', description: 'Atún rojo, aguacate, soja y sésamo tostado.', price: '15,00 €', tags: ['sin gluten'] },
+    ],
+  },
+  {
+    id: 'vegetariano',
+    label: 'Vegetariano',
+    items: [
+      { name: 'Berenjena asada con miso y sésamo', description: 'Berenjena a la brasa, glaseado de miso, sésamo negro.', price: '11,00 €', tags: ['vegano'] },
+      { name: 'Alcachofas confitadas con parmesano', description: 'Alcachofa de temporada confitada en aceite, virutas de parmesano.', price: '12,50 €' },
+      { name: 'Risotto de setas de temporada', description: 'Arroz carnaroli, mezcla de setas de la zona, trufa.', price: '14,00 €' },
+      { name: 'Hummus de remolacha con pan de brasa', description: 'Remolacha asada, tahini, pan tostado en la brasa.', price: '8,00 €', tags: ['vegano'] },
+    ],
+  },
+  {
+    id: 'carnes',
+    label: 'Carnes',
+    items: [
+      { name: 'Chuletón de vaca madurada', description: '45 días de maduración. Para compartir entre dos.', price: '38,00 €' },
+      { name: 'Secreto ibérico a la brasa', description: 'Secreto ibérico de bellota, punto de brasa a elegir.', price: '17,00 €', tags: ['sin gluten'] },
+      { name: 'Costilla de ternera 12 horas', description: 'Cocción lenta a baja temperatura, glaseado de la casa.', price: '19,00 €' },
+      { name: 'Pollo de corral entero a la brasa', description: 'Pollo de corral, hierbas y limón. Para compartir.', price: '16,00 €', tags: ['sin gluten'] },
+    ],
+  },
+  {
+    id: 'pescados',
+    label: 'Pescados y mariscos',
+    items: [
+      { name: 'Lubina salvaje a la brasa', description: 'Pieza entera, aceite de oliva virgen y limón.', price: '22,00 €', tags: ['sin gluten'] },
+      { name: 'Pulpo a la brasa con puré de patata', description: 'Pulpo gallego, pimentón de la Vera, puré casero.', price: '19,00 €', tags: ['sin gluten'] },
+      { name: 'Gambas rojas a la plancha', description: 'Gamba roja de temporada, ajo y perejil.', price: '24,00 €', tags: ['sin gluten'] },
+      { name: 'Bacalao confitado al pil pil', description: 'Bacalao confitado a baja temperatura, pil pil tradicional.', price: '18,00 €', tags: ['sin gluten'] },
+    ],
+  },
+  {
+    id: 'postres',
+    label: 'Postres',
+    items: [
+      { name: 'Torrija caramelizada', description: 'Con helado de vainilla artesano.', price: '7,00 €' },
+      { name: 'Tarta de queso curada al fuego', description: 'Receta de la casa, curada directamente al fuego.', price: '6,50 €' },
+      { name: 'Coulant de chocolate 70%', description: 'Corazón líquido, helado de avellana.', price: '7,50 €' },
+      { name: 'Sorbete de temporada', description: 'Fruta de temporada, sin azúcares añadidos.', price: '5,50 €', tags: ['vegano', 'sin gluten'] },
+    ],
+  },
+];
+---
+<section id="carta" class="py-24 md:py-36 px-5 md:px-10 bg-cream border-t border-charcoal/10">
+  <div class="max-w-[1100px] mx-auto">
+    <div class="max-w-[640px] mb-12 md:mb-14 reveal">
+      <p class="eyebrow mb-4">Nuestra carta</p>
+      <h2 class="font-brasa text-[clamp(28px,4vw,48px)] leading-[1.05] [letter-spacing:var(--tracking-tighter)] font-semibold">
+        Producto de temporada, cocinado al fuego.
+      </h2>
+      <p class="mt-4 text-[16px] leading-[1.6] text-charcoal/60">
+        La carta cambia con el mercado. Estos son algunos de nuestros platos por categoría.
+      </p>
+    </div>
+
+    <fieldset class="carta-tabs border-0 p-0 m-0">
+      <legend class="sr-only">Filtrar la carta por categoría</legend>
+
+      <input type="radio" name="carta-cat" id="tab-entrantes" class="sr-only" checked />
+      <input type="radio" name="carta-cat" id="tab-vegetariano" class="sr-only" />
+      <input type="radio" name="carta-cat" id="tab-carnes" class="sr-only" />
+      <input type="radio" name="carta-cat" id="tab-pescados" class="sr-only" />
+      <input type="radio" name="carta-cat" id="tab-postres" class="sr-only" />
+
+      <div class="tab-list flex flex-wrap gap-2 mb-10 md:mb-12 reveal">
+        {categories.map((cat) => (
+          <label for={`tab-${cat.id}`} class="tab-label" data-cat={cat.id}>
+            {cat.label}
+          </label>
+        ))}
+      </div>
+
+      <div class="tab-panels">
+        {categories.map((cat) => (
+          <div class={`tab-panel panel-${cat.id}`}>
+            <ul class="grid md:grid-cols-2 gap-x-10 gap-y-7" role="list">
+              {cat.items.map((item) => (
+                <li>
+                  <div class="flex items-baseline justify-between gap-4">
+                    <h3 class="font-brasa text-[18px] md:text-[19px] font-semibold leading-snug [letter-spacing:var(--tracking-tighter)]">
+                      {item.name}
+                    </h3>
+                    <span class="font-mono text-[13px] text-ember-600 whitespace-nowrap">{item.price}</span>
+                  </div>
+                  <p class="mt-1.5 text-[14px] leading-relaxed text-charcoal/60">{item.description}</p>
+                  {item.tags && (
+                    <div class="mt-2 flex gap-1.5">
+                      {item.tags.map((tag) => (
+                        <span class="text-[10px] font-mono uppercase tracking-[0.1em] text-charcoal/45 border border-charcoal/15 rounded-full px-2 py-0.5">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </fieldset>
+  </div>
+</section>
+
+<style>
+  .tab-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--color-charcoal) 16%, transparent);
+    color: color-mix(in srgb, var(--color-charcoal) 65%, transparent);
+    cursor: pointer;
+    transition: background-color .2s, color .2s, border-color .2s;
+  }
+  .tab-label:hover {
+    border-color: color-mix(in srgb, var(--color-charcoal) 30%, transparent);
+  }
+
+  .tab-panel { display: none; }
+
+  #tab-entrantes:checked ~ .tab-panels .panel-entrantes,
+  #tab-vegetariano:checked ~ .tab-panels .panel-vegetariano,
+  #tab-carnes:checked ~ .tab-panels .panel-carnes,
+  #tab-pescados:checked ~ .tab-panels .panel-pescados,
+  #tab-postres:checked ~ .tab-panels .panel-postres {
+    display: block;
+  }
+
+  #tab-entrantes:checked ~ .tab-list label[for="tab-entrantes"],
+  #tab-vegetariano:checked ~ .tab-list label[for="tab-vegetariano"],
+  #tab-carnes:checked ~ .tab-list label[for="tab-carnes"],
+  #tab-pescados:checked ~ .tab-list label[for="tab-pescados"],
+  #tab-postres:checked ~ .tab-list label[for="tab-postres"] {
+    background: var(--color-ember-500);
+    border-color: var(--color-ember-500);
+    color: var(--color-cream);
+  }
+
+  #tab-entrantes:focus-visible ~ .tab-list label[for="tab-entrantes"],
+  #tab-vegetariano:focus-visible ~ .tab-list label[for="tab-vegetariano"],
+  #tab-carnes:focus-visible ~ .tab-list label[for="tab-carnes"],
+  #tab-pescados:focus-visible ~ .tab-list label[for="tab-pescados"],
+  #tab-postres:focus-visible ~ .tab-list label[for="tab-postres"] {
+    outline: 2px solid var(--color-ember-500);
+    outline-offset: 3px;
+  }
+</style>

@@ -1,0 +1,29 @@
+---
+import Wordmark from './Wordmark.astro';
+
+const links = [
+  { href: '#carta', label: 'Carta' },
+  { href: '#historia', label: 'Nosotros' },
+  { href: '#reservas', label: 'Reservas' },
+];
+---
+<header class="absolute top-0 left-0 right-0 z-40 px-5 md:px-10 py-5 md:py-7 flex items-center justify-between">
+  <a href="#top" class="flex items-center gap-2.5" aria-label="Brasa — inicio">
+    <Wordmark variant="light" />
+  </a>
+
+  <nav class="hidden md:flex items-center gap-8" aria-label="Principal">
+    {links.map((l) => (
+      <a href={l.href} class="text-[13px] font-medium text-cream/70 hover:text-cream transition font-mono uppercase tracking-[0.14em]">
+        {l.label}
+      </a>
+    ))}
+  </nav>
+
+  <a
+    href="#reservas"
+    class="btn-primary inline-flex items-center rounded-full px-5 py-2.5 text-[13px] font-medium tracking-tight"
+  >
+    Reservar mesa
+  </a>
+</header>
