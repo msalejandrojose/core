@@ -1,6 +1,6 @@
 import { getAuthToken } from '@/store/auth.store';
 
-const baseUrl = import.meta.env.VITE_API_URL;
+const baseUrl = `${import.meta.env.VITE_API_URL}/v1`;
 
 /**
  * Subida y descarga de ficheros van por `fetch` directo en lugar del cliente

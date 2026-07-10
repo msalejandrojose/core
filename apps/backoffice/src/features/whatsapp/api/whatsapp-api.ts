@@ -9,11 +9,13 @@ import type {
 // tipado (`@core/api-client`) porque su esquema se genera desde el OpenAPI de
 // una API viva y todavía no incluye estas rutas; en cuanto se regenere, se
 // puede migrar. Inyecta el Bearer del auth store, igual que el api-client.
-const BASE_URL = import.meta.env.VITE_API_URL as string | undefined;
+const RAW_BASE_URL = import.meta.env.VITE_API_URL as string | undefined;
 
-if (!BASE_URL) {
+if (!RAW_BASE_URL) {
   throw new Error('VITE_API_URL no está definida. Revisa apps/backoffice/.env');
 }
+
+const BASE_URL = `${RAW_BASE_URL}/v1`;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getAuthToken();
