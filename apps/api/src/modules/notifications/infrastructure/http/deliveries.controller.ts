@@ -33,8 +33,11 @@ export class DeliveriesController {
       limit,
       cursor: query.cursor,
       messageTypeKey: query.messageTypeKey,
+      channel: query.channel,
       status: query.status,
       toAddress: query.to,
+      createdFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
+      createdTo: query.dateTo ? new Date(query.dateTo) : undefined,
     });
     return CursorPaginatedResponseDto.of(
       page.items.map((d) => DeliveryResponseDto.fromDomain(d)),

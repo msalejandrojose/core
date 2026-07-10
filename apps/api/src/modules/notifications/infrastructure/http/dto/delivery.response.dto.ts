@@ -1,20 +1,23 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { NotificationChannel } from '@core/shared-types';
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  NOTIFICATION_CHANNELS,
+  type NotificationChannel,
+} from '@core/shared-types';
 import type {
-  DeliveryEvent,
   DeliveryStatus,
   NotificationDelivery,
 } from '../../../domain/entities/notification-delivery.entity';
+import { DeliveryEventDto } from './delivery-event.dto';
 
 export class DeliveryResponseDto {
   @ApiProperty() id: string;
-  @ApiPropertyOptional({ nullable: true }) messageTypeId: string | null;
+  @ApiProperty({ type: String, nullable: true }) messageTypeId: string | null;
   @ApiProperty() messageTypeKey: string;
-  @ApiPropertyOptional({ nullable: true }) accountId: string | null;
-  @ApiProperty() channel: NotificationChannel;
+  @ApiProperty({ type: String, nullable: true }) accountId: string | null;
+  @ApiProperty({ enum: NOTIFICATION_CHANNELS }) channel: NotificationChannel;
   @ApiProperty() provider: string;
   @ApiProperty() to: string;
-  @ApiPropertyOptional({ nullable: true }) subject: string | null;
+  @ApiProperty({ type: String, nullable: true }) subject: string | null;
   @ApiProperty({
     enum: [
       'pending',
@@ -31,13 +34,15 @@ export class DeliveryResponseDto {
     ],
   })
   status: DeliveryStatus;
-  @ApiPropertyOptional({ nullable: true }) providerMessageId: string | null;
-  @ApiPropertyOptional({ nullable: true }) error: string | null;
-  @ApiProperty({ type: 'array', items: { type: 'object' } })
-  events: DeliveryEvent[];
-  @ApiPropertyOptional({ nullable: true }) sentAt: Date | null;
-  @ApiPropertyOptional({ nullable: true }) deliveredAt: Date | null;
-  @ApiPropertyOptional({ nullable: true }) lastEventAt: Date | null;
+  @ApiProperty({ type: String, nullable: true }) providerMessageId:
+    | string
+    | null;
+  @ApiProperty({ type: String, nullable: true }) error: string | null;
+  @ApiProperty({ type: [DeliveryEventDto] })
+  events: DeliveryEventDto[];
+  @ApiProperty({ type: Date, nullable: true }) sentAt: Date | null;
+  @ApiProperty({ type: Date, nullable: true }) deliveredAt: Date | null;
+  @ApiProperty({ type: Date, nullable: true }) lastEventAt: Date | null;
   @ApiProperty() createdAt: Date;
   @ApiProperty() updatedAt: Date;
 
@@ -54,7 +59,7 @@ export class DeliveryResponseDto {
     dto.status = d.status;
     dto.providerMessageId = d.providerMessageId;
     dto.error = d.error;
-    dto.events = d.events;
+    dto.events = d.events.map((e) => DeliveryEventDto.fromDomain(e));
     dto.sentAt = d.sentAt;
     dto.deliveredAt = d.deliveredAt;
     dto.lastEventAt = d.lastEventAt;
