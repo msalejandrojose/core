@@ -169,6 +169,20 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/notifications/account-types',
         order: 2,
       },
+      {
+        code: 'notifications.deliveries',
+        name: 'Envíos',
+        icon: 'Inbox',
+        route: '/notifications/deliveries',
+        order: 3,
+      },
+      {
+        code: 'notifications.webhooks',
+        name: 'Webhooks',
+        icon: 'Webhook',
+        route: '/notifications/webhooks',
+        order: 4,
+      },
     ],
   },
   {

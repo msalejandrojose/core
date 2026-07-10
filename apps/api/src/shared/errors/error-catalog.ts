@@ -306,6 +306,16 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Envío no encontrado.',
   },
+  WEBHOOK_EVENT_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Evento de webhook no encontrado.',
+  },
+  WEBHOOK_EVENT_NOT_REPROCESSABLE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Este evento ya se ha procesado correctamente.',
+  },
 
   // Localización / Geografía (módulo `geo`)
   COUNTRY_NOT_FOUND: {

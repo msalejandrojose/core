@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Contact,
   Files,
+  Inbox,
   Layers,
   LayoutDashboard,
   LayoutList,
@@ -15,6 +16,7 @@ import {
   Shield,
   SquareStack,
   Users,
+  Webhook,
   Workflow,
   Zap,
   type LucideIcon,
@@ -38,6 +40,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Send,
   MessageSquare,
   Layers,
+  Inbox,
+  Webhook,
   // Añadir según se creen secciones nuevas.
 };
 
