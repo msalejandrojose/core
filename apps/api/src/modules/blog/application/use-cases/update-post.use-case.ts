@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { isVisible } from '@core/shared-types';
 import { PostWithRelations } from '../../domain/entities/post.entity';
 import { CategoryNotFoundError } from '../../domain/errors/category-not-found.error';
 import { PostNotFoundError } from '../../domain/errors/post-not-found.error';
@@ -18,6 +19,10 @@ import {
   POST_TAG_REPOSITORY,
   type PostTagRepositoryPort,
 } from '../ports/post-tag-repository.port';
+import {
+  DEPLOY_TRIGGER,
+  type DeployTriggerPort,
+} from '../ports/deploy-trigger.port';
 
 export interface UpdatePostInput {
   slug?: string;
@@ -38,6 +43,7 @@ export class UpdatePostUseCase {
     @Inject(POST_CATEGORY_REPOSITORY)
     private readonly categories: PostCategoryRepositoryPort,
     @Inject(POST_TAG_REPOSITORY) private readonly tags: PostTagRepositoryPort,
+    @Inject(DEPLOY_TRIGGER) private readonly deploy: DeployTriggerPort,
   ) {}
 
   async execute(
@@ -82,6 +88,13 @@ export class UpdatePostUseCase {
       if (missing) throw new TagNotFoundError(missing);
     }
 
-    return this.posts.update(id, patch);
+    const updated = await this.posts.update(id, patch);
+
+    // Solo si el post ya era visible: editar un DRAFT no cambia nada público.
+    if (isVisible(existing.status, existing.publishedAt)) {
+      await this.deploy.trigger(`post:updated:${updated.slug}`);
+    }
+
+    return updated;
   }
 }

@@ -11,6 +11,10 @@ import { PrismaPostRepository } from './infrastructure/persistence/prisma-post.r
 import { PrismaPostCategoryRepository } from './infrastructure/persistence/prisma-post-category.repository';
 import { PrismaPostTagRepository } from './infrastructure/persistence/prisma-post-tag.repository';
 
+// Ports & adapter (deploy trigger de la web pública)
+import { DEPLOY_TRIGGER } from './application/ports/deploy-trigger.port';
+import { GithubDeployTriggerAdapter } from './infrastructure/deploy/github-deploy-trigger.adapter';
+
 // Use cases — posts
 import { CreatePostUseCase } from './application/use-cases/create-post.use-case';
 import { UpdatePostUseCase } from './application/use-cases/update-post.use-case';
@@ -55,6 +59,7 @@ import { PublicBlogController } from './infrastructure/http/public-blog.controll
       useClass: PrismaPostCategoryRepository,
     },
     { provide: POST_TAG_REPOSITORY, useClass: PrismaPostTagRepository },
+    { provide: DEPLOY_TRIGGER, useClass: GithubDeployTriggerAdapter },
 
     CreatePostUseCase,
     UpdatePostUseCase,

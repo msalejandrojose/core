@@ -1,0 +1,25 @@
+name: Blog deploy
+
+# Rebuild + deploy automático de la web (Astro SSG) cuando cambia contenido
+# visible del blog: publicar, editar o retirar (archivar/borrar) un post que
+# ya estaba público. Lo dispara la propia API vía `repository_dispatch` desde
+# `GithubDeployTriggerAdapter` (apps/api/src/modules/blog/infrastructure/deploy)
+# al ejecutarse esos casos de uso — ver GITHUB_DISPATCH_* en apps/api/.env.example.
+#
+# Un post creado como DRAFT o programado a futuro (SCHEDULED) NO dispara nada
+# aquí: no cambia nada visible todavía. Si programas un post, el rebuild para
+# que aparezca en la fecha programada hay que forzarlo a mano (workflow_dispatch)
+# cuando llegue el momento — no hay cron todavía.
+on:
+  repository_dispatch:
+    types: [blog_content_changed]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  web:
+    uses: ./.github/workflows/deploy-web.yml
+    secrets: inherit

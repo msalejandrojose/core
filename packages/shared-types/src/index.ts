@@ -7,7 +7,7 @@ export type { RoleScope } from './iam/role-scope.js';
 export { PermissionLevelSchema, PERMISSION_LEVELS, PermissionLevels } from './iam/permission-level.js';
 export type { PermissionLevel } from './iam/permission-level.js';
 
-export { PostStatusSchema, POST_STATUSES, canPublish, canArchive } from './blog/post-status.js';
+export { PostStatusSchema, POST_STATUSES, canPublish, canArchive, isVisible } from './blog/post-status.js';
 export type { PostStatus } from './blog/post-status.js';
 
 export { WidgetTypeSchema } from './dashboard/widget-type.js';
