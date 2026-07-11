@@ -295,7 +295,15 @@ Clases Tailwind generadas: `bg-brand`, `text-fg`, `bg-bg-muted`, `border-border`
 
 ### Variables de entorno de la web
 
-⚠️ **Convención INVERSA a `apps/api/`**: aquí `.env.local` está gitignored (convención Vite/Astro). Solo las variables con prefijo `PUBLIC_` se exponen al browser.
+Conviven dos usos distintos del archivo `.env*`:
+
+| Archivo | Contenido | Git |
+|---|---|---|
+| `.env.example` | Plantilla de las claves `PUBLIC_*` | Committed |
+| `.env` | Valores locales `PUBLIC_*` de cada dev | **Gitignored** (convención Vite/Astro estándar) |
+| `.env.local` | Config de despliegue compartida, no-`PUBLIC_*` (ej. `CLOUDFLARE_PROJECT_NAME`) | **Committed** (excepción, igual que `apps/api`) |
+
+Solo las variables con prefijo `PUBLIC_` se exponen al browser:
 
 | Variable | Uso |
 |---|---|
@@ -303,6 +311,13 @@ Clases Tailwind generadas: `bg-brand`, `text-fg`, `bg-bg-muted`, `border-border`
 | `PUBLIC_SITE_URL` | URL del propio sitio (sitemap + OG tags) |
 
 `run.sh` inyecta `PUBLIC_API_URL` derivado de `stack.config.json` cuando se levanta con `./run.sh web`.
+
+⚠️ Vite carga `.env` y luego `.env.local`, sobrescribiendo claves repetidas — al revés que `ConfigModule` en `apps/api`. Por eso `apps/web/.env.local` **nunca** lleva `PUBLIC_*` (pisaría tu override local); solo lleva config de despliegue que no cambia entre desarrolladores, como el nombre del proyecto de Cloudflare Pages que usa `deploy-web.yml`:
+
+```bash
+# apps/web/.env.local (committed)
+CLOUDFLARE_PROJECT_NAME=core-web
+```
 
 ### Wiring con el stack local
 
