@@ -13,6 +13,8 @@ export interface AuthUser {
   firstName: string | null;
   lastName: string | null;
   userType: 'BACKOFFICE' | 'APP';
+  /** Avatar del proveedor social (Google/Facebook), si el usuario entró con uno. */
+  avatarUrl?: string | null;
 }
 
 interface AuthState {

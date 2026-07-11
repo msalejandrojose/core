@@ -54,6 +54,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'No tienes permisos para realizar esta acción.',
   },
+  SOCIAL_AUTH_FAILED: {
+    httpStatus: 401,
+    level: 'warn',
+    defaultMessage: 'No se pudo verificar el inicio de sesión social.',
+  },
   USER_ALREADY_EXISTS: {
     httpStatus: 409,
     level: 'warn',

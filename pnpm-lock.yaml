@@ -373,6 +373,9 @@ importers:
       '@capacitor/status-bar':
         specifier: ^6.0.2
         version: 6.0.3(@capacitor/core@6.2.1)
+      '@capgo/capacitor-social-login':
+        specifier: ^6.0.1
+        version: 6.0.1(@capacitor/core@6.2.1)
       '@core/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
@@ -1440,6 +1443,11 @@ packages:
     resolution: {integrity: sha512-nFlgSmtx6Zwaw0tEvZgQsWHBeOfWWB/AvEoCApopLT4mHkBVoSrwkLvy2PjZs5wxCbsmqvQczr3XCyTwaDZVQg==}
     peerDependencies:
       '@capacitor/core': ^6.0.0
+
+  '@capgo/capacitor-social-login@6.0.1':
+    resolution: {integrity: sha512-ji5/fBd2T2ofIIGrblvxteU7qUUpxaBsbpE60xZrbDo+dz0BdSzXN5VGS+WXUcwf9jR3vsuyKFeyj6bVIHXR2g==}
+    peerDependencies:
+      '@capacitor/core': '>=6.0.0'
 
   '@capsizecss/unpack@4.0.1':
     resolution: {integrity: sha512-CuNiSqg7+e1cO/GjffyMOm5Tt2jUF9CWHHnvQ/UkqvtkGfHdgwEC0wpmq7fkN3gxwpRnrAN0WzO3vREKmNolMQ==}
@@ -11544,6 +11552,10 @@ snapshots:
       '@capacitor/core': 6.2.1
 
   '@capacitor/status-bar@6.0.3(@capacitor/core@6.2.1)':
+    dependencies:
+      '@capacitor/core': 6.2.1
+
+  '@capgo/capacitor-social-login@6.0.1(@capacitor/core@6.2.1)':
     dependencies:
       '@capacitor/core': 6.2.1
 
