@@ -22,6 +22,9 @@ export class UserMapper {
       row.emailVerificationExpiresAt ?? null,
       row.passwordResetToken ?? null,
       row.passwordResetExpiresAt ?? null,
+      row.googleId ?? null,
+      row.facebookId ?? null,
+      row.avatarUrl ?? null,
     );
   }
 
@@ -39,6 +42,9 @@ export class UserMapper {
       emailVerificationExpiresAt: user.emailVerificationExpiresAt,
       passwordResetToken: user.passwordResetToken,
       passwordResetExpiresAt: user.passwordResetExpiresAt,
+      googleId: user.googleId,
+      facebookId: user.facebookId,
+      avatarUrl: user.avatarUrl,
       // createdAt / updatedAt los gestiona Prisma (@default / @updatedAt).
     };
   }

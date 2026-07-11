@@ -6,6 +6,9 @@ import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
 // ===== Auth =====
 import { GetCurrentUserUseCase } from './application/use-cases/get-current-user.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
+import { LoginWithGoogleUseCase } from './application/use-cases/login-with-google.use-case';
+import { LoginWithFacebookUseCase } from './application/use-cases/login-with-facebook.use-case';
+import { ResolveSocialUserUseCase } from './application/use-cases/resolve-social-user.use-case';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
 import { SendVerificationEmailUseCase } from './application/use-cases/send-verification-email.use-case';
 import { VerifyEmailUseCase } from './application/use-cases/verify-email.use-case';
@@ -49,6 +52,8 @@ import { PERMISSION_REPOSITORY } from './application/ports/permission-repository
 import { ROLE_REPOSITORY } from './application/ports/role-repository.port';
 import { TOKEN_ISSUER } from './application/ports/token-issuer.port';
 import { USER_REPOSITORY } from './application/ports/user-repository.port';
+import { GOOGLE_TOKEN_VERIFIER } from './application/ports/google-token-verifier.port';
+import { FACEBOOK_TOKEN_VERIFIER } from './application/ports/facebook-token-verifier.port';
 
 // ===== Adapters =====
 import { Argon2PasswordHasher } from './infrastructure/crypto/argon2-password-hasher';
@@ -57,6 +62,8 @@ import { PrismaApiSectionRepository } from './infrastructure/persistence/prisma-
 import { PrismaPermissionRepository } from './infrastructure/persistence/prisma-permission.repository';
 import { PrismaRoleRepository } from './infrastructure/persistence/prisma-role.repository';
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
+import { GoogleTokenVerifier } from './infrastructure/social/google-token-verifier';
+import { FacebookTokenVerifier } from './infrastructure/social/facebook-token-verifier';
 
 // ===== HTTP =====
 import { ApiSectionsController } from './infrastructure/http/api-sections.controller';
@@ -100,6 +107,9 @@ import { MailerModule } from '../mailer/mailer.module';
     // Auth use cases
     RegisterUserUseCase,
     LoginUseCase,
+    LoginWithGoogleUseCase,
+    LoginWithFacebookUseCase,
+    ResolveSocialUserUseCase,
     GetCurrentUserUseCase,
     SendVerificationEmailUseCase,
     VerifyEmailUseCase,
@@ -147,6 +157,8 @@ import { MailerModule } from '../mailer/mailer.module';
     { provide: PERMISSION_REPOSITORY, useClass: PrismaPermissionRepository },
     { provide: PASSWORD_HASHER, useClass: Argon2PasswordHasher },
     { provide: TOKEN_ISSUER, useClass: JwtTokenIssuer },
+    { provide: GOOGLE_TOKEN_VERIFIER, useClass: GoogleTokenVerifier },
+    { provide: FACEBOOK_TOKEN_VERIFIER, useClass: FacebookTokenVerifier },
 
     // Guards locales como singletons del container (los reusan los APP_GUARD
     // de abajo vía `useExisting` para no duplicar instancias).

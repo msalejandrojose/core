@@ -17,6 +17,8 @@ import { Throttle } from '@nestjs/throttler';
 import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
 import { GetCurrentUserUseCase } from '../../application/use-cases/get-current-user.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
+import { LoginWithGoogleUseCase } from '../../application/use-cases/login-with-google.use-case';
+import { LoginWithFacebookUseCase } from '../../application/use-cases/login-with-facebook.use-case';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { VerifyEmailUseCase } from '../../application/use-cases/verify-email.use-case';
 import { RequestPasswordResetUseCase } from '../../application/use-cases/request-password-reset.use-case';
@@ -27,6 +29,8 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
+import { FacebookLoginDto } from './dto/facebook-login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -45,6 +49,8 @@ export class AuthController {
   constructor(
     private readonly registerUser: RegisterUserUseCase,
     private readonly login: LoginUseCase,
+    private readonly loginWithGoogle: LoginWithGoogleUseCase,
+    private readonly loginWithFacebook: LoginWithFacebookUseCase,
     private readonly getCurrentUser: GetCurrentUserUseCase,
     private readonly verifyEmail: VerifyEmailUseCase,
     private readonly requestPasswordReset: RequestPasswordResetUseCase,
@@ -74,6 +80,42 @@ export class AuthController {
   @ApiOkResponse({ type: LoginResponseDto })
   async loginAction(@Body() dto: LoginDto): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.login.execute(dto);
+    return { accessToken, user: UserResponseDto.fromUser(user) };
+  }
+
+  @Post('google')
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Login/registro con Google. Verifica el ID token del SDK nativo y devuelve un access token.',
+  })
+  @ApiOkResponse({ type: LoginResponseDto })
+  async loginWithGoogleAction(
+    @Body() dto: GoogleLoginDto,
+  ): Promise<LoginResponseDto> {
+    const { accessToken, user } = await this.loginWithGoogle.execute(
+      dto.idToken,
+    );
+    return { accessToken, user: UserResponseDto.fromUser(user) };
+  }
+
+  @Post('facebook')
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Login/registro con Facebook. Verifica el access token del SDK nativo y devuelve un access token.',
+  })
+  @ApiOkResponse({ type: LoginResponseDto })
+  async loginWithFacebookAction(
+    @Body() dto: FacebookLoginDto,
+  ): Promise<LoginResponseDto> {
+    const { accessToken, user } = await this.loginWithFacebook.execute(
+      dto.accessToken,
+    );
     return { accessToken, user: UserResponseDto.fromUser(user) };
   }
 

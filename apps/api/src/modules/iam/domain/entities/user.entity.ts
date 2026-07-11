@@ -23,6 +23,10 @@ export class User {
     // Password reset
     public readonly passwordResetToken: string | null = null,
     public readonly passwordResetExpiresAt: Date | null = null,
+    // Social login (Google / Facebook)
+    public readonly googleId: string | null = null,
+    public readonly facebookId: string | null = null,
+    public readonly avatarUrl: string | null = null,
   ) {}
 
   isDeactivated(): boolean {

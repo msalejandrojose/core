@@ -10,6 +10,7 @@ import { PaginatedResult } from '../../../../shared/types/paginated-result';
 import { CursorCodec, CursorPage } from '../../../../shared/pagination';
 import { User } from '../../domain/entities/user.entity';
 import {
+  LinkSocialAccountPatch,
   ListUsersOptions,
   ListWithCursorOptions,
   UpdateTokensPatch,
@@ -43,6 +44,16 @@ export class PrismaUserRepository implements UserRepositoryPort {
     const row = await this.prisma.user.findFirst({
       where: { passwordResetToken: token },
     });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
+  async findByGoogleId(googleId: string): Promise<User | null> {
+    const row = await this.prisma.user.findUnique({ where: { googleId } });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
+  async findByFacebookId(facebookId: string): Promise<User | null> {
+    const row = await this.prisma.user.findUnique({ where: { facebookId } });
     return row ? UserMapper.toDomain(row) : null;
   }
 
@@ -174,6 +185,23 @@ export class PrismaUserRepository implements UserRepositoryPort {
         passwordResetExpiresAt: patch.passwordResetExpiresAt,
         isActive: patch.isActive,
         passwordHash: patch.passwordHash,
+      },
+    });
+    return UserMapper.toDomain(row);
+  }
+
+  async linkSocialAccount(
+    id: string,
+    patch: LinkSocialAccountPatch,
+  ): Promise<User> {
+    const row = await this.prisma.user.update({
+      where: { id },
+      data: {
+        googleId: patch.googleId,
+        facebookId: patch.facebookId,
+        avatarUrl: patch.avatarUrl,
+        firstName: patch.firstName,
+        lastName: patch.lastName,
       },
     });
     return UserMapper.toDomain(row);

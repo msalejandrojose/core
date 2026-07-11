@@ -227,6 +227,13 @@ model User {
   passwordResetToken     String?   @map("password_reset_token") @db.VarChar(128)
   passwordResetExpiresAt DateTime? @map("password_reset_expires_at")
 
+  // Social login (Google / Facebook). `sub` (Google) / `id` (Facebook) del
+  // proveedor. Únicos y nullable: un usuario puede no tener ninguno, uno o
+  // ambos vinculados (login con password + social sobre la misma cuenta).
+  googleId   String? @unique @map("google_id") @db.VarChar(255)
+  facebookId String? @unique @map("facebook_id") @db.VarChar(255)
+  avatarUrl  String? @map("avatar_url") @db.VarChar(1024)
+
   // Relaciones
   userRoles                 UserUserRole[]             @relation("UserRoles")
   assignedRolesByUser       UserUserRole[]             @relation("AssignedBy")
