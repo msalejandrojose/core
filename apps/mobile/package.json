@@ -24,6 +24,7 @@
     "@capacitor/push-notifications": "^6.0.5",
     "@capacitor/splash-screen": "^6.0.4",
     "@capacitor/status-bar": "^6.0.2",
+    "@capgo/capacitor-social-login": "^6.0.1",
     "@core/api-client": "workspace:*",
     "@core/forms": "workspace:*",
     "@core/sections": "workspace:*",
