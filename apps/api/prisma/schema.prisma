@@ -238,6 +238,17 @@ model User {
   notifications             UserNotification[]
   devices                   Device[]
 
+  // Relaciones — módulo `andanzas` (rama andanzas-dev, no vive en main)
+  andanzasSitesCreated       Site[]        @relation("SitesCreated")
+  andanzasSiteEntries        SiteEntry[]   @relation("SiteEntries")
+  andanzasComparisons        Comparison[]  @relation("Comparisons")
+  andanzasFollowing          Follow[]      @relation("Following")
+  andanzasFollowers          Follow[]      @relation("Followers")
+  andanzasGroupsOwned        Group[]       @relation("GroupsOwned")
+  andanzasGroupMemberships   GroupMember[] @relation("GroupMemberships")
+  andanzasInvitationsCreated Invitation[]  @relation("InvitationsCreated")
+  andanzasInvitationUsed     Invitation?   @relation("InvitationUsed")
+
   @@map("user")
 }
 
@@ -1252,4 +1263,185 @@ model Device {
 
   @@index([userId])
   @@map("device")
+}
+
+// ---------------------------------------------------------------------------
+// Andanzas — red social de sitios visitados / por visitar (módulo `andanzas`,
+// vive solo en la rama `andanzas-dev`, no se mergea a `main`). Reutiliza el
+// `User` compartido de `iam` (userType APP) en vez de un modelo propio.
+// Tablas prefijadas `andanzas_` para dejar claro el bounded context.
+// ---------------------------------------------------------------------------
+
+/// Categoría base fija de un `Site`, para que el mapa siempre sea filtrable
+/// aunque las etiquetas libres (`Tag`) se fragmenten.
+enum SiteCategory {
+  RESTAURANT
+  NATURE
+  CULTURE
+  LEISURE
+  OTHER
+}
+
+/// Estado de la relación entre un usuario y un sitio. Solo los `VISITED`
+/// entran en el ranking por comparación de ese usuario.
+enum SiteEntryStatus {
+  WANT_TO_GO
+  VISITED
+}
+
+/// Un lugar cualquiera (restaurante, mirador, parque…), resuelto vía un
+/// proveedor externo de sitios (`externalPlaceId`, p.ej. Google Places o
+/// Mapbox) o creado a mano con un pin en el mapa cuando no aparece en el
+/// proveedor.
+model Site {
+  id              String       @id @default(uuid()) @db.Char(36)
+  name            String       @db.VarChar(255)
+  category        SiteCategory
+  latitude        Decimal      @db.Decimal(9, 6)
+  longitude       Decimal      @db.Decimal(9, 6)
+  address         String?      @db.VarChar(500)
+  externalPlaceId String?      @map("external_place_id") @db.VarChar(255)
+  createdByUserId String       @map("created_by_user_id") @db.Char(36)
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  createdBy User        @relation("SitesCreated", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  tags      SiteTag[]
+  entries   SiteEntry[]
+
+  @@index([category])
+  @@index([externalPlaceId])
+  @@map("andanzas_site")
+}
+
+/// Etiqueta libre creada por los usuarios. El cliente sugiere/autocompleta
+/// sobre tags existentes antes de dejar crear uno nuevo para evitar
+/// duplicados; `name` se guarda normalizado en minúsculas.
+model Tag {
+  id        String   @id @default(uuid()) @db.Char(36)
+  name      String   @unique @db.VarChar(60)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  sites SiteTag[]
+
+  @@map("andanzas_tag")
+}
+
+/// Pivot N-N entre `Site` y `Tag`.
+model SiteTag {
+  siteId String @map("site_id") @db.Char(36)
+  tagId  String @map("tag_id") @db.Char(36)
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([siteId, tagId])
+  @@index([tagId])
+  @@map("andanzas_site_tag")
+}
+
+/// Relación de un usuario con un sitio: wishlist o visitado. `rankPosition`
+/// y `score` solo se rellenan para `VISITED` — los coloca el algoritmo de
+/// ranking por comparación al insertar el sitio en la lista ordenada del
+/// usuario (insertion sort asistido, ver tarea del algoritmo). `score`
+/// (0-10) se deriva de `rankPosition` y es lo que se agrega entre amigos
+/// para la nota "social" del mapa.
+model SiteEntry {
+  id           String          @id @default(uuid()) @db.Char(36)
+  userId       String          @map("user_id") @db.Char(36)
+  siteId       String          @map("site_id") @db.Char(36)
+  status       SiteEntryStatus @default(WANT_TO_GO)
+  rankPosition Int?            @map("rank_position")
+  score        Decimal?        @db.Decimal(3, 1)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  user User @relation("SiteEntries", fields: [userId], references: [id], onDelete: Cascade)
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  comparisonsWon  Comparison[] @relation("ComparisonWinner")
+  comparisonsLost Comparison[] @relation("ComparisonLoser")
+
+  @@unique([userId, siteId])
+  @@index([userId, status, rankPosition])
+  @@map("andanzas_site_entry")
+}
+
+/// Registro de una comparación binaria ("¿te gustó más A o B?") usada para
+/// insertar un `SiteEntry` nuevo en la lista ordenada del usuario. Sirve de
+/// auditoría y permite recalcular el ranking si cambia el algoritmo.
+model Comparison {
+  id            String   @id @default(uuid()) @db.Char(36)
+  userId        String   @map("user_id") @db.Char(36)
+  winnerEntryId String   @map("winner_entry_id") @db.Char(36)
+  loserEntryId  String   @map("loser_entry_id") @db.Char(36)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user   User      @relation("Comparisons", fields: [userId], references: [id], onDelete: Cascade)
+  winner SiteEntry @relation("ComparisonWinner", fields: [winnerEntryId], references: [id], onDelete: Cascade)
+  loser  SiteEntry @relation("ComparisonLoser", fields: [loserEntryId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("andanzas_comparison")
+}
+
+/// Relación de seguimiento direccional tipo Instagram (no requiere
+/// aceptación mutua). `followerId` sigue a `followingId`.
+model Follow {
+  followerId  String   @map("follower_id") @db.Char(36)
+  followingId String   @map("following_id") @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+  @@map("andanzas_follow")
+}
+
+/// Carpeta que agrupa a un subconjunto de las personas que sigues, para
+/// organizar recomendaciones. No es en sí misma una relación de amistad.
+model Group {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String   @db.VarChar(100)
+  ownerUserId String   @map("owner_user_id") @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner   User          @relation("GroupsOwned", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  members GroupMember[]
+
+  @@index([ownerUserId])
+  @@map("andanzas_group")
+}
+
+/// Pivot N-N entre `Group` y `User`.
+model GroupMember {
+  groupId String   @map("group_id") @db.Char(36)
+  userId  String   @map("user_id") @db.Char(36)
+  addedAt DateTime @default(now()) @map("added_at")
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation("GroupMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@index([userId])
+  @@map("andanzas_group_member")
+}
+
+/// Código de invitación para el arranque en beta cerrada. `usedByUserId`
+/// null ⇒ todavía no canjeado.
+model Invitation {
+  id              String    @id @default(uuid()) @db.Char(36)
+  code            String    @unique @db.VarChar(32)
+  createdByUserId String    @map("created_by_user_id") @db.Char(36)
+  usedByUserId    String?   @unique @map("used_by_user_id") @db.Char(36)
+  expiresAt       DateTime? @map("expires_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  createdBy User  @relation("InvitationsCreated", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  usedBy    User? @relation("InvitationUsed", fields: [usedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("andanzas_invitation")
 }
