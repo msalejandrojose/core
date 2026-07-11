@@ -454,10 +454,12 @@ El `meta` lo construye el **controller**, no el use-case. Los use-cases devuelve
 
 ### Naming de ramas
 
-- **Rama base de proyecto:** `{proyecto}-{entorno}` — ej. `plazza-dev`, `aj-assets-dev`, `peluquerias-pre`. Parte de `main` (o de la rama base del mismo proyecto en otro entorno, ej. `plazza-pre` desde `plazza-dev`) y contiene el proyecto completo para ese entorno.
-- **Rama de tarea:** `{proyecto}-{entorno}--{TASK-ID}-{slug}` (doble guión, **sin barra**) — ej. `plazza-dev--TASK-45-crear-parking`. Parte de la rama base de proyecto (no de `main` directamente) y se mergea de vuelta a ella.
+- **Rama base de proyecto:** `{proyecto}-{entorno}` — ej. `plazza-dev`, `aj-assets-dev`, `peluquerias-pre`. Se crea **una sola vez**, partiendo de `main` (o de la rama base del mismo proyecto en otro entorno, ej. `plazza-pre` desde `plazza-dev`), y contiene el proyecto completo para ese entorno.
+- **Rama de tarea:** `{proyecto}-{entorno}--{TASK-ID}-{slug}` (doble guión, **sin barra**) — ej. `plazza-dev--TASK-45-crear-parking`. Parte siempre de la **punta actual** de la rama base de proyecto (`git pull` antes de crearla), nunca de `main` directamente — ni siquiera para la primera tarea, una vez la rama base ya existe.
 
   ⚠️ **Por qué doble guión y no barra:** `{proyecto}-{entorno}/{TASK-ID}-{slug}` (con `/`) es inválido en git — no pueden coexistir una rama `plazza-dev` y una rama `plazza-dev/TASK-45-...`, porque las refs de git son jerárquicas por rutas y una no puede ser a la vez hoja y directorio de la otra (`fatal: cannot lock ref ... 'refs/heads/plazza-dev' exists`). Se descubrió al intentar crear la primera rama de tarea real (`andanzas-dev`, TASK-162). El skill `core-tareas` debe usar este mismo patrón de doble guión al mover una tarea de Notion a "En progreso".
+
+  **Cómo se integra:** cada rama de tarea se cierra con un **Pull Request contra la rama base del proyecto** (no contra `main`, y no con merge local + push directo). `main` solo recibe merges de módulos/paquetes verdaderamente compartidos, nunca del trabajo de un proyecto cliente.
 
 ### Qué vive dónde
 

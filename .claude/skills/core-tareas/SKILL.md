@@ -131,13 +131,14 @@ Cuando el usuario quiere empezar a trabajar en una tarea de proyecto:
    - `Rama`: `peluquerias-dev--TASK-12-formulario-cita`
 5. **Confirma** al usuario con el nombre de la rama y el enlace a la tarea.
 
-Cuando el trabajo termina y hay que mergear:
+Cuando el trabajo termina, se integra con un **Pull Request de la rama de tarea contra la rama del proyecto** (`peluquerias-dev`) — **nunca contra `main`**, y **nunca con merge local + push directo**:
 ```bash
-git checkout peluquerias-dev
-git merge peluquerias-dev--TASK-12-formulario-cita
-git push origin peluquerias-dev
+git push -u origin peluquerias-dev--TASK-12-formulario-cita
+gh pr create --base peluquerias-dev --head peluquerias-dev--TASK-12-formulario-cita --title "..."
 ```
-Luego actualiza la tarea a `Hecha`.
+Actualiza la tarea a `Hecha` al abrir el PR, y a `Confirmada` cuando se mergea.
+
+**Importante:** una vez existe la rama del proyecto, **toda** rama de tarea nueva sale de esa rama (con `git pull` primero para partir de su punta actual) — nunca se vuelve a partir de `main`. `main` solo es el punto de partida la primera vez que se crea la rama base del proyecto.
 
 ---
 
