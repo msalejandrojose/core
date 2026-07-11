@@ -15,7 +15,7 @@ core/
 │   ├── api/                 # NestJS backend (API-first, expone OpenAPI/Swagger)
 │   ├── backoffice/          # React + Vite (backoffice interno)
 │   ├── web/                 # Astro 5 static site — sitio público (@core/web)
-│   └── mobile/              # Ionic + React PWA + iOS/Android (planned, vacío)
+│   └── mobile/              # Ionic + React PWA + iOS/Android vía Capacitor (@core/mobile)
 ├── packages/                # librerías internas que consumen las apps
 │   ├── api-client/          # cliente TS generado desde el OpenAPI del backend (vacío)
 │   ├── shared-types/        # tipos / DTOs / schemas compartidos (vacío)
@@ -345,6 +345,28 @@ pnpm preview:web   # sirve dist/ localmente
 1. Crear el componente en `src/components/islands/<Nombre>.tsx`.
 2. Importarlo en la página Astro y añadir directiva `client:load` (o `client:visible` si no es above-the-fold).
 3. Para acceder a la API usar `getApiUrl()` o `apiFetch()` de `src/lib/api.ts`.
+
+## 6.5. apps/mobile — app móvil Ionic + React + Capacitor
+
+⚠️ Ya no está vacía (a diferencia de lo que dice la tabla del §10) — tiene un shell base real construido en `main`. Nombre de paquete: `@core/mobile`. **Ionic + React + Vite**, empaquetada a iOS/Android vía **Capacitor**, PWA además de nativa.
+
+### Qué trae ya el shell base (vive en `main`, compartido por cualquier proyecto)
+
+- **Auth**: `src/features/auth/` — login por email/password + social login (Google y Facebook, vía `@capgo/capacitor-social-login`), verificación de email, reset de password. Pega contra `iam` (`apps/api`).
+- **Tema**: `src/theme/` + `useThemeStore` — claro/oscuro, tokens siguiendo la skill `core-design-system` (greige cálido + terracota/clay).
+- **i18n**: `react-i18next`.
+- **Sesión**: `useAuthStore` (Zustand) + `@capacitor/preferences` para persistencia, con pantalla de splash mientras rehidrata.
+- **Notificaciones push**: `src/features/notifications/` + `@capacitor/push-notifications`.
+- **Shell de navegación**: `App.tsx` (rutas públicas/privadas por sesión) → `src/app/TabsShell.tsx` (tab bar inferior). El shell base trae tabs genéricas (Inicio con KPIs, Notificaciones, Ajustes) pensadas para un companion app interno — **no** son específicas de ningún proyecto cliente.
+- **Componentes UX compartidos**: `src/components/ux` (`ErrorBoundary`, `OfflineBanner`).
+
+### Cómo añade un proyecto sus propias pantallas
+
+Igual que en la API (`modules/<feature>` específico solo en la rama del proyecto), un proyecto que necesite su propia app móvil:
+
+1. Reutiliza el shell tal cual (auth, tema, i18n, sesión, push) — no se toca en `main`.
+2. Sustituye las tabs genéricas por las suyas modificando `TabsShell.tsx` **dentro de su propia rama** (`{proyecto}-{entorno}`) — no se abstrae un sistema de tabs "pluggable" mientras haya un solo proyecto real consumiéndolo; sería una abstracción prematura.
+3. Sus pantallas van en `src/features/<feature-del-proyecto>/`, siguiendo el patrón ya usado por `features/auth`, `features/notifications`, etc.
 
 ## 7. Añadir una nueva app o package al workspace
 
