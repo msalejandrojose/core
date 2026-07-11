@@ -6,6 +6,9 @@ dist/
 .env
 .env.local
 .env.*.local
+# .env.local aquí lleva solo config de despliegue compartida (CLOUDFLARE_PROJECT_NAME),
+# nunca PUBLIC_* — ver README.md. Excepción committed, igual que apps/api/.env.local.
+!.env.local
 
 # deps
 node_modules/

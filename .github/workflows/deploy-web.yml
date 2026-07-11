@@ -35,11 +35,23 @@ jobs:
           PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
           PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
 
+      - name: Read Cloudflare project name
+        id: cloudflare
+        # Fuente única del nombre de proyecto: apps/web/.env.local (committed).
+        # Evita tenerlo hardcodeado en el workflow.
+        run: |
+          project_name=$(grep -m1 '^CLOUDFLARE_PROJECT_NAME=' apps/web/.env.local | cut -d '=' -f2-)
+          if [ -z "$project_name" ]; then
+            echo "::error::CLOUDFLARE_PROJECT_NAME no está definido en apps/web/.env.local"
+            exit 1
+          fi
+          echo "project_name=$project_name" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # El proyecto de Pages "core-web" debe existir en Cloudflare (ver README/setup).
+          # El proyecto de Pages debe existir en Cloudflare (ver README/setup).
           # --branch=main marca el deploy como PRODUCCIÓN (rama de producción del proyecto).
-          command: pages deploy apps/web/dist --project-name=core-web --branch=main
+          command: pages deploy apps/web/dist --project-name=${{ steps.cloudflare.outputs.project_name }} --branch=main
