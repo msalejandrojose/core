@@ -76,6 +76,6 @@ import { FileViewTokenService } from './infrastructure/http/file-view-token.serv
     ConfirmUploadUseCase,
     FileViewTokenService,
   ],
-  exports: [STORAGE_PORT, STORED_FILE_REPOSITORY],
+  exports: [STORAGE_PORT, STORED_FILE_REPOSITORY, FileViewTokenService],
 })
 export class StorageModule {}

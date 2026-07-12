@@ -7,6 +7,7 @@ import {
   CreateParkingData,
   ListMyParkingsOptions,
   ParkingRepositoryPort,
+  SearchPublicParkingsOptions,
   UpdateParkingPatch,
 } from '../../application/ports/parking-repository.port';
 import { toParkingDomain } from '../mappers/parking.mapper';
@@ -81,29 +82,32 @@ export class PrismaParkingRepository implements ParkingRepositoryPort {
       hostUserId: opts.hostUserId,
       ...(opts.status ? { status: opts.status } : {}),
     };
-    const where: Prisma.ParkingWhereInput = opts.cursor
-      ? { AND: [filters, this.cursorWhere(opts.cursor)] }
-      : filters;
+    return this.listWithCursor(filters, opts.limit, opts.cursor);
+  }
 
-    const rows = await this.prisma.parking.findMany({
-      where,
-      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-      take: opts.limit + 1,
+  async findPublishedById(id: string): Promise<Parking | null> {
+    const row = await this.prisma.parking.findFirst({
+      where: { id, status: 'PUBLISHED' },
       include: PHOTOS_INCLUDE,
     });
+    return row ? toParkingDomain(row) : null;
+  }
 
-    const hasMore = rows.length > opts.limit;
-    const slice = hasMore ? rows.slice(0, opts.limit) : rows;
-    const last = hasMore ? slice[slice.length - 1] : null;
-    return {
-      items: slice.map(toParkingDomain),
-      nextCursor: last
-        ? CursorCodec.encode({
-            id: last.id,
-            createdAt: last.createdAt.toISOString(),
-          })
-        : null,
+  async searchPublished(
+    opts: SearchPublicParkingsOptions,
+  ): Promise<CursorPage<Parking>> {
+    const filters: Prisma.ParkingWhereInput = {
+      status: 'PUBLISHED',
+      ...(opts.q
+        ? {
+            OR: [
+              { title: { contains: opts.q } },
+              { address: { contains: opts.q } },
+            ],
+          }
+        : {}),
     };
+    return this.listWithCursor(filters, opts.limit, opts.cursor);
   }
 
   async addPhoto(parkingId: string, storedFileId: string): Promise<Parking> {
@@ -119,6 +123,36 @@ export class PrismaParkingRepository implements ParkingRepositoryPort {
   async removePhoto(parkingId: string, photoId: string): Promise<Parking> {
     await this.prisma.parkingPhoto.delete({ where: { id: photoId } });
     return (await this.findById(parkingId))!;
+  }
+
+  private async listWithCursor(
+    filters: Prisma.ParkingWhereInput,
+    limit: number,
+    cursor?: string,
+  ): Promise<CursorPage<Parking>> {
+    const where: Prisma.ParkingWhereInput = cursor
+      ? { AND: [filters, this.cursorWhere(cursor)] }
+      : filters;
+
+    const rows = await this.prisma.parking.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      take: limit + 1,
+      include: PHOTOS_INCLUDE,
+    });
+
+    const hasMore = rows.length > limit;
+    const slice = hasMore ? rows.slice(0, limit) : rows;
+    const last = hasMore ? slice[slice.length - 1] : null;
+    return {
+      items: slice.map(toParkingDomain),
+      nextCursor: last
+        ? CursorCodec.encode({
+            id: last.id,
+            createdAt: last.createdAt.toISOString(),
+          })
+        : null,
+    };
   }
 
   private cursorWhere(cursor: string): Prisma.ParkingWhereInput {
