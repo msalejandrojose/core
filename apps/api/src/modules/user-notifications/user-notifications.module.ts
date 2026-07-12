@@ -31,5 +31,10 @@ import { NotifyInAppHandler } from './infrastructure/workflow/notify-in-app.hand
     // Handler de acción de workflow (descubierto por el registry de workflows).
     NotifyInAppHandler,
   ],
+  exports: [
+    // Consumido por AndanzasModule (y cualquier otro módulo de dominio) para
+    // empujar una notificación in-app sin duplicar la lógica de creación.
+    CreateUserNotificationUseCase,
+  ],
 })
 export class UserNotificationsModule {}
