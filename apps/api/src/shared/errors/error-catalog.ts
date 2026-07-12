@@ -429,6 +429,18 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Has alcanzado el límite de invitaciones activas.',
   },
+
+  // Andanzas — sitios y tags
+  ANDANZAS_SITE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Sitio no encontrado.',
+  },
+  ANDANZAS_TOO_MANY_TAGS: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'Se han enviado demasiadas etiquetas para este sitio.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;
