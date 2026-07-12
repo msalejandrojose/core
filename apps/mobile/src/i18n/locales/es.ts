@@ -9,7 +9,9 @@
 export const es = {
   translation: {
     tabs: {
-      home: 'Inicio',
+      search: 'Buscar',
+      reservations: 'Reservas',
+      host: 'Host',
       notifications: 'Notificaciones',
       settings: 'Ajustes',
     },

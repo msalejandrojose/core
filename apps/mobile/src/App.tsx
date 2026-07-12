@@ -25,7 +25,7 @@ export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const theme = useThemeStore((s) => s.theme);
-  const home = '/tabs/home';
+  const home = '/tabs/search';
 
   // La sesión se rehidrata de forma asíncrona (Capacitor Preferences). Hasta que
   // termina mostramos un splash: así el auto-login no parpadea el login primero.

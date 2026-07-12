@@ -21,7 +21,14 @@ if (!baseUrl) {
  * IMPORTANTE (arquitectura): la app NUNCA emite eventos de workflows por su
  * cuenta. Llama a endpoints de dominio y es la API quien publica el evento.
  */
-export const apiClient = createApiClient({ baseUrl, getToken: getAuthToken });
+// La API vive versionada bajo `/v1` (ver `app.setGlobalPrefix` en apps/api);
+// `SwaggerModule` genera el schema OpenAPI sin ese prefijo, así que hay que
+// añadirlo aquí para que las rutas tipadas apunten a la URL real. Mismo
+// convenio que `uploadFormFile` en `components/forms/upload.ts`.
+export const apiClient = createApiClient({
+  baseUrl: `${baseUrl}/v1`,
+  getToken: getAuthToken,
+});
 
 // Endpoints donde un 401 significa "credenciales incorrectas" (no sesión
 // expirada) y por tanto NO deben cerrar sesión: p. ej. change-password devuelve

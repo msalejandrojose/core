@@ -11,12 +11,18 @@ import {
 import { Redirect, Route } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  homeOutline,
+  businessOutline,
   notificationsOutline,
+  searchOutline,
   settingsOutline,
+  ticketOutline,
 } from 'ionicons/icons';
-import HomePage from '@/features/home/HomePage';
-import SectionScreen from '@/features/sections/SectionScreen';
+import SearchScreen from '@/features/parking/SearchScreen';
+import ParkingDetailScreen from '@/features/parking/ParkingDetailScreen';
+import MyReservationsScreen from '@/features/parking/MyReservationsScreen';
+import ReservationDetailScreen from '@/features/parking/ReservationDetailScreen';
+import HostParkingsScreen from '@/features/parking/HostParkingsScreen';
+import ParkingFormScreen from '@/features/parking/ParkingFormScreen';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import SettingsPage from '@/features/settings/SettingsPage';
 import AppearancePage from '@/features/settings/AppearancePage';
@@ -26,10 +32,10 @@ import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { usePushNotifications } from '@/features/notifications/use-push-notifications';
 
 /**
- * Shell del área autenticada: tab bar inferior (Inicio / Notificaciones /
- * Ajustes) sobre un `IonRouterOutlet`, cada tab con su propio stack de
- * navegación. La ruta base `/tabs/home` y un fallback cubren cualquier ruta no
- * reconocida (p. ej. venir de `/login` tras autenticarse).
+ * Shell del área autenticada, específico de Plazza (ver core-architecture
+ * §6.5: las tabs genéricas del shell base se sustituyen aquí, dentro de la
+ * rama del proyecto). Tab bar: Buscar (huésped) / Reservas (huésped) / Host
+ * (plazas + reservas recibidas) / Notificaciones / Ajustes.
  */
 export default function TabsShell() {
   const { t } = useTranslation();
@@ -40,8 +46,6 @@ export default function TabsShell() {
   // web/PWA). Vive aquí para arrancar una vez al entrar al área autenticada.
   usePushNotifications();
 
-  // Contador del badge al entrar en el área autenticada; el inbox lo mantiene
-  // en sync a partir de aquí (marcar leídas actualiza el store compartido).
   useEffect(() => {
     void refreshUnread();
   }, [refreshUnread]);
@@ -49,8 +53,12 @@ export default function TabsShell() {
   return (
     <IonTabs>
       <IonRouterOutlet>
-        <Route exact path="/tabs/home" component={HomePage} />
-        <Route exact path="/tabs/home/s/:code" component={SectionScreen} />
+        <Route exact path="/tabs/search" component={SearchScreen} />
+        <Route exact path="/tabs/search/p/:id" component={ParkingDetailScreen} />
+        <Route exact path="/tabs/reservations" component={MyReservationsScreen} />
+        <Route exact path="/tabs/reservations/:id" component={ReservationDetailScreen} />
+        <Route exact path="/tabs/host" component={HostParkingsScreen} />
+        <Route exact path="/tabs/host/parkings/:id" component={ParkingFormScreen} />
         <Route exact path="/tabs/notifications" component={NotificationsPage} />
         <Route exact path="/tabs/settings" component={SettingsPage} />
         <Route
@@ -65,15 +73,23 @@ export default function TabsShell() {
           component={ChangePasswordPage}
         />
         <Route exact path="/tabs">
-          <Redirect to="/tabs/home" />
+          <Redirect to="/tabs/search" />
         </Route>
-        <Route render={() => <Redirect to="/tabs/home" />} />
+        <Route render={() => <Redirect to="/tabs/search" />} />
       </IonRouterOutlet>
 
       <IonTabBar slot="bottom">
-        <IonTabButton tab="home" href="/tabs/home">
-          <IonIcon icon={homeOutline} aria-hidden="true" />
-          <IonLabel>{t('tabs.home')}</IonLabel>
+        <IonTabButton tab="search" href="/tabs/search">
+          <IonIcon icon={searchOutline} aria-hidden="true" />
+          <IonLabel>{t('tabs.search')}</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="reservations" href="/tabs/reservations">
+          <IonIcon icon={ticketOutline} aria-hidden="true" />
+          <IonLabel>{t('tabs.reservations')}</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="host" href="/tabs/host">
+          <IonIcon icon={businessOutline} aria-hidden="true" />
+          <IonLabel>{t('tabs.host')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="notifications" href="/tabs/notifications">
           <IonIcon icon={notificationsOutline} aria-hidden="true" />
