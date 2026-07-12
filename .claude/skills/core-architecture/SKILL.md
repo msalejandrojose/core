@@ -15,7 +15,7 @@ core/
 │   ├── api/                 # NestJS backend (API-first, expone OpenAPI/Swagger)
 │   ├── backoffice/          # React + Vite (backoffice interno)
 │   ├── web/                 # Astro 5 static site — sitio público (@core/web)
-│   └── mobile/              # Ionic + React PWA + iOS/Android (planned, vacío)
+│   └── mobile/              # Ionic + React PWA + iOS/Android vía Capacitor (@core/mobile)
 ├── packages/                # librerías internas que consumen las apps
 │   ├── api-client/          # cliente TS generado desde el OpenAPI del backend (vacío)
 │   ├── shared-types/        # tipos / DTOs / schemas compartidos (vacío)
@@ -346,6 +346,28 @@ pnpm preview:web   # sirve dist/ localmente
 2. Importarlo en la página Astro y añadir directiva `client:load` (o `client:visible` si no es above-the-fold).
 3. Para acceder a la API usar `getApiUrl()` o `apiFetch()` de `src/lib/api.ts`.
 
+## 6.5. apps/mobile — app móvil Ionic + React + Capacitor
+
+⚠️ Ya no está vacía (a diferencia de lo que dice la tabla del §10) — tiene un shell base real construido en `main`. Nombre de paquete: `@core/mobile`. **Ionic + React + Vite**, empaquetada a iOS/Android vía **Capacitor**, PWA además de nativa.
+
+### Qué trae ya el shell base (vive en `main`, compartido por cualquier proyecto)
+
+- **Auth**: `src/features/auth/` — login por email/password + social login (Google y Facebook, vía `@capgo/capacitor-social-login`), verificación de email, reset de password. Pega contra `iam` (`apps/api`).
+- **Tema**: `src/theme/` + `useThemeStore` — claro/oscuro, tokens siguiendo la skill `core-design-system` (greige cálido + terracota/clay).
+- **i18n**: `react-i18next`.
+- **Sesión**: `useAuthStore` (Zustand) + `@capacitor/preferences` para persistencia, con pantalla de splash mientras rehidrata.
+- **Notificaciones push**: `src/features/notifications/` + `@capacitor/push-notifications`.
+- **Shell de navegación**: `App.tsx` (rutas públicas/privadas por sesión) → `src/app/TabsShell.tsx` (tab bar inferior). El shell base trae tabs genéricas (Inicio con KPIs, Notificaciones, Ajustes) pensadas para un companion app interno — **no** son específicas de ningún proyecto cliente.
+- **Componentes UX compartidos**: `src/components/ux` (`ErrorBoundary`, `OfflineBanner`).
+
+### Cómo añade un proyecto sus propias pantallas
+
+Igual que en la API (`modules/<feature>` específico solo en la rama del proyecto), un proyecto que necesite su propia app móvil:
+
+1. Reutiliza el shell tal cual (auth, tema, i18n, sesión, push) — no se toca en `main`.
+2. Sustituye las tabs genéricas por las suyas modificando `TabsShell.tsx` **dentro de su propia rama** (`{proyecto}-{entorno}`) — no se abstrae un sistema de tabs "pluggable" mientras haya un solo proyecto real consumiéndolo; sería una abstracción prematura.
+3. Sus pantallas van en `src/features/<feature-del-proyecto>/`, siguiendo el patrón ya usado por `features/auth`, `features/notifications`, etc.
+
 ## 7. Añadir una nueva app o package al workspace
 
 ### Una nueva app (frontend)
@@ -454,8 +476,12 @@ El `meta` lo construye el **controller**, no el use-case. Los use-cases devuelve
 
 ### Naming de ramas
 
-- **Rama base de proyecto:** `{proyecto}-{entorno}` — ej. `plazza-dev`, `aj-assets-dev`, `peluquerias-pre`. Parte de `main` (o de la rama base del mismo proyecto en otro entorno, ej. `plazza-pre` desde `plazza-dev`) y contiene el proyecto completo para ese entorno.
-- **Rama de tarea:** `{proyecto}-{entorno}/{TASK-ID}-{slug}` — parte de la rama base de proyecto (no de `main` directamente) y se mergea de vuelta a ella. Esta es la misma convención que ya usa el skill `core-tareas` al mover una tarea de Notion a "En progreso".
+- **Rama base de proyecto:** `{proyecto}-{entorno}` — ej. `plazza-dev`, `aj-assets-dev`, `peluquerias-pre`. Se crea **una sola vez**, partiendo de `main` (o de la rama base del mismo proyecto en otro entorno, ej. `plazza-pre` desde `plazza-dev`), y contiene el proyecto completo para ese entorno.
+- **Rama de tarea:** `{proyecto}-{entorno}--{TASK-ID}-{slug}` (doble guión, **sin barra**) — ej. `plazza-dev--TASK-45-crear-parking`. Parte siempre de la **punta actual** de la rama base de proyecto (`git pull` antes de crearla), nunca de `main` directamente — ni siquiera para la primera tarea, una vez la rama base ya existe.
+
+  ⚠️ **Por qué doble guión y no barra:** `{proyecto}-{entorno}/{TASK-ID}-{slug}` (con `/`) es inválido en git — no pueden coexistir una rama `plazza-dev` y una rama `plazza-dev/TASK-45-...`, porque las refs de git son jerárquicas por rutas y una no puede ser a la vez hoja y directorio de la otra (`fatal: cannot lock ref ... 'refs/heads/plazza-dev' exists`). Se descubrió al intentar crear la primera rama de tarea real (`andanzas-dev`, TASK-162). El skill `core-tareas` debe usar este mismo patrón de doble guión al mover una tarea de Notion a "En progreso".
+
+  **Cómo se integra:** cada rama de tarea se cierra con un **Pull Request contra la rama base del proyecto** (no contra `main`, y no con merge local + push directo). `main` solo recibe merges de módulos/paquetes verdaderamente compartidos, nunca del trabajo de un proyecto cliente.
 
 ### Qué vive dónde
 
@@ -496,7 +522,7 @@ Cada rama de proyecto se despliega de forma independiente (su propio entorno/sta
 
 ### Estado actual
 
-Todavía no existe ninguna rama de proyecto — el repo solo tiene `main`. El primer caso real será **Plazza** (marketplace de plazas de parking), que ya tiene ~13 tareas en Notion bajo `Proyecto: plazza`, `Entorno: dev` pendientes de una rama `plazza-dev`.
+Primer caso real: **Andanzas** (red social de sitios visitados/por visitar, ranking por comparación tipo Beli), con rama base `andanzas-dev` creada desde `main` y tareas en Notion bajo `Proyecto: Andanzas`, `Entorno: dev`. **Plazza** (marketplace de plazas de parking) tiene ~13 tareas en Notion bajo `Proyecto: plazza`, `Entorno: dev` todavía pendientes de su rama `plazza-dev`.
 
 ## 11. Si esta skill se queda desactualizada
 
