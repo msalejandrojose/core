@@ -441,6 +441,23 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Se han enviado demasiadas etiquetas para este sitio.',
   },
+
+  // Andanzas — SiteEntry y ranking por comparación
+  ANDANZAS_INVALID_SITE_ENTRY_TRANSITION: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'Transición de estado no permitida para este sitio.',
+  },
+  ANDANZAS_SITE_ENTRY_ALREADY_RATED: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Este sitio ya tiene una nota.',
+  },
+  ANDANZAS_RANKING_OUT_OF_SYNC: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'La comparación ha quedado desincronizada, reinicia el flujo.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;
