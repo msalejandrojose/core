@@ -284,6 +284,32 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'El archivo no está disponible para usarse como foto.',
   },
+  RESERVATION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Reserva no encontrada.',
+  },
+  PARKING_NOT_BOOKABLE: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La plaza no existe o no está disponible para reservar.',
+  },
+  PARKING_NOT_AVAILABLE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage:
+      'La plaza no está disponible en el rango de fechas solicitado.',
+  },
+  RESERVATION_DATE_RANGE_INVALID: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'La fecha de fin debe ser posterior a la fecha de inicio.',
+  },
+  INVALID_RESERVATION_TRANSITION: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La transición de estado de la reserva no está permitida.',
+  },
 
   // Sections (UI navigation tree)
   SECTION_NOT_FOUND: {
