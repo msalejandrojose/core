@@ -1,0 +1,43 @@
+---
+const appUrl = import.meta.env.PUBLIC_ANDANZAS_APP_URL || 'http://app.aj-local.es';
+---
+
+<section class="relative overflow-hidden py-24 lg:py-36">
+  <div class="absolute inset-0 -z-10 pointer-events-none" aria-hidden="true">
+    <div
+      class="absolute top-0 right-0 w-[600px] h-[600px] rounded-full"
+      style="background: radial-gradient(circle, oklch(0.72 0.08 40 / 0.1) 0%, transparent 70%); transform: translate(20%, -30%);"
+    ></div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="max-w-2xl">
+      <p class="text-xs font-medium tracking-widest text-brand uppercase mb-4">
+        Beta cerrada, por invitación
+      </p>
+      <h1 class="font-display text-5xl lg:text-6xl font-semibold leading-[1.1] tracking-tight text-fg">
+        Los sitios que has pisado, puntuados como se debe
+      </h1>
+      <p class="mt-6 text-xl leading-relaxed text-fg-muted max-w-xl">
+        Nada de estrellas al tuntún. Comparas cada sitio nuevo con los que ya
+        puntuaste y Andanzas le encuentra su hueco exacto en tu ranking. Sigue
+        a tus amigos y descubre dónde han estado.
+      </p>
+
+      <div class="mt-10 flex flex-wrap items-center gap-4">
+        <a
+          href={appUrl}
+          class="inline-flex items-center px-6 py-3 rounded-md bg-brand text-white font-medium hover:bg-brand-dark transition-colors"
+        >
+          Entrar con mi invitación
+        </a>
+        <a
+          href="#como-funciona"
+          class="inline-flex items-center px-6 py-3 rounded-md border border-border text-fg font-medium hover:bg-bg-muted transition-colors"
+        >
+          Ver cómo funciona
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

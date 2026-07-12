@@ -1,0 +1,47 @@
+---
+const steps = [
+  {
+    n: '01',
+    title: 'Añade un sitio',
+    text: 'Un restaurante, un mirador, una playa perdida — pon un pin en el mapa o márcalo como "quiero ir".',
+  },
+  {
+    n: '02',
+    title: 'Puntúa por comparación',
+    text: 'Nada de notas al azar: te preguntamos si te gustó más o menos que otros sitios que ya puntuaste, y encuentra su sitio exacto en tu ranking.',
+  },
+  {
+    n: '03',
+    title: 'Sigue a tus amigos',
+    text: 'Ve su lista, su ranking y lo que han puntuado — sin tener que preguntarles por WhatsApp qué tal el sitio.',
+  },
+  {
+    n: '04',
+    title: 'Descubre en el mapa',
+    text: 'Todo lo que tus amigos han puntuado, en un mapa. Así de simple para decidir dónde ir.',
+  },
+];
+---
+
+<section id="como-funciona" class="py-24 lg:py-32 bg-bg-muted">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="max-w-2xl mb-16">
+      <h2 class="font-display text-3xl lg:text-4xl font-semibold tracking-tight text-fg">
+        Cómo funciona
+      </h2>
+      <p class="mt-4 text-lg text-fg-muted">
+        Cuatro pasos, sin fricción.
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+      {steps.map((step) => (
+        <div>
+          <p class="font-display text-3xl font-semibold text-brand-light">{step.n}</p>
+          <h3 class="mt-3 text-lg font-semibold text-fg">{step.title}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-fg-muted">{step.text}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,39 @@
+---
+const faqs = [
+  {
+    q: '¿Necesito invitación?',
+    a: 'Sí, de momento. Andanzas está en beta cerrada — pídele un código a un amigo que ya esté dentro.',
+  },
+  {
+    q: '¿En qué dispositivo funciona?',
+    a: 'Es una PWA: se abre desde el navegador del móvil y se puede añadir a la pantalla de inicio como una app normal. También funciona en ordenador.',
+  },
+  {
+    q: '¿Tengo que puntuar todo lo que añada?',
+    a: 'No. Puedes marcar un sitio como "quiero ir" sin puntuarlo, y puntuarlo más adelante cuando lo hayas visitado.',
+  },
+  {
+    q: '¿Cómo funciona lo de puntuar por comparación?',
+    a: 'En vez de ponerle una nota al aire, te preguntamos si te gustó más o menos que otros sitios que ya tienes puntuados. Con un par de comparaciones, Andanzas le encuentra su posición exacta en tu ranking.',
+  },
+];
+---
+
+<section id="faq" class="py-24 lg:py-32 bg-bg-muted">
+  <div class="max-w-3xl mx-auto px-6 lg:px-8">
+    <div class="mb-14">
+      <h2 class="font-display text-3xl lg:text-4xl font-semibold tracking-tight text-fg">
+        Preguntas frecuentes
+      </h2>
+    </div>
+
+    <dl class="divide-y divide-border border-y border-border">
+      {faqs.map((f) => (
+        <div class="py-7 grid md:grid-cols-12 gap-3 md:gap-8">
+          <dt class="md:col-span-5 text-base font-semibold text-fg leading-snug">{f.q}</dt>
+          <dd class="md:col-span-7 text-sm leading-relaxed text-fg-muted">{f.a}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+</section>

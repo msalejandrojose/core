@@ -5,6 +5,10 @@ interface Props {
   image?: string;
   url?: string;
   type?: 'website' | 'article';
+  // Nombre del sitio para el sufijo del <title> y og:site_name — por
+  // defecto "Core"; los sub-sitios de proyecto (p.ej. Andanzas) pasan el
+  // suyo para no salir como "Andanzas | Core".
+  siteName?: string;
 }
 
 const {
@@ -13,11 +17,12 @@ const {
   image,
   url = Astro.url.href,
   type = 'website',
+  siteName = 'Core',
 } = Astro.props;
 
 const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://aj.es';
 const ogImage = image ? image : `${siteUrl}/og-default.png`;
-const fullTitle = `${title} | Core`;
+const fullTitle = `${title} | ${siteName}`;
 ---
 
 <title>{fullTitle}</title>
@@ -25,7 +30,7 @@ const fullTitle = `${title} | Core`;
 <link rel="canonical" href={url} />
 
 <meta property="og:type" content={type} />
-<meta property="og:site_name" content="Core" />
+<meta property="og:site_name" content={siteName} />
 <meta property="og:title" content={fullTitle} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={ogImage} />

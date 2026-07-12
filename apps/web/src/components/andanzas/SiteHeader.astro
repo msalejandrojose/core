@@ -1,0 +1,18 @@
+---
+const appUrl = import.meta.env.PUBLIC_ANDANZAS_APP_URL || 'http://app.aj-local.es';
+---
+
+<header class="sticky top-0 z-50 border-b border-border bg-bg/80 backdrop-blur-md">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
+    <a href="/andanzas" class="font-display text-xl font-semibold tracking-tight text-fg">
+      Andanzas
+    </a>
+
+    <a
+      href={appUrl}
+      class="inline-flex items-center px-4 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-dark transition-colors"
+    >
+      Entrar
+    </a>
+  </div>
+</header>
