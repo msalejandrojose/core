@@ -64,6 +64,30 @@ export class SiteEntriesController {
     );
   }
 
+  @Get('user/:userId')
+  @ApiOperation({
+    summary:
+      'Lista de sitios de otro usuario (cursor paginada). En el MVP cualquier perfil es visible (ver TASK-167, canViewProfile) — Follow decide el feed, no el acceso al perfil.',
+  })
+  @ApiCursorPaginatedResponse(MySiteEntryResponseDto)
+  async listByUser(
+    @Param('userId') userId: string,
+    @Query() query: ListMySiteEntriesQueryDto,
+  ): Promise<CursorPaginatedResponseDto<MySiteEntryResponseDto>> {
+    const limit = query.limit ?? 20;
+    const page = await this.listMine.execute({
+      userId,
+      status: query.status,
+      limit,
+      cursor: query.cursor,
+    });
+    return CursorPaginatedResponseDto.of(
+      page.items.map((entry) => MySiteEntryResponseDto.fromEntry(entry)),
+      page.nextCursor,
+      limit,
+    );
+  }
+
   @Post(':siteId/rating')
   @ApiOperation({
     summary:

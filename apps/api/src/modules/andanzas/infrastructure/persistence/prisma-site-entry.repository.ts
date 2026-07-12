@@ -8,6 +8,7 @@ import {
   SiteEntryWithSite,
 } from '../../domain/entities/site-entry.entity';
 import {
+  ListFeedOptions,
   ListMySiteEntriesOptions,
   SiteEntryRepositoryPort,
   UpsertSiteEntryStatusData,
@@ -80,6 +81,37 @@ export class PrismaSiteEntryRepository implements SiteEntryRepositoryPort {
     const filters: Prisma.SiteEntryWhereInput = {
       userId: opts.userId,
       ...(opts.status ? { status: opts.status } : {}),
+    };
+    const where: Prisma.SiteEntryWhereInput = opts.cursor
+      ? { AND: [filters, this.createdAtCursorWhere(opts.cursor)] }
+      : filters;
+
+    const rows = await this.prisma.siteEntry.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      take: opts.limit + 1,
+      include: SITE_ENTRY_WITH_SITE_INCLUDE,
+    });
+
+    const hasMore = rows.length > opts.limit;
+    const slice = hasMore ? rows.slice(0, opts.limit) : rows;
+    const last = hasMore ? slice[slice.length - 1] : null;
+
+    return {
+      items: slice.map((row) =>
+        SiteEntryMapper.toDomainWithSite(row as SiteEntryRowWithSite),
+      ),
+      nextCursor: last
+        ? CursorCodec.encode({ id: last.id, createdAt: last.createdAt.toISOString() })
+        : null,
+    };
+  }
+
+  async listFeed(opts: ListFeedOptions): Promise<CursorPage<SiteEntryWithSite>> {
+    const filters: Prisma.SiteEntryWhereInput = {
+      userId: { in: opts.userIds },
+      status: 'VISITED',
+      score: { not: null },
     };
     const where: Prisma.SiteEntryWhereInput = opts.cursor
       ? { AND: [filters, this.createdAtCursorWhere(opts.cursor)] }
