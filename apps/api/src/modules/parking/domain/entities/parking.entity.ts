@@ -1,4 +1,5 @@
 import type { ParkingStatus } from '@core/shared-types';
+import type { ParkingPhoto } from './parking-photo.entity';
 
 export type { ParkingStatus };
 
@@ -21,4 +22,7 @@ export interface Parking {
 
   createdAt: Date;
   updatedAt: Date;
+
+  // Galería, ordenada por `position`.
+  photos: ParkingPhoto[];
 }
