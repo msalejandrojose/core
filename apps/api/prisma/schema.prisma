@@ -1307,7 +1307,7 @@ model Site {
   latitude        Decimal      @db.Decimal(9, 6)
   longitude       Decimal      @db.Decimal(9, 6)
   address         String?      @db.VarChar(500)
-  externalPlaceId String?      @map("external_place_id") @db.VarChar(255)
+  externalPlaceId String?      @unique @map("external_place_id") @db.VarChar(255)
   createdByUserId String       @map("created_by_user_id") @db.Char(36)
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
@@ -1317,7 +1317,6 @@ model Site {
   entries   SiteEntry[]
 
   @@index([category])
-  @@index([externalPlaceId])
   @@map("andanzas_site")
 }
 

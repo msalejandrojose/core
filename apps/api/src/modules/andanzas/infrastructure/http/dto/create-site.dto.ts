@@ -45,6 +45,16 @@ export class CreateSiteDto {
   address?: string;
 
   @ApiPropertyOptional({
+    maxLength: 255,
+    description:
+      'mapbox_id de un resultado de GET /andanzas/sites/search. Ausente si el sitio se crea a mano con un pin.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  externalPlaceId?: string;
+
+  @ApiPropertyOptional({
     type: [String],
     maxItems: MAX_TAGS_PER_SITE,
     example: ['playa', 'vistas al mar'],

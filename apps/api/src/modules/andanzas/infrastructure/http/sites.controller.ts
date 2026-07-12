@@ -10,8 +10,11 @@ import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current
 import { CreateSiteUseCase } from '../../application/use-cases/create-site.use-case';
 import { GetSiteUseCase } from '../../application/use-cases/get-site.use-case';
 import { ListSitesUseCase } from '../../application/use-cases/list-sites.use-case';
+import { SearchSitePlacesUseCase } from '../../application/use-cases/search-site-places.use-case';
 import { CreateSiteDto } from './dto/create-site.dto';
 import { ListSitesQueryDto } from './dto/list-sites.query.dto';
+import { SearchSitePlacesQueryDto } from './dto/search-site-places.query.dto';
+import { PlaceCandidateResponseDto } from './dto/place-candidate.response.dto';
 import { SiteResponseDto } from './dto/site.response.dto';
 
 @ApiTags('andanzas/sites')
@@ -22,6 +25,7 @@ export class SitesController {
     private readonly createSite: CreateSiteUseCase,
     private readonly getSite: GetSiteUseCase,
     private readonly listSites: ListSitesUseCase,
+    private readonly searchSitePlaces: SearchSitePlacesUseCase,
   ) {}
 
   @Post()
@@ -58,6 +62,19 @@ export class SitesController {
       page.nextCursor,
       limit,
     );
+  }
+
+  @Get('search')
+  @ApiOperation({
+    summary:
+      'Buscar sitios en el proveedor externo (TASK-165) para crear uno a partir del resultado. Declarada antes de :id para que "search" no se confunda con un id.',
+  })
+  @ApiOkResponse({ type: PlaceCandidateResponseDto, isArray: true })
+  async searchPlaces(
+    @Query() query: SearchSitePlacesQueryDto,
+  ): Promise<PlaceCandidateResponseDto[]> {
+    const candidates = await this.searchSitePlaces.execute(query.q);
+    return candidates.map((c) => PlaceCandidateResponseDto.fromCandidate(c));
   }
 
   @Get(':id')
