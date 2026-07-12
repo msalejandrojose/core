@@ -244,6 +244,8 @@ model User {
   dashboards                Dashboard[]
   notifications             UserNotification[]
   devices                   Device[]
+  hostedParkings            Parking[]
+  reservations              Reservation[]
 
   @@map("user")
 }
@@ -367,7 +369,8 @@ model StoredFile {
   updatedAt    DateTime         @updatedAt @map("updated_at")
 
   // Relaciones
-  owner User? @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+  owner        User?         @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+  parkingPhoto ParkingPhoto?
 
   @@map("stored_file")
 }
@@ -1207,6 +1210,7 @@ model PostalCode {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   municipality Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+  parkings     Parking[]
 
   @@unique([municipalityId, code])
   @@index([municipalityId])
@@ -1259,4 +1263,119 @@ model Device {
 
   @@index([userId])
   @@map("device")
+}
+
+// ---------------------------------------------------------------------------
+// Plazza — marketplace de plazas de parking (módulo `parking`)
+//
+// Vive solo en la rama de proyecto `plazza-dev` (y sus ramas de tarea), nunca
+// se mergea a `main`. Reutiliza `User` (iam) como host/huésped, `PostalCode`
+// (geo) para la jerarquía de ubicación y `StoredFile` (storage) para las
+// fotos. Ver diagrama y máquinas de estado en
+// `src/modules/parking/domain/DOMAIN.md`.
+// ---------------------------------------------------------------------------
+
+/// Estado de publicación de una plaza. `DRAFT` mientras el host la está
+/// completando (aún no visible), `PUBLISHED`/`UNPUBLISHED` es el toggle
+/// reversible una vez completada.
+enum ParkingStatus {
+  DRAFT // en edición, no visible en el buscador público
+  PUBLISHED // visible y reservable
+  UNPUBLISHED // ocultada por el host, no reservable
+}
+
+/// Estado de una reserva. Sin `COMPLETED`: una reserva `CONFIRMED` cuyo rango
+/// de fechas ya pasó se considera completada por cálculo (`endDate < now()`),
+/// no por un estado propio.
+enum ReservationStatus {
+  PENDING // creada, a la espera de confirmación (p.ej. pago)
+  CONFIRMED // confirmada, bloquea el rango de fechas para otras reservas
+  CANCELLED // cancelada, libera el rango de fechas
+}
+
+/// Plaza de parking publicada por un host. CRUD completo en el módulo
+/// `parking` (Fase 1, TASK-145).
+model Parking {
+  id                 String        @id @default(uuid()) @db.Char(36)
+  hostUserId         String        @map("host_user_id") @db.Char(36)
+  title              String        @db.VarChar(200)
+  description        String?       @db.Text
+  address            String        @db.VarChar(255)
+  latitude           Decimal       @db.Decimal(9, 6)
+  longitude          Decimal       @db.Decimal(9, 6)
+  postalCodeId       String?       @map("postal_code_id") @db.Char(36)
+  accessInstructions String?       @map("access_instructions") @db.Text
+  pricePerDay        Decimal       @map("price_per_day") @db.Decimal(10, 2)
+  status             ParkingStatus @default(DRAFT)
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  // Relaciones
+  host               User                       @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
+  postalCode         PostalCode?                @relation(fields: [postalCodeId], references: [id], onDelete: SetNull)
+  photos             ParkingPhoto[]
+  availabilityBlocks ParkingAvailabilityBlock[]
+  reservations       Reservation[]
+
+  @@index([hostUserId])
+  @@index([postalCodeId])
+  @@index([status])
+  @@map("parking")
+}
+
+/// Foto de una plaza. Vínculo 1-1 con un `StoredFile` ya subido (módulo
+/// storage); `position` ordena la galería.
+model ParkingPhoto {
+  id           String   @id @default(uuid()) @db.Char(36)
+  parkingId    String   @map("parking_id") @db.Char(36)
+  storedFileId String   @unique @map("stored_file_id") @db.Char(36)
+  position     Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  parking    Parking    @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  storedFile StoredFile @relation(fields: [storedFileId], references: [id], onDelete: Cascade)
+
+  @@index([parkingId, position])
+  @@map("parking_photo")
+}
+
+/// Bloqueo de disponibilidad definido por el host (mantenimiento, uso
+/// personal…), independiente de las reservas. Una plaza está disponible en un
+/// rango de fechas si no cae dentro de ningún `ParkingAvailabilityBlock` ni de
+/// ninguna `Reservation` en estado `PENDING`/`CONFIRMED` (anti-solape, Fase 1
+/// TASK-148).
+model ParkingAvailabilityBlock {
+  id        String   @id @default(uuid()) @db.Char(36)
+  parkingId String   @map("parking_id") @db.Char(36)
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  reason    String?  @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+
+  @@index([parkingId, startDate, endDate])
+  @@map("parking_availability_block")
+}
+
+/// Reserva de una plaza para un rango de fechas. Cálculo de `totalAmount` y
+/// lógica de anti-solape en el módulo `parking` (Fase 1, TASK-148).
+model Reservation {
+  id          String            @id @default(uuid()) @db.Char(36)
+  parkingId   String            @map("parking_id") @db.Char(36)
+  guestUserId String            @map("guest_user_id") @db.Char(36)
+  startDate   DateTime          @map("start_date") @db.Date
+  endDate     DateTime          @map("end_date") @db.Date
+  totalAmount Decimal           @map("total_amount") @db.Decimal(10, 2)
+  status      ReservationStatus @default(PENDING)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  guest   User    @relation(fields: [guestUserId], references: [id], onDelete: Cascade)
+
+  @@index([parkingId, startDate, endDate])
+  @@index([guestUserId])
+  @@index([status])
+  @@map("reservation")
 }
