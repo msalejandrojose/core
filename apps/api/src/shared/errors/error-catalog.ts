@@ -263,6 +263,28 @@ export const ERROR_CATALOG = {
     defaultMessage: 'La transición de estado del lead no está permitida.',
   },
 
+  // Plazza — plazas de parking (módulo `parking`)
+  PARKING_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Plaza no encontrada.',
+  },
+  INVALID_PARKING_TRANSITION: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La transición de estado de la plaza no está permitida.',
+  },
+  PARKING_PHOTO_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Foto no encontrada en la plaza.',
+  },
+  PARKING_PHOTO_SOURCE_INVALID: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'El archivo no está disponible para usarse como foto.',
+  },
+
   // Sections (UI navigation tree)
   SECTION_NOT_FOUND: {
     httpStatus: 404,

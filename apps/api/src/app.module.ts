@@ -14,6 +14,7 @@ import { WorkflowsModule } from './modules/workflows/workflows.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { GeoModule } from './modules/geo/geo.module';
+import { ParkingModule } from './modules/parking/parking.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
 import { DevicesModule } from './modules/devices/devices.module';
@@ -62,6 +63,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     DashboardModule,
     LeadsModule,
     GeoModule,
+    ParkingModule,
     NotificationsModule,
     UserNotificationsModule,
     DevicesModule,
