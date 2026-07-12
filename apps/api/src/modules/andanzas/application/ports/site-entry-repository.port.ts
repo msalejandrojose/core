@@ -20,6 +20,12 @@ export interface ListMySiteEntriesOptions {
   cursor?: string;
 }
 
+export interface ListFeedOptions {
+  userIds: string[];
+  limit: number;
+  cursor?: string;
+}
+
 export interface SiteEntryRepositoryPort {
   findByUserAndSite(userId: string, siteId: string): Promise<SiteEntry | null>;
   // Crea la entry si no existe, o actualiza solo el status si ya existe
@@ -35,4 +41,7 @@ export interface SiteEntryRepositoryPort {
     excludeEntryId: string,
   ): Promise<SiteEntry[]>;
   listByUser(opts: ListMySiteEntriesOptions): Promise<CursorPage<SiteEntryWithSite>>;
+  // Feed agregado: sitios VISITED y ya puntuados de la gente que sigues
+  // (ver TASK-167 — Follow decide el feed, no el acceso al perfil).
+  listFeed(opts: ListFeedOptions): Promise<CursorPage<SiteEntryWithSite>>;
 }

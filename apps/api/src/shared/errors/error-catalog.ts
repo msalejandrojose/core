@@ -458,6 +458,18 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'La comparación ha quedado desincronizada, reinicia el flujo.',
   },
+
+  // Andanzas — social (follows)
+  ANDANZAS_CANNOT_FOLLOW_SELF: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'No puedes seguirte a ti mismo.',
+  },
+  ANDANZAS_FOLLOW_TARGET_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Usuario no encontrado.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;
