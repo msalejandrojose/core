@@ -1,0 +1,21 @@
+---
+import PlazzaLayout from '../../layouts/PlazzaLayout.astro';
+import SiteHeader from '../../components/plazza/SiteHeader.astro';
+import SiteFooter from '../../components/plazza/SiteFooter.astro';
+import ParkingSearch from '../../components/islands/ParkingSearch';
+---
+<PlazzaLayout
+  title="Buscar plaza de parking — Plazza"
+  description="Busca plazas de parking privadas por ubicación y fechas. Reserva por horas o días cerca de estadios, conciertos y estaciones."
+>
+  <SiteHeader />
+  <main class="pt-16 md:pt-20 pb-20 md:pb-28 px-5 md:px-10">
+    <div class="max-w-[1280px] mx-auto">
+      <h1 class="font-plazza text-[clamp(28px,4vw,42px)] leading-[1.05] [letter-spacing:var(--tracking-tighter)] font-semibold text-ink mb-8 md:mb-10">
+        Encuentra tu plaza.
+      </h1>
+      <ParkingSearch client:load />
+    </div>
+  </main>
+  <SiteFooter />
+</PlazzaLayout>

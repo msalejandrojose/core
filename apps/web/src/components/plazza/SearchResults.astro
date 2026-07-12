@@ -1,51 +1,59 @@
 ---
-const results = [
-  { zone: 'Junto al estadio', number: '12', distance: '250 m del acceso', price: 8, rating: 4.9, tag: 'Evento hoy' },
-  { zone: 'Centro histórico',  number: '04', distance: '400 m de la plaza mayor', price: 4, rating: 4.7, tag: 'Techada' },
-  { zone: 'Estación de tren',  number: '27', distance: '5 min a pie del andén', price: 3, rating: 4.8, tag: 'Larga estancia' },
-];
+import { searchParkings, resolvePhotoUrl } from '../../lib/parking';
+
+// Teaser estático (build-time) con las últimas plazas publicadas. El
+// buscador vivo, con fechas y disponibilidad real, vive en /plazas
+// (isla `ParkingSearch`).
+const page = await searchParkings({ limit: 3 });
+const results = page.data;
 ---
 <section class="py-20 md:py-28 px-5 md:px-10 bg-white border-t border-ink/8">
   <div class="max-w-[1280px] mx-auto">
     <div class="flex items-end justify-between gap-6 mb-10 md:mb-14 reveal">
       <div class="max-w-[560px]">
-        <p class="eyebrow mb-4">Resultados de ejemplo</p>
+        <p class="eyebrow mb-4">Últimas plazas publicadas</p>
         <h2 class="font-plazza text-[clamp(26px,3.4vw,40px)] leading-[1.08] [letter-spacing:var(--tracking-tighter)] font-semibold">
           Plazas disponibles cerca de ti.
         </h2>
       </div>
-      <span class="hidden md:block font-mono text-[12px] text-ink/40 uppercase tracking-[0.12em]">3 de 128 plazas</span>
+      <a href="/plazas" class="hidden md:block font-mono text-[12px] text-ink/40 uppercase tracking-[0.12em] hover:text-ink transition">
+        Ver todas las plazas →
+      </a>
     </div>
 
-    <div class="grid md:grid-cols-3 gap-6 md:gap-7">
-      {results.map((r, i) => (
-        <article class="card-hover rounded-xl overflow-hidden border border-ink/8 bg-paper reveal" style={`transition-delay: ${i * 0.08}s`}>
-          <div class="plaza-ph aspect-[4/3] relative flex items-start justify-between p-4">
-            <span class="relative z-10 rounded-full bg-asphalt-900/70 backdrop-blur text-paper text-[11px] font-mono uppercase tracking-[0.1em] px-2.5 py-1">
-              {r.tag}
-            </span>
-            <span class="relative z-10 flex items-center justify-center size-9 rounded-full bg-paper font-plazza font-bold text-asphalt-900 text-[13px]">
-              P{r.number}
-            </span>
-          </div>
-          <div class="p-5">
-            <div class="flex items-center justify-between mb-1.5">
-              <h3 class="font-plazza font-semibold text-[17px] tracking-tight text-ink">{r.zone}</h3>
-              <span class="flex items-center gap-1 text-[13px] font-medium text-ink/70">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="#F5A623" aria-hidden="true"><path d="M6.5 0 8 4.5H13L9 7.3 10.4 12 6.5 9.2 2.6 12 4 7.3 0 4.5H5Z"/></svg>
-                {r.rating}
-              </span>
+    {results.length === 0 ? (
+      <p class="text-[15px] text-ink/50 reveal">
+        Todavía no hay plazas publicadas. <a href="/contacto" class="text-amber-dark font-semibold">Publica la tuya</a>.
+      </p>
+    ) : (
+      <div class="grid md:grid-cols-3 gap-6 md:gap-7">
+        {results.map((r, i) => (
+          <a
+            href={`/plazas/${r.id}`}
+            class="card-hover rounded-xl overflow-hidden border border-ink/8 bg-paper reveal block"
+            style={`transition-delay: ${i * 0.08}s`}
+          >
+            <div
+              class="plaza-ph aspect-[4/3] relative"
+              style={r.coverPhotoUrl ? `background-image:url(${resolvePhotoUrl(r.coverPhotoUrl)}); background-size:cover; background-position:center;` : ''}
+            ></div>
+            <div class="p-5">
+              <h3 class="font-plazza font-semibold text-[17px] tracking-tight text-ink mb-1.5">{r.title}</h3>
+              <p class="text-[14px] text-ink/55 mb-4">{r.address}</p>
+              <div class="flex items-baseline justify-between">
+                <p class="font-plazza font-semibold text-[20px] text-ink">
+                  {r.pricePerDay}€ <span class="font-sans font-normal text-[13px] text-ink/50">/ día</span>
+                </p>
+                <span class="text-[13px] font-semibold text-amber-dark">Ver ficha →</span>
+              </div>
             </div>
-            <p class="text-[14px] text-ink/55 mb-4">{r.distance}</p>
-            <div class="flex items-baseline justify-between">
-              <p class="font-plazza font-semibold text-[20px] text-ink">
-                {r.price}€ <span class="font-sans font-normal text-[13px] text-ink/50">/ hora</span>
-              </p>
-              <a href="#ficha" class="text-[13px] font-semibold text-amber-dark hover:text-ink transition">Ver ficha →</a>
-            </div>
-          </div>
-        </article>
-      ))}
-    </div>
+          </a>
+        ))}
+      </div>
+    )}
+
+    <a href="/plazas" class="md:hidden mt-8 block text-center font-mono text-[12px] text-ink/40 uppercase tracking-[0.12em]">
+      Ver todas las plazas →
+    </a>
   </div>
 </section>

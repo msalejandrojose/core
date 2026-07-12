@@ -35,6 +35,13 @@ export interface ListMyParkingsOptions {
   status?: ParkingStatus;
 }
 
+export interface SearchPublicParkingsOptions {
+  limit: number;
+  cursor?: string;
+  /** Búsqueda libre por título o dirección (buscador público). */
+  q?: string;
+}
+
 export interface ParkingRepositoryPort {
   create(data: CreateParkingData): Promise<Parking>;
   update(id: string, patch: UpdateParkingPatch): Promise<Parking>;
@@ -42,7 +49,13 @@ export interface ParkingRepositoryPort {
   findById(id: string): Promise<Parking | null>;
   /** Scoped al host: `null` tanto si no existe como si pertenece a otro host. */
   findByIdForHost(id: string, hostUserId: string): Promise<Parking | null>;
+  /** `null` si no existe o no está `PUBLISHED` (ficha pública). */
+  findPublishedById(id: string): Promise<Parking | null>;
   list(opts: ListMyParkingsOptions): Promise<CursorPage<Parking>>;
+  /** Buscador público: solo plazas `PUBLISHED`. */
+  searchPublished(
+    opts: SearchPublicParkingsOptions,
+  ): Promise<CursorPage<Parking>>;
   addPhoto(parkingId: string, storedFileId: string): Promise<Parking>;
   removePhoto(parkingId: string, photoId: string): Promise<Parking>;
 }

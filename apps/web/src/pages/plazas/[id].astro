@@ -1,0 +1,26 @@
+---
+import type { GetStaticPaths } from 'astro';
+import PlazzaLayout from '../../layouts/PlazzaLayout.astro';
+import SiteHeader from '../../components/plazza/SiteHeader.astro';
+import SiteFooter from '../../components/plazza/SiteFooter.astro';
+import FichaPlaza from '../../components/plazza/FichaPlaza.astro';
+import { getAllPublishedParkings, getParking } from '../../lib/parking';
+
+export const getStaticPaths = (async () => {
+  const summaries = await getAllPublishedParkings();
+  const parkings = await Promise.all(summaries.map((s) => getParking(s.id)));
+  return parkings.map((parking) => ({ params: { id: parking.id }, props: { parking } }));
+}) satisfies GetStaticPaths;
+
+const { parking } = Astro.props;
+---
+<PlazzaLayout
+  title={`${parking.title} — Plazza`}
+  description={parking.description ?? `Plaza de parking en ${parking.address}, desde ${parking.pricePerDay}€/día.`}
+>
+  <SiteHeader />
+  <main>
+    <FichaPlaza parking={parking} />
+  </main>
+  <SiteFooter />
+</PlazzaLayout>
