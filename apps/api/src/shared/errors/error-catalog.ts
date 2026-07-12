@@ -417,6 +417,18 @@ export const ERROR_CATALOG = {
     level: 'error',
     defaultMessage: 'No se pudo enviar el mensaje de WhatsApp.',
   },
+
+  // Andanzas — invitaciones
+  ANDANZAS_INVITATION_INVALID: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'El código de invitación no es válido o ha caducado.',
+  },
+  ANDANZAS_TOO_MANY_ACTIVE_INVITATIONS: {
+    httpStatus: 429,
+    level: 'warn',
+    defaultMessage: 'Has alcanzado el límite de invitaciones activas.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;

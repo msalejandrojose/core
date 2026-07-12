@@ -18,6 +18,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
+import { AndanzasModule } from './modules/andanzas/andanzas.module';
 import { ErrorLogModule } from './infrastructure/error-log/error-log.module';
 import { HealthModule } from './infrastructure/health/health.module';
 import { AppExceptionFilter } from './shared/filters/app-exception.filter';
@@ -66,6 +67,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     UserNotificationsModule,
     DevicesModule,
     WhatsappModule,
+    AndanzasModule,
     ErrorLogModule,
     HealthModule,
   ],
