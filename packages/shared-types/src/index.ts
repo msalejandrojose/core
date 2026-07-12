@@ -47,3 +47,18 @@ export {
 export type { NotificationChannel } from './notifications/channel.js';
 
 export type { CursorMeta, OffsetMeta } from './pagination/meta.js';
+
+export {
+  ParkingStatusSchema,
+  PARKING_STATUSES,
+  PARKING_STATUS_TRANSITIONS,
+  canTransitionParkingStatus,
+  isBookableParkingStatus,
+  ReservationStatusSchema,
+  RESERVATION_STATUSES,
+  RESERVATION_STATUS_TRANSITIONS,
+  canTransitionReservationStatus,
+  ACTIVE_RESERVATION_STATUSES,
+  blocksAvailability,
+} from './parking/parking.js';
+export type { ParkingStatus, ReservationStatus } from './parking/parking.js';
