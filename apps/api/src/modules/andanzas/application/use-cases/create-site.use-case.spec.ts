@@ -2,12 +2,15 @@ import { CreateSiteUseCase } from './create-site.use-case';
 import { TooManyTagsError } from '../../domain/errors/too-many-tags.error';
 
 describe('CreateSiteUseCase', () => {
-  let sites: { create: jest.Mock };
+  let sites: { create: jest.Mock; findByExternalPlaceId: jest.Mock };
   let tags: { upsertByName: jest.Mock };
   let useCase: CreateSiteUseCase;
 
   beforeEach(() => {
-    sites = { create: jest.fn().mockResolvedValue({ id: 'site-1' }) };
+    sites = {
+      create: jest.fn().mockResolvedValue({ id: 'site-1' }),
+      findByExternalPlaceId: jest.fn().mockResolvedValue(null),
+    };
     tags = {
       upsertByName: jest
         .fn()
@@ -59,5 +62,29 @@ describe('CreateSiteUseCase', () => {
       useCase.execute({ ...baseInput, tagNames: tooMany }),
     ).rejects.toThrow(TooManyTagsError);
     expect(sites.create).not.toHaveBeenCalled();
+  });
+
+  it('crea el sitio con externalPlaceId cuando viene del buscador', async () => {
+    await useCase.execute({ ...baseInput, externalPlaceId: 'mapbox.123' });
+
+    expect(sites.findByExternalPlaceId).toHaveBeenCalledWith('mapbox.123');
+    expect(sites.create).toHaveBeenCalledWith(
+      expect.objectContaining({ externalPlaceId: 'mapbox.123' }),
+    );
+  });
+
+  it('dedup: reutiliza el sitio existente con el mismo externalPlaceId en vez de duplicarlo', async () => {
+    const existing = { id: 'site-existing', externalPlaceId: 'mapbox.123' };
+    sites.findByExternalPlaceId.mockResolvedValue(existing);
+
+    const result = await useCase.execute({ ...baseInput, externalPlaceId: 'mapbox.123' });
+
+    expect(result).toBe(existing);
+    expect(sites.create).not.toHaveBeenCalled();
+  });
+
+  it('sin externalPlaceId no consulta el dedup', async () => {
+    await useCase.execute(baseInput);
+    expect(sites.findByExternalPlaceId).not.toHaveBeenCalled();
   });
 });

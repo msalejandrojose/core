@@ -441,6 +441,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Se han enviado demasiadas etiquetas para este sitio.',
   },
+  ANDANZAS_SITE_PLACE_SEARCH_FAILED: {
+    httpStatus: 502,
+    level: 'error',
+    defaultMessage: 'No se ha podido buscar sitios en el proveedor externo.',
+  },
 
   // Andanzas — SiteEntry y ranking por comparación
   ANDANZAS_INVALID_SITE_ENTRY_TRANSITION: {

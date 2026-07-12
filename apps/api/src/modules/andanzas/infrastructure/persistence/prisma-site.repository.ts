@@ -28,6 +28,7 @@ export class PrismaSiteRepository implements SiteRepositoryPort {
         latitude: data.latitude,
         longitude: data.longitude,
         address: data.address,
+        externalPlaceId: data.externalPlaceId,
         createdByUserId: data.createdByUserId,
         tags: { create: data.tagIds.map((tagId) => ({ tagId })) },
       },
@@ -39,6 +40,14 @@ export class PrismaSiteRepository implements SiteRepositoryPort {
   async findById(id: string): Promise<SiteWithTags | null> {
     const row = await this.prisma.site.findUnique({
       where: { id },
+      include: SITE_INCLUDE,
+    });
+    return row ? SiteMapper.toDomain(row as SiteRowWithTags) : null;
+  }
+
+  async findByExternalPlaceId(externalPlaceId: string): Promise<SiteWithTags | null> {
+    const row = await this.prisma.site.findUnique({
+      where: { externalPlaceId },
       include: SITE_INCLUDE,
     });
     return row ? SiteMapper.toDomain(row as SiteRowWithTags) : null;

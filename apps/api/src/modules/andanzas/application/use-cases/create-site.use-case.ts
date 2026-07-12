@@ -20,6 +20,9 @@ export interface CreateSiteInput {
   latitude: number;
   longitude: number;
   address?: string;
+  // Presente cuando el sitio viene de elegir un resultado del buscador
+  // (TASK-165); ausente cuando se crea a mano con un pin en el mapa.
+  externalPlaceId?: string;
   tagNames?: string[];
 }
 
@@ -45,12 +48,22 @@ export class CreateSiteUseCase {
       normalizedNames.map((name) => this.tags.upsertByName(name)),
     );
 
+    // Dedup: si el sitio viene de un resultado del buscador y otro usuario
+    // ya lo creó antes (mismo externalPlaceId), se reutiliza en vez de
+    // duplicarlo. Los tags nuevos de esta petición no se fusionan sobre el
+    // existente — queda para un refinamiento futuro si hace falta.
+    if (input.externalPlaceId) {
+      const existing = await this.sites.findByExternalPlaceId(input.externalPlaceId);
+      if (existing) return existing;
+    }
+
     return this.sites.create({
       name: input.name,
       category: input.category,
       latitude: input.latitude,
       longitude: input.longitude,
       address: input.address ?? null,
+      externalPlaceId: input.externalPlaceId ?? null,
       createdByUserId: input.createdByUserId,
       tagIds: tags.map((tag) => tag.id),
     });
