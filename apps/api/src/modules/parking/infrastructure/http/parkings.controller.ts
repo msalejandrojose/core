@@ -24,6 +24,7 @@ import {
 import { type AccessTokenPayload } from '../../../iam/application/ports/token-issuer.port';
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
+import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
 import { AddParkingPhotoUseCase } from '../../application/use-cases/add-parking-photo.use-case';
 import { CreateParkingUseCase } from '../../application/use-cases/create-parking.use-case';
 import { GetParkingUseCase } from '../../application/use-cases/get-parking.use-case';
@@ -53,6 +54,7 @@ export class ParkingsController {
     private readonly unpublishParking: UnpublishParkingUseCase,
     private readonly addParkingPhoto: AddParkingPhotoUseCase,
     private readonly removeParkingPhoto: RemoveParkingPhotoUseCase,
+    private readonly viewTokens: FileViewTokenService,
   ) {}
 
   @Get()
@@ -70,7 +72,7 @@ export class ParkingsController {
       status: query.status,
     });
     return CursorPaginatedResponseDto.of(
-      page.items.map((p) => ParkingResponseDto.fromDomain(p)),
+      page.items.map((p) => ParkingResponseDto.fromDomain(p, this.viewTokens)),
       page.nextCursor,
       limit,
     );
@@ -87,7 +89,7 @@ export class ParkingsController {
       hostUserId: current.sub,
       ...dto,
     });
-    return ParkingResponseDto.fromDomain(parking);
+    return ParkingResponseDto.fromDomain(parking, this.viewTokens);
   }
 
   @Get(':id')
@@ -98,7 +100,7 @@ export class ParkingsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ParkingResponseDto> {
     const parking = await this.getParking.execute(id, current.sub);
-    return ParkingResponseDto.fromDomain(parking);
+    return ParkingResponseDto.fromDomain(parking, this.viewTokens);
   }
 
   @Patch(':id')
@@ -110,7 +112,7 @@ export class ParkingsController {
     @Body() dto: UpdateParkingDto,
   ): Promise<ParkingResponseDto> {
     const parking = await this.updateParking.execute(id, current.sub, dto);
-    return ParkingResponseDto.fromDomain(parking);
+    return ParkingResponseDto.fromDomain(parking, this.viewTokens);
   }
 
   @Post(':id/publish')
@@ -121,7 +123,7 @@ export class ParkingsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ParkingResponseDto> {
     const parking = await this.publishParking.execute(id, current.sub);
-    return ParkingResponseDto.fromDomain(parking);
+    return ParkingResponseDto.fromDomain(parking, this.viewTokens);
   }
 
   @Post(':id/unpublish')
@@ -132,7 +134,7 @@ export class ParkingsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ParkingResponseDto> {
     const parking = await this.unpublishParking.execute(id, current.sub);
-    return ParkingResponseDto.fromDomain(parking);
+    return ParkingResponseDto.fromDomain(parking, this.viewTokens);
   }
 
   @Post(':id/photos')
@@ -148,7 +150,7 @@ export class ParkingsController {
       current.sub,
       dto.storedFileId,
     );
-    return ParkingResponseDto.fromDomain(parking);
+    return ParkingResponseDto.fromDomain(parking, this.viewTokens);
   }
 
   @Delete(':id/photos/:photoId')
@@ -165,6 +167,6 @@ export class ParkingsController {
       current.sub,
       photoId,
     );
-    return ParkingResponseDto.fromDomain(parking);
+    return ParkingResponseDto.fromDomain(parking, this.viewTokens);
   }
 }

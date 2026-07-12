@@ -1,12 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PARKING_STATUSES, type ParkingStatus } from '@core/shared-types';
 import { type Parking } from '../../../domain/entities/parking.entity';
+import { FileViewTokenService } from '../../../../storage/infrastructure/http/file-view-token.service';
 
 class ParkingPhotoResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() storedFileId: string;
   @ApiProperty() position: number;
   @ApiProperty() createdAt: Date;
+  @ApiProperty() url: string;
 }
 
 export class ParkingResponseDto {
@@ -28,7 +30,10 @@ export class ParkingResponseDto {
   @ApiProperty({ type: [ParkingPhotoResponseDto] })
   photos: ParkingPhotoResponseDto[];
 
-  static fromDomain(parking: Parking): ParkingResponseDto {
+  static fromDomain(
+    parking: Parking,
+    viewTokens: FileViewTokenService,
+  ): ParkingResponseDto {
     const dto = new ParkingResponseDto();
     dto.id = parking.id;
     dto.hostUserId = parking.hostUserId;
@@ -48,6 +53,7 @@ export class ParkingResponseDto {
       storedFileId: p.storedFileId,
       position: p.position,
       createdAt: p.createdAt,
+      url: `/files/view?token=${viewTokens.issue(p.storedFileId)}`,
     }));
     return dto;
   }
