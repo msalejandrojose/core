@@ -179,6 +179,9 @@ import { MailerModule } from '../mailer/mailer.module';
     ROLE_REPOSITORY,
     // Consumido por el resolver de target `users` de WorkflowsModule.
     USER_REPOSITORY,
+    // Consumido por AndanzasModule para dar de alta la cuenta al canjear
+    // una invitación (ver UserRegistrarPort en el módulo andanzas).
+    RegisterUserUseCase,
   ],
 })
 export class IamModule {}
