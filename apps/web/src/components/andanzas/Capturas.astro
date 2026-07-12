@@ -1,0 +1,51 @@
+---
+// Mockups ilustrativos (no capturas reales — las pantallas de la app aún
+// no están construidas, solo el backend). Se sustituyen por capturas de
+// verdad en cuanto exista UI de apps/mobile para Andanzas.
+const screens = [
+  {
+    label: 'Tu ranking',
+    accent: 'oklch(0.58 0.12 40)',
+    lines: ['🥇 Chiringuito La Ola · 9.4', '🥈 Mirador del Puerto · 8.7', '🥉 Bar Pepe · 8.1'],
+  },
+  {
+    label: '¿Cuál te gustó más?',
+    accent: 'oklch(0.42 0.12 40)',
+    lines: ['Comparando…', 'Chiringuito La Ola', 'vs', 'Terraza Luna'],
+  },
+  {
+    label: 'Mapa de amigos',
+    accent: 'oklch(0.72 0.08 40)',
+    lines: ['📍 8 sitios de Marta', '📍 5 sitios de Juan', '📍 tu zona'],
+  },
+];
+---
+
+<section class="py-24 lg:py-32">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="max-w-2xl mb-16">
+      <h2 class="font-display text-3xl lg:text-4xl font-semibold tracking-tight text-fg">
+        Así se ve (más o menos)
+      </h2>
+      <p class="mt-4 text-lg text-fg-muted">
+        La app está en construcción — esto son mockups del concepto, no capturas finales.
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-8">
+      {screens.map((screen) => (
+        <div class="rounded-xl border border-border bg-bg-muted p-3">
+          <div class="rounded-lg bg-bg aspect-[9/16] p-5 flex flex-col" style={`box-shadow: inset 0 0 0 1px oklch(0.86 0.014 80)`}>
+            <div class="h-2 w-16 rounded-full mx-auto mb-6" style={`background:${screen.accent}`}></div>
+            <p class="text-xs font-medium text-fg-subtle uppercase tracking-wide mb-4">{screen.label}</p>
+            <div class="space-y-2 flex-1">
+              {screen.lines.map((line) => (
+                <p class="text-sm text-fg-muted leading-snug">{line}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

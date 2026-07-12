@@ -1,0 +1,25 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-border bg-bg-muted mt-auto">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+      <div>
+        <p class="font-display text-lg font-semibold text-fg">Andanzas</p>
+        <p class="mt-1 text-sm text-fg-muted">Los sitios que has pisado, puntuados como se debe.</p>
+      </div>
+
+      <nav class="flex flex-wrap gap-x-8 gap-y-2" aria-label="Footer">
+        <a href="/andanzas#como-funciona" class="text-sm text-fg-muted hover:text-fg transition-colors">Cómo funciona</a>
+        <a href="/andanzas#faq" class="text-sm text-fg-muted hover:text-fg transition-colors">Preguntas frecuentes</a>
+      </nav>
+    </div>
+
+    <div class="mt-8 pt-8 border-t border-border">
+      <p class="text-xs text-fg-subtle">
+        © {year} Andanzas. Acceso solo por invitación, de momento.
+      </p>
+    </div>
+  </div>
+</footer>

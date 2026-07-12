@@ -1,0 +1,22 @@
+---
+const appUrl = import.meta.env.PUBLIC_ANDANZAS_APP_URL || 'http://app.aj-local.es';
+---
+
+<section class="py-24 lg:py-32">
+  <div class="max-w-3xl mx-auto px-6 lg:px-8 text-center">
+    <h2 class="font-display text-3xl lg:text-4xl font-semibold tracking-tight text-fg">
+      ¿Tienes ya tu código de invitación?
+    </h2>
+    <p class="mt-4 text-lg text-fg-muted">
+      Entra y empieza a puntuar los sitios que ya has pisado.
+    </p>
+    <div class="mt-8">
+      <a
+        href={appUrl}
+        class="inline-flex items-center px-7 py-3.5 rounded-md bg-brand text-white font-medium hover:bg-brand-dark transition-colors"
+      >
+        Entrar en Andanzas
+      </a>
+    </div>
+  </div>
+</section>
