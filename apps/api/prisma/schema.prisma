@@ -1398,11 +1398,59 @@ model Reservation {
 
   parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
   guest   User    @relation(fields: [guestUserId], references: [id], onDelete: Cascade)
+  payment Payment?
 
   @@index([parkingId, startDate, endDate])
   @@index([guestUserId])
   @@index([status])
   @@map("reservation")
+}
+
+/// Estado del cobro al huésped (TASK-153).
+enum PaymentStatus {
+  PENDING // checkout creado, a la espera de que Stripe confirme el cobro
+  PAID // cobro confirmado (webhook `checkout.session.completed`)
+  FAILED // el checkout expiró o el cobro falló
+  REFUNDED // reembolsado (fuera de alcance del flujo automático; manual)
+}
+
+/// Estado de la liquidación al host de su parte del cobro (`hostPayoutAmount`).
+/// Sin integración real de pagos a terceros (Stripe Connect): un admin marca
+/// `RELEASED` cuando la transferencia se hace por fuera del sistema. Ver nota
+/// en `domain/commission.ts`.
+enum HostPayoutStatus {
+  PENDING
+  RELEASED
+}
+
+/// Cobro al huésped de una reserva + reparto de comisión de la plataforma.
+/// 1-1 con `Reservation` (una reserva se paga una vez; para cambios de
+/// importe se cancela y se reserva de nuevo). `amount` es una copia de
+/// `Reservation.totalAmount` en el momento del checkout — inmutable aunque
+/// la reserva cambie después.
+model Payment {
+  id                        String           @id @default(uuid()) @db.Char(36)
+  reservationId             String           @unique @map("reservation_id") @db.Char(36)
+  status                    PaymentStatus    @default(PENDING)
+  amount                    Decimal          @db.Decimal(10, 2)
+  platformFeeAmount         Decimal          @map("platform_fee_amount") @db.Decimal(10, 2)
+  hostPayoutAmount          Decimal          @map("host_payout_amount") @db.Decimal(10, 2)
+  hostPayoutStatus          HostPayoutStatus @default(PENDING) @map("host_payout_status")
+  hostPayoutReleasedAt      DateTime?        @map("host_payout_released_at")
+  provider                  String           @default("stripe") @db.VarChar(30)
+  providerCheckoutSessionId String?          @unique @map("provider_checkout_session_id") @db.VarChar(255)
+  providerPaymentIntentId   String?          @unique @map("provider_payment_intent_id") @db.VarChar(255)
+  paidAt                    DateTime?        @map("paid_at")
+  failedAt                  DateTime?        @map("failed_at")
+  refundedAt                DateTime?        @map("refunded_at")
+  createdAt                 DateTime         @default(now()) @map("created_at")
+  updatedAt                 DateTime         @updatedAt @map("updated_at")
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([hostPayoutStatus])
+  @@map("payment")
 }
 
 /// Estado de la verificación de identidad de un host (KYC básico, TASK-155).

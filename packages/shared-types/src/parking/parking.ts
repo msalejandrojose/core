@@ -77,3 +77,11 @@ export function canTransitionHostVerificationStatus(
 ): boolean {
   return HOST_VERIFICATION_STATUS_TRANSITIONS[from].includes(to);
 }
+
+export const PaymentStatusSchema = z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']);
+export type PaymentStatus = z.infer<typeof PaymentStatusSchema>;
+export const PAYMENT_STATUSES = PaymentStatusSchema.options;
+
+export const HostPayoutStatusSchema = z.enum(['PENDING', 'RELEASED']);
+export type HostPayoutStatus = z.infer<typeof HostPayoutStatusSchema>;
+export const HOST_PAYOUT_STATUSES = HostPayoutStatusSchema.options;

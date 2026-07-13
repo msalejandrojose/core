@@ -64,5 +64,15 @@ export {
   HOST_VERIFICATION_STATUSES,
   HOST_VERIFICATION_STATUS_TRANSITIONS,
   canTransitionHostVerificationStatus,
+  PaymentStatusSchema,
+  PAYMENT_STATUSES,
+  HostPayoutStatusSchema,
+  HOST_PAYOUT_STATUSES,
 } from './parking/parking.js';
-export type { ParkingStatus, ReservationStatus, HostVerificationStatus } from './parking/parking.js';
+export type {
+  ParkingStatus,
+  ReservationStatus,
+  HostVerificationStatus,
+  PaymentStatus,
+  HostPayoutStatus,
+} from './parking/parking.js';

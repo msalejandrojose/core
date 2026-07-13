@@ -15,13 +15,17 @@ import { RequiresPermission } from '../../../iam/infrastructure/http/decorators/
 import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
 import { GetAnyParkingUseCase } from '../../application/use-cases/get-any-parking.use-case';
 import { ListAllParkingsUseCase } from '../../application/use-cases/list-all-parkings.use-case';
+import { ListAllPaymentsUseCase } from '../../application/use-cases/list-all-payments.use-case';
 import { ListAllReservationsUseCase } from '../../application/use-cases/list-all-reservations.use-case';
 import { ModerateUnpublishParkingUseCase } from '../../application/use-cases/moderate-unpublish-parking.use-case';
+import { ReleaseHostPayoutUseCase } from '../../application/use-cases/release-host-payout.use-case';
 import { UnverifyParkingUseCase } from '../../application/use-cases/unverify-parking.use-case';
 import { VerifyParkingUseCase } from '../../application/use-cases/verify-parking.use-case';
 import { ListAllParkingsQueryDto } from './dto/list-all-parkings.query.dto';
+import { ListAllPaymentsQueryDto } from './dto/list-all-payments.query.dto';
 import { ListAllReservationsQueryDto } from './dto/list-all-reservations.query.dto';
 import { ParkingResponseDto } from './dto/parking.response.dto';
+import { PaymentResponseDto } from './dto/payment.response.dto';
 import { ReservationResponseDto } from './dto/reservation.response.dto';
 
 // Backoffice: moderación de plazas y visión completa de reservas, sobre
@@ -37,6 +41,8 @@ export class AdminParkingsController {
     private readonly verifyParking: VerifyParkingUseCase,
     private readonly unverifyParking: UnverifyParkingUseCase,
     private readonly listAllReservations: ListAllReservationsUseCase,
+    private readonly listAllPayments: ListAllPaymentsUseCase,
+    private readonly releaseHostPayout: ReleaseHostPayoutUseCase,
     private readonly viewTokens: FileViewTokenService,
   ) {}
 
@@ -126,5 +132,42 @@ export class AdminParkingsController {
       page.nextCursor,
       limit,
     );
+  }
+
+  @Get('payments')
+  @RequiresPermission('parking', 'READ')
+  @ApiOperation({
+    summary: 'Listar todos los pagos (soporte y liquidación de hosts)',
+  })
+  @ApiCursorPaginatedResponse(PaymentResponseDto)
+  async listPayments(
+    @Query() query: ListAllPaymentsQueryDto,
+  ): Promise<CursorPaginatedResponseDto<PaymentResponseDto>> {
+    const limit = query.limit ?? 20;
+    const page = await this.listAllPayments.execute({
+      limit,
+      cursor: query.cursor,
+      status: query.status,
+      hostPayoutStatus: query.hostPayoutStatus,
+    });
+    return CursorPaginatedResponseDto.of(
+      page.items.map((p) => PaymentResponseDto.fromDomain(p)),
+      page.nextCursor,
+      limit,
+    );
+  }
+
+  @Post('payments/:id/release-payout')
+  @RequiresPermission('parking', 'WRITE')
+  @ApiOperation({
+    summary:
+      'Marcar como liquidada la parte del host de un pago (transferencia hecha fuera del sistema)',
+  })
+  @ApiOkResponse({ type: PaymentResponseDto })
+  async releasePayout(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PaymentResponseDto> {
+    const payment = await this.releaseHostPayout.execute(id);
+    return PaymentResponseDto.fromDomain(payment);
   }
 }
