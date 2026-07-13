@@ -65,12 +65,15 @@ async function bootstrap() {
   // El filtro global de excepciones (`AppExceptionFilter`) se registra vía
   // `APP_FILTER` en `app.module.ts` para que reciba `ErrorLogService` por DI.
 
-  // Versionado path-based: toda la API vive bajo `/v1`. Los health checks
-  // quedan fuera porque los probes de infra (Cloud Run, ECS, LB) apuntan a
-  // rutas fijas sin versión. `/docs` y `/docs-json` no se ven afectados: por
-  // defecto `SwaggerModule.setup` ignora el prefijo global.
-  app.setGlobalPrefix('v1', { exclude: ['health', 'health/live'] });
-
+  // El spec OpenAPI se genera ANTES de aplicar el prefijo global a
+  // propósito: `SwaggerModule.createDocument` refleja el prefijo que esté
+  // activo en ese momento, así que si se genera después, cada ruta del doc
+  // (y por tanto cada path del cliente tipado `@core/api-client`) queda
+  // con `/v1/` delante. Los ~140 call sites de mobile/backoffice están
+  // escritos sin el prefijo (el versionado es un detalle de transporte,
+  // no del contrato) — `/v1` se añade una sola vez al `baseUrl` del
+  // cliente (ver apps/mobile|backoffice/src/api/client.ts), no en cada
+  // llamada. Este orden es justo lo que lo mantiene así.
   const config = new DocumentBuilder()
     .setTitle('Core API')
     .setDescription('Core API — API-first, OpenAPI spec served at /docs-json')
@@ -82,6 +85,11 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document, {
     jsonDocumentUrl: 'docs-json',
   });
+
+  // Versionado path-based: toda la API vive bajo `/v1`. Los health checks
+  // quedan fuera porque los probes de infra (Cloud Run, ECS, LB) apuntan a
+  // rutas fijas sin versión.
+  app.setGlobalPrefix('v1', { exclude: ['health', 'health/live'] });
 
   await app.listen(process.env.PORT ?? 3000);
 }
