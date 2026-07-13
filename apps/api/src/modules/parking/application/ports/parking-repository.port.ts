@@ -42,6 +42,13 @@ export interface SearchPublicParkingsOptions {
   q?: string;
 }
 
+export interface ListAllParkingsOptions {
+  limit: number;
+  cursor?: string;
+  status?: ParkingStatus;
+  hostUserId?: string;
+}
+
 export interface ParkingRepositoryPort {
   create(data: CreateParkingData): Promise<Parking>;
   update(id: string, patch: UpdateParkingPatch): Promise<Parking>;
@@ -56,6 +63,8 @@ export interface ParkingRepositoryPort {
   searchPublished(
     opts: SearchPublicParkingsOptions,
   ): Promise<CursorPage<Parking>>;
+  /** Backoffice: todas las plazas, de cualquier host, para moderación. */
+  listAll(opts: ListAllParkingsOptions): Promise<CursorPage<Parking>>;
   addPhoto(parkingId: string, storedFileId: string): Promise<Parking>;
   removePhoto(parkingId: string, photoId: string): Promise<Parking>;
 }

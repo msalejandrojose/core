@@ -6,6 +6,7 @@ import { CursorCodec, CursorPage } from '../../../../shared/pagination';
 import { Reservation } from '../../domain/entities/reservation.entity';
 import {
   CreateReservationData,
+  ListAllReservationsOptions,
   ListHostReservationsOptions,
   ListMyReservationsOptions,
   ReservationRepositoryPort,
@@ -80,6 +81,16 @@ export class PrismaReservationRepository implements ReservationRepositoryPort {
       parking: { hostUserId: opts.hostUserId },
       ...(opts.parkingId ? { parkingId: opts.parkingId } : {}),
       ...(opts.status ? { status: opts.status } : {}),
+    };
+    return this.listWithCursor(filters, opts.limit, opts.cursor);
+  }
+
+  async listAll(
+    opts: ListAllReservationsOptions,
+  ): Promise<CursorPage<Reservation>> {
+    const filters: Prisma.ReservationWhereInput = {
+      ...(opts.status ? { status: opts.status } : {}),
+      ...(opts.parkingId ? { parkingId: opts.parkingId } : {}),
     };
     return this.listWithCursor(filters, opts.limit, opts.cursor);
   }

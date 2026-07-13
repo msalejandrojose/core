@@ -161,6 +161,21 @@ const LeadDetailPage = lazy(() =>
     default: m.LeadDetailPage,
   })),
 );
+const ParkingsPage = lazy(() =>
+  import('@/features/parking/ParkingsPage').then((m) => ({
+    default: m.ParkingsPage,
+  })),
+);
+const ParkingDetailPage = lazy(() =>
+  import('@/features/parking/ParkingDetailPage').then((m) => ({
+    default: m.ParkingDetailPage,
+  })),
+);
+const ReservationsPage = lazy(() =>
+  import('@/features/parking/ReservationsPage').then((m) => ({
+    default: m.ReservationsPage,
+  })),
+);
 const FormsListPage = lazy(() =>
   import('@/features/dynamic-forms/FormsListPage').then((m) => ({
     default: m.FormsListPage,
@@ -241,6 +256,15 @@ export default function App() {
               <Route path="/blog/tags" element={<TagsPage />} />
               <Route path="/leads" element={<LeadsPage />} />
               <Route path="/leads/:id" element={<LeadDetailPage />} />
+              <Route path="/parking/parkings" element={<ParkingsPage />} />
+              <Route
+                path="/parking/parkings/:id"
+                element={<ParkingDetailPage />}
+              />
+              <Route
+                path="/parking/reservations"
+                element={<ReservationsPage />}
+              />
               <Route path="/files" element={<FilesPage />} />
               <Route path="/whatsapp" element={<WhatsappPage />} />
               <Route

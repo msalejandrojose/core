@@ -15,8 +15,12 @@ if (!baseUrl) {
  * - Ante un 401 (sesión expirada/credenciales inválidas) cierra sesión, vacía la
  *   caché de queries y redirige a /login con un hard reload para limpiar estado.
  */
+// La API vive versionada bajo `/v1` (ver `app.setGlobalPrefix` en apps/api);
+// `SwaggerModule` genera el schema OpenAPI sin ese prefijo, así que hay que
+// añadirlo aquí para que las rutas tipadas apunten a la URL real. Mismo
+// convenio que los helpers de subida (`features/files/lib/http.ts`, etc.).
 export const apiClient = createApiClient({
-  baseUrl,
+  baseUrl: `${baseUrl}/v1`,
   getToken: getAuthToken,
 });
 
