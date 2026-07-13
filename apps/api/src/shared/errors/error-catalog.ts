@@ -320,6 +320,23 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'La fecha de fin debe ser posterior a la fecha de inicio.',
   },
+  PAYMENT_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Pago no encontrado.',
+  },
+  RESERVATION_NOT_PAYABLE: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage:
+      'La reserva no admite un nuevo cobro (cancelada o ya tiene un pago en curso).',
+  },
+  HOST_PAYOUT_NOT_ELIGIBLE: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage:
+      'El pago no está en un estado que permita liquidar al host.',
+  },
   HOST_VERIFICATION_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',

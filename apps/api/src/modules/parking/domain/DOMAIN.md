@@ -19,6 +19,7 @@ erDiagram
     Parking ||--o{ ParkingAvailabilityBlock : "bloqueos del host"
     Parking ||--o{ ParkingPriceOverride : "precios especiales"
     Parking ||--o{ Reservation : "reservas"
+    Reservation ||--o| Payment : "cobro"
 
     Parking {
         string id PK
@@ -61,6 +62,16 @@ erDiagram
         decimal totalAmount
         ReservationStatus status
     }
+    Payment {
+        string id PK
+        string reservationId FK "unique"
+        PaymentStatus status
+        decimal amount
+        decimal platformFeeAmount
+        decimal hostPayoutAmount
+        HostPayoutStatus hostPayoutStatus
+        string providerCheckoutSessionId "unique, nullable"
+    }
 ```
 
 ### Notas de diseño
@@ -84,6 +95,26 @@ erDiagram
   `domain/pricing.ts` (`calculateReservationTotal`), reutilizado por
   `CreateReservationUseCase` y por `GetParkingPriceQuoteUseCase` (quote
   público sin crear reserva, para el buscador).
+- **`Payment` es 1-1 con `Reservation`** (TASK-153): una reserva se paga una
+  vez; para cambiar el importe se cancela y se reserva de nuevo en vez de
+  editar un pago. `amount` es una copia congelada de `totalAmount` en el
+  momento del checkout. El cobro se hace vía **Stripe Checkout** (puerto
+  `PaymentGatewayPort` en el módulo genérico `payments`, con
+  `NullPaymentGatewayAdapter` si no hay `STRIPE_SECRET_KEY` — mismo patrón que
+  `MailerPort`/`ResendMailerAdapter`/`NullMailerAdapter`); el webhook de
+  Stripe es quien confirma el cobro (`HandlePaymentWebhookUseCase`), no la
+  API en el momento de crear el checkout.
+- **`platformFeeAmount`/`hostPayoutAmount`** se calculan con
+  `calculateCommissionSplit` (`domain/commission.ts`, `PLAZZA_PLATFORM_FEE_PERCENT`,
+  10% por defecto) al crear el checkout. **`hostPayoutStatus` es un registro
+  manual**, no una transferencia real: no hay integración de Stripe Connect
+  (requeriría onboarding bancario del host, fuera de alcance) — un admin lo
+  marca `RELEASED` desde el backoffice cuando liquida al host por fuera del
+  sistema.
+- El pago **no transiciona el estado de la reserva**: confirmar una reserva
+  (`Reservation.status: PENDING → CONFIRMED`) sigue siendo una acción
+  explícita del host, independiente de si ya se cobró. Unificar ambos flujos
+  es una decisión de producto para una iteración futura.
 - Los enums y las funciones de transición (`canTransitionParkingStatus`,
   `canTransitionReservationStatus`, `blocksAvailability`) viven en
   `@core/shared-types` (`src/parking/parking.ts`), igual que el pipeline de

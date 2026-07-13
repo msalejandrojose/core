@@ -23,12 +23,16 @@ import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current
 import { CancelReservationUseCase } from '../../application/use-cases/cancel-reservation.use-case';
 import { ConfirmReservationUseCase } from '../../application/use-cases/confirm-reservation.use-case';
 import { CreateReservationUseCase } from '../../application/use-cases/create-reservation.use-case';
+import { CreateReservationCheckoutUseCase } from '../../application/use-cases/create-reservation-checkout.use-case';
 import { GetReservationUseCase } from '../../application/use-cases/get-reservation.use-case';
+import { GetReservationPaymentUseCase } from '../../application/use-cases/get-reservation-payment.use-case';
 import { ListHostReservationsUseCase } from '../../application/use-cases/list-host-reservations.use-case';
 import { ListMyReservationsUseCase } from '../../application/use-cases/list-my-reservations.use-case';
+import { CheckoutResponseDto } from './dto/checkout.response.dto';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { ListHostReservationsQueryDto } from './dto/list-host-reservations.query.dto';
 import { ListMyReservationsQueryDto } from './dto/list-my-reservations.query.dto';
+import { PaymentResponseDto } from './dto/payment.response.dto';
 import { ReservationResponseDto } from './dto/reservation.response.dto';
 
 // Reservas del usuario autenticado, tanto como guest (reservas que hace)
@@ -45,6 +49,8 @@ export class ReservationsController {
     private readonly listHostReservations: ListHostReservationsUseCase,
     private readonly confirmReservation: ConfirmReservationUseCase,
     private readonly cancelReservation: CancelReservationUseCase,
+    private readonly createReservationCheckout: CreateReservationCheckoutUseCase,
+    private readonly getReservationPayment: GetReservationPaymentUseCase,
   ) {}
 
   @Post()
@@ -143,5 +149,32 @@ export class ReservationsController {
   ): Promise<ReservationResponseDto> {
     const reservation = await this.cancelReservation.execute(id, current.sub);
     return ReservationResponseDto.fromDomain(reservation);
+  }
+
+  @Post(':id/checkout')
+  @ApiOperation({
+    summary: 'Iniciar el cobro de la reserva (Stripe Checkout, solo el guest)',
+  })
+  @ApiCreatedResponse({ type: CheckoutResponseDto })
+  async checkout(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CheckoutResponseDto> {
+    const checkout = await this.createReservationCheckout.execute(
+      id,
+      current.sub,
+    );
+    return CheckoutResponseDto.fromDomain(checkout);
+  }
+
+  @Get(':id/payment')
+  @ApiOperation({ summary: 'Estado del pago de una reserva (guest o host)' })
+  @ApiOkResponse({ type: PaymentResponseDto })
+  async payment(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PaymentResponseDto> {
+    const payment = await this.getReservationPayment.execute(id, current.sub);
+    return PaymentResponseDto.fromDomain(payment);
   }
 }
