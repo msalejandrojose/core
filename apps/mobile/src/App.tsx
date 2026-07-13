@@ -8,6 +8,7 @@ import LoginPage from '@/features/auth/LoginPage';
 import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage';
 import VerifyEmailPage from '@/features/auth/VerifyEmailPage';
+import JoinPage from '@/features/onboarding/JoinPage';
 import TabsShell from '@/app/TabsShell';
 import { ErrorBoundary, OfflineBanner } from '@/components/ux';
 
@@ -72,6 +73,13 @@ export default function App() {
                 ) : (
                   <ForgotPasswordPage />
                 )
+              }
+            />
+            <Route
+              exact
+              path="/join/:code?"
+              render={() =>
+                isAuthenticated ? <Redirect to={home} /> : <JoinPage />
               }
             />
 
