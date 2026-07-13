@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IamModule } from '../iam/iam.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { StorageModule } from '../storage/storage.module';
 import { HOST_VERIFICATION_REPOSITORY } from './application/ports/host-verification-repository.port';
 import { PARKING_REPOSITORY } from './application/ports/parking-repository.port';
@@ -47,7 +48,7 @@ import { PublicParkingsController } from './infrastructure/http/public-parkings.
 import { ReservationsController } from './infrastructure/http/reservations.controller';
 
 @Module({
-  imports: [IamModule, StorageModule],
+  imports: [IamModule, StorageModule, NotificationsModule],
   controllers: [
     ParkingsController,
     ReservationsController,

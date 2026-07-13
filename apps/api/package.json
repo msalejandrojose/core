@@ -30,6 +30,7 @@
     "seed:geo": "pnpm build && node dist/seeds/seed-geo.js",
     "seed:leads": "pnpm build && node dist/seeds/seed-leads-capture.js",
     "seed:notifications": "pnpm build && node dist/seeds/seed-notifications.js",
+    "seed:parking-notifications": "pnpm build && node dist/seeds/seed-parking-notifications.js",
     "sync:sections": "pnpm build && node dist/seeds/sync-api-sections.js"
   },
   "dependencies": {
