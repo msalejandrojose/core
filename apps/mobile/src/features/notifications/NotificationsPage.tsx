@@ -1,4 +1,5 @@
 import {
+  IonBackButton,
   IonButton,
   IonButtons,
   IonContent,
@@ -93,7 +94,8 @@ function NotificationRow({
  * sobre el primitivo `CursorList`, MOB-09), con pull-to-refresh, scroll
  * infinito, marcar-como-leída al tocar y "Marcar todo". Al (re)entrar en la
  * pestaña refresca el contador de no leídas para que el badge no quede obsoleto.
- * Es una raíz de tab, así que no lleva botón de volver.
+ * En Andanzas se llega desde el tab "Perfil" (TASK-180), no tiene tab propia,
+ * así que lleva botón de volver.
  */
 export default function NotificationsPage() {
   const { items, status, unread, hasMore, reload, loadMore, markRead, markAllRead } =
@@ -120,6 +122,9 @@ export default function NotificationsPage() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/tabs/me" text="" />
+          </IonButtons>
           <IonTitle>Notificaciones</IonTitle>
           <IonButtons slot="end">
             {unread > 0 ? (

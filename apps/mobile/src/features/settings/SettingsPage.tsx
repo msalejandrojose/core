@@ -1,5 +1,7 @@
 import {
+  IonBackButton,
   IonButton,
+  IonButtons,
   IonContent,
   IonHeader,
   IonIcon,
@@ -16,9 +18,10 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useAuthStore } from '@/store/auth.store';
 
 /**
- * Pantalla de Ajustes (raíz de tab). Agrupa el acceso a perfil y apariencia
- * —aún sin pantalla propia, se implementan en MOB-06 y MOB-17— y el cierre de
- * sesión. Filas tipo ajustes iOS sobre superficie agrupada (DS §1b).
+ * Pantalla de Ajustes. Agrupa el acceso a perfil y apariencia y el cierre de
+ * sesión. Filas tipo ajustes iOS sobre superficie agrupada (DS §1b). En
+ * Andanzas se llega desde el tab "Perfil" (TASK-180), no tiene tab propia,
+ * así que lleva botón de volver.
  */
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -38,6 +41,9 @@ export default function SettingsPage() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/tabs/me" text="" />
+          </IonButtons>
           <IonTitle>Ajustes</IonTitle>
         </IonToolbar>
       </IonHeader>
