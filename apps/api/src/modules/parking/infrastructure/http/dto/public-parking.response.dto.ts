@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { type Parking } from '../../../domain/entities/parking.entity';
+import { type PublicParkingResult } from '../../../application/use-cases/search-public-parkings.use-case';
 import { FileViewTokenService } from '../../../../storage/infrastructure/http/file-view-token.service';
 
 function resolvePhotoUrls(
@@ -24,9 +25,14 @@ export class PublicParkingSummaryResponseDto {
     description: 'Un admin verificó que la plaza existe (TASK-155).',
   })
   verified: boolean;
+  @ApiPropertyOptional({
+    description:
+      'Distancia en km al centro de búsqueda. Solo presente si la búsqueda llevaba `lat`/`lng` (TASK-147).',
+  })
+  distanceKm?: number;
 
   static fromDomain(
-    parking: Parking,
+    parking: PublicParkingResult,
     viewTokens: FileViewTokenService,
   ): PublicParkingSummaryResponseDto {
     const dto = new PublicParkingSummaryResponseDto();
@@ -39,6 +45,9 @@ export class PublicParkingSummaryResponseDto {
     const urls = resolvePhotoUrls(parking, viewTokens);
     dto.coverPhotoUrl = urls[0] ?? null;
     dto.verified = parking.verifiedAt !== null;
+    if (parking.distanceKm !== undefined) {
+      dto.distanceKm = Math.round(parking.distanceKm * 10) / 10;
+    }
     return dto;
   }
 }

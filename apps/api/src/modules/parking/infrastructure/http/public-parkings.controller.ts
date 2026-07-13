@@ -6,8 +6,11 @@ import {
 } from '../../../../shared/pagination';
 import { Public } from '../../../iam/infrastructure/http/decorators/public.decorator';
 import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
+import { GetParkingPriceQuoteUseCase } from '../../application/use-cases/get-parking-price-quote.use-case';
 import { GetPublicParkingUseCase } from '../../application/use-cases/get-public-parking.use-case';
 import { SearchPublicParkingsUseCase } from '../../application/use-cases/search-public-parkings.use-case';
+import { ParkingPriceQuoteQueryDto } from './dto/parking-price-quote.query.dto';
+import { ParkingPriceQuoteResponseDto } from './dto/parking-price-quote.response.dto';
 import {
   PublicParkingResponseDto,
   PublicParkingSummaryResponseDto,
@@ -23,6 +26,7 @@ export class PublicParkingsController {
   constructor(
     private readonly searchPublicParkings: SearchPublicParkingsUseCase,
     private readonly getPublicParking: GetPublicParkingUseCase,
+    private readonly getParkingPriceQuote: GetParkingPriceQuoteUseCase,
     private readonly viewTokens: FileViewTokenService,
   ) {}
 
@@ -39,6 +43,9 @@ export class PublicParkingsController {
       q: query.q,
       startDate: query.startDate ? new Date(query.startDate) : undefined,
       endDate: query.endDate ? new Date(query.endDate) : undefined,
+      lat: query.lat,
+      lng: query.lng,
+      radiusKm: query.radiusKm,
     });
     return CursorPaginatedResponseDto.of(
       page.items.map((p) =>
@@ -61,5 +68,23 @@ export class PublicParkingsController {
       this.viewTokens,
       hostVerified,
     );
+  }
+
+  @Get('parkings/:id/quote')
+  @ApiOperation({
+    summary:
+      'Precio total de una plaza para un rango de fechas (con precios dinámicos aplicados, TASK-146).',
+  })
+  @ApiOkResponse({ type: ParkingPriceQuoteResponseDto })
+  async quote(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ParkingPriceQuoteQueryDto,
+  ): Promise<ParkingPriceQuoteResponseDto> {
+    const quote = await this.getParkingPriceQuote.execute(
+      id,
+      new Date(query.startDate),
+      new Date(query.endDate),
+    );
+    return ParkingPriceQuoteResponseDto.fromDomain(quote);
   }
 }

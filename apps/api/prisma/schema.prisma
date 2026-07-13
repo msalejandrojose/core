@@ -1320,6 +1320,7 @@ model Parking {
   postalCode         PostalCode?                @relation(fields: [postalCodeId], references: [id], onDelete: SetNull)
   photos             ParkingPhoto[]
   availabilityBlocks ParkingAvailabilityBlock[]
+  priceOverrides     ParkingPriceOverride[]
   reservations       Reservation[]
 
   @@index([hostUserId])
@@ -1361,6 +1362,25 @@ model ParkingAvailabilityBlock {
 
   @@index([parkingId, startDate, endDate])
   @@map("parking_availability_block")
+}
+
+/// Precio distinto al `pricePerDay` base de la plaza para un rango de fechas
+/// concreto (picos de demanda / eventos). El cálculo del importe de una
+/// reserva (Fase 1 TASK-148, ampliado en TASK-146) recorre noche a noche: usa
+/// el override cuya fecha cubra esa noche si existe, si no el precio base.
+model ParkingPriceOverride {
+  id          String   @id @default(uuid()) @db.Char(36)
+  parkingId   String   @map("parking_id") @db.Char(36)
+  startDate   DateTime @map("start_date") @db.Date
+  endDate     DateTime @map("end_date") @db.Date
+  pricePerDay Decimal  @map("price_per_day") @db.Decimal(10, 2)
+  label       String?  @db.VarChar(120)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+
+  @@index([parkingId, startDate, endDate])
+  @@map("parking_price_override")
 }
 
 /// Reserva de una plaza para un rango de fechas. Cálculo de `totalAmount` y

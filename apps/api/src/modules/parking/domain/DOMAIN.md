@@ -17,6 +17,7 @@ erDiagram
     Parking ||--o{ ParkingPhoto : "fotos"
     StoredFile ||--|| ParkingPhoto : "archivo"
     Parking ||--o{ ParkingAvailabilityBlock : "bloqueos del host"
+    Parking ||--o{ ParkingPriceOverride : "precios especiales"
     Parking ||--o{ Reservation : "reservas"
 
     Parking {
@@ -43,6 +44,14 @@ erDiagram
         date endDate
         string reason "nullable"
     }
+    ParkingPriceOverride {
+        string id PK
+        string parkingId FK
+        date startDate
+        date endDate
+        decimal pricePerDay
+        string label "nullable"
+    }
     Reservation {
         string id PK
         string parkingId FK
@@ -68,6 +77,13 @@ erDiagram
   `latitude`/`longitude` en texto/coordenadas libres (necesarias para el mapa
   y el buscador de proximidad); `postalCodeId` engancha con la jerarquía de
   `geo` solo para SEO local y agregaciones administrativas.
+- **`ParkingPriceOverride` sustituye el precio para las noches que cubre**
+  (TASK-146): el cálculo del importe de una reserva recorre noche a noche y
+  usa el override cuya fecha la cubra (el más reciente si hay varios
+  solapados) o el `pricePerDay` base si no hay ninguno. Vive en
+  `domain/pricing.ts` (`calculateReservationTotal`), reutilizado por
+  `CreateReservationUseCase` y por `GetParkingPriceQuoteUseCase` (quote
+  público sin crear reserva, para el buscador).
 - Los enums y las funciones de transición (`canTransitionParkingStatus`,
   `canTransitionReservationStatus`, `blocksAvailability`) viven en
   `@core/shared-types` (`src/parking/parking.ts`), igual que el pipeline de

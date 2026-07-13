@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { isBookableParkingStatus } from '@core/shared-types';
 import { Reservation } from '../../domain/entities/reservation.entity';
+import { calculateReservationTotal } from '../../domain/pricing';
 import { ParkingNotBookableError } from '../../domain/errors/parking-not-bookable.error';
 import { ParkingNotAvailableError } from '../../domain/errors/parking-not-available.error';
 import { ReservationDateRangeInvalidError } from '../../domain/errors/reservation-date-range-invalid.error';
@@ -12,8 +13,10 @@ import {
   RESERVATION_REPOSITORY,
   type ReservationRepositoryPort,
 } from '../ports/reservation-repository.port';
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+import {
+  PARKING_PRICE_OVERRIDE_REPOSITORY,
+  type ParkingPriceOverrideRepositoryPort,
+} from '../ports/parking-price-override-repository.port';
 
 export interface CreateReservationInput {
   parkingId: string;
@@ -23,8 +26,10 @@ export interface CreateReservationInput {
 }
 
 /**
- * Crea una reserva en `PENDING`. Calcula `totalAmount` (`pricePerDay × noches`)
- * y valida anti-solape contra bloqueos del host y otras reservas activas.
+ * Crea una reserva en `PENDING`. Calcula `totalAmount` noche a noche
+ * (`pricePerDay` base, o el precio especial de `ParkingPriceOverride` si la
+ * noche cae en uno, TASK-146) y valida anti-solape contra bloqueos del host y
+ * otras reservas activas.
  */
 @Injectable()
 export class CreateReservationUseCase {
@@ -33,6 +38,8 @@ export class CreateReservationUseCase {
     private readonly parkings: ParkingRepositoryPort,
     @Inject(RESERVATION_REPOSITORY)
     private readonly reservations: ReservationRepositoryPort,
+    @Inject(PARKING_PRICE_OVERRIDE_REPOSITORY)
+    private readonly priceOverrides: ParkingPriceOverrideRepositoryPort,
   ) {}
 
   async execute(input: CreateReservationInput): Promise<Reservation> {
@@ -56,10 +63,17 @@ export class CreateReservationUseCase {
       throw new ParkingNotAvailableError(parkingId, startDate, endDate);
     }
 
-    const nights = Math.round(
-      (endDate.getTime() - startDate.getTime()) / MS_PER_DAY,
+    const overlappingPrices = await this.priceOverrides.listOverlapping(
+      parkingId,
+      startDate,
+      endDate,
     );
-    const totalAmount = Math.round(parking.pricePerDay * nights * 100) / 100;
+    const totalAmount = calculateReservationTotal(
+      parking.pricePerDay,
+      overlappingPrices,
+      startDate,
+      endDate,
+    );
 
     return this.reservations.create({
       parkingId,
