@@ -8,7 +8,7 @@ export class PlaceCandidateResponseDto {
   @ApiProperty()
   name!: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ nullable: true, type: String })
   address!: string | null;
 
   @ApiProperty()
