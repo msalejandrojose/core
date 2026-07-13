@@ -26,9 +26,11 @@ async function generate(): Promise<void> {
     logger: false,
   });
 
-  // Mismo prefijo que en `main.ts`, para que el spec generado (usado en CI
-  // para tipar `@core/api-client`) refleje las rutas reales de la API viva.
-  app.setGlobalPrefix('v1', { exclude: ['health', 'health/live'] });
+  // Sin `setGlobalPrefix` aquí a propósito, igual que en `main.ts` antes de
+  // aplicarlo: el spec debe reflejar las rutas del contrato (sin `/v1`), que
+  // es lo que consume `openapi-typescript` para tipar `@core/api-client`.
+  // El prefijo `/v1` es un detalle de transporte que cada cliente añade una
+  // sola vez en su `baseUrl` (ver apps/mobile|backoffice/src/api/client.ts).
 
   const config = new DocumentBuilder()
     .setTitle('Core API')
