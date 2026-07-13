@@ -78,6 +78,13 @@ export function canTransitionHostVerificationStatus(
   return HOST_VERIFICATION_STATUS_TRANSITIONS[from].includes(to);
 }
 
+export const ReviewAuthorRoleSchema = z.enum(['GUEST', 'HOST']);
+export type ReviewAuthorRole = z.infer<typeof ReviewAuthorRoleSchema>;
+export const REVIEW_AUTHOR_ROLES = ReviewAuthorRoleSchema.options;
+
+export const REVIEW_MIN_RATING = 1;
+export const REVIEW_MAX_RATING = 5;
+
 export const PaymentStatusSchema = z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']);
 export type PaymentStatus = z.infer<typeof PaymentStatusSchema>;
 export const PAYMENT_STATUSES = PaymentStatusSchema.options;

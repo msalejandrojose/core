@@ -248,6 +248,7 @@ model User {
   reservations              Reservation[]
   hostVerification          HostVerification?          @relation("HostVerificationHost")
   reviewedHostVerifications HostVerification[]         @relation("HostVerificationReviewer")
+  reviews                   Review[]
 
   @@map("user")
 }
@@ -1396,9 +1397,10 @@ model Reservation {
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
 
-  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
-  guest   User    @relation(fields: [guestUserId], references: [id], onDelete: Cascade)
+  parking Parking  @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  guest   User     @relation(fields: [guestUserId], references: [id], onDelete: Cascade)
   payment Payment?
+  reviews Review[]
 
   @@index([parkingId, startDate, endDate])
   @@index([guestUserId])
@@ -1482,4 +1484,33 @@ model HostVerification {
 
   @@index([status])
   @@map("host_verification")
+}
+
+/// Quién escribe la reseña dentro de una reserva: el huésped valorando la
+/// plaza/host, o el host valorando al huésped.
+enum ReviewAuthorRole {
+  GUEST
+  HOST
+}
+
+/// Reseña bidireccional tras la estancia (TASK-154): como mucho una por
+/// autor y reserva (`@@unique([reservationId, authorRole])` — el guest y el
+/// host de una misma reserva pueden dejar, cada uno, una única reseña).
+/// Solo se puede reseñar una reserva `CONFIRMED` cuyo `endDate` ya pasó (ver
+/// `domain/review-eligibility.ts`).
+model Review {
+  id            String           @id @default(uuid()) @db.Char(36)
+  reservationId String           @map("reservation_id") @db.Char(36)
+  authorUserId  String           @map("author_user_id") @db.Char(36)
+  authorRole    ReviewAuthorRole @map("author_role")
+  rating        Int              @db.TinyInt
+  comment       String?          @db.Text
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  author      User        @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@unique([reservationId, authorRole])
+  @@index([authorUserId])
+  @@map("review")
 }

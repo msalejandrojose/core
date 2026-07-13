@@ -8,13 +8,16 @@ import { Public } from '../../../iam/infrastructure/http/decorators/public.decor
 import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
 import { GetParkingPriceQuoteUseCase } from '../../application/use-cases/get-parking-price-quote.use-case';
 import { GetPublicParkingUseCase } from '../../application/use-cases/get-public-parking.use-case';
+import { ListParkingReviewsUseCase } from '../../application/use-cases/list-parking-reviews.use-case';
 import { SearchPublicParkingsUseCase } from '../../application/use-cases/search-public-parkings.use-case';
 import { ParkingPriceQuoteQueryDto } from './dto/parking-price-quote.query.dto';
 import { ParkingPriceQuoteResponseDto } from './dto/parking-price-quote.response.dto';
+import { ListParkingReviewsQueryDto } from './dto/list-parking-reviews.query.dto';
 import {
   PublicParkingResponseDto,
   PublicParkingSummaryResponseDto,
 } from './dto/public-parking.response.dto';
+import { ReviewResponseDto } from './dto/review.response.dto';
 import { SearchPublicParkingsQueryDto } from './dto/search-public-parkings.query.dto';
 
 // Buscador y ficha públicos (landing web): sin autenticación, solo plazas
@@ -27,6 +30,7 @@ export class PublicParkingsController {
     private readonly searchPublicParkings: SearchPublicParkingsUseCase,
     private readonly getPublicParking: GetPublicParkingUseCase,
     private readonly getParkingPriceQuote: GetParkingPriceQuoteUseCase,
+    private readonly listParkingReviews: ListParkingReviewsUseCase,
     private readonly viewTokens: FileViewTokenService,
   ) {}
 
@@ -62,11 +66,33 @@ export class PublicParkingsController {
   async get(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<PublicParkingResponseDto> {
-    const { parking, hostVerified } = await this.getPublicParking.execute(id);
+    const { parking, hostVerified, rating } =
+      await this.getPublicParking.execute(id);
     return PublicParkingResponseDto.fromDomain(
       parking,
       this.viewTokens,
       hostVerified,
+      rating,
+    );
+  }
+
+  @Get('parkings/:id/reviews')
+  @ApiOperation({ summary: 'Reseñas del guest sobre una plaza (TASK-154).' })
+  @ApiCursorPaginatedResponse(ReviewResponseDto)
+  async reviews(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ListParkingReviewsQueryDto,
+  ): Promise<CursorPaginatedResponseDto<ReviewResponseDto>> {
+    const limit = query.limit ?? 20;
+    const page = await this.listParkingReviews.execute({
+      parkingId: id,
+      limit,
+      cursor: query.cursor,
+    });
+    return CursorPaginatedResponseDto.of(
+      page.items.map((r) => ReviewResponseDto.fromDomain(r)),
+      page.nextCursor,
+      limit,
     );
   }
 

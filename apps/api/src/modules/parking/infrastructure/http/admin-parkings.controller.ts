@@ -1,6 +1,9 @@
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
@@ -17,6 +20,8 @@ import { GetAnyParkingUseCase } from '../../application/use-cases/get-any-parkin
 import { ListAllParkingsUseCase } from '../../application/use-cases/list-all-parkings.use-case';
 import { ListAllPaymentsUseCase } from '../../application/use-cases/list-all-payments.use-case';
 import { ListAllReservationsUseCase } from '../../application/use-cases/list-all-reservations.use-case';
+import { ListAllReviewsUseCase } from '../../application/use-cases/list-all-reviews.use-case';
+import { ModerateDeleteReviewUseCase } from '../../application/use-cases/moderate-delete-review.use-case';
 import { ModerateUnpublishParkingUseCase } from '../../application/use-cases/moderate-unpublish-parking.use-case';
 import { ReleaseHostPayoutUseCase } from '../../application/use-cases/release-host-payout.use-case';
 import { UnverifyParkingUseCase } from '../../application/use-cases/unverify-parking.use-case';
@@ -24,9 +29,11 @@ import { VerifyParkingUseCase } from '../../application/use-cases/verify-parking
 import { ListAllParkingsQueryDto } from './dto/list-all-parkings.query.dto';
 import { ListAllPaymentsQueryDto } from './dto/list-all-payments.query.dto';
 import { ListAllReservationsQueryDto } from './dto/list-all-reservations.query.dto';
+import { ListAllReviewsQueryDto } from './dto/list-all-reviews.query.dto';
 import { ParkingResponseDto } from './dto/parking.response.dto';
 import { PaymentResponseDto } from './dto/payment.response.dto';
 import { ReservationResponseDto } from './dto/reservation.response.dto';
+import { ReviewResponseDto } from './dto/review.response.dto';
 
 // Backoffice: moderación de plazas y visión completa de reservas, sobre
 // cualquier host/guest. Protegido por el árbol de permisos (sección
@@ -43,6 +50,8 @@ export class AdminParkingsController {
     private readonly listAllReservations: ListAllReservationsUseCase,
     private readonly listAllPayments: ListAllPaymentsUseCase,
     private readonly releaseHostPayout: ReleaseHostPayoutUseCase,
+    private readonly listAllReviews: ListAllReviewsUseCase,
+    private readonly moderateDeleteReview: ModerateDeleteReviewUseCase,
     private readonly viewTokens: FileViewTokenService,
   ) {}
 
@@ -169,5 +178,33 @@ export class AdminParkingsController {
   ): Promise<PaymentResponseDto> {
     const payment = await this.releaseHostPayout.execute(id);
     return PaymentResponseDto.fromDomain(payment);
+  }
+
+  @Get('reviews')
+  @RequiresPermission('parking', 'READ')
+  @ApiOperation({ summary: 'Listar todas las reseñas (moderación)' })
+  @ApiCursorPaginatedResponse(ReviewResponseDto)
+  async listReviews(
+    @Query() query: ListAllReviewsQueryDto,
+  ): Promise<CursorPaginatedResponseDto<ReviewResponseDto>> {
+    const limit = query.limit ?? 20;
+    const page = await this.listAllReviews.execute({
+      limit,
+      cursor: query.cursor,
+      parkingId: query.parkingId,
+    });
+    return CursorPaginatedResponseDto.of(
+      page.items.map((r) => ReviewResponseDto.fromDomain(r)),
+      page.nextCursor,
+      limit,
+    );
+  }
+
+  @Delete('reviews/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequiresPermission('parking', 'WRITE')
+  @ApiOperation({ summary: 'Eliminar una reseña abusiva/inapropiada' })
+  async deleteReview(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.moderateDeleteReview.execute(id);
   }
 }

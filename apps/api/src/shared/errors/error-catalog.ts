@@ -337,6 +337,22 @@ export const ERROR_CATALOG = {
     defaultMessage:
       'El pago no está en un estado que permita liquidar al host.',
   },
+  REVIEW_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Reseña no encontrada.',
+  },
+  REVIEW_NOT_ELIGIBLE: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage:
+      'La reserva no admite reseña todavía (debe estar confirmada y la estancia ya haber terminado).',
+  },
+  REVIEW_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya has dejado una reseña para esta reserva.',
+  },
   HOST_VERIFICATION_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',

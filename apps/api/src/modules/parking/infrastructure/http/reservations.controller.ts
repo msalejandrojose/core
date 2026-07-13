@@ -28,12 +28,16 @@ import { GetReservationUseCase } from '../../application/use-cases/get-reservati
 import { GetReservationPaymentUseCase } from '../../application/use-cases/get-reservation-payment.use-case';
 import { ListHostReservationsUseCase } from '../../application/use-cases/list-host-reservations.use-case';
 import { ListMyReservationsUseCase } from '../../application/use-cases/list-my-reservations.use-case';
+import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
+import { ListReservationReviewsUseCase } from '../../application/use-cases/list-reservation-reviews.use-case';
 import { CheckoutResponseDto } from './dto/checkout.response.dto';
 import { CreateReservationDto } from './dto/create-reservation.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
 import { ListHostReservationsQueryDto } from './dto/list-host-reservations.query.dto';
 import { ListMyReservationsQueryDto } from './dto/list-my-reservations.query.dto';
 import { PaymentResponseDto } from './dto/payment.response.dto';
 import { ReservationResponseDto } from './dto/reservation.response.dto';
+import { ReviewResponseDto } from './dto/review.response.dto';
 
 // Reservas del usuario autenticado, tanto como guest (reservas que hace)
 // como host (reservas que recibe en sus plazas). Scoped a `current.sub` en
@@ -51,6 +55,8 @@ export class ReservationsController {
     private readonly cancelReservation: CancelReservationUseCase,
     private readonly createReservationCheckout: CreateReservationCheckoutUseCase,
     private readonly getReservationPayment: GetReservationPaymentUseCase,
+    private readonly createReview: CreateReviewUseCase,
+    private readonly listReservationReviews: ListReservationReviewsUseCase,
   ) {}
 
   @Post()
@@ -176,5 +182,36 @@ export class ReservationsController {
   ): Promise<PaymentResponseDto> {
     const payment = await this.getReservationPayment.execute(id, current.sub);
     return PaymentResponseDto.fromDomain(payment);
+  }
+
+  @Post(':id/reviews')
+  @ApiOperation({
+    summary:
+      'Dejar una reseña tras la estancia (guest sobre la plaza, host sobre el guest)',
+  })
+  @ApiCreatedResponse({ type: ReviewResponseDto })
+  async addReview(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateReviewDto,
+  ): Promise<ReviewResponseDto> {
+    const review = await this.createReview.execute({
+      reservationId: id,
+      authorUserId: current.sub,
+      rating: dto.rating,
+      comment: dto.comment ?? null,
+    });
+    return ReviewResponseDto.fromDomain(review);
+  }
+
+  @Get(':id/reviews')
+  @ApiOperation({ summary: 'Reseñas de una reserva (guest o host)' })
+  @ApiOkResponse({ type: [ReviewResponseDto] })
+  async getReviews(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ReviewResponseDto[]> {
+    const reviews = await this.listReservationReviews.execute(id, current.sub);
+    return reviews.map((r) => ReviewResponseDto.fromDomain(r));
   }
 }

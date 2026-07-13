@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { type Parking } from '../../../domain/entities/parking.entity';
+import { type RatingSummary } from '../../../application/ports/review-repository.port';
 import { type PublicParkingResult } from '../../../application/use-cases/search-public-parkings.use-case';
 import { FileViewTokenService } from '../../../../storage/infrastructure/http/file-view-token.service';
 
@@ -30,6 +31,15 @@ export class PublicParkingSummaryResponseDto {
       'Distancia en km al centro de búsqueda. Solo presente si la búsqueda llevaba `lat`/`lng` (TASK-147).',
   })
   distanceKm?: number;
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description:
+      'Media de las reseñas del guest (TASK-154). `null` si no tiene ninguna.',
+  })
+  ratingAverage: number | null;
+  @ApiProperty({ description: 'Nº de reseñas del guest.' })
+  reviewsCount: number;
 
   static fromDomain(
     parking: PublicParkingResult,
@@ -48,6 +58,11 @@ export class PublicParkingSummaryResponseDto {
     if (parking.distanceKm !== undefined) {
       dto.distanceKm = Math.round(parking.distanceKm * 10) / 10;
     }
+    dto.ratingAverage =
+      parking.rating.average !== null
+        ? Math.round(parking.rating.average * 10) / 10
+        : null;
+    dto.reviewsCount = parking.rating.count;
     return dto;
   }
 }
@@ -71,11 +86,21 @@ export class PublicParkingResponseDto {
     description: 'El host tiene el KYC básico aprobado (TASK-155).',
   })
   hostVerified: boolean;
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description:
+      'Media de las reseñas del guest (TASK-154). `null` si no tiene ninguna.',
+  })
+  ratingAverage: number | null;
+  @ApiProperty({ description: 'Nº de reseñas del guest.' })
+  reviewsCount: number;
 
   static fromDomain(
     parking: Parking,
     viewTokens: FileViewTokenService,
     hostVerified: boolean,
+    rating: RatingSummary,
   ): PublicParkingResponseDto {
     const dto = new PublicParkingResponseDto();
     dto.id = parking.id;
@@ -88,6 +113,9 @@ export class PublicParkingResponseDto {
     dto.photoUrls = resolvePhotoUrls(parking, viewTokens);
     dto.verified = parking.verifiedAt !== null;
     dto.hostVerified = hostVerified;
+    dto.ratingAverage =
+      rating.average !== null ? Math.round(rating.average * 10) / 10 : null;
+    dto.reviewsCount = rating.count;
     return dto;
   }
 }
