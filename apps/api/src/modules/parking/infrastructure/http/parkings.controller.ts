@@ -26,17 +26,22 @@ import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
 import { AddParkingPhotoUseCase } from '../../application/use-cases/add-parking-photo.use-case';
+import { AddParkingPriceOverrideUseCase } from '../../application/use-cases/add-parking-price-override.use-case';
 import { CreateParkingUseCase } from '../../application/use-cases/create-parking.use-case';
 import { GetParkingUseCase } from '../../application/use-cases/get-parking.use-case';
 import { ListMyParkingsUseCase } from '../../application/use-cases/list-my-parkings.use-case';
+import { ListParkingPriceOverridesUseCase } from '../../application/use-cases/list-parking-price-overrides.use-case';
 import { PublishParkingUseCase } from '../../application/use-cases/publish-parking.use-case';
 import { RemoveParkingPhotoUseCase } from '../../application/use-cases/remove-parking-photo.use-case';
+import { RemoveParkingPriceOverrideUseCase } from '../../application/use-cases/remove-parking-price-override.use-case';
 import { UnpublishParkingUseCase } from '../../application/use-cases/unpublish-parking.use-case';
 import { UpdateParkingUseCase } from '../../application/use-cases/update-parking.use-case';
 import { AddParkingPhotoDto } from './dto/add-parking-photo.dto';
+import { AddParkingPriceOverrideDto } from './dto/add-parking-price-override.dto';
 import { CreateParkingDto } from './dto/create-parking.dto';
 import { ListMyParkingsQueryDto } from './dto/list-my-parkings.query.dto';
 import { ParkingResponseDto } from './dto/parking.response.dto';
+import { ParkingPriceOverrideResponseDto } from './dto/parking-price-override.response.dto';
 import { UpdateParkingDto } from './dto/update-parking.dto';
 
 // CRUD de plazas del host autenticado. Todo va scopeado a `current.sub`: un
@@ -54,6 +59,9 @@ export class ParkingsController {
     private readonly unpublishParking: UnpublishParkingUseCase,
     private readonly addParkingPhoto: AddParkingPhotoUseCase,
     private readonly removeParkingPhoto: RemoveParkingPhotoUseCase,
+    private readonly addParkingPriceOverride: AddParkingPriceOverrideUseCase,
+    private readonly removeParkingPriceOverride: RemoveParkingPriceOverrideUseCase,
+    private readonly listParkingPriceOverrides: ListParkingPriceOverridesUseCase,
     private readonly viewTokens: FileViewTokenService,
   ) {}
 
@@ -168,5 +176,54 @@ export class ParkingsController {
       photoId,
     );
     return ParkingResponseDto.fromDomain(parking, this.viewTokens);
+  }
+
+  @Get(':id/price-overrides')
+  @ApiOperation({
+    summary: 'Listar los precios especiales por fecha de una de mis plazas',
+  })
+  @ApiOkResponse({ type: [ParkingPriceOverrideResponseDto] })
+  async listPriceOverrides(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ParkingPriceOverrideResponseDto[]> {
+    const overrides = await this.listParkingPriceOverrides.execute(
+      id,
+      current.sub,
+    );
+    return overrides.map((o) => ParkingPriceOverrideResponseDto.fromDomain(o));
+  }
+
+  @Post(':id/price-overrides')
+  @ApiOperation({
+    summary:
+      'Definir un precio distinto al base para un rango de fechas (picos de demanda/eventos)',
+  })
+  @ApiCreatedResponse({ type: ParkingPriceOverrideResponseDto })
+  async addPriceOverride(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AddParkingPriceOverrideDto,
+  ): Promise<ParkingPriceOverrideResponseDto> {
+    const override = await this.addParkingPriceOverride.execute({
+      parkingId: id,
+      hostUserId: current.sub,
+      startDate: new Date(dto.startDate),
+      endDate: new Date(dto.endDate),
+      pricePerDay: dto.pricePerDay,
+      label: dto.label ?? null,
+    });
+    return ParkingPriceOverrideResponseDto.fromDomain(override);
+  }
+
+  @Delete(':id/price-overrides/:overrideId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Quitar un precio especial de la plaza' })
+  async removePriceOverride(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('overrideId', ParseUUIDPipe) overrideId: string,
+  ): Promise<void> {
+    await this.removeParkingPriceOverride.execute(id, current.sub, overrideId);
   }
 }

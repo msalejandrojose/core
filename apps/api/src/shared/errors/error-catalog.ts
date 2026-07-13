@@ -310,6 +310,16 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'La transición de estado de la reserva no está permitida.',
   },
+  PARKING_PRICE_OVERRIDE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Precio especial no encontrado en la plaza.',
+  },
+  PARKING_PRICE_OVERRIDE_RANGE_INVALID: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'La fecha de fin debe ser posterior a la fecha de inicio.',
+  },
   HOST_VERIFICATION_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
