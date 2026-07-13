@@ -12,7 +12,7 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import { useHistory, useParams } from 'react-router-dom';
-import { carSportOutline, locationOutline } from 'ionicons/icons';
+import { carSportOutline, locationOutline, shieldCheckmarkOutline } from 'ionicons/icons';
 import { ErrorState, SkeletonList } from '@/components/ux';
 import { toast } from '@/lib/toast';
 import {
@@ -143,6 +143,39 @@ export default function ParkingDetailScreen() {
               <IonIcon icon={locationOutline} aria-hidden="true" />
               {parking.address}
             </p>
+
+            {parking.verified || parking.hostVerified ? (
+              <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+                {parking.verified ? (
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: 13,
+                      color: 'var(--ion-color-secondary)',
+                    }}
+                  >
+                    <IonIcon icon={shieldCheckmarkOutline} aria-hidden="true" />
+                    Plaza verificada
+                  </span>
+                ) : null}
+                {parking.hostVerified ? (
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: 13,
+                      color: 'var(--ion-color-secondary)',
+                    }}
+                  >
+                    <IonIcon icon={shieldCheckmarkOutline} aria-hidden="true" />
+                    Host verificado
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
 
             {parking.description ? (
               <p style={{ fontSize: 15, lineHeight: 1.55, color: 'var(--ion-text-color)', marginTop: 16 }}>

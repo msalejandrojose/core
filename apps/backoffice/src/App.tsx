@@ -176,6 +176,11 @@ const ReservationsPage = lazy(() =>
     default: m.ReservationsPage,
   })),
 );
+const HostVerificationsPage = lazy(() =>
+  import('@/features/parking/HostVerificationsPage').then((m) => ({
+    default: m.HostVerificationsPage,
+  })),
+);
 const FormsListPage = lazy(() =>
   import('@/features/dynamic-forms/FormsListPage').then((m) => ({
     default: m.FormsListPage,
@@ -264,6 +269,10 @@ export default function App() {
               <Route
                 path="/parking/reservations"
                 element={<ReservationsPage />}
+              />
+              <Route
+                path="/parking/host-verifications"
+                element={<HostVerificationsPage />}
               />
               <Route path="/files" element={<FilesPage />} />
               <Route path="/whatsapp" element={<WhatsappPage />} />

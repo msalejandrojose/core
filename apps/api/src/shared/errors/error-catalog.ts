@@ -310,6 +310,23 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'La transición de estado de la reserva no está permitida.',
   },
+  HOST_VERIFICATION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Verificación de host no encontrada.',
+  },
+  HOST_VERIFICATION_DOCUMENT_INVALID: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage:
+      'El archivo no está disponible para usarse como documento de verificación.',
+  },
+  INVALID_HOST_VERIFICATION_TRANSITION: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage:
+      'La transición de estado de la verificación de host no está permitida.',
+  },
 
   // Sections (UI navigation tree)
   SECTION_NOT_FOUND: {

@@ -20,6 +20,10 @@ export class PublicParkingSummaryResponseDto {
   @ApiProperty() longitude: number;
   @ApiProperty() pricePerDay: number;
   @ApiProperty({ type: String, nullable: true }) coverPhotoUrl: string | null;
+  @ApiProperty({
+    description: 'Un admin verificó que la plaza existe (TASK-155).',
+  })
+  verified: boolean;
 
   static fromDomain(
     parking: Parking,
@@ -34,6 +38,7 @@ export class PublicParkingSummaryResponseDto {
     dto.pricePerDay = parking.pricePerDay;
     const urls = resolvePhotoUrls(parking, viewTokens);
     dto.coverPhotoUrl = urls[0] ?? null;
+    dto.verified = parking.verifiedAt !== null;
     return dto;
   }
 }
@@ -49,10 +54,19 @@ export class PublicParkingResponseDto {
   @ApiProperty() longitude: number;
   @ApiProperty() pricePerDay: number;
   @ApiProperty({ type: [String] }) photoUrls: string[];
+  @ApiProperty({
+    description: 'Un admin verificó que la plaza existe (TASK-155).',
+  })
+  verified: boolean;
+  @ApiProperty({
+    description: 'El host tiene el KYC básico aprobado (TASK-155).',
+  })
+  hostVerified: boolean;
 
   static fromDomain(
     parking: Parking,
     viewTokens: FileViewTokenService,
+    hostVerified: boolean,
   ): PublicParkingResponseDto {
     const dto = new PublicParkingResponseDto();
     dto.id = parking.id;
@@ -63,6 +77,8 @@ export class PublicParkingResponseDto {
     dto.longitude = parking.longitude;
     dto.pricePerDay = parking.pricePerDay;
     dto.photoUrls = resolvePhotoUrls(parking, viewTokens);
+    dto.verified = parking.verifiedAt !== null;
+    dto.hostVerified = hostVerified;
     return dto;
   }
 }

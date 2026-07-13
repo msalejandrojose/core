@@ -52,3 +52,28 @@ export const ACTIVE_RESERVATION_STATUSES: readonly ReservationStatus[] = ['PENDI
 export function blocksAvailability(status: ReservationStatus): boolean {
   return ACTIVE_RESERVATION_STATUSES.includes(status);
 }
+
+export const HostVerificationStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
+export type HostVerificationStatus = z.infer<typeof HostVerificationStatusSchema>;
+export const HOST_VERIFICATION_STATUSES = HostVerificationStatusSchema.options;
+
+/**
+ * Máquina de estados del KYC básico del host (TASK-155). Un rechazo vuelve a
+ * `PENDING` para que el host pueda reenviar la solicitud; una aprobación
+ * puede revocarse (`REJECTED`) si se detecta fraude después.
+ */
+export const HOST_VERIFICATION_STATUS_TRANSITIONS: Record<
+  HostVerificationStatus,
+  readonly HostVerificationStatus[]
+> = {
+  PENDING: ['APPROVED', 'REJECTED'],
+  APPROVED: ['REJECTED'],
+  REJECTED: ['PENDING'],
+};
+
+export function canTransitionHostVerificationStatus(
+  from: HostVerificationStatus,
+  to: HostVerificationStatus,
+): boolean {
+  return HOST_VERIFICATION_STATUS_TRANSITIONS[from].includes(to);
+}

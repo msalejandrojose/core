@@ -246,6 +246,8 @@ model User {
   devices                   Device[]
   hostedParkings            Parking[]
   reservations              Reservation[]
+  hostVerification          HostVerification?          @relation("HostVerificationHost")
+  reviewedHostVerifications HostVerification[]         @relation("HostVerificationReviewer")
 
   @@map("user")
 }
@@ -369,8 +371,9 @@ model StoredFile {
   updatedAt    DateTime         @updatedAt @map("updated_at")
 
   // Relaciones
-  owner        User?         @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
-  parkingPhoto ParkingPhoto?
+  owner            User?             @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+  parkingPhoto     ParkingPhoto?
+  hostVerification HostVerification?
 
   @@map("stored_file")
 }
@@ -1307,6 +1310,8 @@ model Parking {
   accessInstructions String?       @map("access_instructions") @db.Text
   pricePerDay        Decimal       @map("price_per_day") @db.Decimal(10, 2)
   status             ParkingStatus @default(DRAFT)
+  /// Fecha en la que un admin verificó que la plaza existe (moderación, TASK-155). `null` = sin verificar.
+  verifiedAt         DateTime?     @map("verified_at")
   createdAt          DateTime      @default(now()) @map("created_at")
   updatedAt          DateTime      @updatedAt @map("updated_at")
 
@@ -1378,4 +1383,35 @@ model Reservation {
   @@index([guestUserId])
   @@index([status])
   @@map("reservation")
+}
+
+/// Estado de la verificación de identidad de un host (KYC básico, TASK-155).
+enum HostVerificationStatus {
+  PENDING // solicitada, a la espera de revisión
+  APPROVED // identidad verificada por un admin
+  REJECTED // rechazada; el host puede volver a enviarla (vuelve a PENDING)
+}
+
+/// Verificación de identidad de un host: nombre legal declarado + documento
+/// subido (StoredFile), revisada por un admin desde el backoffice. Un host
+/// tiene como mucho una solicitud viva (`hostUserId` único); reenviar tras un
+/// rechazo actualiza la misma fila en vez de crear una nueva.
+model HostVerification {
+  id               String                 @id @default(uuid()) @db.Char(36)
+  hostUserId       String                 @unique @map("host_user_id") @db.Char(36)
+  legalName        String                 @map("legal_name") @db.VarChar(200)
+  documentFileId   String                 @unique @map("document_file_id") @db.Char(36)
+  status           HostVerificationStatus @default(PENDING)
+  reviewedByUserId String?                @map("reviewed_by_user_id") @db.Char(36)
+  reviewedAt       DateTime?              @map("reviewed_at")
+  rejectionReason  String?                @map("rejection_reason") @db.VarChar(500)
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+
+  host       User       @relation("HostVerificationHost", fields: [hostUserId], references: [id], onDelete: Cascade)
+  document   StoredFile @relation(fields: [documentFileId], references: [id], onDelete: Cascade)
+  reviewedBy User?      @relation("HostVerificationReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("host_verification")
 }

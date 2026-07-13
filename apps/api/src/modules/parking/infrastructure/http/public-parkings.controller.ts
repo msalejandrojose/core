@@ -55,7 +55,11 @@ export class PublicParkingsController {
   async get(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<PublicParkingResponseDto> {
-    const parking = await this.getPublicParking.execute(id);
-    return PublicParkingResponseDto.fromDomain(parking, this.viewTokens);
+    const { parking, hostVerified } = await this.getPublicParking.execute(id);
+    return PublicParkingResponseDto.fromDomain(
+      parking,
+      this.viewTokens,
+      hostVerified,
+    );
   }
 }

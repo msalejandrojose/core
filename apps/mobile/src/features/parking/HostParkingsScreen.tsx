@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   IonBadge,
   IonButton,
+  IonButtons,
   IonContent,
   IonFab,
   IonFabButton,
@@ -17,7 +18,12 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
-import { addOutline, calendarClearOutline, carSportOutline } from 'ionicons/icons';
+import {
+  addOutline,
+  calendarClearOutline,
+  carSportOutline,
+  shieldCheckmarkOutline,
+} from 'ionicons/icons';
 import { CursorList, useCursorList } from '@/components/list';
 import { toast } from '@/lib/toast';
 import {
@@ -151,6 +157,11 @@ export default function HostParkingsScreen() {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Host</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={() => history.push('/tabs/host/verification')}>
+              <IonIcon icon={shieldCheckmarkOutline} slot="icon-only" aria-hidden="true" />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
         <IonToolbar>
           <IonSegment
