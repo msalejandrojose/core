@@ -5,6 +5,7 @@ import { CursorCodec, CursorPage } from '../../../../shared/pagination';
 import { Parking } from '../../domain/entities/parking.entity';
 import {
   CreateParkingData,
+  ListAllParkingsOptions,
   ListMyParkingsOptions,
   ParkingRepositoryPort,
   SearchPublicParkingsOptions,
@@ -106,6 +107,14 @@ export class PrismaParkingRepository implements ParkingRepositoryPort {
             ],
           }
         : {}),
+    };
+    return this.listWithCursor(filters, opts.limit, opts.cursor);
+  }
+
+  async listAll(opts: ListAllParkingsOptions): Promise<CursorPage<Parking>> {
+    const filters: Prisma.ParkingWhereInput = {
+      ...(opts.status ? { status: opts.status } : {}),
+      ...(opts.hostUserId ? { hostUserId: opts.hostUserId } : {}),
     };
     return this.listWithCursor(filters, opts.limit, opts.cursor);
   }

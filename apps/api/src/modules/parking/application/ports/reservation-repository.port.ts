@@ -27,6 +27,13 @@ export interface ListHostReservationsOptions {
   parkingId?: string;
 }
 
+export interface ListAllReservationsOptions {
+  limit: number;
+  cursor?: string;
+  status?: ReservationStatus;
+  parkingId?: string;
+}
+
 export interface ReservationRepositoryPort {
   create(data: CreateReservationData): Promise<Reservation>;
   updateStatus(id: string, status: ReservationStatus): Promise<Reservation>;
@@ -41,6 +48,8 @@ export interface ReservationRepositoryPort {
   listForHost(
     opts: ListHostReservationsOptions,
   ): Promise<CursorPage<Reservation>>;
+  /** Backoffice: todas las reservas, de cualquier guest/host, para soporte y moderación. */
+  listAll(opts: ListAllReservationsOptions): Promise<CursorPage<Reservation>>;
   /**
    * Anti-solape: true si el rango [startDate, endDate) se cruza con algún
    * `ParkingAvailabilityBlock` o con alguna reserva en estado
