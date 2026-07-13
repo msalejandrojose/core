@@ -10,6 +10,11 @@ import {
   RESERVATION_REPOSITORY,
   type ReservationRepositoryPort,
 } from '../ports/reservation-repository.port';
+import {
+  REVIEW_REPOSITORY,
+  type RatingSummary,
+  type ReviewRepositoryPort,
+} from '../ports/review-repository.port';
 
 const DEFAULT_RADIUS_KM = 15;
 /** Sobre-fetch cuando hay filtro geográfico: filtrar por radio reduce el
@@ -35,6 +40,8 @@ export interface SearchPublicParkingsInput {
 export interface PublicParkingResult extends Parking {
   /** Solo presente cuando la búsqueda se hizo con `lat`/`lng`. */
   distanceKm?: number;
+  /** Media y nº de reseñas del guest sobre la plaza (TASK-154). */
+  rating: RatingSummary;
 }
 
 /** Buscador público (landing). Solo plazas `PUBLISHED`, con anti-solape opcional por fechas y filtro opcional por ubicación. */
@@ -45,6 +52,8 @@ export class SearchPublicParkingsUseCase {
     private readonly parkings: ParkingRepositoryPort,
     @Inject(RESERVATION_REPOSITORY)
     private readonly reservations: ReservationRepositoryPort,
+    @Inject(REVIEW_REPOSITORY)
+    private readonly reviews: ReviewRepositoryPort,
   ) {}
 
   async execute(
@@ -58,7 +67,13 @@ export class SearchPublicParkingsUseCase {
       q: input.q,
     });
 
-    let items: PublicParkingResult[] = page.items;
+    const ratings = await Promise.all(
+      page.items.map((p) => this.reviews.getParkingRatingSummary(p.id)),
+    );
+    let items: PublicParkingResult[] = page.items.map((p, i) => ({
+      ...p,
+      rating: ratings[i],
+    }));
 
     if (input.startDate && input.endDate) {
       const availability = await Promise.all(

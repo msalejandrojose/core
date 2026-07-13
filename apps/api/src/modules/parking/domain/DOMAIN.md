@@ -20,6 +20,8 @@ erDiagram
     Parking ||--o{ ParkingPriceOverride : "precios especiales"
     Parking ||--o{ Reservation : "reservas"
     Reservation ||--o| Payment : "cobro"
+    Reservation ||--o{ Review : "reseñas"
+    User ||--o{ Review : "autor"
 
     Parking {
         string id PK
@@ -72,6 +74,14 @@ erDiagram
         HostPayoutStatus hostPayoutStatus
         string providerCheckoutSessionId "unique, nullable"
     }
+    Review {
+        string id PK
+        string reservationId FK
+        string authorUserId FK
+        ReviewAuthorRole authorRole "GUEST | HOST"
+        int rating "1-5"
+        string comment "nullable"
+    }
 ```
 
 ### Notas de diseño
@@ -115,6 +125,17 @@ erDiagram
   (`Reservation.status: PENDING → CONFIRMED`) sigue siendo una acción
   explícita del host, independiente de si ya se cobró. Unificar ambos flujos
   es una decisión de producto para una iteración futura.
+- **`Review` es bidireccional** (TASK-154): como mucho una por
+  `(reservationId, authorRole)` — el guest reseña la plaza/host, el host
+  reseña al guest, cada uno una vez. Solo reseñable si la reserva está
+  `CONFIRMED` y `endDate` ya pasó (`domain/review-eligibility.ts`,
+  `isReservationReviewable` — mismo criterio de "completada por cálculo" que
+  el resto del dominio). La media de reseñas `GUEST` de una plaza
+  (`ReviewRepositoryPort.getParkingRatingSummary`) se expone en el buscador y
+  la ficha públicos como señal de confianza del marketplace; las reseñas
+  `HOST` (sobre el guest) no tienen todavía una superficie propia en ningún
+  cliente — quedan disponibles vía API para una futura pantalla de perfil de
+  guest.
 - Los enums y las funciones de transición (`canTransitionParkingStatus`,
   `canTransitionReservationStatus`, `blocksAvailability`) viven en
   `@core/shared-types` (`src/parking/parking.ts`), igual que el pipeline de
