@@ -13,6 +13,12 @@ export const es = {
       notifications: 'Notificaciones',
       settings: 'Ajustes',
     },
+    andanzasTabs: {
+      map: 'Mapa',
+      myList: 'Mi lista',
+      feed: 'Feed',
+      me: 'Perfil',
+    },
     settings: {
       account: 'Cuenta',
       profile: 'Perfil',

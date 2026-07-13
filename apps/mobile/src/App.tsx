@@ -9,7 +9,7 @@ import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage';
 import VerifyEmailPage from '@/features/auth/VerifyEmailPage';
 import JoinPage from '@/features/onboarding/JoinPage';
-import TabsShell from '@/app/TabsShell';
+import AndanzasTabsShell from '@/app/AndanzasTabsShell';
 import { ErrorBoundary, OfflineBanner } from '@/components/ux';
 
 /**
@@ -26,7 +26,7 @@ export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const theme = useThemeStore((s) => s.theme);
-  const home = '/tabs/home';
+  const home = '/tabs/map';
 
   // La sesión se rehidrata de forma asíncrona (Capacitor Preferences). Hasta que
   // termina mostramos un splash: así el auto-login no parpadea el login primero.
@@ -87,7 +87,11 @@ export default function App() {
             <Route
               path="/tabs"
               render={() =>
-                isAuthenticated ? <TabsShell /> : <Redirect to="/login" />
+                isAuthenticated ? (
+                  <AndanzasTabsShell />
+                ) : (
+                  <Redirect to="/login" />
+                )
               }
             />
 
