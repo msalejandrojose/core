@@ -6,8 +6,10 @@ export type ParkingSummary = components['schemas']['PublicParkingSummaryResponse
 export type ParkingPublic = components['schemas']['PublicParkingResponseDto'];
 export type MyParking = components['schemas']['ParkingResponseDto'];
 export type Reservation = components['schemas']['ReservationResponseDto'];
+export type HostVerification = components['schemas']['HostVerificationResponseDto'];
 export type ParkingStatus = 'DRAFT' | 'PUBLISHED' | 'UNPUBLISHED';
 export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+export type HostVerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 // Las fotos vienen como ruta relativa al mount `/v1` (`/files/view?token=...`).
 export function resolvePhotoUrl(path: string): string {
@@ -198,6 +200,22 @@ export async function removeParkingPhoto(
     params: { path: { id: parkingId, photoId } },
   });
   return error || !data ? null : data;
+}
+
+// --- Verificación de host / KYC básico (TASK-155) ---
+
+export async function getMyHostVerification(): Promise<HostVerification | null> {
+  const { data, error } = await apiClient.GET('/me/host-verification');
+  return error || !data ? null : data;
+}
+
+export async function submitHostVerification(input: {
+  legalName: string;
+  documentFileId: string;
+}): Promise<{ data: HostVerification | null; errorMessage?: string }> {
+  const { data, error } = await apiClient.POST('/me/host-verification', { body: input });
+  if (error || !data) return { data: null, errorMessage: errorMessageOf(error) };
+  return { data };
 }
 
 // El filtro global de la API responde `{ code, message, statusCode, ... }`.

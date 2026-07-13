@@ -1,6 +1,7 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,10 +12,15 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ParkingStatusBadge } from './components/ParkingStatusBadge';
 import { useParking } from './hooks/use-parking';
-import { useUnpublishParking } from './hooks/use-parking-mutations';
+import {
+  useUnpublishParking,
+  useUnverifyParking,
+  useVerifyParking,
+} from './hooks/use-parking-mutations';
 import { useReservations } from './hooks/use-reservations';
 import { reservationColumns } from './reservation-columns';
 import { DataTable } from '@/components/data-table/DataTable';
+import { resolveFileUrl } from '@/lib/file-url';
 import type { ParkingRow, ReservationRow } from './types';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -31,6 +37,8 @@ export function ParkingDetailPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useParking(id);
   const unpublish = useUnpublishParking(id ?? '');
+  const verify = useVerifyParking(id ?? '');
+  const unverify = useUnverifyParking(id ?? '');
   const { data: reservationsPage } = useReservations({ limit: 10, parkingId: id });
 
   if (isLoading || !data) {
@@ -58,6 +66,12 @@ export function ParkingDetailPage() {
             </h1>
             <div className="mt-1 flex items-center gap-2">
               <ParkingStatusBadge status={parking.status} />
+              {parking.verified && (
+                <Badge variant="secondary" className="gap-1">
+                  <ShieldCheck className="size-3" />
+                  Verificada
+                </Badge>
+              )}
               <span className="text-muted-foreground text-sm">
                 {parking.pricePerDay}€ / día
               </span>
@@ -65,6 +79,15 @@ export function ParkingDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {parking.verified ? (
+            <Button variant="outline" disabled={unverify.isPending} onClick={() => unverify.mutate()}>
+              Quitar verificación
+            </Button>
+          ) : (
+            <Button variant="outline" disabled={verify.isPending} onClick={() => verify.mutate()}>
+              Verificar plaza
+            </Button>
+          )}
           {parking.status === 'PUBLISHED' && (
             <ConfirmDialog
               trigger={<Button variant="outline">Despublicar</Button>}
@@ -85,7 +108,7 @@ export function ParkingDetailPage() {
               {parking.photos.map((photo) => (
                 <img
                   key={photo.id}
-                  src={photo.url}
+                  src={resolveFileUrl(photo.url)}
                   alt=""
                   className="aspect-square w-full rounded-lg object-cover"
                 />

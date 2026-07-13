@@ -1,4 +1,4 @@
-import type { ReservationStatus, ParkingStatus } from './parking.api';
+import type { ReservationStatus, ParkingStatus, HostVerificationStatus } from './parking.api';
 
 const RESERVATION_STATUS_LABEL: Record<ReservationStatus, string> = {
   PENDING: 'Pendiente',
@@ -33,4 +33,24 @@ export function reservationStatusColor(status: ReservationStatus): string {
 
 export function parkingStatusLabel(status: ParkingStatus): string {
   return PARKING_STATUS_LABEL[status] ?? status;
+}
+
+const HOST_VERIFICATION_STATUS_LABEL: Record<HostVerificationStatus, string> = {
+  PENDING: 'En revisión',
+  APPROVED: 'Verificado',
+  REJECTED: 'Rechazado',
+};
+
+const HOST_VERIFICATION_STATUS_COLOR: Record<HostVerificationStatus, string> = {
+  PENDING: 'primary',
+  APPROVED: 'secondary',
+  REJECTED: 'danger',
+};
+
+export function hostVerificationStatusLabel(status: HostVerificationStatus): string {
+  return HOST_VERIFICATION_STATUS_LABEL[status] ?? status;
+}
+
+export function hostVerificationStatusColor(status: HostVerificationStatus): string {
+  return HOST_VERIFICATION_STATUS_COLOR[status] ?? 'medium';
 }

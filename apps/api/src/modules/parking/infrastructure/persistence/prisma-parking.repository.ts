@@ -164,6 +164,15 @@ export class PrismaParkingRepository implements ParkingRepositoryPort {
     };
   }
 
+  async setVerified(id: string, verifiedAt: Date | null): Promise<Parking> {
+    const row = await this.prisma.parking.update({
+      where: { id },
+      data: { verifiedAt },
+      include: PHOTOS_INCLUDE,
+    });
+    return toParkingDomain(row);
+  }
+
   private cursorWhere(cursor: string): Prisma.ParkingWhereInput {
     const decoded = CursorCodec.decode(cursor);
     const date = new Date(decoded.createdAt);

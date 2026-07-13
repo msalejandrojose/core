@@ -25,6 +25,7 @@ export interface ParkingRow {
   accessInstructions: string | null;
   pricePerDay: DecimalLike;
   status: string;
+  verifiedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   photos?: ParkingPhotoRow[];
@@ -43,6 +44,7 @@ export function toParkingDomain(row: ParkingRow): Parking {
     accessInstructions: row.accessInstructions,
     pricePerDay: row.pricePerDay.toNumber(),
     status: row.status as ParkingStatus,
+    verifiedAt: row.verifiedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     photos: (row.photos ?? [])

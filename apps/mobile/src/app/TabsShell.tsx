@@ -23,6 +23,7 @@ import MyReservationsScreen from '@/features/parking/MyReservationsScreen';
 import ReservationDetailScreen from '@/features/parking/ReservationDetailScreen';
 import HostParkingsScreen from '@/features/parking/HostParkingsScreen';
 import ParkingFormScreen from '@/features/parking/ParkingFormScreen';
+import HostVerificationScreen from '@/features/parking/HostVerificationScreen';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import SettingsPage from '@/features/settings/SettingsPage';
 import AppearancePage from '@/features/settings/AppearancePage';
@@ -58,6 +59,7 @@ export default function TabsShell() {
         <Route exact path="/tabs/reservations" component={MyReservationsScreen} />
         <Route exact path="/tabs/reservations/:id" component={ReservationDetailScreen} />
         <Route exact path="/tabs/host" component={HostParkingsScreen} />
+        <Route exact path="/tabs/host/verification" component={HostVerificationScreen} />
         <Route exact path="/tabs/host/parkings/:id" component={ParkingFormScreen} />
         <Route exact path="/tabs/notifications" component={NotificationsPage} />
         <Route exact path="/tabs/settings" component={SettingsPage} />

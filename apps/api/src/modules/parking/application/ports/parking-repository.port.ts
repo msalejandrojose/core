@@ -67,4 +67,6 @@ export interface ParkingRepositoryPort {
   listAll(opts: ListAllParkingsOptions): Promise<CursorPage<Parking>>;
   addPhoto(parkingId: string, storedFileId: string): Promise<Parking>;
   removePhoto(parkingId: string, photoId: string): Promise<Parking>;
+  /** Backoffice: marca (o desmarca, `null`) que un admin verificó que la plaza existe. */
+  setVerified(id: string, verifiedAt: Date | null): Promise<Parking>;
 }

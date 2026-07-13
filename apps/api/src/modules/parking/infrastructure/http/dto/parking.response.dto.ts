@@ -25,6 +25,7 @@ export class ParkingResponseDto {
     | null;
   @ApiProperty() pricePerDay: number;
   @ApiProperty({ enum: PARKING_STATUSES }) status: ParkingStatus;
+  @ApiProperty() verified: boolean;
   @ApiProperty() createdAt: Date;
   @ApiProperty() updatedAt: Date;
   @ApiProperty({ type: [ParkingPhotoResponseDto] })
@@ -46,6 +47,7 @@ export class ParkingResponseDto {
     dto.accessInstructions = parking.accessInstructions;
     dto.pricePerDay = parking.pricePerDay;
     dto.status = parking.status;
+    dto.verified = parking.verifiedAt !== null;
     dto.createdAt = parking.createdAt;
     dto.updatedAt = parking.updatedAt;
     dto.photos = parking.photos.map((p) => ({

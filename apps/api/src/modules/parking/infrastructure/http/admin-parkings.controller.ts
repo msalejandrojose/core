@@ -17,6 +17,8 @@ import { GetAnyParkingUseCase } from '../../application/use-cases/get-any-parkin
 import { ListAllParkingsUseCase } from '../../application/use-cases/list-all-parkings.use-case';
 import { ListAllReservationsUseCase } from '../../application/use-cases/list-all-reservations.use-case';
 import { ModerateUnpublishParkingUseCase } from '../../application/use-cases/moderate-unpublish-parking.use-case';
+import { UnverifyParkingUseCase } from '../../application/use-cases/unverify-parking.use-case';
+import { VerifyParkingUseCase } from '../../application/use-cases/verify-parking.use-case';
 import { ListAllParkingsQueryDto } from './dto/list-all-parkings.query.dto';
 import { ListAllReservationsQueryDto } from './dto/list-all-reservations.query.dto';
 import { ParkingResponseDto } from './dto/parking.response.dto';
@@ -32,6 +34,8 @@ export class AdminParkingsController {
     private readonly listAllParkings: ListAllParkingsUseCase,
     private readonly getAnyParking: GetAnyParkingUseCase,
     private readonly moderateUnpublish: ModerateUnpublishParkingUseCase,
+    private readonly verifyParking: VerifyParkingUseCase,
+    private readonly unverifyParking: UnverifyParkingUseCase,
     private readonly listAllReservations: ListAllReservationsUseCase,
     private readonly viewTokens: FileViewTokenService,
   ) {}
@@ -76,6 +80,30 @@ export class AdminParkingsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ParkingResponseDto> {
     const parking = await this.moderateUnpublish.execute(id);
+    return ParkingResponseDto.fromDomain(parking, this.viewTokens);
+  }
+
+  @Post('parkings/:id/verify')
+  @RequiresPermission('parking', 'WRITE')
+  @ApiOperation({
+    summary: 'Verificar que una plaza existe de verdad (KYC básico)',
+  })
+  @ApiOkResponse({ type: ParkingResponseDto })
+  async verify(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ParkingResponseDto> {
+    const parking = await this.verifyParking.execute(id);
+    return ParkingResponseDto.fromDomain(parking, this.viewTokens);
+  }
+
+  @Post('parkings/:id/unverify')
+  @RequiresPermission('parking', 'WRITE')
+  @ApiOperation({ summary: 'Revocar la verificación de una plaza' })
+  @ApiOkResponse({ type: ParkingResponseDto })
+  async unverify(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ParkingResponseDto> {
+    const parking = await this.unverifyParking.execute(id);
     return ParkingResponseDto.fromDomain(parking, this.viewTokens);
   }
 

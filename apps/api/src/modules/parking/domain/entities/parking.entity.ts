@@ -19,6 +19,8 @@ export interface Parking {
   accessInstructions: string | null;
   pricePerDay: number;
   status: ParkingStatus;
+  /** Fecha en la que un admin verificó que la plaza existe. `null` = sin verificar. */
+  verifiedAt: Date | null;
 
   createdAt: Date;
   updatedAt: Date;

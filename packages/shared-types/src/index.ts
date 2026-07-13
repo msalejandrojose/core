@@ -60,5 +60,9 @@ export {
   canTransitionReservationStatus,
   ACTIVE_RESERVATION_STATUSES,
   blocksAvailability,
+  HostVerificationStatusSchema,
+  HOST_VERIFICATION_STATUSES,
+  HOST_VERIFICATION_STATUS_TRANSITIONS,
+  canTransitionHostVerificationStatus,
 } from './parking/parking.js';
-export type { ParkingStatus, ReservationStatus } from './parking/parking.js';
+export type { ParkingStatus, ReservationStatus, HostVerificationStatus } from './parking/parking.js';
