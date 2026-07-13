@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { listOutline, mapOutline, peopleOutline, personCircleOutline } from 'ionicons/icons';
 import MapPage from '@/features/map/MapPage';
 import MyListPage from '@/features/my-list/MyListPage';
+import AddSitePage from '@/features/sites/AddSitePage';
 import FeedPage from '@/features/feed/FeedPage';
 import MePage from '@/features/me/MePage';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
@@ -49,6 +50,7 @@ export default function AndanzasTabsShell() {
       <IonRouterOutlet>
         <Route exact path="/tabs/map" component={MapPage} />
         <Route exact path="/tabs/list" component={MyListPage} />
+        <Route exact path="/tabs/list/add" component={AddSitePage} />
         <Route exact path="/tabs/feed" component={FeedPage} />
         <Route exact path="/tabs/me" component={MePage} />
         <Route exact path="/tabs/notifications" component={NotificationsPage} />
