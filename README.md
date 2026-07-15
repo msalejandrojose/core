@@ -169,6 +169,21 @@ Convención propia (inversa a Vite/Next):
 
 ---
 
+## Secretos de producción (SOPS + age)
+
+Los secretos que necesita cada app en cada entorno (prod, staging...) viven
+**cifrados** en `secrets/<proyecto>/<entorno>.env`, cifrados con
+[SOPS](https://github.com/getsops/sops) + [age](https://github.com/FiloSottile/age).
+Se pueden commitear sin riesgo: sin la clave privada correspondiente son
+ilegibles. El workflow de deploy (`.github/workflows/deploy.yml`) los
+descifra en el runner de CI usando una clave age propia guardada solo como
+GitHub Secret (`SOPS_AGE_KEY_CI`).
+
+Detalles de setup (generar tu clave, editar un secreto, revocar acceso) en
+[`secrets/README.md`](./secrets/README.md).
+
+---
+
 ## Añadir cosas
 
 - **Una feature nueva en la API** → crea un módulo en `apps/api/src/modules/<feature>/` siguiendo el patrón hexagonal e impórtalo en `app.module.ts`. Detalles paso a paso en la skill de arquitectura.

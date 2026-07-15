@@ -46,8 +46,28 @@ jobs:
       - name: Test API
         run: pnpm --filter @core/api test
 
+      # Secretos de producción cifrados con SOPS+age (ver secrets/README.md).
+      # Los dos pasos siguientes se saltan solos mientras secrets/api/prod.env
+      # no exista todavía (así no rompen el pipeline antes de tener el setup
+      # completo). En cuanto se cree ese archivo (cifrado, vía `sops
+      # secrets/api/prod.env`) y se añada el GitHub Secret SOPS_AGE_KEY_CI,
+      # se activan automáticamente.
+      - name: Install sops
+        if: hashFiles('secrets/api/prod.env') != ''
+        run: |
+          curl -Lo /usr/local/bin/sops https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.amd64
+          chmod +x /usr/local/bin/sops
+
+      - name: Descifrar secrets de la API (SOPS)
+        if: hashFiles('secrets/api/prod.env') != ''
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY_CI }}
+        # apps/api/.env está gitignored: el archivo descifrado solo vive en
+        # este runner efímero, nunca se commitea.
+        run: sops -d secrets/api/prod.env > apps/api/.env
+
       - name: Deploy API
-        run: echo "🚧 Despliegue de la API todavía no configurado (placeholder)."
+        run: echo "🚧 Despliegue de la API todavía no configurado (placeholder). apps/api/.env queda listo (si existe secrets/api/prod.env) para el paso de deploy real."
 
   # --- Backoffice (placeholder): aún sin tests. Deploy real: TODO ---
   backoffice:

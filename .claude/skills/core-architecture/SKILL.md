@@ -194,6 +194,35 @@ El override está en `.gitignore`:
 
 **Para que la API conecte a la BBDD local:** `apps/api/.env` debe tener `DATABASE_URL`, `DB_USER`, `DB_PASSWORD` que **coincidan** con `docker/.env`.
 
+### 4.1 Secretos de producción/CI — SOPS + age
+
+Los `.env` de producción/staging (los secretos reales, no las plantillas) **no
+viven como GitHub Secrets sueltos** — viven cifrados en el propio repo, en
+`secrets/<proyecto>/<entorno>.env`, cifrados con [SOPS](https://github.com/getsops/sops)
+usando claves [age](https://github.com/FiloSottile/age). Es seguro commitearlos:
+sin la clave privada correspondiente son ilegibles.
+
+- **Config de claves/reglas**: `.sops.yaml` en la raíz — define qué claves age
+  pueden descifrar cada `path_regex` (una regla por `secrets/<proyecto>/`).
+- **Editar un secreto**: `sops secrets/api/prod.env` — descifra a un temporal,
+  abre `$EDITOR`, re-cifra al guardar. Nunca queda texto plano en disco.
+- **Clave de CI**: par de claves age aparte cuya privada vive **solo** como
+  GitHub Secret (`SOPS_AGE_KEY_CI`), nunca en el repo ni en máquinas de devs.
+- **Consumo en CI**: en `.github/workflows/deploy.yml`, el job de cada app
+  instala el binario de `sops` y corre `sops -d secrets/<app>/prod.env >
+  apps/<app>/.env` justo antes del paso de deploy, usando `SOPS_AGE_KEY`
+  (env var) con el secret de CI. El paso se salta solo (`if:
+  hashFiles(...)`) mientras el archivo cifrado no exista todavía, para no
+  romper el pipeline antes de que el setup esté completo.
+- **Detalles completos** (generar tu clave, dar/revocar acceso a alguien,
+  estructura de carpetas): `secrets/README.md`.
+
+**Regla de oro**: si un secreto real (JWT_SECRET de prod, API keys, etc.) se
+va a usar en CI, va en `secrets/<proyecto>/<entorno>.env` cifrado — no como
+GitHub Secret individual suelto, salvo credenciales de infraestructura que no
+cambian por entorno (ej. `CLOUDFLARE_API_TOKEN`, que sigue siendo un GitHub
+Secret normal porque no es un secreto "de la app").
+
 ## 5. Docker stack
 
 `docker/docker-compose.yml` define tres servicios:

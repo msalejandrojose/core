@@ -1,0 +1,35 @@
+# Config de SOPS: qué claves age pueden descifrar cada fichero de secrets/.
+#
+# Cómo añadir tu clave:
+#   1. Genera tu par de claves EN TU MÁQUINA (nunca en un sandbox/CI compartido):
+#        age-keygen -o ~/.config/sops/age/keys.txt
+#      Esto imprime una línea "Public key: age1...". Guarda el archivo en
+#      privado (contiene la clave PRIVADA) y no lo commitees nunca.
+#   2. Añade tu clave pública a la lista `age:` de cada regla de abajo.
+#   3. Si el fichero ya existía cifrado con otras claves, re-cifra para que
+#      incluya la tuya:
+#        sops updatekeys secrets/<proyecto>/<entorno>.env
+#
+# La clave "CI" es un par de claves aparte, generado igual, cuya privada vive
+# ÚNICAMENTE como GitHub Secret (SOPS_AGE_KEY) — nunca en ningún archivo del
+# repo ni en la máquina de ningún dev.
+
+keys:
+  - &ci_key age1REEMPLAZA_CON_LA_PUBLICA_DE_CI
+  # - &dev_alejandro age1REEMPLAZA_CON_TU_PUBLICA
+
+creation_rules:
+  - path_regex: secrets/api/.*\.env$
+    age:
+      - *ci_key
+      # - *dev_alejandro
+
+  - path_regex: secrets/backoffice/.*\.env$
+    age:
+      - *ci_key
+      # - *dev_alejandro
+
+  - path_regex: secrets/web/.*\.env$
+    age:
+      - *ci_key
+      # - *dev_alejandro
