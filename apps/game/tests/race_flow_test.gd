@@ -1,5 +1,7 @@
 extends Node
 
+const TestEnv := preload("res://tests/test_env.gd")
+
 ## Prueba del flujo de carrera sobre la escena real:
 ##
 ##     godot --quit-after 1800 res://tests/race_flow_test.tscn
@@ -17,6 +19,7 @@ var _records: Array = []
 
 
 func _ready() -> void:
+	TestEnv.reset()
 	RaceRecords.clear(TRACK)
 
 	var main: Node = load("res://scenes/main.tscn").instantiate()

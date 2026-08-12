@@ -32,7 +32,7 @@ provisional).
 | Decisión | Elección | Motivo |
 |---|---|---|
 | Ubicación | Todo dentro del monorepo `core` | Reaprovechar IAM, Prisma, Docker, backoffice |
-| Proyecto Godot | `apps/game/` | Carpeta fuera del workspace pnpm (no tiene `package.json`, pnpm la ignora) |
+| Proyecto Godot | `apps/game/` | Paquete del workspace (`@core/game`). El `package.json` no tiene dependencias: existe solo para que el proyecto tenga los mismos comandos `pnpm` que el resto de apps |
 | Backend | `apps/api` → `src/modules/racing/` | Módulo de dominio en la rama `racing-dev`, nunca en `main` |
 | Auth | IAM existente de `core` (`modules/iam`) | Email/password + social login ya construidos y probados |
 | Multijugador | Ninguno en F0 | Ver §7 |

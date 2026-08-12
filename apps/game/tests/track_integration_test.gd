@@ -1,5 +1,7 @@
 extends Node
 
+const TestEnv := preload("res://tests/test_env.gd")
+
 ## Prueba de integración del circuito:
 ##
 ##     godot --quit-after 1800 res://tests/track_integration_test.tscn
@@ -22,6 +24,8 @@ var _completed := false
 
 
 func _ready() -> void:
+	TestEnv.reset()
+
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().physics_frame

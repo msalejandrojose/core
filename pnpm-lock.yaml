@@ -350,6 +350,8 @@ importers:
         specifier: ^8.0.12
         version: 8.0.16(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)
 
+  apps/game: {}
+
   apps/mobile:
     dependencies:
       '@capacitor/app':

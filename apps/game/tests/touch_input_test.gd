@@ -1,5 +1,7 @@
 extends Node
 
+const TestEnv := preload("res://tests/test_env.gd")
+
 ## Banco de pruebas de los controles táctiles:
 ##
 ##     godot res://tests/touch_input_test.tscn
@@ -19,6 +21,8 @@ var _failures := 0
 
 
 func _ready() -> void:
+	TestEnv.reset()
+
 	var controls := TOUCH_CONTROLS.instantiate()
 	add_child(controls)
 	_pad = controls.get_node("Pad")

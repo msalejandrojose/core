@@ -1,5 +1,7 @@
 extends Node
 
+const TestEnv := preload("res://tests/test_env.gd")
+
 ## Prueba del sentido inverso y del esquema de control alternativo:
 ##
 ##     godot --quit-after 1800 res://tests/settings_test.tscn
@@ -13,15 +15,10 @@ const TRACK := "test-settings"
 var _failures := 0
 var _now: int = 0
 var _pad: Control
-var _restored_scheme: int
-var _restored_reverse: bool
 
 
 func _ready() -> void:
-	_restored_scheme = GameSettings.control_scheme
-	_restored_reverse = GameSettings.reverse
-	GameSettings.set_reverse(false)
-	GameSettings.set_control_scheme(GameSettings.ControlScheme.WHEEL)
+	TestEnv.reset()
 
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	add_child(main)
@@ -45,9 +42,7 @@ func _ready() -> void:
 
 	RaceRecords.clear(TRACK)
 	RaceRecords.clear(TRACK + "-rev")
-	GameSettings.set_control_scheme(_restored_scheme)
-	GameSettings.set_reverse(_restored_reverse)
-	VehicleInput.locked = false
+	TestEnv.reset()
 
 	if _failures == 0:
 		print("\nOK")

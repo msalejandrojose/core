@@ -1,5 +1,7 @@
 extends Node
 
+const TestEnv := preload("res://tests/test_env.gd")
+
 ## Prueba del semáforo de salida:
 ##
 ##     godot --quit-after 1800 res://tests/countdown_test.tscn
@@ -14,6 +16,8 @@ var _finished := false
 
 
 func _ready() -> void:
+	TestEnv.reset()
+
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().physics_frame
