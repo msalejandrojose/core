@@ -37,6 +37,10 @@ docker/Caddyfile
 !apps/api/.env.local
 # Backoffice (Vite): .env lleva solo NO-secretos y SÍ se commitea; .env.local (secretos) queda ignorado.
 !apps/backoffice/.env
+# Web (Astro): .env.local lleva solo config de despliegue NO-secreta y compartida
+# (ej. CLOUDFLARE_PROJECT_NAME), nunca PUBLIC_*, para no pisar overrides locales
+# en .env (Vite carga .env.local DESPUÉS de .env y sobrescribe claves repetidas).
+!apps/web/.env.local
 
 # Logs
 *.log

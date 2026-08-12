@@ -1,0 +1,52 @@
+---
+interface Props {
+  heroImage?: string;
+  heroAlt?: string;
+}
+
+const {
+  heroImage,
+  heroAlt = 'Mesa preparada con brasas encendidas al fondo',
+} = Astro.props;
+---
+<section id="top" class="relative bg-charcoal">
+  {heroImage ? (
+    <img
+      src={heroImage}
+      alt={heroAlt}
+      class="absolute inset-0 w-full h-full object-cover"
+      fetchpriority="high"
+    />
+  ) : (
+    <div class="img-ph absolute inset-0 w-full h-full" aria-hidden="true"></div>
+  )}
+  <div class="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/55 to-charcoal/20" aria-hidden="true"></div>
+
+  <div class="relative min-h-[92vh] md:min-h-[88vh] flex flex-col justify-end px-5 md:px-10 pb-16 md:pb-24 pt-32">
+    <div class="max-w-[1280px] mx-auto w-full">
+      <div class="reveal">
+        <div class="inline-flex items-center gap-2.5 px-3 py-1.5 mb-6 md:mb-8 bg-cream/8 backdrop-blur border border-cream/15 rounded-full">
+          <span class="block w-[7px] h-[7px] rounded-full bg-ember-500 pulse-dot" aria-hidden="true"></span>
+          <span class="eyebrow-light">Abierto de martes a domingo</span>
+        </div>
+
+        <h1 class="font-brasa text-[clamp(38px,7vw,84px)] leading-[0.98] [letter-spacing:var(--tracking-tightest)] font-semibold text-cream mb-6 max-w-[820px]">
+          Cocina de fuego lento, <span class="text-ember-300 italic">producto de temporada</span>.
+        </h1>
+
+        <p class="text-[17px] md:text-[19px] leading-[1.55] text-cream/70 mb-9 max-w-[520px]">
+          Brasas encendidas desde primera hora, carta corta que cambia con el mercado y una mesa que siempre te está esperando.
+        </p>
+
+        <div class="flex flex-wrap items-center gap-4">
+          <a href="#reservas" class="btn-primary inline-flex items-center rounded-full px-7 py-3.5 text-[15px] font-medium tracking-tight">
+            Reservar mesa
+          </a>
+          <a href="#carta" class="btn-outline inline-flex items-center rounded-full px-7 py-3.5 text-[15px] font-medium tracking-tight">
+            Ver la carta
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

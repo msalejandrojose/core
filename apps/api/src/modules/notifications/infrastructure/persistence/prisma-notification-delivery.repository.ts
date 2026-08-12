@@ -78,8 +78,17 @@ export class PrismaNotificationDeliveryRepository implements NotificationDeliver
   ): Promise<CursorPage<NotificationDelivery>> {
     const filters: Prisma.NotificationDeliveryWhereInput = {
       ...(opts.messageTypeKey ? { messageTypeKey: opts.messageTypeKey } : {}),
+      ...(opts.channel ? { channel: opts.channel } : {}),
       ...(opts.status ? { status: opts.status } : {}),
-      ...(opts.toAddress ? { toAddress: opts.toAddress } : {}),
+      ...(opts.toAddress ? { toAddress: { contains: opts.toAddress } } : {}),
+      ...(opts.createdFrom || opts.createdTo
+        ? {
+            createdAt: {
+              ...(opts.createdFrom ? { gte: opts.createdFrom } : {}),
+              ...(opts.createdTo ? { lte: opts.createdTo } : {}),
+            },
+          }
+        : {}),
     };
     const where: Prisma.NotificationDeliveryWhereInput = opts.cursor
       ? { AND: [filters, this.cursorWhere(opts.cursor)] }

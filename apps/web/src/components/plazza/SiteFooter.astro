@@ -1,0 +1,20 @@
+---
+import Wordmark from './Wordmark.astro';
+---
+<footer class="bg-asphalt-900 text-paper/60 px-5 md:px-10 py-12 border-t border-paper/10">
+  <div class="max-w-[1280px] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+    <div class="flex items-center gap-2.5">
+      <Wordmark variant="light" />
+      <span class="font-mono text-[11px] tracking-[0.14em] uppercase text-paper/35 ml-2">España</span>
+    </div>
+    <nav class="flex flex-wrap gap-x-6 gap-y-2 text-[13px]" aria-label="Contacto">
+      <a href="mailto:hola@plazza.es" class="hover:text-paper transition">hola@plazza.es</a>
+      <a href="/contacto" class="hover:text-paper transition">Contacto</a>
+    </nav>
+    <nav class="flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-paper/40" aria-label="Legal">
+      <a href="/aviso-legal" class="hover:text-paper transition">Aviso legal</a>
+      <a href="/privacidad" class="hover:text-paper transition">Privacidad</a>
+      <a href="/cookies" class="hover:text-paper transition">Cookies</a>
+    </nav>
+  </div>
+</footer>

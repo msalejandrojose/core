@@ -1,0 +1,17 @@
+---
+interface Props {
+  variant?: 'dark' | 'light';
+}
+const { variant = 'dark' } = Astro.props;
+const color = variant === 'light' ? '#F7F1E6' : '#C1441E';
+const textClass = variant === 'light' ? 'text-cream' : 'text-charcoal';
+---
+<span class="inline-flex items-center gap-2.5">
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+    <path
+      d="M9 1.5c1.3 2 1.8 3.4.9 5-.5.9-1.5 1-1.9 0-.3.9.1 1.6.7 2.1-2 .2-3.7 1.9-3.7 4a3.9 3.9 0 0 0 7.8.4c.3-2.6-1-4.4-2-5.7 1 .1 1.8.6 2.4 1.4.7-2.9-1.1-5.6-4.2-7.2Z"
+      fill={color}
+    />
+  </svg>
+  <span class={`font-brasa font-semibold text-[17px] tracking-tight ${textClass}`}>Brasa</span>
+</span>

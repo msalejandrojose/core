@@ -79,3 +79,102 @@ export interface MessageType {
   createdAt: string;
   updatedAt: string;
 }
+
+// --- Bandeja de deliveries (log de entregabilidad) ------------------------
+
+export type DeliveryStatus =
+  | 'pending'
+  | 'sent'
+  | 'deferred'
+  | 'delivered'
+  | 'opened'
+  | 'clicked'
+  | 'unsubscribed'
+  | 'spam'
+  | 'dropped'
+  | 'bounced'
+  | 'failed';
+
+export const DELIVERY_STATUSES: DeliveryStatus[] = [
+  'pending',
+  'sent',
+  'deferred',
+  'delivered',
+  'opened',
+  'clicked',
+  'unsubscribed',
+  'spam',
+  'dropped',
+  'bounced',
+  'failed',
+];
+
+export const DELIVERY_STATUS_LABELS: Record<DeliveryStatus, string> = {
+  pending: 'Pendiente',
+  sent: 'Enviado',
+  deferred: 'Diferido',
+  delivered: 'Entregado',
+  opened: 'Abierto',
+  clicked: 'Clic',
+  unsubscribed: 'Baja',
+  spam: 'Spam',
+  dropped: 'Descartado',
+  bounced: 'Rebotado',
+  failed: 'Fallido',
+};
+
+export interface DeliveryEvent {
+  type: string;
+  at: string;
+  reason?: string;
+}
+
+export interface Delivery {
+  id: string;
+  messageTypeId: string | null;
+  messageTypeKey: string;
+  accountId: string | null;
+  channel: NotificationChannel;
+  provider: string;
+  to: string;
+  subject: string | null;
+  status: DeliveryStatus;
+  providerMessageId: string | null;
+  error: string | null;
+  events: DeliveryEvent[];
+  sentAt: string | null;
+  deliveredAt: string | null;
+  lastEventAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- Centro de webhooks (eventos entrantes) --------------------------------
+
+export type WebhookEventStatus = 'pending' | 'processed' | 'failed';
+
+export const WEBHOOK_EVENT_STATUSES: WebhookEventStatus[] = [
+  'pending',
+  'processed',
+  'failed',
+];
+
+export const WEBHOOK_EVENT_STATUS_LABELS: Record<WebhookEventStatus, string> = {
+  pending: 'Pendiente',
+  processed: 'Procesado',
+  failed: 'Fallido',
+};
+
+export interface WebhookEvent {
+  id: string;
+  source: string;
+  type: string | null;
+  payload: unknown;
+  signatureValid: boolean;
+  status: WebhookEventStatus;
+  result: string | null;
+  error: string | null;
+  processedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

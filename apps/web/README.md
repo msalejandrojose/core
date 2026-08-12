@@ -18,21 +18,30 @@ pnpm check            # solo type-check (astro check)
 
 ## Variables de entorno
 
-> ⚠️ **Convención diferente a `apps/api/`**
+> ⚠️ **Dos convenciones distintas conviven aquí**
 >
-> Aquí `.env.local` está **gitignored** (convención Vite/Astro). En la API, `.env.local` está committed como defaults del equipo. No confundir.
+> - Variables de **Astro/build** (`PUBLIC_*`): tu `.env` personal es el gitignored, como en cualquier proyecto Vite/Astro.
+> - Config de **despliegue** (no consumida por Astro, solo por el workflow de CI): vive en `.env.local`, que aquí SÍ está committed — igual que en `apps/api`.
+>
+> Vite carga `.env` y luego `.env.local`, y `.env.local` **sobrescribe** claves repetidas. Por eso `.env.local` nunca lleva `PUBLIC_*`: si llevara alguna, pisaría el override que pongas en tu `.env` local. Solo lleva claves de despliegue que no cambian entre desarrolladores.
 
 | Archivo | Contenido | Git |
 |---|---|---|
-| `.env.example` | Plantilla con todas las claves | Committed |
-| `.env.local` | Valores locales por defecto | **Gitignored** |
-| `.env` | Overrides locales / secretos | **Gitignored** |
+| `.env.example` | Plantilla con las claves `PUBLIC_*` | Committed |
+| `.env` | Tus valores locales (`PUBLIC_*`) | **Gitignored** |
+| `.env.local` | Config de despliegue compartida (ej. `CLOUDFLARE_PROJECT_NAME`) | **Committed** |
 
-Solo las variables con prefijo `PUBLIC_` se exponen al cliente (browser):
+Solo las variables con prefijo `PUBLIC_` se exponen al cliente (browser); van en tu `.env` local:
 
 ```bash
 PUBLIC_API_URL=http://api.aj-local.es   # URL de la API (usada por el island de contacto)
 PUBLIC_SITE_URL=http://www.aj-local.es  # URL del propio sitio (sitemap + OG tags)
+```
+
+`.env.local` (committed) solo lleva config de despliegue leída por `deploy-web.yml`:
+
+```bash
+CLOUDFLARE_PROJECT_NAME=core-web   # proyecto de Cloudflare Pages donde se publica dist/
 ```
 
 ## Stack local con run.sh

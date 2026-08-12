@@ -96,35 +96,7 @@ jobs:
         run: echo "🚧 Despliegue de la mobile todavía no configurado (placeholder)."
 
   # --- Web (REAL): build Astro estático + deploy a Cloudflare Pages ---
+  # Lógica real en deploy-web.yml (reusable), compartida con blog-deploy.yml.
   web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build web (astro check + build)
-        run: pnpm build:web
-        env:
-          # Opcionales: si no defines estas Variables en el repo, Astro usa sus
-          # fallbacks (site → https://aj.es). Recomendado fijarlas para el sitemap/OG.
-          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
-          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
-
-      - name: Deploy to Cloudflare Pages
-        if: github.ref == 'refs/heads/main'
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # El proyecto de Pages "core-web" debe existir en Cloudflare (ver README/setup).
-          # --branch=main marca el deploy como PRODUCCIÓN (rama de producción del proyecto).
-          command: pages deploy apps/web/dist --project-name=core-web --branch=main
+    uses: ./.github/workflows/deploy-web.yml
+    secrets: inherit

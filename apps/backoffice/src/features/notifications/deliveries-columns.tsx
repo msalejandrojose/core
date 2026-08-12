@@ -1,75 +1,76 @@
 import type { ColumnDef } from '@tanstack/react-table';
+import { Link } from 'react-router-dom';
+import { RowActions } from '@/components/data-table/RowActions';
 import { Badge } from '@/components/ui/badge';
-import {
-  CHANNEL_LABELS,
-  DELIVERY_STATUS_LABELS,
-  type Delivery,
-  type DeliveryStatus,
-} from './types';
-
-const STATUS_VARIANT: Record<
-  DeliveryStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
-> = {
-  pending: 'secondary',
-  sent: 'outline',
-  deferred: 'secondary',
-  delivered: 'default',
-  opened: 'default',
-  clicked: 'default',
-  unsubscribed: 'secondary',
-  spam: 'destructive',
-  dropped: 'destructive',
-  bounced: 'destructive',
-  failed: 'destructive',
-};
-
-function formatDate(value: string | null): string {
-  if (!value) return '—';
-  return new Date(value).toLocaleString();
-}
+import { DeliveryStatusBadge } from './components/DeliveryStatusBadge';
+import { CHANNEL_LABELS, type Delivery } from './types';
 
 export const deliveryColumns: ColumnDef<Delivery>[] = [
-  {
-    accessorKey: 'to',
-    header: 'Destinatario',
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.to}</span>
-    ),
-  },
-  {
-    accessorKey: 'messageTypeKey',
-    header: 'Tipo de mensaje',
-    cell: ({ row }) => (
-      <span className="font-mono text-sm">{row.original.messageTypeKey}</span>
-    ),
-  },
-  {
-    accessorKey: 'channel',
-    header: 'Canal',
-    cell: ({ row }) => (
-      <Badge variant="secondary">{CHANNEL_LABELS[row.original.channel]}</Badge>
-    ),
-  },
-  {
-    accessorKey: 'status',
-    header: 'Estado',
-    cell: ({ row }) => {
-      const { status, error } = row.original;
-      return (
-        <Badge variant={STATUS_VARIANT[status]} title={error ?? undefined}>
-          {DELIVERY_STATUS_LABELS[status]}
-        </Badge>
-      );
+    {
+        accessorKey: 'channel',
+        header: 'Canal',
+        cell: ({ row }) => (
+            <Badge variant="secondary">{CHANNEL_LABELS[row.original.channel]}</Badge>
+        ),
     },
-  },
-  {
-    id: 'sentAt',
-    header: 'Enviado',
-    cell: ({ row }) => (
-      <span className="text-muted-foreground text-sm">
-        {formatDate(row.original.sentAt)}
+    {
+        accessorKey: 'provider',
+        header: 'Proveedor',
+        cell: ({ row }) => (
+            <span className="text-muted-foreground text-sm">
+        {row.original.provider}
       </span>
-    ),
-  },
+        ),
+    },
+    {
+        accessorKey: 'to',
+        header: 'Destinatario',
+        cell: ({ row }) => (
+            <Link
+                to={`/notifications/deliveries/${row.original.id}`}
+                className="font-medium hover:underline"
+            >
+                {row.original.to}
+            </Link>
+        ),
+    },
+    {
+        accessorKey: 'messageTypeKey',
+        header: 'Tipo de mensaje',
+        cell: ({ row }) => (
+            <span className="font-mono text-xs">{row.original.messageTypeKey}</span>
+        ),
+    },
+    {
+        accessorKey: 'status',
+        header: 'Estado',
+        cell: ({ row }) => <DeliveryStatusBadge status={row.original.status} />,
+    },
+    {
+        id: 'lastEventAt',
+        header: 'Último evento',
+        cell: ({ row }) => (
+            <span className="text-muted-foreground text-sm tabular-nums">
+        {row.original.lastEventAt
+            ? new Date(row.original.lastEventAt).toLocaleString('es-ES')
+            : '—'}
+      </span>
+        ),
+    },
+    {
+        accessorKey: 'createdAt',
+        header: 'Enviado',
+        cell: ({ row }) => (
+            <span className="text-muted-foreground text-sm tabular-nums">
+        {new Date(row.original.createdAt).toLocaleString('es-ES')}
+      </span>
+        ),
+    },
+    {
+        id: 'actions',
+        enableSorting: false,
+        cell: ({ row }) => (
+            <RowActions viewHref={`/notifications/deliveries/${row.original.id}`} />
+        ),
+    },
 ];

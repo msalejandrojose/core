@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+@theme {
+  --color-asphalt-900: #14161A;
+  --color-asphalt-800: #1D2027;
+  --color-asphalt-700: #262A33;
+  --color-asphalt-500: #4B515C;
+  --color-asphalt-300: #8A8F99;
+  --color-asphalt-100: #E4E4E1;
+
+  --color-paper:      #F4F3EF;
+  --color-paper-dark: #E9E7E0;
+  --color-ink:        #16181C;
+
+  --color-amber:      #F5A623;
+  --color-amber-dark: #C97F0F;
+  --color-signal:     #1F9D6C;
+
+  --font-plazza: "Space Grotesk", system-ui, sans-serif;
+  --font-sans:   "Inter", system-ui, sans-serif;
+  --font-mono:   "IBM Plex Mono", ui-monospace, monospace;
+
+  --tracking-tightest: -0.03em;
+  --tracking-tighter:  -0.02em;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, .display { font-family: var(--font-plazza); }
+
+  ::selection { background: var(--color-amber); color: var(--color-asphalt-900); }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-amber-dark);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-amber-dark);
+  }
+
+  .hairline { height: 1px; background: color-mix(in srgb, var(--color-ink) 12%, transparent); }
+
+  .btn-primary {
+    background: var(--color-amber);
+    color: var(--color-asphalt-900);
+    transition: transform .22s cubic-bezier(.2,0,0,1), background-color .22s, box-shadow .22s;
+    box-shadow: 0 1px 1px rgba(20,22,26,0.06), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn-primary:hover { background: #FFB646; transform: translateY(-1px); box-shadow: 0 10px 20px -10px rgba(201,127,15,0.55); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-dark {
+    background: var(--color-asphalt-900);
+    color: var(--color-paper);
+    transition: transform .22s cubic-bezier(.2,0,0,1), background-color .22s;
+  }
+  .btn-dark:hover { background: var(--color-asphalt-700); transform: translateY(-1px); }
+
+  .field-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--color-ink) 50%, transparent);
+    margin-bottom: 6px;
+  }
+
+  .field {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-ink);
+  }
+  .field::placeholder { color: color-mix(in srgb, var(--color-ink) 32%, transparent); font-weight: 400; }
+  .field:focus { outline: none; }
+
+  .card-hover { transition: transform .3s cubic-bezier(.2,0,0,1), box-shadow .3s; }
+  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -24px rgba(20,22,26,0.35); }
+
+  /* Placeholder "photo" for a parking spot: asphalt texture + painted lines */
+  .plaza-ph {
+    position: relative;
+    overflow: hidden;
+    background:
+      repeating-linear-gradient(115deg, transparent 0 18px, color-mix(in srgb, var(--color-paper) 6%, transparent) 18px 20px),
+      linear-gradient(160deg, var(--color-asphalt-700) 0%, var(--color-asphalt-900) 100%);
+  }
+  .plaza-ph::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, transparent 46%, color-mix(in srgb, var(--color-paper) 55%, transparent) 46% 48%, transparent 48%),
+      linear-gradient(90deg, transparent 76%, color-mix(in srgb, var(--color-paper) 55%, transparent) 76% 78%, transparent 78%);
+    opacity: .5;
+  }
+}
+
+@layer utilities {
+  .reveal { opacity: 0; transform: translateY(10px); transition: opacity .8s cubic-bezier(.2,0,0,1), transform .8s cubic-bezier(.2,0,0,1); }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  .pulse-dot { animation: pulse 2.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.35 } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .pulse-dot { animation: none !important; }
+  html { scroll-behavior: auto; }
+}

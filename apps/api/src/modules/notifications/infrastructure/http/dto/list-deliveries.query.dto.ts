@@ -1,5 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import {
+  NOTIFICATION_CHANNELS,
+  type NotificationChannel,
+} from '@core/shared-types';
+import { IsDateString, IsIn, IsOptional, IsString } from 'class-validator';
 import { CursorPaginationQueryDto } from '../../../../../shared/pagination';
 import type { DeliveryStatus } from '../../../domain/entities/notification-delivery.entity';
 
@@ -23,13 +27,35 @@ export class ListDeliveriesQueryDto extends CursorPaginationQueryDto {
   @IsString()
   messageTypeKey?: string;
 
+  @ApiPropertyOptional({
+    enum: NOTIFICATION_CHANNELS,
+    description: 'Filtra por canal.',
+  })
+  @IsOptional()
+  @IsIn(NOTIFICATION_CHANNELS)
+  channel?: NotificationChannel;
+
   @ApiPropertyOptional({ enum: STATUSES, description: 'Filtra por estado.' })
   @IsOptional()
   @IsIn(STATUSES)
   status?: DeliveryStatus;
 
-  @ApiPropertyOptional({ description: 'Filtra por destinatario.' })
+  @ApiPropertyOptional({ description: 'Búsqueda por destinatario (contiene).' })
   @IsOptional()
   @IsString()
   to?: string;
+
+  @ApiPropertyOptional({
+    description: 'Fecha de envío desde (ISO-8601, inclusive).',
+  })
+  @IsOptional()
+  @IsDateString()
+  dateFrom?: string;
+
+  @ApiPropertyOptional({
+    description: 'Fecha de envío hasta (ISO-8601, inclusive).',
+  })
+  @IsOptional()
+  @IsDateString()
+  dateTo?: string;
 }

@@ -36,17 +36,29 @@ export interface UpdateTokensPatch {
   passwordHash?: string | null;
 }
 
+/** Vincula (o refresca) los datos de un proveedor social sobre un usuario ya existente. */
+export interface LinkSocialAccountPatch {
+  googleId?: string;
+  facebookId?: string;
+  avatarUrl?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}
+
 export interface UserRepositoryPort {
   // ── Por id / email ─────────────────────────────────────────────────────
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   findByEmailVerificationToken(token: string): Promise<User | null>;
   findByPasswordResetToken(token: string): Promise<User | null>;
+  findByGoogleId(googleId: string): Promise<User | null>;
+  findByFacebookId(facebookId: string): Promise<User | null>;
 
   // ── Mutaciones ─────────────────────────────────────────────────────────
   create(user: User): Promise<User>;
   update(id: string, patch: UpdateUserPatch): Promise<User>;
   updateTokens(id: string, patch: UpdateTokensPatch): Promise<User>;
+  linkSocialAccount(id: string, patch: LinkSocialAccountPatch): Promise<User>;
   // Soft delete: marca isActive=false.
   deactivate(id: string): Promise<User>;
 

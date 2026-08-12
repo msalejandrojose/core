@@ -1,7 +1,7 @@
 // Wrapper sobre @core/api-client (pendiente de generar) + fetch nativo.
 // Una vez que api-client exista, sustituir el fetch directo por su instancia.
 
-const apiUrl = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000';
+const apiUrl = `${import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000'}/v1`;
 
 export function getApiUrl(): string {
   return apiUrl;

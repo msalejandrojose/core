@@ -11,3 +11,9 @@ export function canPublish(from: PostStatus): boolean {
 export function canArchive(from: PostStatus): boolean {
   return from !== 'ARCHIVED';
 }
+
+// Visible en el sitio público: PUBLISHED, o SCHEDULED cuya fecha ya venció.
+export function isVisible(status: PostStatus, publishedAt: Date | null): boolean {
+  if (status === 'PUBLISHED') return true;
+  return status === 'SCHEDULED' && publishedAt !== null && publishedAt.getTime() <= Date.now();
+}

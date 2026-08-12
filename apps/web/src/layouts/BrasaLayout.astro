@@ -1,0 +1,109 @@
+---
+import '../styles/brasa.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+}
+
+const {
+  title = 'Brasa — Cocina de fuego lento en el centro de la ciudad',
+  description = 'Restaurante de brasa y producto de temporada. Consulta la carta, descubre nuestra historia y solicita tu reserva.',
+  canonical = Astro.url.href,
+} = Astro.props;
+
+const siteName = 'Brasa';
+const ogImage = new URL('/og.jpg', Astro.site ?? Astro.url).href;
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <meta name="theme-color" content="#1B1512" />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_ES" />
+  <meta property="og:site_name" content={siteName} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={ogImage} />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImage} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Restaurant",
+        "name": siteName,
+        "url": Astro.site?.href ?? Astro.url.origin,
+        "servesCuisine": ["Brasa", "Mediterránea", "Temporada"],
+        "priceRange": "€€",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Calle Mayor, 12",
+          "addressLocality": "Albacete",
+          "addressRegion": "Castilla-La Mancha",
+          "addressCountry": "ES"
+        },
+        "openingHoursSpecification": [
+          { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Sunday"], "opens": "13:00", "closes": "23:00" },
+          { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Friday", "Saturday"], "opens": "13:00", "closes": "00:30" }
+        ],
+        "hasMenu": {
+          "@type": "Menu",
+          "hasMenuSection": [
+            { "@type": "MenuSection", "name": "Entrantes" },
+            { "@type": "MenuSection", "name": "Vegetariano" },
+            { "@type": "MenuSection", "name": "Carnes" },
+            { "@type": "MenuSection", "name": "Pescados y mariscos" },
+            { "@type": "MenuSection", "name": "Postres" }
+          ]
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "¿Es necesario reservar mesa?", "acceptedAnswer": { "@type": "Answer", "text": "Recomendamos reservar, sobre todo fines de semana. Puedes solicitar tu reserva desde la web y te confirmamos por teléfono." } },
+          { "@type": "Question", "name": "¿Tenéis opciones vegetarianas?", "acceptedAnswer": { "@type": "Answer", "text": "Sí, la carta tiene una sección vegetariana con platos elaborados con el mismo cuidado que el resto." } }
+        ]
+      }
+    ]
+  })} />
+</head>
+<body>
+  <slot />
+
+  <script>
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+    } else {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        }
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+---
+import Wordmark from './Wordmark.astro';
+---
+<header class="sticky top-0 z-40 bg-paper/85 backdrop-blur border-b border-ink/8 px-5 md:px-10 py-4 flex items-center justify-between">
+  <a href="#top" class="flex items-center gap-2.5" aria-label="Plazza — inicio">
+    <Wordmark />
+  </a>
+  <nav class="hidden md:flex items-center gap-8 font-mono text-[12px] uppercase tracking-[0.12em] text-ink/65" aria-label="Principal">
+    <a href="#buscador" class="hover:text-ink transition">Buscar plaza</a>
+    <a href="#como-funciona" class="hover:text-ink transition">Cómo funciona</a>
+    <a href="#faq" class="hover:text-ink transition">FAQ</a>
+  </nav>
+  <a href="#publicar" class="btn-primary rounded-full px-4 py-2 text-[13px] font-semibold">
+    Publica tu plaza
+  </a>
+</header>

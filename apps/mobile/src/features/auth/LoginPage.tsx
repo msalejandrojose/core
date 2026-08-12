@@ -2,21 +2,32 @@ import { useState, type FormEvent } from 'react';
 import {
   IonButton,
   IonContent,
+  IonIcon,
   IonInput,
   IonNote,
   IonPage,
   IonSpinner,
 } from '@ionic/react';
+import { logoFacebook, logoGoogle } from 'ionicons/icons';
 import { useLogin } from './use-login';
+import { useGoogleLogin } from './use-google-login';
+import { useFacebookLogin } from './use-facebook-login';
 
 /**
  * Pantalla de login. Look editorial y tranquilo (DS §1): wordmark serif, mucho
  * aire, un único acento clay en el botón. Campos inset con radio grande.
+ * Debajo del login email/password, atajos de login social (Google/Facebook)
+ * contra `POST /auth/google` y `POST /auth/facebook`.
  */
 export default function LoginPage() {
   const { submit, loading, error } = useLogin();
+  const google = useGoogleLogin();
+  const facebook = useFacebookLogin();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const anyLoading = loading || google.loading || facebook.loading;
+  const errorMessage = error ?? google.error ?? facebook.error;
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -70,16 +81,16 @@ export default function LoginPage() {
               onIonInput={(e) => setPassword(e.detail.value ?? '')}
             />
 
-            {error && (
+            {errorMessage && (
               <IonNote color="danger" style={{ fontSize: 14 }}>
-                {error}
+                {errorMessage}
               </IonNote>
             )}
 
             <IonButton
               type="submit"
               expand="block"
-              disabled={loading}
+              disabled={anyLoading}
               style={{ marginTop: 8 }}
             >
               {loading ? <IonSpinner name="crescent" /> : 'Entrar'}
@@ -94,6 +105,57 @@ export default function LoginPage() {
               ¿Olvidaste tu contraseña?
             </IonButton>
           </form>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              margin: '24px 0',
+              color: 'var(--core-muted)',
+              fontSize: 13,
+            }}
+          >
+            <span style={{ flex: 1, height: 1, background: 'var(--core-border)' }} />
+            o continúa con
+            <span style={{ flex: 1, height: 1, background: 'var(--core-border)' }} />
+          </div>
+
+          <div style={{ display: 'grid', gap: 10 }}>
+            <IonButton
+              expand="block"
+              fill="outline"
+              color="medium"
+              disabled={anyLoading}
+              onClick={() => void google.submit()}
+            >
+              {google.loading ? (
+                <IonSpinner name="crescent" />
+              ) : (
+                <>
+                  <IonIcon icon={logoGoogle} slot="start" />
+                  Continuar con Google
+                </>
+              )}
+            </IonButton>
+
+            <IonButton
+              expand="block"
+              fill="outline"
+              color="medium"
+              disabled={anyLoading}
+              onClick={() => void facebook.submit()}
+            >
+              {facebook.loading ? (
+                <IonSpinner name="crescent" />
+              ) : (
+                <>
+                  <IonIcon icon={logoFacebook} slot="start" />
+                  Continuar con Facebook
+                </>
+              )}
+            </IonButton>
+          </div>
         </div>
       </IonContent>
     </IonPage>

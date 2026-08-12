@@ -99,16 +99,18 @@ Estas ramas parten de `main` y contienen el proyecto completo para ese entorno.
 
 ### Ramas de tarea (feature branches)
 ```
-{proyecto}-{entorno}/{task-id}-{slug}
+{proyecto}-{entorno}--{task-id}-{slug}
 ```
 - `{task-id}`: el ID auto-generado de Notion (p.ej. `TASK-12`)
 - `{slug}`: nombre de la tarea en kebab-case, max ~4 palabras
 
 Ejemplos:
-- `peluquerias-dev/TASK-12-formulario-cita`
-- `coches-dev/TASK-23-ficha-vehiculo`
+- `peluquerias-dev--TASK-12-formulario-cita`
+- `coches-dev--TASK-23-ficha-vehiculo`
 
 Las ramas de tarea **parten de la rama base del proyecto** y se mergean de vuelta a ella.
+
+⚠️ **Doble guión, nunca barra.** `{proyecto}-{entorno}/{task-id}-{slug}` (con `/`) es inválido en git: no pueden coexistir una rama `peluquerias-dev` y una rama `peluquerias-dev/TASK-12-...`, porque las refs de git son jerárquicas por rutas (una no puede ser a la vez hoja y directorio). Se descubrió al crear la primera rama de tarea real (`andanzas-dev`, TASK-162) — ver `core-architecture` §10.
 
 ---
 
@@ -122,20 +124,21 @@ Cuando el usuario quiere empezar a trabajar en una tarea de proyecto:
    ```bash
    git checkout peluquerias-dev
    git pull origin peluquerias-dev
-   git checkout -b peluquerias-dev/TASK-12-formulario-cita
+   git checkout -b peluquerias-dev--TASK-12-formulario-cita
    ```
 4. **Actualiza la tarea en Notion**:
    - `Estado`: `En progreso`
-   - `Rama`: `peluquerias-dev/TASK-12-formulario-cita`
+   - `Rama`: `peluquerias-dev--TASK-12-formulario-cita`
 5. **Confirma** al usuario con el nombre de la rama y el enlace a la tarea.
 
-Cuando el trabajo termina y hay que mergear:
+Cuando el trabajo termina, se integra con un **Pull Request de la rama de tarea contra la rama del proyecto** (`peluquerias-dev`) — **nunca contra `main`**, y **nunca con merge local + push directo**:
 ```bash
-git checkout peluquerias-dev
-git merge peluquerias-dev/TASK-12-formulario-cita
-git push origin peluquerias-dev
+git push -u origin peluquerias-dev--TASK-12-formulario-cita
+gh pr create --base peluquerias-dev --head peluquerias-dev--TASK-12-formulario-cita --title "..."
 ```
-Luego actualiza la tarea a `Hecha`.
+Actualiza la tarea a `Hecha` al abrir el PR, y a `Confirmada` cuando se mergea.
+
+**Importante:** una vez existe la rama del proyecto, **toda** rama de tarea nueva sale de esa rama (con `git pull` primero para partir de su punta actual) — nunca se vuelve a partir de `main`. `main` solo es el punto de partida la primera vez que se crea la rama base del proyecto.
 
 ---
 
@@ -234,7 +237,7 @@ Primero busca la tarea con `notion-search` para obtener su `page_id`, luego usa 
   "command": "update_properties",
   "properties": {
     "Estado": "En progreso",
-    "Rama": "peluquerias-dev/TASK-12-formulario-cita"
+    "Rama": "peluquerias-dev--TASK-12-formulario-cita"
   }
 }
 ```

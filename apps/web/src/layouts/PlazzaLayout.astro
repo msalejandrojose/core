@@ -1,0 +1,95 @@
+---
+import '../styles/plazza.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+}
+
+const {
+  title = 'Plazza — Encuentra o alquila tu plaza de parking',
+  description = 'Busca y reserva plazas de parking privadas por horas o días, o publica tu plaza libre y gana dinero con ella. Ideal para conciertos, partidos y eventos.',
+  canonical = Astro.url.href,
+} = Astro.props;
+
+const siteName = 'Plazza';
+const ogImage = new URL('/og.jpg', Astro.site ?? Astro.url).href;
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <meta name="theme-color" content="#14161A" />
+  <meta name="robots" content="index,follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_ES" />
+  <meta property="og:site_name" content={siteName} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={ogImage} />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImage} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": siteName,
+        "url": Astro.site?.href ?? Astro.url.origin,
+        "description": "Marketplace para encontrar o alquilar plazas de parking privadas."
+      },
+      {
+        "@type": "Service",
+        "serviceType": "Alquiler de plazas de parking privadas",
+        "provider": { "@type": "Organization", "name": siteName },
+        "areaServed": "España",
+        "description": "Reserva plazas de parking cerca de estadios, recintos de conciertos, aeropuertos y estaciones. Los propietarios publican su plaza libre y los conductores la reservan por horas o días."
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "¿Cómo sé que la plaza existe de verdad?", "acceptedAnswer": { "@type": "Answer", "text": "Verificamos la identidad de cada propietario y la ubicación exacta de la plaza antes de publicarla." } },
+          { "@type": "Question", "name": "¿Puedo reservar para un evento concreto?", "acceptedAnswer": { "@type": "Answer", "text": "Sí, puedes buscar por fecha y hora exactas, ideal para conciertos, partidos o ferias." } },
+          { "@type": "Question", "name": "¿Cómo cobro si publico mi plaza?", "acceptedAnswer": { "@type": "Answer", "text": "El pago se gestiona en la propia plataforma y se libera al propietario tras cada reserva completada." } }
+        ]
+      }
+    ]
+  })} />
+</head>
+<body>
+  <slot />
+
+  <script>
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+    } else {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            io.unobserve(e.target);
+          }
+        }
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    }
+  </script>
+</body>
+</html>

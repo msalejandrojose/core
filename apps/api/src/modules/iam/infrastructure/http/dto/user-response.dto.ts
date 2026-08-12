@@ -20,6 +20,13 @@ export class UserResponseDto {
   @ApiProperty({ enum: ['BACKOFFICE', 'APP'] as const })
   userType!: UserType;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Avatar del proveedor social (Google/Facebook), si aplica.',
+  })
+  avatarUrl!: string | null;
+
   @ApiProperty()
   isActive!: boolean;
 
@@ -36,6 +43,7 @@ export class UserResponseDto {
     dto.firstName = user.firstName;
     dto.lastName = user.lastName;
     dto.userType = user.userType;
+    dto.avatarUrl = user.avatarUrl;
     dto.isActive = user.isActive;
     dto.lastLoginAt = user.lastLoginAt;
     dto.createdAt = user.createdAt;

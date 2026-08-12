@@ -7,6 +7,10 @@ import {
   POST_REPOSITORY,
   type PostRepositoryPort,
 } from '../ports/post-repository.port';
+import {
+  DEPLOY_TRIGGER,
+  type DeployTriggerPort,
+} from '../ports/deploy-trigger.port';
 
 export interface PublishPostInput {
   // Opcional. Si es una fecha futura, el post queda SCHEDULED; si es pasada,
@@ -18,6 +22,7 @@ export interface PublishPostInput {
 export class PublishPostUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly posts: PostRepositoryPort,
+    @Inject(DEPLOY_TRIGGER) private readonly deploy: DeployTriggerPort,
   ) {}
 
   async execute(
@@ -37,6 +42,16 @@ export class PublishPostUseCase {
     }
 
     const publishedAt = isFuture ? requested : (requested ?? now);
-    return this.posts.setStatus(id, targetStatus, publishedAt);
+    const post = await this.posts.setStatus(id, targetStatus, publishedAt);
+
+    // Solo el post que queda visible YA dispara el rebuild. Uno programado a
+    // futuro (SCHEDULED) no cambia nada visible todavía: no hay disparo
+    // automático a esa fecha, así que si publicas "programado" hay que forzar
+    // el deploy (workflow_dispatch) cuando llegue el momento.
+    if (targetStatus === 'PUBLISHED') {
+      await this.deploy.trigger(`post:published:${post.slug}`);
+    }
+
+    return post;
   }
 }

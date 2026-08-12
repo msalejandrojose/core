@@ -35,8 +35,11 @@ export interface ListDeliveriesOptions {
   limit: number;
   cursor?: string;
   messageTypeKey?: string;
+  channel?: NotificationChannel;
   status?: DeliveryStatus;
   toAddress?: string;
+  createdFrom?: Date;
+  createdTo?: Date;
 }
 
 export interface NotificationDeliveryRepositoryPort {

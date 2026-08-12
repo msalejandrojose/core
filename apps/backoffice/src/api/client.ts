@@ -2,12 +2,17 @@ import { createApiClient } from '@core/api-client';
 import { queryClient } from './query-client';
 import { getAuthToken, useAuthStore } from '@/store/auth.store';
 
-const baseUrl = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_API_URL;
 
-if (!baseUrl) {
+if (!apiUrl) {
   // Fallar pronto y claro si falta la config en lugar de hacer requests a `undefined`.
   throw new Error('VITE_API_URL no está definida. Revisa apps/backoffice/.env');
 }
+
+// La API vive bajo `/v1` (ver apps/api/src/main.ts). El schema generado y los
+// call sites de la app son prefix-less: el prefijo se añade aquí, una única
+// vez, en vez de en cada llamada.
+const baseUrl = `${apiUrl}/v1`;
 
 /**
  * Cliente HTTP tipado contra el OpenAPI de `@core/api`.

@@ -72,6 +72,86 @@ recepción y deep-link) y es **no-op en web/PWA**. Para que funcione en nativo:
 - La app sube el token del dispositivo a `POST /me/devices`, endpoint de backend
   **pendiente** (ver tarea «API · Registro de dispositivos para push»).
 
+## Login social (Google / Facebook)
+
+El código web vive en `src/features/auth/use-google-login.ts` y
+`use-facebook-login.ts` (llaman a `POST /auth/google` / `POST /auth/facebook`
+de la API — ver `apps/api`), sobre el plugin `@capgo/capacitor-social-login`.
+Botones en `LoginPage.tsx`. Requiere configurar credenciales en **tres**
+sitios: Google/Facebook console, la API (`apps/api/.env`) y la app
+(`apps/mobile/.env`).
+
+### 1. Google
+
+1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   crea (o reusa) un proyecto y registra credenciales OAuth 2.0:
+   - **Web client ID** (tipo "Web application") — lo usa Android vía
+     Credential Manager y también la API para verificar el token.
+   - **iOS client ID** (tipo "iOS", con el bundle id `es.aj.core`).
+2. Rellena en `apps/mobile/.env`: `VITE_GOOGLE_WEB_CLIENT_ID`,
+   `VITE_GOOGLE_IOS_CLIENT_ID`.
+3. Rellena en `apps/api/.env`: `GOOGLE_CLIENT_ID` con el/los client ID que
+   deban aceptarse (puedes poner varios separados por coma si Android/iOS
+   usan IDs distintos — la API valida el `aud` del token contra esta lista).
+4. **iOS**: en `ios/App/App/Info.plist` añade un `CFBundleURLTypes` con el
+   *reversed client id* del iOS client ID (`com.googleusercontent.apps.XXXX`).
+5. **Android**: el plugin usa Credential Manager (login a nivel de SO); no
+   necesita `google-services.json` para esto (solo si además usas Firebase
+   para push). Asegúrate de que el SHA-1 del keystore de firma está
+   registrado como cliente Android en el mismo proyecto de Google Cloud.
+
+### 2. Facebook
+
+1. Crea una app en [developers.facebook.com](https://developers.facebook.com/apps)
+   con el producto **Facebook Login**.
+2. Copia el **App ID** y el **Client Token** (Configuración → Básica →
+   Avanzado).
+3. Rellena en `apps/mobile/.env`: `VITE_FACEBOOK_APP_ID`,
+   `VITE_FACEBOOK_CLIENT_TOKEN`.
+4. Rellena en `apps/api/.env`: `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` (la
+   API los usa para verificar con `debug_token` que el access token que envía
+   el cliente pertenece a esta app, no solo que es válido).
+5. **iOS**: en `ios/App/App/Info.plist` añade (sustituyendo `[APP_ID]` /
+   `[CLIENT_TOKEN]` / `[APP_NAME]`):
+   ```xml
+   <key>CFBundleURLTypes</key>
+   <array>
+     <dict>
+       <key>CFBundleURLSchemes</key>
+       <array><string>fb[APP_ID]</string></array>
+     </dict>
+   </array>
+   <key>FacebookAppID</key><string>[APP_ID]</string>
+   <key>FacebookClientToken</key><string>[CLIENT_TOKEN]</string>
+   <key>FacebookDisplayName</key><string>[APP_NAME]</string>
+   <key>LSApplicationQueriesSchemes</key>
+   <array>
+     <string>fbapi</string>
+     <string>fbauth</string>
+     <string>fb-messenger-share-api</string>
+     <string>fbauth2</string>
+     <string>fbshareextension</string>
+   </array>
+   ```
+   Y en `ios/App/App/AppDelegate.swift` conecta `FBSDKCoreKit` en
+   `didFinishLaunchingWithOptions` y `open url` — ver el README del plugin
+   (`node_modules/@capgo/capacitor-social-login/README.md`) para el código
+   exacto.
+6. **Android**: sigue la [guía oficial de Facebook para Android](https://developers.facebook.com/docs/android/getting-started)
+   (declarar `FacebookActivity` y el `ContentProvider` en el manifest —
+   `cap sync` ya copia los valores de `appId`/`clientToken` que pases a
+   `SocialLogin.initialize()` en tiempo de ejecución, pero el manifest nativo
+   hay que tocarlo a mano una vez).
+
+### Backend
+
+Los endpoints `POST /auth/google` y `POST /auth/facebook` viven en
+`apps/api/src/modules/iam/`. Verifican el token contra el proveedor
+(`GoogleTokenVerifier` / `FacebookTokenVerifier`, ambos con `fetch` nativo,
+sin SDKs) y crean o vinculan el usuario (`ResolveSocialUserUseCase`). Las
+columnas nuevas en `user` (`google_id`, `facebook_id`, `avatar_url`) están en
+la migración `add_social_login_to_user`.
+
 ## Notas
 
 - `appId`: `es.aj.core` · `appName`: `Core` (en `capacitor.config.ts`).

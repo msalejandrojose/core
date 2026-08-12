@@ -1,10 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CursorMetaDto {
   @ApiProperty()
   limit!: number;
 
-  @ApiPropertyOptional({ nullable: true, type: String })
+  @ApiProperty({ nullable: true, type: String })
   nextCursor!: string | null;
 
   @ApiProperty()

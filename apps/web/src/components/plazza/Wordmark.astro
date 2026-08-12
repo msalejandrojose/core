@@ -1,0 +1,17 @@
+---
+interface Props {
+  variant?: 'dark' | 'light';
+}
+const { variant = 'dark' } = Astro.props;
+const bg = variant === 'light' ? '#F4F3EF' : '#14161A';
+const fg = variant === 'light' ? '#14161A' : '#F5A623';
+const textClass = variant === 'light' ? 'text-paper' : 'text-ink';
+---
+<span class="inline-flex items-center gap-2.5">
+  <span
+    class="flex items-center justify-center size-7 rounded-md font-plazza font-bold text-[15px]"
+    style={`background:${bg}; color:${fg}`}
+    aria-hidden="true"
+  >P</span>
+  <span class={`font-plazza font-semibold text-[16px] tracking-tight ${textClass}`}>Plazza</span>
+</span>

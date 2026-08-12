@@ -57,6 +57,7 @@ function MessageTypeRowActions({ messageType }: { messageType: MessageType }) {
   const { mutate: remove, isPending } = useDeleteMessageType();
   return (
     <RowActions
+      viewHref={`/notifications/message-types/${messageType.id}/editor`}
       editTrigger={
         <MessageTypeFormDialog
           messageType={messageType}

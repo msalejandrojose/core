@@ -7,6 +7,7 @@ import { SENDING_ACCOUNT_TYPE_REPOSITORY } from './application/ports/sending-acc
 import { SENDING_ACCOUNT_REPOSITORY } from './application/ports/sending-account-repository.port';
 import { MESSAGE_TYPE_REPOSITORY } from './application/ports/message-type-repository.port';
 import { NOTIFICATION_DELIVERY_REPOSITORY } from './application/ports/notification-delivery-repository.port';
+import { WEBHOOK_EVENT_REPOSITORY } from './application/ports/webhook-event-repository.port';
 import { CHANNEL_DISPATCHER_REGISTRY } from './application/ports/channel-dispatcher-registry.port';
 import { SECRET_CIPHER } from './application/ports/secret-cipher.port';
 import { CreateSendingAccountTypeUseCase } from './application/use-cases/create-sending-account-type.use-case';
@@ -26,10 +27,15 @@ import { SendNotificationUseCase } from './application/use-cases/send-notificati
 import { IngestSendgridEventsUseCase } from './application/use-cases/ingest-sendgrid-events.use-case';
 import { ListDeliveriesUseCase } from './application/use-cases/list-deliveries.use-case';
 import { GetDeliveryUseCase } from './application/use-cases/get-delivery.use-case';
+import { RecordWebhookEventUseCase } from './application/use-cases/record-webhook-event.use-case';
+import { ListWebhookEventsUseCase } from './application/use-cases/list-webhook-events.use-case';
+import { GetWebhookEventUseCase } from './application/use-cases/get-webhook-event.use-case';
+import { ReprocessWebhookEventUseCase } from './application/use-cases/reprocess-webhook-event.use-case';
 import { PrismaSendingAccountTypeRepository } from './infrastructure/persistence/prisma-sending-account-type.repository';
 import { PrismaSendingAccountRepository } from './infrastructure/persistence/prisma-sending-account.repository';
 import { PrismaMessageTypeRepository } from './infrastructure/persistence/prisma-message-type.repository';
 import { PrismaNotificationDeliveryRepository } from './infrastructure/persistence/prisma-notification-delivery.repository';
+import { PrismaWebhookEventRepository } from './infrastructure/persistence/prisma-webhook-event.repository';
 import { NestChannelDispatcherRegistry } from './infrastructure/channels/nest-channel-dispatcher.registry';
 import { EmailChannelDispatcher } from './infrastructure/channels/email-channel.dispatcher';
 import { SmsChannelDispatcher } from './infrastructure/channels/sms-channel.dispatcher';
@@ -43,6 +49,7 @@ import { SendingAccountsController } from './infrastructure/http/sending-account
 import { MessageTypesController } from './infrastructure/http/message-types.controller';
 import { EmailTemplatesController } from './infrastructure/http/email-templates.controller';
 import { DeliveriesController } from './infrastructure/http/deliveries.controller';
+import { WebhookEventsController } from './infrastructure/http/webhook-events.controller';
 import { SendgridWebhookController } from './infrastructure/http/sendgrid-webhook.controller';
 import {
   SENDGRID_SIGNATURE_VERIFIER,
@@ -57,6 +64,7 @@ import {
     MessageTypesController,
     EmailTemplatesController,
     DeliveriesController,
+    WebhookEventsController,
     SendgridWebhookController,
   ],
   providers: [
@@ -73,6 +81,10 @@ import {
     {
       provide: NOTIFICATION_DELIVERY_REPOSITORY,
       useClass: PrismaNotificationDeliveryRepository,
+    },
+    {
+      provide: WEBHOOK_EVENT_REPOSITORY,
+      useClass: PrismaWebhookEventRepository,
     },
     {
       provide: CHANNEL_DISPATCHER_REGISTRY,
@@ -135,6 +147,12 @@ import {
     IngestSendgridEventsUseCase,
     ListDeliveriesUseCase,
     GetDeliveryUseCase,
+
+    // Centro de webhooks: registro del payload crudo + lectura + reproceso.
+    RecordWebhookEventUseCase,
+    ListWebhookEventsUseCase,
+    GetWebhookEventUseCase,
+    ReprocessWebhookEventUseCase,
 
     // Action handler de workflows (lo descubre el registry de workflows).
     NotificationsSendHandler,

@@ -103,6 +103,31 @@ const AccountTypesPage = lazy(() =>
     default: m.AccountTypesPage,
   })),
 );
+const DeliveriesPage = lazy(() =>
+  import('@/features/notifications/DeliveriesPage').then((m) => ({
+    default: m.DeliveriesPage,
+  })),
+);
+const DeliveryDetailPage = lazy(() =>
+  import('@/features/notifications/DeliveryDetailPage').then((m) => ({
+    default: m.DeliveryDetailPage,
+  })),
+);
+const WebhookEventsPage = lazy(() =>
+  import('@/features/notifications/WebhookEventsPage').then((m) => ({
+    default: m.WebhookEventsPage,
+  })),
+);
+const WebhookEventDetailPage = lazy(() =>
+  import('@/features/notifications/WebhookEventDetailPage').then((m) => ({
+    default: m.WebhookEventDetailPage,
+  })),
+);
+const MessageTypeEditorPage = lazy(() =>
+  import('@/features/notifications/MessageTypeEditorPage').then((m) => ({
+    default: m.MessageTypeEditorPage,
+  })),
+);
 const CountriesPage = lazy(() =>
   import('@/features/geo/countries/CountriesPage').then((m) => ({
     default: m.CountriesPage,
@@ -235,6 +260,26 @@ export default function App() {
               <Route
                 path="/notifications/account-types"
                 element={<AccountTypesPage />}
+              />
+              <Route
+                path="/notifications/deliveries"
+                element={<DeliveriesPage />}
+              />
+              <Route
+                path="/notifications/deliveries/:id"
+                element={<DeliveryDetailPage />}
+              />
+              <Route
+                path="/notifications/webhooks"
+                element={<WebhookEventsPage />}
+              />
+              <Route
+                path="/notifications/webhooks/:id"
+                element={<WebhookEventDetailPage />}
+              />
+              <Route
+                path="/notifications/message-types/:id/editor"
+                element={<MessageTypeEditorPage />}
               />
               <Route path="/geo/countries" element={<CountriesPage />} />
               <Route path="/geo/regions" element={<RegionsPage />} />
