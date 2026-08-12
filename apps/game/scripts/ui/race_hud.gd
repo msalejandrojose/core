@@ -27,7 +27,7 @@ var _time_label: Label
 var _best_label: Label
 var _delta_label: Label
 var _restart_button: Button
-var _licenses_button: Button
+var _settings_button: Button
 var _delta_left: float = 0.0
 
 var _lights_on: int = 0
@@ -115,24 +115,23 @@ func _build() -> void:
 	_restart_button.pressed.connect(_director.restart)
 	add_child(_restart_button)
 
-	# Aviso MIT de Kenney: obligación de la licencia, no un extra. Vive aquí
-	# hasta que exista una pantalla de Ajustes de verdad, que es su sitio.
-	_licenses_button = Button.new()
-	_licenses_button.text = "Licencias"
-	_licenses_button.custom_minimum_size = Vector2(200, 72)
-	_licenses_button.anchor_left = 1.0
-	_licenses_button.anchor_right = 1.0
-	_licenses_button.offset_left = -248
-	_licenses_button.offset_top = 152
-	_licenses_button.offset_right = -48
-	_licenses_button.offset_bottom = 224
-	_licenses_button.add_theme_font_size_override("font_size", 26)
-	_licenses_button.pressed.connect(open_licenses)
-	add_child(_licenses_button)
+	# Las licencias viven dentro de Ajustes, que es su sitio según el SPEC.
+	_settings_button = Button.new()
+	_settings_button.text = "Ajustes"
+	_settings_button.custom_minimum_size = Vector2(200, 72)
+	_settings_button.anchor_left = 1.0
+	_settings_button.anchor_right = 1.0
+	_settings_button.offset_left = -248
+	_settings_button.offset_top = 152
+	_settings_button.offset_right = -48
+	_settings_button.offset_bottom = 224
+	_settings_button.add_theme_font_size_override("font_size", 26)
+	_settings_button.pressed.connect(open_settings)
+	add_child(_settings_button)
 
 
-func open_licenses() -> void:
-	add_child(load("res://scenes/ui/licenses-screen.tscn").instantiate())
+func open_settings() -> void:
+	add_child(load("res://scenes/ui/settings-screen.tscn").instantiate())
 
 
 ## Desplazamiento para no quedar bajo el notch o la barra de estado. En
@@ -236,7 +235,8 @@ func _draw() -> void:
 
 
 func _refresh_best() -> void:
-	if RaceRecords.has_best(_director.track_id):
-		_best_label.text = "MEJOR  %s" % format_ms(RaceRecords.best_ms(_director.track_id))
+	var key := _director.record_key()
+	if RaceRecords.has_best(key):
+		_best_label.text = "MEJOR  %s" % format_ms(RaceRecords.best_ms(key))
 	else:
 		_best_label.text = "SIN MARCA"

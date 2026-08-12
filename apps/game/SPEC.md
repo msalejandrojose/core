@@ -55,9 +55,13 @@ en F0 no se toca.
 1. **Juego** — Starter kit adaptado: 1 pista, 1 coche, modo contrarreloj.
    - Cronómetro con precisión de milisegundos.
    - Detección de vuelta válida por checkpoints en orden (evita atajos).
+   - Salida con semáforo, para que todas las vueltas empiecen igual.
    - Reinicio rápido (el gesto más usado de un contrarreloj — debe ser instantáneo).
    - Controles táctiles: acelerador/freno + dirección. **Reescritos**: el starter
-     kit usa teclado.
+     kit usa teclado. Dos esquemas elegibles: volante flotante analógico y toque
+     lateral con acelerador automático.
+   - Ajustes con el sentido del circuito (normal / inverso). Cada sentido es un
+     circuito distinto a efectos de tiempos.
 2. **Cuenta** — login vía IAM de `core` (email/password + Google/Apple).
    Usuarios de tipo `APP`.
 3. **Leaderboard global** — subir tiempo al terminar vuelta, ver top N + tu posición.
@@ -86,10 +90,16 @@ justifica la Fase 1. Si no engancha, ninguna cantidad de IAP lo arregla.
 Mínimo viable. Se añade a `apps/api/prisma/schema.prisma` en la rama `racing-dev`.
 
 ```prisma
-/// Circuito jugable. En F0 hay exactamente uno, sembrado por seed.
+/// Circuito jugable. En F0 hay uno, sembrado por seed — pero corriéndose en
+/// los dos sentidos, y cada sentido es una fila distinta.
+///
+/// Por qué una fila y no un flag en LapTime: una vuelta al revés no es
+/// comparable con una normal, así que son leaderboards separados. Modelarlo
+/// como `Track` hace que esa separación sea estructural en vez de depender de
+/// que cada consulta se acuerde de filtrar por sentido.
 model Track {
   id        String   @id @default(uuid()) @db.Char(36)
-  slug      String   @unique @db.VarChar(64)   // "kenney-01"
+  slug      String   @unique @db.VarChar(64)   // "kenney-01", "kenney-01-rev"
   name      String   @db.VarChar(120)
   /// Nº de SECTORES de la vuelta = checkpoints intermedios + la meta. Es
   /// también la longitud que debe tener `splitsMs`. En el cliente el

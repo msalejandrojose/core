@@ -57,13 +57,15 @@ func get_vehicle_position() -> Vector3: return vehicle_model.global_position
 ## reaparece con la inercia del intento anterior y el crono nuevo empieza con
 ## el coche ya lanzado.
 
-func reset_to_start() -> void:
+func reset_to_start(yaw: float = 0.0) -> void:
 
 	sphere.position = _start_sphere_position
 	sphere.linear_velocity = Vector3.ZERO
 	sphere.angular_velocity = Vector3.ZERO
 
 	vehicle_model.transform = _start_model_transform
+	if yaw != 0.0:
+		vehicle_model.rotate_y(yaw)
 
 	input = Vector3.ZERO
 	linear_speed = 0.0

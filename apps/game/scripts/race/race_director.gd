@@ -46,7 +46,8 @@ func _ready() -> void:
 	# arranque por acelerón haría que el crono empezara antes que la carrera.
 	lap_timer.auto_start_on_throttle = false
 
-	begin_countdown()
+	GameSettings.changed.connect(_on_settings_changed)
+	restart()
 
 
 func _process(delta: float) -> void:
@@ -93,25 +94,39 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## Clave bajo la que se guarda el récord. Cada sentido del circuito tiene la
+## suya: una vuelta al revés no es comparable con una normal, así que meterlas
+## en el mismo saco daría un "mejor tiempo" que no significa nada.
+func record_key() -> String:
+	return track_id + GameSettings.track_suffix()
+
+
 ## Reinicio rápido. No recarga la escena: recoloca el coche y reinicia el
 ## estado. Es el gesto más usado de un contrarreloj, así que tiene que ser
 ## instantáneo — una pantalla de carga aquí mataría el bucle de juego.
 func restart() -> void:
-	vehicle.reset_to_start()
+	# En sentido inverso el coche sale mirando al otro lado. Media vuelta sobre
+	# el eje vertical: el circuito es el mismo, se recorre al revés.
+	vehicle.reset_to_start(PI if GameSettings.reverse else 0.0)
+	lap_timer.set_reversed(GameSettings.reverse)
 	VehicleInput.release()
 	begin_countdown()
 	restarted.emit()
 
 
-func _on_sector_completed(checkpoint: int, split_ms: int) -> void:
-	var reference := RaceRecords.best_splits(track_id)
-	if checkpoint >= reference.size():
-		sector_delta.emit(checkpoint, 0, false)
+func _on_settings_changed() -> void:
+	restart()
+
+
+func _on_sector_completed(sector: int, split_ms: int) -> void:
+	var reference := RaceRecords.best_splits(record_key())
+	if sector >= reference.size():
+		sector_delta.emit(sector, 0, false)
 		return
 
-	sector_delta.emit(checkpoint, split_ms - int(reference[checkpoint]), true)
+	sector_delta.emit(sector, split_ms - int(reference[sector]), true)
 
 
 func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
-	if RaceRecords.submit(track_id, duration_ms, splits_ms):
+	if RaceRecords.submit(record_key(), duration_ms, splits_ms):
 		record_beaten.emit(duration_ms)

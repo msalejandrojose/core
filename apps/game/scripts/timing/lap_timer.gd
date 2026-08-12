@@ -10,7 +10,10 @@ class_name LapTimer extends Node
 ## la meta sin haberlos pasado no completa nada — ese es el antiatajo.
 
 signal lap_started()
-signal sector_completed(checkpoint: int, split_ms: int)
+## `sector` es la POSICIÓN dentro de la vuelta, no el id del checkpoint: en
+## sentido inverso se cruzan los checkpoints 2,1,0 pero los sectores siguen
+## siendo 0,1,2, y es contra el sector contra lo que se comparan los splits.
+signal sector_completed(sector: int, split_ms: int)
 signal lap_completed(duration_ms: int, splits_ms: Array)
 ## Se ha cruzado algo fuera de orden. `got` es -1 cuando lo cruzado es la meta.
 signal shortcut_rejected(expected: int, got: int)
@@ -29,6 +32,10 @@ var elapsed_ms: int = 0
 ## Reloj inyectable para poder testear sin esperar en tiempo real.
 var clock: Callable = Callable(Time, "get_ticks_msec")
 
+## Orden en el que hay que cruzar los checkpoints. En sentido inverso es el
+## mismo recorrido leído al revés, no unos checkpoints distintos.
+var checkpoint_order: Array[int] = []
+
 var _start_ms: int = 0
 var _splits: Array[int] = []
 var _next_checkpoint: int = 0
@@ -45,6 +52,17 @@ func _ready() -> void:
 
 	if not found.is_empty():
 		checkpoint_count = intermediate
+
+	set_reversed(false)
+
+
+## Recalcula el recorrido esperado. Aborta la vuelta en curso: cambiar de
+## sentido a mitad de vuelta dejaría un tiempo que no es de ningún circuito.
+func set_reversed(reversed: bool) -> void:
+	checkpoint_order.clear()
+	for i in checkpoint_count:
+		checkpoint_order.append(checkpoint_count - 1 - i if reversed else i)
+	abort()
 
 
 func _process(_delta: float) -> void:
@@ -74,14 +92,15 @@ func cross_checkpoint(index: int) -> bool:
 	if not running:
 		return false
 
-	if index != _next_checkpoint:
-		shortcut_rejected.emit(_next_checkpoint, index)
+	var expected := checkpoint_order[_next_checkpoint] if _next_checkpoint < checkpoint_order.size() else -1
+	if index != expected:
+		shortcut_rejected.emit(expected, index)
 		return false
 
 	var split: int = clock.call() - _start_ms
 	_splits.append(split)
 	_next_checkpoint += 1
-	sector_completed.emit(index, split)
+	sector_completed.emit(_next_checkpoint - 1, split)
 	return true
 
 

@@ -19,6 +19,15 @@ const STEER_ZONE_RATIO := 0.5
 
 const PEDAL_RADIUS_RATIO := 0.075
 const PEDAL_MARGIN_RATIO := 0.055
+
+# --- Esquema de toque lateral -------------------------------------------------
+
+## Lo que tarda el giro en llegar a tope al mantener pulsado un lado. Sin rampa
+## el volante es un interruptor y el coche va dando bandazos.
+const TAP_STEER_RATE := 4.5
+## Freno del esquema de toque, en el borde inferior central. Va separado de las
+## dos zonas de giro para poder frenar y girar a la vez con dos dedos.
+const TAP_BRAKE_RADIUS_RATIO := 0.065
 ## El freno se dibuja y se detecta algo más pequeño que el acelerador: se usa
 ## menos y así el pulgar no lo pilla por error al buscar el gas.
 const BRAKE_RADIUS_FACTOR := 0.78
@@ -50,6 +59,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _is_tap_scheme():
+		_process_tap(delta)
+		return
+
 	var touching := _steer_finger != -1 or not _pedal_fingers.is_empty()
 	VehicleInput.touch_active = touching
 
@@ -106,7 +119,62 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
+# --- Esquema de toque lateral -------------------------------------------------
+
+func _is_tap_scheme() -> bool:
+	return GameSettings.control_scheme == GameSettings.ControlScheme.TAP
+
+
+## Aquí el gas va puesto siempre, así que hay que reclamar el input incluso sin
+## dedos en pantalla: si no, el autoload lo sobreescribe con el del teclado y el
+## coche se para solo.
+func _process_tap(delta: float) -> void:
+	VehicleInput.touch_active = true
+
+	if VehicleInput.locked:
+		queue_redraw()
+		return
+
+	var left := _tap_held("left")
+	var right := _tap_held("right")
+
+	var target := 0.0
+	if left != right:
+		target = -1.0 if left else 1.0
+
+	VehicleInput.steer = move_toward(VehicleInput.steer, target, delta * TAP_STEER_RATE)
+	VehicleInput.throttle = -1.0 if _tap_held("brake") else 1.0
+
+	queue_redraw()
+
+
+func _press_tap(index: int, pos: Vector2) -> bool:
+	if pos.distance_to(_tap_brake_center()) <= _tap_brake_radius():
+		_pedal_fingers[index] = "brake"
+		return true
+
+	_pedal_fingers[index] = "left" if pos.x < size.x * 0.5 else "right"
+	return true
+
+
+func _tap_held(role: String) -> bool:
+	return _pedal_held(role)
+
+
+func _tap_brake_radius() -> float:
+	return size.x * TAP_BRAKE_RADIUS_RATIO
+
+
+func _tap_brake_center() -> Vector2:
+	return Vector2(size.x * 0.5, size.y - size.x * PEDAL_MARGIN_RATIO - _tap_brake_radius())
+
+
+# --- Volante flotante ---------------------------------------------------------
+
 func _on_press(index: int, pos: Vector2) -> bool:
+	if _is_tap_scheme():
+		return _press_tap(index, pos)
+
 	if pos.distance_to(_accel_center()) <= _pedal_radius():
 		_pedal_fingers[index] = "accel"
 		return true
@@ -180,6 +248,10 @@ func _brake_center() -> Vector2:
 # --- Dibujo -------------------------------------------------------------------
 
 func _draw() -> void:
+	if _is_tap_scheme():
+		_draw_tap()
+		return
+
 	var r := _pedal_radius()
 
 	_draw_pedal(_accel_center(), r, _pedal_held("accel"))
@@ -208,3 +280,37 @@ func _pedal_held(role: String) -> bool:
 	for r in _pedal_fingers.values():
 		if r == role: return true
 	return false
+
+
+## Dos flechas en los laterales y el freno abajo en el centro. Las flechas se
+## dibujan aunque no las estés tocando: en este esquema toda la mitad de la
+## pantalla es el control, y sin nada dibujado no hay forma de adivinarlo.
+func _draw_tap() -> void:
+	var r := _pedal_radius()
+	var y := size.y * 0.62
+
+	_draw_arrow(Vector2(size.x * 0.11, y), r, -1.0, _tap_held("left"))
+	_draw_arrow(Vector2(size.x * 0.89, y), r, 1.0, _tap_held("right"))
+
+	var brake_r := _tap_brake_radius()
+	var held := _tap_held("brake")
+	draw_circle(_tap_brake_center(), brake_r, INK * Color(1, 1, 1, 0.75 if held else 0.45))
+	draw_arc(_tap_brake_center(), brake_r, 0.0, TAU, 40, CLAY if held else BONE, 4.0, true)
+	# Barra: el símbolo universal de "para".
+	var bar := Vector2(brake_r * 0.42, brake_r * 0.12)
+	draw_rect(Rect2(_tap_brake_center() - bar, bar * 2.0), (CLAY if held else BONE) * Color(1, 1, 1, 0.9))
+
+
+func _draw_arrow(center: Vector2, radius: float, direction: float, held: bool) -> void:
+	draw_circle(center, radius, INK * Color(1, 1, 1, 0.75 if held else 0.40))
+
+	var edge := CLAY if held else BONE
+	draw_arc(center, radius, 0.0, TAU, 48, edge, 4.0, true)
+
+	var tip := center + Vector2(direction * radius * 0.42, 0.0)
+	var back := center - Vector2(direction * radius * 0.22, 0.0)
+	draw_colored_polygon(PackedVector2Array([
+		tip,
+		back + Vector2(0.0, -radius * 0.38),
+		back + Vector2(0.0, radius * 0.38),
+	]), edge * Color(1, 1, 1, 0.95 if held else 0.75))
