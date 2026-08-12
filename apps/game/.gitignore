@@ -20,6 +20,8 @@ mono_crash.*.json
 
 # Artefactos de export (iOS / Android). Nunca se commitean: se generan.
 build/
+# El proyecto Xcode lo regenera `tools/ios.sh sync` desde el proyecto Godot.
+*.xcodeproj/
 *.ipa
 *.aab
 *.apk
