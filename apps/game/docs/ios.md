@@ -56,6 +56,7 @@ Es el equivalente a `cap add ios`, y es el único paso que no tiene CLI.
 | App Store Team ID | tu Team ID | Ver más abajo: es lo que evita tener que reconfigurar la firma en cada sync |
 | Bundle Identifier | p. ej. `es.aj.racing` | Tiene que ser tuyo y único. No dejes el de ejemplo de Godot |
 | Export Project Only | **activado** | Genera un proyecto Xcode en vez de intentar firmar un `.ipa`. La firma se hace en Xcode, que es donde vive tu Apple ID |
+| Targeted Device Family | **iPhone & iPad** (`2`) | Ojo con los valores del `.cfg`: `0` es iPhone, `1` es **iPad**, `2` es ambos. Poner `1` creyendo que era iPhone da el error «*iPhone … doesn't match any of Racing.app's targeted device families*» al ir a instalar |
 
 Guardar cierra el diálogo y escribe `export_presets.cfg` en la raíz del proyecto.
 Ese fichero **sí se commitea**: es la configuración compartida.
