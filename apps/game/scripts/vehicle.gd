@@ -112,9 +112,12 @@ func _physics_process(delta):
 
 func handle_input(delta):
 
+	# El input viene del autoload, no del teclado: la misma física sirve para
+	# táctil, teclado y (más adelante) reproducir un ghost.
+
 	if raycast.is_colliding():
-		input.x = Input.get_axis("left", "right")
-		input.z = Input.get_axis("back", "forward")
+		input.x = VehicleInput.steer
+		input.z = VehicleInput.throttle
 
 	sphere.angular_velocity += vehicle_model.get_global_transform().basis.x * (linear_speed * 100) * delta
 
