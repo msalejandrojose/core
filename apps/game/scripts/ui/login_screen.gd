@@ -50,7 +50,8 @@ func _build() -> void:
 	column.add_child(title)
 
 	var intro := Label.new()
-	intro.text = "Hace falta para subir tus tiempos y aparecer en la clasificación."
+	intro.text = "La cuenta sirve para subir tus tiempos y salir en la clasificación. Puedes jugar sin ella: los tiempos se guardan en este dispositivo."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	intro.add_theme_font_size_override("font_size", 24)
 	intro.add_theme_color_override("font_color", BONE * Color(1, 1, 1, 0.6))
 	column.add_child(intro)
@@ -75,7 +76,10 @@ func _build() -> void:
 	row.add_theme_constant_override("separation", 16)
 	column.add_child(row)
 
-	row.add_child(_button("Cerrar", 200, func() -> void: _close()))
+	# Jugar sin cuenta ya funcionaba, pero con el botón llamado "Cerrar" no lo
+	# parecía: cerrar no promete nada, y quien no quiere registrarse necesita
+	# ver una salida clara antes de plantearse abandonar.
+	row.add_child(_button("Jugar sin cuenta", 340, func() -> void: _close()))
 
 	var push := Control.new()
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -199,7 +199,7 @@ func _refresh_account() -> void:
 		_account_label.text = "Conectado como %s — tus tiempos se suben." % Session.email
 		_account_button.text = "Salir"
 	else:
-		_account_label.text = "Sin cuenta: se guardan en este dispositivo, pero no salen en la clasificación."
+		_account_label.text = "Juegas sin cuenta. Tus tiempos se guardan aquí; con cuenta salen además en la clasificación."
 		_account_button.text = "Entrar"
 
 
