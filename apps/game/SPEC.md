@@ -52,7 +52,7 @@ en F0 no se toca.
 
 ### Dentro
 
-1. **Juego** — Starter kit adaptado: 1 pista, 1 coche, modo contrarreloj.
+1. **Juego** — Starter kit adaptado: 3 circuitos, 1 coche, modo contrarreloj.
    - Cronómetro con precisión de milisegundos.
    - Detección de vuelta válida por checkpoints en orden (evita atajos).
    - Salida con semáforo, para que todas las vueltas empiecen igual.
@@ -60,8 +60,11 @@ en F0 no se toca.
    - Controles táctiles: acelerador/freno + dirección. **Reescritos**: el starter
      kit usa teclado. Dos esquemas elegibles: volante flotante analógico y toque
      lateral con acelerador automático.
-   - Ajustes con el sentido del circuito (normal / inverso). Cada sentido es un
-     circuito distinto a efectos de tiempos.
+   - Ajustes con circuito y sentido (normal / inverso). Cada combinación de
+     circuito y sentido es un circuito distinto a efectos de tiempos.
+   - Los circuitos se construyen en tiempo de ejecución desde una lista de
+     celdas (`scripts/track/track_catalog.gd`): añadir uno es añadir
+     coordenadas, no montar una escena.
 2. **Cuenta** — login vía IAM de `core` (email/password + Google/Apple).
    Usuarios de tipo `APP`.
 3. **Leaderboard global** — subir tiempo al terminar vuelta, ver top N + tu posición.
@@ -71,8 +74,8 @@ en F0 no se toca.
 
 ### Fuera (explícito)
 
-Ghosts, amigos, temporadas, IAP, skills/skins, editor de circuitos, backoffice,
-múltiples pistas, múltiples coches, sonido propio, live racing.
+Ghosts, amigos, temporadas, IAP, skills/skins, editor de circuitos en la app,
+backoffice, múltiples coches, sonido propio, live racing.
 
 ### Criterio de "hecho"
 

@@ -28,7 +28,7 @@ func _ready() -> void:
 	var director: RaceDirector = main.get_node("RaceDirector")
 	_pad = main.get_node("TouchControls/Pad")
 
-	director.track_id = TRACK
+	director.track_id_override = TRACK
 	director.set_process(false)
 	timer.auto_start_on_throttle = false
 	timer.clock = func() -> int: return _now

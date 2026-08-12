@@ -31,7 +31,7 @@ func _ready() -> void:
 	var vehicle: Vehicle = main.get_node("Vehicle")
 	var sphere: RigidBody3D = main.get_node("Vehicle/Sphere")
 
-	director.track_id = TRACK
+	director.track_id_override = TRACK
 
 	# El semáforo tiene su propio test (countdown_test). Aquí se congela para
 	# que no suelte el coche a mitad de las comprobaciones.

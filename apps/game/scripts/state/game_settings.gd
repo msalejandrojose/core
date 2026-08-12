@@ -17,6 +17,7 @@ signal changed()
 
 var control_scheme: ControlScheme = ControlScheme.WHEEL
 var reverse: bool = false
+var track_id: String = TrackCatalog.DEFAULT_ID
 
 var _cfg := ConfigFile.new()
 
@@ -25,6 +26,11 @@ func _ready() -> void:
 	_cfg.load(PATH)
 	control_scheme = _cfg.get_value("controls", "scheme", ControlScheme.WHEEL)
 	reverse = _cfg.get_value("track", "reverse", false)
+	track_id = _cfg.get_value("track", "id", TrackCatalog.DEFAULT_ID)
+	# Un circuito que ya no existe (renombrado, retirado) no debe dejar el juego
+	# sin pista: se cae al primero del catálogo.
+	if not TrackCatalog.ids().has(track_id):
+		track_id = TrackCatalog.DEFAULT_ID
 
 
 func set_control_scheme(scheme: ControlScheme) -> void:
@@ -32,6 +38,14 @@ func set_control_scheme(scheme: ControlScheme) -> void:
 		return
 	control_scheme = scheme
 	_cfg.set_value("controls", "scheme", scheme)
+	_save()
+
+
+func set_track_id(id: String) -> void:
+	if id == track_id:
+		return
+	track_id = id
+	_cfg.set_value("track", "id", id)
 	_save()
 
 
@@ -43,12 +57,20 @@ func set_reverse(value: bool) -> void:
 	_save()
 
 
-## Sufijo para las claves de récord. Correr al revés es, a efectos de tiempos,
-## otro circuito: una vuelta inversa no se puede comparar con una normal, así
-## que cada sentido guarda su propia marca. En la API esto será una `Track`
-## distinta o un campo `direction`.
-func track_suffix() -> String:
-	return "-rev" if reverse else ""
+## Clave de récord: circuito y sentido. Correr al revés es, a efectos de
+## tiempos, otro circuito — una vuelta inversa no se puede comparar con una
+## normal — así que cada combinación guarda su propia marca. En la API esto
+## será una `Track` distinta por cada una.
+func track_key() -> String:
+	return key_for(track_id)
+
+
+## Misma regla aplicada a un circuito cualquiera. Existe para que el sufijo de
+## sentido se calcule en un único sitio: cuando el director tenía su propia
+## concatenación, la sobreescritura de los tests se saltaba el "-rev" y el
+## récord inverso acababa pisando al normal.
+func key_for(id: String) -> String:
+	return id + ("-rev" if reverse else "")
 
 
 func _save() -> void:

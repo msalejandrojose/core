@@ -42,11 +42,19 @@ var _next_checkpoint: int = 0
 
 
 func _ready() -> void:
+	rescan()
+
+
+## Vuelve a engancharse a los checkpoints que haya ahora en la escena. Hay que
+## llamarlo cada vez que se construye un circuito: las puertas son nodos nuevos,
+## y las del circuito anterior ya no existen.
+func rescan() -> void:
 	var found := get_tree().get_nodes_in_group("checkpoint")
 	var intermediate := 0
 	for node in found:
 		if node.has_signal("crossed"):
-			node.crossed.connect(_on_checkpoint_crossed)
+			if not node.crossed.is_connected(_on_checkpoint_crossed):
+				node.crossed.connect(_on_checkpoint_crossed)
 			if not node.is_finish:
 				intermediate += 1
 

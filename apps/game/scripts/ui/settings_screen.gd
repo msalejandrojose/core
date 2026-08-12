@@ -28,10 +28,21 @@ func _build() -> void:
 	add_child(margin)
 
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 28)
+	column.add_theme_constant_override("separation", 20)
 	margin.add_child(column)
 
 	column.add_child(_title("Ajustes"))
+
+	var names: Array = []
+	var ids: Array = TrackCatalog.ids()
+	for layout in TrackCatalog.all():
+		names.append(layout.name)
+
+	column.add_child(_label("Circuito", 30))
+	column.add_child(_choice(
+		names,
+		maxi(ids.find(GameSettings.track_id), 0),
+		func(index: int) -> void: GameSettings.set_track_id(ids[index])))
 
 	column.add_child(_label("Sentido del circuito", 30))
 	column.add_child(_choice(
@@ -39,8 +50,8 @@ func _build() -> void:
 		1 if GameSettings.reverse else 0,
 		func(index: int) -> void: GameSettings.set_reverse(index == 1)))
 	column.add_child(_label(
-		"Cada sentido guarda su propio récord: una vuelta al revés no es "
-		+ "comparable con una normal.", 22))
+		"Cada circuito y sentido guarda su propio récord: una vuelta al revés "
+		+ "no es comparable con una normal.", 22))
 
 	column.add_child(_label("Controles", 30))
 	column.add_child(_choice(
@@ -107,7 +118,7 @@ func _choice(options: Array, selected: int, on_pick: Callable) -> HBoxContainer:
 		button.toggle_mode = true
 		button.button_group = group
 		button.button_pressed = i == selected
-		button.custom_minimum_size = Vector2(260, 88)
+		button.custom_minimum_size = Vector2(220, 80)
 		button.add_theme_font_size_override("font_size", 30)
 		var index := i
 		button.pressed.connect(func() -> void: on_pick.call(index))

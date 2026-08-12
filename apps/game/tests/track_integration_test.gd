@@ -34,7 +34,7 @@ func _ready() -> void:
 	var sphere: RigidBody3D = main.get_node("Vehicle/Sphere")
 	var director: RaceDirector = main.get_node("RaceDirector")
 
-	director.track_id = TRACK
+	director.track_id_override = TRACK
 	director.set_process(false)
 	VehicleInput.locked = false
 	RaceRecords.clear(TRACK)
@@ -45,13 +45,25 @@ func _ready() -> void:
 	timer.lap_completed.connect(func(_d, _s): _completed = true)
 	timer.start()
 
-	for gate in ["Checkpoint0", "Checkpoint1", "Checkpoint2"]:
-		var cp: Node3D = main.get_node(gate)
-		await _move_to(sphere, cp.global_position)
+	# Las puertas ya no son nodos fijos de la escena: las coloca TrackBuilder al
+	# construir el circuito, así que se buscan por grupo y se ordenan por índice.
+	var gates: Array[Node] = []
+	var finish: Node3D = null
+	for node in get_tree().get_nodes_in_group("checkpoint"):
+		if node.is_finish:
+			finish = node
+		else:
+			gates.append(node)
+	gates.sort_custom(func(a, b): return a.index < b.index)
+
+	_check_eq(gates.size(), 3, "el circuito tiene 3 puertas")
+
+	for gate in gates:
+		await _move_to(sphere, gate.global_position)
 
 	_check_eq(timer.remaining_checkpoints(), 0, "los 3 checkpoints se han cruzado")
 
-	await _move_to(sphere, main.get_node("Finish").global_position)
+	await _move_to(sphere, finish.global_position)
 	_check(_completed, true, "la meta cierra la vuelta")
 
 	RaceRecords.clear(TRACK)

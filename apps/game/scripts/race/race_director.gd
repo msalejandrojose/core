@@ -23,12 +23,16 @@ const LIGHT_INTERVAL_S := 0.6
 ## delta acumulado se queda en 1,79999 en vez de 1,8.
 const _EPSILON := 0.0001
 
-@export var track_id: String = "kenney-01"
+## Solo para los tests: fuerza la clave de récord y deja fuera al catálogo,
+## para que un arnés no escriba en la marca real de un circuito del juego.
+@export var track_id_override: String = ""
 @export var vehicle_path: NodePath = ^"../Vehicle"
 @export var lap_timer_path: NodePath = ^"../LapTimer"
+@export var track_builder_path: NodePath = ^"../TrackBuilder"
 
 var vehicle: Vehicle
 var lap_timer: LapTimer
+var track_builder: TrackBuilder
 
 var counting_down: bool = false
 var _countdown_elapsed: float = 0.0
@@ -38,6 +42,7 @@ var _lights_on: int = 0
 func _ready() -> void:
 	vehicle = get_node(vehicle_path)
 	lap_timer = get_node(lap_timer_path)
+	track_builder = get_node(track_builder_path)
 
 	lap_timer.sector_completed.connect(_on_sector_completed)
 	lap_timer.lap_completed.connect(_on_lap_completed)
@@ -47,6 +52,8 @@ func _ready() -> void:
 	lap_timer.auto_start_on_throttle = false
 
 	GameSettings.changed.connect(_on_settings_changed)
+
+	rebuild_track()
 	restart()
 
 
@@ -94,20 +101,29 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Clave bajo la que se guarda el récord. Cada sentido del circuito tiene la
-## suya: una vuelta al revés no es comparable con una normal, así que meterlas
-## en el mismo saco daría un "mejor tiempo" que no significa nada.
+## Clave bajo la que se guarda el récord: circuito y sentido.
 func record_key() -> String:
-	return track_id + GameSettings.track_suffix()
+	if track_id_override.is_empty():
+		return GameSettings.track_key()
+	return GameSettings.key_for(track_id_override)
 
 
-## Reinicio rápido. No recarga la escena: recoloca el coche y reinicia el
-## estado. Es el gesto más usado de un contrarreloj, así que tiene que ser
-## instantáneo — una pantalla de carga aquí mataría el bucle de juego.
+## Levanta el circuito seleccionado y engancha el cronómetro a sus puertas.
+## Solo hace falta al arrancar y al cambiarlo en ajustes; reiniciar una vuelta
+## no reconstruye nada, que por eso es instantáneo.
+func rebuild_track() -> void:
+	track_builder.build(TrackCatalog.by_id(GameSettings.track_id))
+	lap_timer.rescan()
+
+
+## Reinicio rápido. No recarga la escena ni reconstruye la pista: recoloca el
+## coche y reinicia el estado. Es el gesto más usado de un contrarreloj, así
+## que tiene que ser instantáneo — una pantalla de carga aquí mataría el bucle.
 func restart() -> void:
-	# En sentido inverso el coche sale mirando al otro lado. Media vuelta sobre
-	# el eje vertical: el circuito es el mismo, se recorre al revés.
-	vehicle.reset_to_start(PI if GameSettings.reverse else 0.0)
+	# La salida es la línea de meta. En sentido inverso, mirando al otro lado:
+	# el circuito es el mismo, se recorre al revés.
+	vehicle.position = track_builder.start_position
+	vehicle.reset_to_start(track_builder.start_yaw + (PI if GameSettings.reverse else 0.0))
 	lap_timer.set_reversed(GameSettings.reverse)
 	VehicleInput.release()
 	begin_countdown()
@@ -115,6 +131,7 @@ func restart() -> void:
 
 
 func _on_settings_changed() -> void:
+	rebuild_track()
 	restart()
 
 
