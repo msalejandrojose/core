@@ -1,8 +1,12 @@
 extends CanvasLayer
 
-## Menú de ajustes. Cambiar cualquier opción se guarda al momento y relanza la
-## salida, porque tanto el sentido como el esquema de control alteran la vuelta
-## en curso: dejarla viva daría un tiempo hecho a medias entre dos configuraciones.
+## Preferencias del jugador. Cambiar cualquier opción se guarda al momento y
+## relanza la salida: el esquema de control altera la vuelta en curso, y dejarla
+## viva daría un tiempo hecho a medias entre dos configuraciones.
+##
+## Circuito y sentido NO están aquí: son lo que eliges para jugar, no una
+## preferencia, y viven en el menú principal. Tenerlos en dos sitios sería tener
+## dos sitios donde mirar cuando algo no cuadra.
 
 const BONE := Color("f0ece6")
 const INK := Color(0.11, 0.098, 0.09)
@@ -32,26 +36,6 @@ func _build() -> void:
 	margin.add_child(column)
 
 	column.add_child(_title("Ajustes"))
-
-	var names: Array = []
-	var ids: Array = TrackCatalog.ids()
-	for layout in TrackCatalog.all():
-		names.append(layout.name)
-
-	column.add_child(_label("Circuito", 30))
-	column.add_child(_choice(
-		names,
-		maxi(ids.find(GameSettings.track_id), 0),
-		func(index: int) -> void: GameSettings.set_track_id(ids[index])))
-
-	column.add_child(_label("Sentido del circuito", 30))
-	column.add_child(_choice(
-		["Normal", "Inverso"],
-		1 if GameSettings.reverse else 0,
-		func(index: int) -> void: GameSettings.set_reverse(index == 1)))
-	column.add_child(_label(
-		"Cada circuito y sentido guarda su propio récord: una vuelta al revés "
-		+ "no es comparable con una normal.", 22))
 
 	column.add_child(_label("Controles", 30))
 	column.add_child(_choice(

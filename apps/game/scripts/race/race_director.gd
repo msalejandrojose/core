@@ -30,11 +30,17 @@ const _EPSILON := 0.0001
 @export var lap_timer_path: NodePath = ^"../LapTimer"
 @export var track_builder_path: NodePath = ^"../TrackBuilder"
 @export var view_path: NodePath = ^"../View"
+@export var main_menu_path: NodePath = ^"../MainMenu"
+@export var race_hud_path: NodePath = ^"../RaceHud"
+@export var touch_controls_path: NodePath = ^"../TouchControls"
 
 var vehicle: Vehicle
 var lap_timer: LapTimer
 var track_builder: TrackBuilder
 var view: Node3D
+var main_menu: CanvasLayer
+var race_hud: CanvasLayer
+var touch_controls: CanvasLayer
 
 var counting_down: bool = false
 var _countdown_elapsed: float = 0.0
@@ -46,6 +52,11 @@ func _ready() -> void:
 	lap_timer = get_node(lap_timer_path)
 	track_builder = get_node(track_builder_path)
 	view = get_node(view_path)
+	main_menu = get_node(main_menu_path)
+	race_hud = get_node(race_hud_path)
+	touch_controls = get_node(touch_controls_path)
+
+	main_menu.play_pressed.connect(_on_play_pressed)
 
 	lap_timer.sector_completed.connect(_on_sector_completed)
 	lap_timer.lap_completed.connect(_on_lap_completed)
@@ -58,6 +69,10 @@ func _ready() -> void:
 
 	rebuild_track()
 	restart()
+
+	# Se arranca en el menú: el juego no empieza a contar sin que nadie haya
+	# dicho a qué circuito quiere jugar.
+	open_menu()
 
 
 func _process(delta: float) -> void:
@@ -136,9 +151,38 @@ func restart() -> void:
 	restarted.emit()
 
 
+## Con un menú delante la salida se congela: la cuenta atrás no puede correr
+## detrás de una pantalla, y el coche no puede salir sin que lo estén viendo.
+func open_menu() -> void:
+	set_process(false)
+	VehicleInput.locked = true
+	# También los controles: los pedales se dibujan siempre, y sin esconderlos
+	# quedan flotando encima del menú y compitiendo con sus botones.
+	race_hud.visible = false
+	touch_controls.visible = false
+	main_menu.open()
+
+
+func _on_play_pressed() -> void:
+	main_menu.close()
+	race_hud.visible = true
+	touch_controls.visible = true
+	restart()
+	set_process(true)
+
+
 func _on_settings_changed() -> void:
 	rebuild_track()
 	restart()
+	# Cambiar de circuito desde el menú no debe soltar el coche: se reconstruye
+	# la pista para verla de fondo, pero la salida sigue congelada.
+	if main_menu.visible:
+		set_process(false)
+		VehicleInput.locked = true
+
+	# Se arranca en el menú: el juego no empieza a contar sin que nadie haya
+	# dicho a qué circuito quiere jugar.
+	open_menu()
 
 
 func _on_sector_completed(sector: int, split_ms: int) -> void:

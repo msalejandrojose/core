@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/track/track_builder.gd" id="17_track"]
 [ext_resource type="Script" path="res://scripts/race/race_director.gd" id="15_dir"]
 [ext_resource type="PackedScene" path="res://scenes/ui/race-hud.tscn" id="16_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/main-menu.tscn" id="18_menu"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ya4ey"]
 size = Vector3(60, 0, 60)
@@ -75,3 +76,5 @@ script = ExtResource("15_dir")
 [node name="TouchControls" parent="." instance=ExtResource("12_touch")]
 
 [node name="RaceHud" parent="." instance=ExtResource("16_hud")]
+
+[node name="MainMenu" parent="." instance=ExtResource("18_menu")]

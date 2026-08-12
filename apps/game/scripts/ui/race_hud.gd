@@ -28,6 +28,7 @@ var _best_label: Label
 var _delta_label: Label
 var _restart_button: Button
 var _settings_button: Button
+var _menu_button: Button
 var _delta_left: float = 0.0
 
 var _lights_on: int = 0
@@ -128,6 +129,20 @@ func _build() -> void:
 	_settings_button.add_theme_font_size_override("font_size", 26)
 	_settings_button.pressed.connect(open_settings)
 	add_child(_settings_button)
+
+	# Volver a elegir circuito sin salir de la app.
+	_menu_button = Button.new()
+	_menu_button.text = "Menú"
+	_menu_button.custom_minimum_size = Vector2(200, 72)
+	_menu_button.anchor_left = 1.0
+	_menu_button.anchor_right = 1.0
+	_menu_button.offset_left = -248
+	_menu_button.offset_top = 240
+	_menu_button.offset_right = -48
+	_menu_button.offset_bottom = 312
+	_menu_button.add_theme_font_size_override("font_size", 26)
+	_menu_button.pressed.connect(_director.open_menu)
+	add_child(_menu_button)
 
 
 func open_settings() -> void:
