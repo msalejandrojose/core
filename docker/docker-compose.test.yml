@@ -1,0 +1,26 @@
+# Stack de test para los E2E de la API (`pnpm --filter @core/api test:e2e`).
+#
+# Levanta un MySQL completamente aislado del de desarrollo (puerto y BBDD
+# distintos) con los datos en tmpfs: nace vacío en cada `up` y desaparece con
+# `down` — no hay volumen que persista entre ejecuciones. Las credenciales son
+# fijas y no-secretas: solo viven mientras dura el contenedor efímero.
+services:
+  mysql-test:
+    build:
+      context: ./mysql
+    image: core-mysql:local
+    container_name: core-mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: core_test
+      MYSQL_USER: core_test
+      MYSQL_PASSWORD: core_test
+    ports:
+      - "3307:3306"
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20

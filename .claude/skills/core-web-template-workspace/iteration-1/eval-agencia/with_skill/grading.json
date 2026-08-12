@@ -1,0 +1,36 @@
+{
+  "eval_id": 1,
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "Se crea apps/web/src/pages/templates/agencia.astro",
+      "passed": true,
+      "evidence": "agencia.astro aparece en files_created"
+    },
+    {
+      "text": "La entrada 'agencia' se añade al array templates en index.astro",
+      "passed": true,
+      "evidence": "selector_registered: true"
+    },
+    {
+      "text": "DevTemplateBadge se importa y usa en la página de la plantilla",
+      "passed": true,
+      "evidence": "dev_badge_included: true"
+    },
+    {
+      "text": "pnpm --filter @core/web exec astro check devuelve 0 errores",
+      "passed": true,
+      "evidence": "astro_check_result: pass"
+    },
+    {
+      "text": "El color #D4A017 o similar aparece en el código de la plantilla",
+      "passed": true,
+      "evidence": "accent_color_present: true — #D4A017 en agencia.css como token CSS"
+    },
+    {
+      "text": "Se crean componentes en components/agencia/ y un CSS propio con tokens",
+      "passed": true,
+      "evidence": "agencia.css, AgenciaLayout.astro, components/agencia/{Hero,Servicios,FooterContacto}.astro creados"
+    }
+  ]
+}

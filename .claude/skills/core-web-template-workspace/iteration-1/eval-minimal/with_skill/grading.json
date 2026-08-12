@@ -1,0 +1,36 @@
+{
+  "eval_id": 0,
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "Se crea apps/web/src/pages/templates/minimal.astro",
+      "passed": true,
+      "evidence": "minimal.astro aparece en files_created"
+    },
+    {
+      "text": "La entrada 'minimal' se añade al array templates en index.astro",
+      "passed": true,
+      "evidence": "selector_registered: true"
+    },
+    {
+      "text": "DevTemplateBadge se importa y usa en la página de la plantilla",
+      "passed": true,
+      "evidence": "dev_badge_included: true"
+    },
+    {
+      "text": "pnpm --filter @core/web exec astro check devuelve 0 errores",
+      "passed": true,
+      "evidence": "astro_check_result: pass"
+    },
+    {
+      "text": "Se crean al menos Hero.astro y un componente de Features en components/minimal/",
+      "passed": true,
+      "evidence": "files_created incluye Hero.astro, Features.astro, FinalCTA.astro en components/minimal/"
+    },
+    {
+      "text": "Se crea un CSS propio con tokens de diseño (no inline en el layout)",
+      "passed": true,
+      "evidence": "apps/web/src/styles/minimal.css aparece en files_created"
+    }
+  ]
+}

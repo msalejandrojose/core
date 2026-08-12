@@ -1,0 +1,61 @@
+{
+  "skill_name": "core-web-template",
+  "evals": [
+    {
+      "id": 0,
+      "name": "eval-minimal",
+      "prompt": "Crea una plantilla llamada 'Minimal' para una landing de SaaS B2B. Fondo negro puro, texto blanco, tipografía grande y sin adornos. Secciones: Hero con headline impactante y CTA, Features en grid de 3 columnas, y CTA final. Estilo oscuro y técnico.",
+      "expected_output": "Debe crear: src/pages/templates/minimal.astro, un layout MinimalLayout.astro, CSS propio con tokens oscuros, componentes en src/components/minimal/, y registrar la entrada en src/pages/index.astro",
+      "assertions": [
+        {
+          "name": "page_file_exists",
+          "description": "Se crea apps/web/src/pages/templates/minimal.astro"
+        },
+        {
+          "name": "selector_registered",
+          "description": "La entrada 'minimal' se añade al array templates en index.astro"
+        },
+        {
+          "name": "dev_badge_included",
+          "description": "DevTemplateBadge se importa y usa en la página de la plantilla"
+        },
+        {
+          "name": "astro_check_passes",
+          "description": "pnpm --filter @core/web exec astro check devuelve 0 errores"
+        },
+        {
+          "name": "sections_scaffolded",
+          "description": "Se crean al menos Hero.astro y un componente de Features"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "eval-agencia",
+      "prompt": "Añade una nueva plantilla 'Agencia' al selector de la web. Quiero probar un diseño de agencia creativa: fondo muy oscuro casi negro, acentos en amarillo mostaza (#D4A017), tipografía grande y bold. Secciones: un hero con texto oversized, una sección de servicios, y un footer de contacto.",
+      "expected_output": "Debe crear: src/pages/templates/agencia.astro, layout/CSS/componentes propios en sus directorios correspondientes, y registrar en el selector con el mood/paleta correctos",
+      "assertions": [
+        {
+          "name": "page_file_exists",
+          "description": "Se crea apps/web/src/pages/templates/agencia.astro"
+        },
+        {
+          "name": "selector_registered",
+          "description": "La entrada 'agencia' se añade al array templates en index.astro"
+        },
+        {
+          "name": "dev_badge_included",
+          "description": "DevTemplateBadge se importa y usa en la página de la plantilla"
+        },
+        {
+          "name": "astro_check_passes",
+          "description": "pnpm --filter @core/web exec astro check devuelve 0 errores"
+        },
+        {
+          "name": "accent_color_used",
+          "description": "El amarillo mostaza aparece en el CSS o en los componentes"
+        }
+      ]
+    }
+  ]
+}
