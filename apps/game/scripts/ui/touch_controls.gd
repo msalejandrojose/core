@@ -75,11 +75,19 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+## Se usa `_input` y no `_unhandled_input` a propósito: con emulate_mouse_from_touch
+## activo, el sistema de GUI convierte el toque en evento de ratón y lo marca como
+## manejado antes de llegar a la fase unhandled, así que allí no llega nada.
+## Verificado en `tests/touch_input_test.gd`.
+##
+## Como contrapartida, aquí solo se marca el evento como manejado cuando de verdad
+## se consume: un toque que no cae en ningún control sigue su camino y podrá ser
+## recogido por la UI que venga después (menús, pausa, HUD).
+func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
-		if event.pressed: _on_press(event.index, event.position)
-		else: _on_release(event.index)
-		get_viewport().set_input_as_handled()
+		var claimed := _on_press(event.index, event.position) if event.pressed else _on_release(event.index)
+		if claimed:
+			get_viewport().set_input_as_handled()
 
 	elif event is InputEventScreenDrag:
 		if event.index == _steer_finger:
@@ -87,14 +95,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-func _on_press(index: int, pos: Vector2) -> void:
+func _on_press(index: int, pos: Vector2) -> bool:
 	if pos.distance_to(_accel_center()) <= _pedal_radius():
 		_pedal_fingers[index] = "accel"
-		return
+		return true
 
 	if pos.distance_to(_brake_center()) <= _pedal_radius():
 		_pedal_fingers[index] = "brake"
-		return
+		return true
 
 	# Volante flotante: nace donde caiga el pulgar, no en un punto fijo. Evita
 	# tener que buscar a ciegas un control dibujado.
@@ -103,13 +111,18 @@ func _on_press(index: int, pos: Vector2) -> void:
 		_steer_origin = pos
 		_steer_point = pos
 		_steer_target = 0.0
+		return true
+
+	return false
 
 
-func _on_release(index: int) -> void:
+func _on_release(index: int) -> bool:
 	if index == _steer_finger:
 		_steer_finger = -1
 		_steer_target = 0.0
-	_pedal_fingers.erase(index)
+		return true
+
+	return _pedal_fingers.erase(index)
 
 
 func _update_steer(pos: Vector2) -> void:
