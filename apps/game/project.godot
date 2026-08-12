@@ -90,6 +90,11 @@ bounce={
 
 [rendering]
 
+; Obligatorio para exportar a arm64 (iOS y macOS Apple Silicon). Sin esto el
+; export de iOS falla con un mensaje de error VACÍO; el de macOS sí lo explica,
+; y fue así como se encontró.
+textures/vram_compression/import_etc2_astc=true
+
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
 environment/ssao/quality=3
 environment/ssao/half_size=false

@@ -11,11 +11,26 @@ exportador por línea de comandos, así que el ciclo se parece bastante:
 
 `./tools/ios.sh run` hace las dos últimas, que es el ciclo normal del día a día.
 
-> ⚠️ **Nada de este documento está ejecutado todavía.** Se escribió sin las
-> export templates instaladas, así que los pasos 1 y 2 no se han podido probar
-> en esta máquina. Si algo no cuadra, el código manda: corrige aquí.
+> **Pasos 1 y 2 ya hechos**: las export templates están instaladas y
+> `export_presets.cfg` está en el repo. El export a proyecto Xcode se ha
+> ejecutado y funciona. Lo que queda sin verificar es de Xcode en adelante
+> (firma, instalación en dispositivo), porque requiere un Apple ID.
 
 ---
+
+## Paso 0 — Compresión de texturas ETC2 ASTC
+
+Ya está puesto en `project.godot`, pero conviene saber por qué está ahí:
+exportar a arm64 (iOS, y macOS Apple Silicon) **exige**
+`rendering/textures/vram_compression/import_etc2_astc=true`. Sin eso el export
+falla.
+
+La trampa: **el export de iOS falla con un mensaje de error vacío**. Literalmente
+"configuration errors:" y nada detrás. Se encontró exportando a macOS, que sí
+explica el problema con todas las letras. Si algún día ves un error vacío en un
+export de iOS, prueba a exportar a macOS para leer el motivo real.
+
+Activarlo obliga a reimportar todas las texturas la primera vez.
 
 ## Paso 1 — Export templates (una vez por versión del motor)
 
@@ -38,6 +53,7 @@ Es el equivalente a `cap add ios`, y es el único paso que no tiene CLI.
 | Campo | Valor | Por qué |
 |---|---|---|
 | Nombre del preset | `iOS` | El script lo busca por este nombre exacto |
+| App Store Team ID | tu Team ID | Ver más abajo: es lo que evita tener que reconfigurar la firma en cada sync |
 | Bundle Identifier | p. ej. `es.aj.racing` | Tiene que ser tuyo y único. No dejes el de ejemplo de Godot |
 | Export Project Only | **activado** | Genera un proyecto Xcode en vez de intentar firmar un `.ipa`. La firma se hace en Xcode, que es donde vive tu Apple ID |
 
@@ -68,6 +84,27 @@ Esto es tuyo: implica meter tu Apple ID, y eso no lo hace nadie por ti.
 5. Elige el dispositivo arriba y dale a ▶.
 6. La primera vez el iPhone rechaza la app por desarrollador sin verificar:
    **Ajustes → General → VPN y gestión de dispositivos → confía en tu perfil.**
+
+### El Team ID va en el preset, no solo en Xcode
+
+`./tools/ios.sh sync` **regenera el proyecto Xcode entero**, incluido el
+`project.pbxproj` donde vive la configuración de firma. Si pones tu equipo solo
+desde la interfaz de Xcode, el siguiente sync se lo lleva por delante y hay que
+volver a ponerlo.
+
+La solución es poner el Team ID en `export_presets.cfg`
+(`application/app_store_team_id`), que ahora mismo tiene el marcador
+`TEAMIDTODO`. Así cada regeneración sale ya firmada con tu equipo.
+
+Para averiguarlo, una vez tengas el Apple ID metido en Xcode:
+
+```bash
+security find-identity -v -p codesigning
+```
+
+Sale como `Apple Development: tu@email (XXXXXXXXXX)` — el código entre
+paréntesis del final es el Team ID. También está en **Xcode → Settings →
+Accounts**, columna Team.
 
 ### Sobre la cuenta gratuita
 
