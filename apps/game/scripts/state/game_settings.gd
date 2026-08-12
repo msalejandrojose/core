@@ -19,6 +19,11 @@ var control_scheme: ControlScheme = ControlScheme.WHEEL
 var reverse: bool = false
 var track_id: String = TrackCatalog.DEFAULT_ID
 
+## Dirección de la API elegida en Ajustes. Vacía = la del proyecto. Existe para
+## poder apuntar a otro backend desde el propio móvil: recompilar y reinstalar
+## solo para cambiar una URL es un ciclo demasiado lento.
+var api_base_url: String = ""
+
 var _cfg := ConfigFile.new()
 
 
@@ -27,6 +32,7 @@ func _ready() -> void:
 	control_scheme = _cfg.get_value("controls", "scheme", ControlScheme.WHEEL)
 	reverse = _cfg.get_value("track", "reverse", false)
 	track_id = _cfg.get_value("track", "id", TrackCatalog.DEFAULT_ID)
+	api_base_url = _cfg.get_value("api", "base_url", "")
 	# Un circuito que ya no existe (renombrado, retirado) no debe dejar el juego
 	# sin pista: se cae al primero del catálogo.
 	if not TrackCatalog.ids().has(track_id):
@@ -46,6 +52,15 @@ func set_track_id(id: String) -> void:
 		return
 	track_id = id
 	_cfg.set_value("track", "id", id)
+	_save()
+
+
+func set_api_base_url(url: String) -> void:
+	var clean := url.strip_edges()
+	if clean == api_base_url:
+		return
+	api_base_url = clean
+	_cfg.set_value("api", "base_url", clean)
 	_save()
 
 

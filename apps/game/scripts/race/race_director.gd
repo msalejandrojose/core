@@ -176,13 +176,12 @@ func _on_settings_changed() -> void:
 	restart()
 	# Cambiar de circuito desde el menú no debe soltar el coche: se reconstruye
 	# la pista para verla de fondo, pero la salida sigue congelada.
+	#
+	# Y NO se abre el menú aquí: cambiar el esquema de control desde Ajustes en
+	# mitad de una carrera te echaría a la pantalla de inicio.
 	if main_menu.visible:
 		set_process(false)
 		VehicleInput.locked = true
-
-	# Se arranca en el menú: el juego no empieza a contar sin que nadie haya
-	# dicho a qué circuito quiere jugar.
-	open_menu()
 
 
 func _on_sector_completed(sector: int, split_ms: int) -> void:
@@ -200,14 +199,6 @@ func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 
 	# La marca local se guarda SIEMPRE, haya cuenta o no y haya red o no. Subirla
 	# es un extra: el juego no puede quedarse esperando a un servidor justo
-	# después de cruzar la meta.
+	# después de cruzar la meta, así que se encola y ya se ocupa la cola.
 	if Session.is_logged_in():
-		_upload_lap(duration_ms, splits_ms)
-
-
-func _upload_lap(duration_ms: int, splits_ms: Array) -> void:
-	var response = await RacingApi.submit_lap(record_key(), duration_ms, splits_ms)
-	if not response.ok:
-		# Sin cola de reintentos todavía (TASK-205): de momento solo se deja
-		# constancia, en vez de fingir que se subió.
-		push_warning("No se pudo subir la vuelta (%s): %s" % [response.code, response.message])
+		LapQueue.enqueue(record_key(), duration_ms, splits_ms)

@@ -27,8 +27,19 @@ var access_token: String = ""
 
 
 func _ready() -> void:
+	refresh_base_url()
+	GameSettings.changed.connect(refresh_base_url)
+
+
+## Lo elegido en Ajustes manda sobre el valor del proyecto.
+func refresh_base_url() -> void:
+	var configured := ""
 	if ProjectSettings.has_setting(BASE_URL_SETTING):
-		base_url = str(ProjectSettings.get_setting(BASE_URL_SETTING))
+		configured = str(ProjectSettings.get_setting(BASE_URL_SETTING))
+
+	base_url = GameSettings.api_base_url if GameSettings.api_base_url != "" else configured
+	if base_url == "":
+		base_url = DEFAULT_BASE_URL
 
 
 func get_json(path: String, authorized: bool = true) -> ApiResponse:

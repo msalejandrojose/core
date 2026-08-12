@@ -73,3 +73,7 @@ func _adopt(response) -> void:
 	_cfg.set_value("session", "email", email)
 	_cfg.save(PATH)
 	changed.emit()
+
+	# Entrar es el momento natural para soltar lo que quedó pendiente: puede
+	# haber tiempos corridos sin cuenta o con la sesión caducada.
+	LapQueue.flush()

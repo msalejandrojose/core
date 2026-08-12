@@ -47,6 +47,25 @@ func _build() -> void:
 		"Volante: arrastra el pulgar izquierdo para girar, pedales a la derecha.\n"
 		+ "Toque lateral: pulsa un lado para girar, el acelerador va puesto.", 22))
 
+	column.add_child(_label("Servidor", 30))
+
+	# Editable desde el propio móvil: recompilar y reinstalar solo para cambiar
+	# una URL es un ciclo demasiado lento cuando estás probando en dispositivo.
+	var server := LineEdit.new()
+	server.text = GameSettings.api_base_url
+	server.placeholder_text = Api.base_url
+	server.custom_minimum_size = Vector2(0, 80)
+	server.add_theme_font_size_override("font_size", 26)
+	server.text_submitted.connect(func(value: String) -> void:
+		GameSettings.set_api_base_url(value))
+	server.focus_exited.connect(func() -> void:
+		GameSettings.set_api_base_url(server.text))
+	column.add_child(server)
+
+	column.add_child(_label(
+		"Vacío usa el del juego (%s). Cambia esto si el backend está en otra máquina."
+		% Api.base_url, 22))
+
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
