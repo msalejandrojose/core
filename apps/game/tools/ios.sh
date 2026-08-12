@@ -56,7 +56,14 @@ cmd_sync() {
 
 cmd_open() {
 	[ -d "$XCODEPROJ" ] || die "no existe $XCODEPROJ — corre primero: $0 sync"
-	open "$XCODEPROJ"
+
+	# `open` a secas abre la app que macOS tenga asociada a .xcodeproj, y si
+	# tienes VS Code instalado suele ser esa. Hay que nombrar Xcode.
+	local xcode
+	xcode="$(dirname "$(dirname "$(xcode-select -p)")")"
+	[ -d "$xcode" ] || die "no encuentro Xcode (xcode-select -p apunta a $(xcode-select -p))"
+
+	open -a "$xcode" "$XCODEPROJ"
 }
 
 case "${1:-run}" in
