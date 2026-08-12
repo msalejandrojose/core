@@ -58,6 +58,9 @@ en F0 no se toca.
    - Salida con semáforo, para que todas las vueltas empiecen igual.
    - Nitro con depósito que se gasta y se recarga: sin límite no sería una
      decisión, sería ir siempre más rápido.
+   - Tres cilindradas (50cc / 100cc / 150cc). Cada combinación de circuito,
+     sentido y cilindrada es una clasificación propia: un 150cc contra un 50cc
+     no es una comparación.
    - Menú principal para elegir circuito y sentido, con vista previa del
      trazado detrás.
    - Reinicio rápido (el gesto más usado de un contrarreloj — debe ser instantáneo).

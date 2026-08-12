@@ -11,6 +11,8 @@ const TestEnv := preload("res://tests/test_env.gd")
 ## sentido guarde su récord por separado.
 
 const TRACK := "test-settings"
+const KEY := "test-settings-100cc"
+const KEY_REV := "test-settings-rev-100cc"
 
 var _failures := 0
 var _now: int = 0
@@ -32,16 +34,16 @@ func _ready() -> void:
 	director.set_process(false)
 	timer.auto_start_on_throttle = false
 	timer.clock = func() -> int: return _now
-	RaceRecords.clear(TRACK)
-	RaceRecords.clear(TRACK + "-rev")
+	RaceRecords.clear(KEY)
+	RaceRecords.clear(KEY_REV)
 
 	await _test_orden_normal(timer, director)
 	await _test_orden_inverso(timer, director)
 	await _test_records_separados(timer, director)
 	await _test_esquema_toque(director)
 
-	RaceRecords.clear(TRACK)
-	RaceRecords.clear(TRACK + "-rev")
+	RaceRecords.clear(KEY)
+	RaceRecords.clear(KEY_REV)
 	TestEnv.reset()
 
 	if _failures == 0:
@@ -78,7 +80,7 @@ func _test_orden_inverso(timer: LapTimer, _d: RaceDirector) -> void:
 func _test_records_separados(timer: LapTimer, director: RaceDirector) -> void:
 	GameSettings.set_reverse(false)
 	director.set_process(false)
-	_check_eq(director.record_key(), TRACK, "en normal la clave es la pista")
+	_check_eq(director.record_key(), KEY, "en normal la clave lleva circuito y cilindrada")
 
 	timer.set_reversed(false)
 	timer.start()
@@ -87,12 +89,12 @@ func _test_records_separados(timer: LapTimer, director: RaceDirector) -> void:
 	_now += 10000; timer.cross_checkpoint(2)
 	_now += 10000; timer.cross_finish()
 
-	_check_eq(RaceRecords.best_ms(TRACK), 40000, "el récord normal se guarda")
+	_check_eq(RaceRecords.best_ms(KEY), 40000, "el récord normal se guarda")
 
 	GameSettings.set_reverse(true)
 	director.set_process(false)
-	_check_eq(director.record_key(), TRACK + "-rev", "en inverso la clave lleva sufijo")
-	_check_eq(RaceRecords.best_ms(TRACK + "-rev"), 0, "el inverso empieza sin récord")
+	_check_eq(director.record_key(), KEY_REV, "en inverso la clave lleva además el sentido")
+	_check_eq(RaceRecords.best_ms(KEY_REV), 0, "el inverso empieza sin récord")
 
 	timer.set_reversed(true)
 	timer.start()
@@ -101,8 +103,8 @@ func _test_records_separados(timer: LapTimer, director: RaceDirector) -> void:
 	_now += 20000; timer.cross_checkpoint(0)
 	_now += 20000; timer.cross_finish()
 
-	_check_eq(RaceRecords.best_ms(TRACK + "-rev"), 80000, "el récord inverso se guarda aparte")
-	_check_eq(RaceRecords.best_ms(TRACK), 40000, "una vuelta inversa más lenta no toca el normal")
+	_check_eq(RaceRecords.best_ms(KEY_REV), 80000, "el récord inverso se guarda aparte")
+	_check_eq(RaceRecords.best_ms(KEY), 40000, "una vuelta inversa más lenta no toca el normal")
 
 	GameSettings.set_reverse(false)
 	director.set_process(false)

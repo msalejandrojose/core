@@ -9,9 +9,11 @@ import { PrismaService } from '../infrastructure/database/prisma/prisma.service'
 // es el ancla de los tiempos, así que aquí solo hay lo que el servidor
 // necesita para validarlos y ordenarlos.
 //
-// Cada circuito se siembra DOS veces, una por sentido: una vuelta al revés no
-// es comparable con una normal, así que son leaderboards separados. El slug
-// inverso lleva sufijo "-rev", igual que la clave de récord del cliente.
+// Cada circuito se siembra en TODAS sus variantes jugables: dos sentidos por
+// tres cilindradas. Un tiempo al revés no es comparable con uno normal, y uno a
+// 150cc tampoco lo es con uno a 50cc, así que cada combinación es su propio
+// leaderboard. El slug se compone igual que la clave de récord del cliente
+// (`GameSettings.key_for`): "kenney-01-rev-150cc".
 
 // Velocidad punta del coche, medida en el juego: 9,75 u/s a fondo en recta,
 // prácticamente igual con y sin agarre (el agarre cambia lo que tardas en
@@ -36,6 +38,15 @@ interface TrackSeed {
   checkpoints: number;
 }
 
+// Multiplicador de velocidad punta de cada cilindrada. Tiene que coincidir con
+// `GameSettings.ENGINE_SPEED` del juego: es lo que hace que el mínimo físico de
+// cada clase esté donde toca. A 150cc el coche corre más, así que el suelo baja.
+const ENGINE_CLASSES: ReadonlyArray<{ name: string; speed: number }> = [
+  { name: '50cc', speed: 0.72 },
+  { name: '100cc', speed: 1.0 },
+  { name: '150cc', speed: 1.32 },
+];
+
 const TRACKS: readonly TrackSeed[] = [
   { slug: 'kenney-01', name: 'Kenney', cells: 16, checkpoints: 3 },
   { slug: 'herradura', name: 'Herradura', cells: 18, checkpoints: 3 },
@@ -56,9 +67,10 @@ const TRACKS: readonly TrackSeed[] = [
  * criterio: preferimos dejar pasar tramposos sutiles a llamar tramposo a
  * alguien que solo es rápido.
  */
-function minPlausibleMs(cells: number): number {
+function minPlausibleMs(cells: number, engineSpeed: number): number {
   const distance = cells * CELL_SIZE_UNITS * RACING_LINE_FACTOR;
-  return Math.floor((distance / TOP_SPEED_UNITS_PER_SECOND) * 1000);
+  const topSpeed = TOP_SPEED_UNITS_PER_SECOND * engineSpeed;
+  return Math.floor((distance / topSpeed) * 1000);
 }
 
 async function main(): Promise<void> {
@@ -67,33 +79,38 @@ async function main(): Promise<void> {
   });
   const prisma = app.get(PrismaService);
 
+  let seeded = 0;
+
   for (const track of TRACKS) {
     for (const reversed of [false, true]) {
-      const slug = reversed ? `${track.slug}-rev` : track.slug;
-      const name = reversed ? `${track.name} (inverso)` : track.name;
+      for (const engine of ENGINE_CLASSES) {
+        const slug = `${track.slug}${reversed ? '-rev' : ''}-${engine.name}`;
+        const name = `${track.name}${reversed ? ' (inverso)' : ''} · ${engine.name}`;
 
-      const data = {
-        name,
-        sectorCount: track.checkpoints + 1,
-        minPlausibleMs: minPlausibleMs(track.cells),
-        isActive: true,
-      };
+        const data = {
+          name,
+          sectorCount: track.checkpoints + 1,
+          minPlausibleMs: minPlausibleMs(track.cells, engine.speed),
+          isActive: true,
+        };
 
-      await prisma.track.upsert({
-        where: { slug },
-        create: { slug, ...data },
-        update: data,
-      });
+        await prisma.track.upsert({
+          where: { slug },
+          create: { slug, ...data },
+          update: data,
+        });
 
-      console.log(
-        `✓ ${slug.padEnd(18)} sectores=${data.sectorCount} mínimo=${(
-          data.minPlausibleMs / 1000
-        ).toFixed(1)}s`,
-      );
+        seeded += 1;
+        console.log(
+          `✓ ${slug.padEnd(24)} sectores=${data.sectorCount} mínimo=${(
+            data.minPlausibleMs / 1000
+          ).toFixed(1)}s`,
+        );
+      }
     }
   }
 
-  console.log(`\n${TRACKS.length * 2} circuitos sembrados.`);
+  console.log(`\n${seeded} circuitos sembrados.`);
   await app.close();
 }
 

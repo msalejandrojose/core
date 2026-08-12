@@ -18,6 +18,7 @@ static func reset() -> void:
 	GameSettings.set_track_id(TrackCatalog.DEFAULT_ID)
 	GameSettings.set_control_scheme(GameSettings.ControlScheme.WHEEL)
 	GameSettings.set_reverse(false)
+	GameSettings.set_engine_class(GameSettings.EngineClass.CC100)
 	VehicleInput.locked = false
 	VehicleInput.touch_active = false
 	VehicleInput.steer = 0.0

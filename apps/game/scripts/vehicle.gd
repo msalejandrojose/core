@@ -54,6 +54,9 @@ var calculated_lean: float
 ## sensación de ir sobre nieve.
 var grip: float = 1.0
 
+## Cilindrada elegida: multiplica la velocidad punta. Lo pone el director.
+var speed_scale: float = 1.0
+
 # --- Nitro --------------------------------------------------------------------
 #
 # El depósito es lo que convierte el nitro en una decisión. Sin él, pulsarlo
@@ -143,7 +146,7 @@ func _physics_process(delta):
 
 	# El nitro solo empuja hacia delante: no sirve para frenar antes ni para dar
 	# marcha atrás a lo loco.
-	var target_speed = input.z
+	var target_speed = input.z * speed_scale
 	if nitro_active and target_speed > 0.0:
 		target_speed *= NITRO_BOOST
 
@@ -247,7 +250,9 @@ func effect_engine(delta):
 func effect_trails():
 
 	var drift_intensity = abs(linear_speed - acceleration) + (abs(calculated_lean) * 2.0)
-	var should_emit = drift_intensity > 0.25
+	# Con nitro las estelas salen siempre, se derrape o no: es la señal de que
+	# el coche está empujando, no de que esté patinando.
+	var should_emit = drift_intensity > 0.25 or nitro_active
 
 	if trail_left != null: trail_left.emitting = should_emit
 	if trail_right != null: trail_right.emitting = should_emit

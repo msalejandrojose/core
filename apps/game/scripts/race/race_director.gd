@@ -23,6 +23,16 @@ const LIGHT_INTERVAL_S := 0.6
 ## delta acumulado se queda en 1,79999 en vez de 1,8.
 const _EPSILON := 0.0001
 
+## Altura por debajo de la cual se da el coche por perdido y se le devuelve a la
+## salida.
+##
+## Es una red de seguridad, no un arreglo: no se ha conseguido reproducir que el
+## coche acabe fuera del mundo (20 cambios de circuito conduciendo, ninguno
+## falló), pero un jugador que se cae al vacío se queda sin partida hasta que
+## reinicia a mano, y eso no puede pasar por muy raro que sea el camino que
+## lleve allí.
+const RESCUE_BELOW_Y := -5.0
+
 ## Solo para los tests: fuerza la clave de récord y deja fuera al catálogo,
 ## para que un arnés no escriba en la marca real de un circuito del juego.
 @export var track_id_override: String = ""
@@ -76,6 +86,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if vehicle.global_position.y < RESCUE_BELOW_Y:
+		push_warning("Coche fuera del mundo en %s, devuelto a la salida." % record_key())
+		restart()
+		return
+
 	if not counting_down:
 		return
 
@@ -134,6 +149,7 @@ func rebuild_track() -> void:
 	track_builder.build(layout)
 	lap_timer.rescan()
 	vehicle.grip = layout.grip
+	vehicle.speed_scale = GameSettings.engine_speed()
 
 
 ## Reinicio rápido. No recarga la escena ni reconstruye la pista: recoloca el

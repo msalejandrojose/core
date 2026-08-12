@@ -11,6 +11,10 @@ const TestEnv := preload("res://tests/test_env.gd")
 ## récord salga con el signo correcto.
 
 const TRACK := "test-kenney-01"
+## La clave de récord compone circuito, sentido y cilindrada. Se escribe entera
+## a mano y no llamando a `key_for`: un test que usa la misma función que el
+## código no comprueba el formato, solo que coincide consigo mismo.
+const KEY := "test-kenney-01-100cc"
 
 var _failures := 0
 var _now: int = 0
@@ -20,7 +24,7 @@ var _records: Array = []
 
 func _ready() -> void:
 	TestEnv.reset()
-	RaceRecords.clear(TRACK)
+	RaceRecords.clear(KEY)
 
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	add_child(main)
@@ -54,7 +58,7 @@ func _ready() -> void:
 	_now += 5000; timer.cross_finish()
 
 	_check_eq(_records.size(), 1, "la primera vuelta entra como récord")
-	_check_eq(RaceRecords.best_ms(TRACK), 20000, "el récord guardado es el correcto")
+	_check_eq(RaceRecords.best_ms(KEY), 20000, "el récord guardado es el correcto")
 	_check(_deltas[0][2], false, "sin referencia previa no se muestra delta")
 
 	# --- Vuelta 2: primer sector más rápido, luego más lenta en total ---------
@@ -68,7 +72,7 @@ func _ready() -> void:
 	_check_eq(_deltas[0][1], -1000, "sector más rápido da delta negativo")
 	_check_eq(_deltas[1][1], 3000, "sector más lento da delta positivo")
 	_check_eq(_records.size(), 1, "una vuelta más lenta no pisa el récord")
-	_check_eq(RaceRecords.best_ms(TRACK), 20000, "el récord sigue siendo el bueno")
+	_check_eq(RaceRecords.best_ms(KEY), 20000, "el récord sigue siendo el bueno")
 
 	# --- Reinicio -------------------------------------------------------------
 	sphere.position = Vector3(12, 0.5, -7)
@@ -95,7 +99,7 @@ func _ready() -> void:
 	_check_eq(hud.format_delta_ms(-412), "-0.412", "formato de delta negativo")
 	_check_eq(hud.format_delta_ms(3000), "+3.000", "formato de delta positivo")
 
-	RaceRecords.clear(TRACK)
+	RaceRecords.clear(KEY)
 
 	if _failures == 0:
 		print("\nOK")

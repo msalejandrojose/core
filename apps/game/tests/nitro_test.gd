@@ -34,6 +34,7 @@ func _ready() -> void:
 	await _test_vacio_no_empuja()
 	await _test_empuja_de_verdad()
 	await _test_reiniciar_rellena()
+	await _test_cilindradas()
 
 	_release()
 
@@ -106,6 +107,24 @@ func _test_reiniciar_rellena() -> void:
 	_director.restart()
 	await get_tree().physics_frame
 	_check_eq(_vehicle.nitro_charge, 1.0, "reiniciar rellena el depósito")
+
+
+## Las cilindradas tienen que notarse de verdad, y en orden. Un selector que no
+## cambia nada es peor que no tenerlo.
+func _test_cilindradas() -> void:
+	var recorrido := {}
+	for clase in [GameSettings.EngineClass.CC50, GameSettings.EngineClass.CC100, GameSettings.EngineClass.CC150]:
+		GameSettings.set_engine_class(clase)
+		_director.rebuild_track()
+		recorrido[clase] = await _distancia(120, false)
+
+	GameSettings.set_engine_class(GameSettings.EngineClass.CC100)
+	_director.rebuild_track()
+
+	_check(recorrido[GameSettings.EngineClass.CC100] > recorrido[GameSettings.EngineClass.CC50], true,
+		"100cc corre más que 50cc (%.1f vs %.1f)" % [recorrido[GameSettings.EngineClass.CC100], recorrido[GameSettings.EngineClass.CC50]])
+	_check(recorrido[GameSettings.EngineClass.CC150] > recorrido[GameSettings.EngineClass.CC100], true,
+		"150cc corre más que 100cc (%.1f vs %.1f)" % [recorrido[GameSettings.EngineClass.CC150], recorrido[GameSettings.EngineClass.CC100]])
 
 
 # --- Utilidades ---------------------------------------------------------------

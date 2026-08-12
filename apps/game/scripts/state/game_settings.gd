@@ -6,6 +6,28 @@ extends Node
 
 const PATH := "user://settings.cfg"
 
+## Cilindrada. Un tiempo a 150cc no es comparable con uno a 50cc, igual que no
+## lo es una vuelta al revés: cada una tiene su propia clasificación.
+enum EngineClass {
+	CC50,
+	CC100,
+	CC150,
+}
+
+## Multiplicador de velocidad punta de cada clase.
+const ENGINE_SPEED := {
+	EngineClass.CC50: 0.72,
+	EngineClass.CC100: 1.0,
+	EngineClass.CC150: 1.32,
+}
+
+const ENGINE_NAMES := {
+	EngineClass.CC50: "50cc",
+	EngineClass.CC100: "100cc",
+	EngineClass.CC150: "150cc",
+}
+
+
 enum ControlScheme {
 	## Volante flotante analógico con acelerador y freno. El de TASK-197.
 	WHEEL,
@@ -24,6 +46,8 @@ var track_id: String = TrackCatalog.DEFAULT_ID
 ## solo para cambiar una URL es un ciclo demasiado lento.
 var api_base_url: String = ""
 
+var engine_class: EngineClass = EngineClass.CC100
+
 var _cfg := ConfigFile.new()
 
 
@@ -33,6 +57,7 @@ func _ready() -> void:
 	reverse = _cfg.get_value("track", "reverse", false)
 	track_id = _cfg.get_value("track", "id", TrackCatalog.DEFAULT_ID)
 	api_base_url = _cfg.get_value("api", "base_url", "")
+	engine_class = _cfg.get_value("race", "engine_class", EngineClass.CC100)
 	# Un circuito que ya no existe (renombrado, retirado) no debe dejar el juego
 	# sin pista: se cae al primero del catálogo.
 	if not TrackCatalog.ids().has(track_id):
@@ -64,6 +89,22 @@ func set_api_base_url(url: String) -> void:
 	_save()
 
 
+func set_engine_class(value: EngineClass) -> void:
+	if value == engine_class:
+		return
+	engine_class = value
+	_cfg.set_value("race", "engine_class", value)
+	_save()
+
+
+func engine_speed() -> float:
+	return ENGINE_SPEED[engine_class]
+
+
+func engine_name() -> String:
+	return ENGINE_NAMES[engine_class]
+
+
 func set_reverse(value: bool) -> void:
 	if value == reverse:
 		return
@@ -80,12 +121,15 @@ func track_key() -> String:
 	return key_for(track_id)
 
 
-## Misma regla aplicada a un circuito cualquiera. Existe para que el sufijo de
-## sentido se calcule en un único sitio: cuando el director tenía su propia
-## concatenación, la sobreescritura de los tests se saltaba el "-rev" y el
-## récord inverso acababa pisando al normal.
+## Misma regla aplicada a un circuito cualquiera. Existe para que la clave se
+## componga en un único sitio: cuando el director tenía su propia concatenación,
+## la sobreescritura de los tests se saltaba el "-rev" y el récord inverso
+## acababa pisando al normal.
+##
+## Entran circuito, sentido Y cilindrada, porque los tres cambian el tiempo. Un
+## 150cc contra un 50cc no es una comparación, es otro juego.
 func key_for(id: String) -> String:
-	return id + ("-rev" if reverse else "")
+	return "%s%s-%s" % [id, "-rev" if reverse else "", engine_name()]
 
 
 func _save() -> void:

@@ -21,6 +21,7 @@ var _account_label: Label
 var _account_button: Button
 var _track_buttons: Array[Button] = []
 var _direction_buttons: Array[Button] = []
+var _engine_buttons: Array[Button] = []
 
 
 func _ready() -> void:
@@ -61,7 +62,7 @@ func _build() -> void:
 	add_child(margin)
 
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 18)
+	column.add_theme_constant_override("separation", 12)
 	margin.add_child(column)
 
 	var title := Label.new()
@@ -84,8 +85,8 @@ func _build() -> void:
 		button.text = layout.name
 		button.toggle_mode = true
 		button.button_group = group
-		button.custom_minimum_size = Vector2(240, 92)
-		button.add_theme_font_size_override("font_size", 30)
+		button.custom_minimum_size = Vector2(230, 84)
+		button.add_theme_font_size_override("font_size", 28)
 		var id: String = ids[i]
 		button.pressed.connect(func() -> void: _pick_track(id))
 		tracks.add_child(button)
@@ -103,12 +104,31 @@ func _build() -> void:
 		button.text = "Normal" if i == 0 else "Inverso"
 		button.toggle_mode = true
 		button.button_group = direction_group
-		button.custom_minimum_size = Vector2(240, 92)
-		button.add_theme_font_size_override("font_size", 30)
+		button.custom_minimum_size = Vector2(230, 84)
+		button.add_theme_font_size_override("font_size", 28)
 		var reversed := i == 1
 		button.pressed.connect(func() -> void: _pick_direction(reversed))
 		directions.add_child(button)
 		_direction_buttons.append(button)
+
+	column.add_child(_heading("Cilindrada"))
+
+	var engines := HBoxContainer.new()
+	engines.add_theme_constant_override("separation", 16)
+	column.add_child(engines)
+
+	var engine_group := ButtonGroup.new()
+	for value in [GameSettings.EngineClass.CC50, GameSettings.EngineClass.CC100, GameSettings.EngineClass.CC150]:
+		var button := Button.new()
+		button.text = GameSettings.ENGINE_NAMES[value]
+		button.toggle_mode = true
+		button.button_group = engine_group
+		button.custom_minimum_size = Vector2(200, 84)
+		button.add_theme_font_size_override("font_size", 28)
+		var chosen: int = value
+		button.pressed.connect(func() -> void: _pick_engine(chosen))
+		engines.add_child(button)
+		_engine_buttons.append(button)
 
 	_best_label = Label.new()
 	_best_label.add_theme_font_size_override("font_size", 28)
@@ -155,6 +175,11 @@ func _pick_direction(reversed: bool) -> void:
 	_refresh_best()
 
 
+func _pick_engine(value: int) -> void:
+	GameSettings.set_engine_class(value)
+	_refresh_best()
+
+
 ## Refleja lo que hay guardado. Se llama al abrir y no solo al construir, porque
 ## Ajustes puede haber cambiado cosas mientras el menú estaba montado.
 func _sync() -> void:
@@ -165,6 +190,9 @@ func _sync() -> void:
 
 	for i in _direction_buttons.size():
 		_direction_buttons[i].button_pressed = (i == 1) == GameSettings.reverse
+
+	for i in _engine_buttons.size():
+		_engine_buttons[i].button_pressed = i == GameSettings.engine_class
 
 	_refresh_account()
 	_refresh_best()
@@ -178,7 +206,7 @@ func _refresh_best() -> void:
 		var script := load("res://scripts/ui/race_hud.gd")
 		_best_label.text = "Tu mejor vuelta aquí:  %s" % script.format_ms(RaceRecords.best_ms(key))
 	else:
-		_best_label.text = "Aún no has corrido este circuito en este sentido."
+		_best_label.text = "Aún no has corrido esta combinación de circuito, sentido y cilindrada."
 
 
 ## Entrar no es obligatorio para jugar: sin cuenta se corre igual y los tiempos
