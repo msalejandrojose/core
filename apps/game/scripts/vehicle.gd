@@ -28,6 +28,12 @@ class_name Vehicle extends Node3D
 @onready var engine_sound: AudioStreamPlayer3D = $Container/EngineSound
 @onready var impact_sound: AudioStreamPlayer3D = $Container/ImpactSound
 
+# Posición de salida, capturada antes del primer frame. Se usa @onready y no
+# _ready porque la moto sobreescribe _ready sin llamar a super().
+
+@onready var _start_sphere_position: Vector3 = sphere.position
+@onready var _start_model_transform: Transform3D = vehicle_model.transform
+
 var input: Vector3
 var normal: Vector3
 
@@ -45,6 +51,28 @@ var calculated_lean: float
 # Public Functions
 
 func get_vehicle_position() -> Vector3: return vehicle_model.global_position
+
+## Devuelve el coche a la salida sin recargar la escena. Hay que limpiar la
+## velocidad de la esfera y el estado derivado: si solo se recoloca, el coche
+## reaparece con la inercia del intento anterior y el crono nuevo empieza con
+## el coche ya lanzado.
+
+func reset_to_start() -> void:
+
+	sphere.position = _start_sphere_position
+	sphere.linear_velocity = Vector3.ZERO
+	sphere.angular_velocity = Vector3.ZERO
+
+	vehicle_model.transform = _start_model_transform
+
+	input = Vector3.ZERO
+	linear_speed = 0.0
+	angular_speed = 0.0
+	acceleration = 0.0
+	calculated_lean = 0.0
+	linear_velocity = Vector3.ZERO
+	prev_position = vehicle_model.position
+	colliding = false
 
 # Functions
 

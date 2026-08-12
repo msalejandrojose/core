@@ -19,6 +19,9 @@ const STEER_ZONE_RATIO := 0.5
 
 const PEDAL_RADIUS_RATIO := 0.075
 const PEDAL_MARGIN_RATIO := 0.055
+## El freno se dibuja y se detecta algo más pequeño que el acelerador: se usa
+## menos y así el pulgar no lo pilla por error al buscar el gas.
+const BRAKE_RADIUS_FACTOR := 0.78
 
 ## Suavizado del giro. Alto a propósito: quita el jitter del dedo sin añadir
 ## retardo perceptible. El coche ya suaviza otra vez en `vehicle.gd`.
@@ -28,6 +31,7 @@ const STEER_SMOOTHING := 22.0
 
 const CLAY := Color("b4552f")
 const BONE := Color("f0ece6")
+const INK := Color(0.11, 0.098, 0.09)
 
 # --- Estado -------------------------------------------------------------------
 
@@ -100,7 +104,7 @@ func _on_press(index: int, pos: Vector2) -> bool:
 		_pedal_fingers[index] = "accel"
 		return true
 
-	if pos.distance_to(_brake_center()) <= _pedal_radius():
+	if pos.distance_to(_brake_center()) <= _brake_radius():
 		_pedal_fingers[index] = "brake"
 		return true
 
@@ -152,6 +156,10 @@ func _pedal_radius() -> float:
 	return size.x * PEDAL_RADIUS_RATIO
 
 
+func _brake_radius() -> float:
+	return _pedal_radius() * BRAKE_RADIUS_FACTOR
+
+
 func _accel_center() -> Vector2:
 	var m := size.x * PEDAL_MARGIN_RATIO
 	return Vector2(size.x - m - _pedal_radius(), size.y - m - _pedal_radius())
@@ -168,19 +176,25 @@ func _draw() -> void:
 	var r := _pedal_radius()
 
 	_draw_pedal(_accel_center(), r, _pedal_held("accel"))
-	_draw_pedal(_brake_center(), r * 0.78, _pedal_held("brake"))
+	_draw_pedal(_brake_center(), _brake_radius(), _pedal_held("brake"))
 
 	if _steer_finger != -1:
 		var travel := size.x * STEER_TRAVEL_RATIO
 		var y := _steer_origin.y
-		draw_line(Vector2(_steer_origin.x - travel, y), Vector2(_steer_origin.x + travel, y), BONE * Color(1, 1, 1, 0.22), 3.0, true)
-		draw_circle(Vector2(_steer_point.x, y), r * 0.42, CLAY * Color(1, 1, 1, 0.75))
+		draw_line(Vector2(_steer_origin.x - travel, y), Vector2(_steer_origin.x + travel, y), INK * Color(1, 1, 1, 0.45), 8.0, true)
+		draw_line(Vector2(_steer_origin.x - travel, y), Vector2(_steer_origin.x + travel, y), BONE * Color(1, 1, 1, 0.45), 3.0, true)
+		draw_circle(Vector2(_steer_point.x, y), r * 0.44, INK * Color(1, 1, 1, 0.55))
+		draw_circle(Vector2(_steer_point.x, y), r * 0.36, CLAY)
 
 
+## Fondo oscuro + borde claro. Un pedal dibujado solo en tono claro se
+## desvanece sobre la hierba y el asfalto claro del circuito: se comprobó en
+## captura, no se dedujo.
 func _draw_pedal(center: Vector2, radius: float, held: bool) -> void:
-	var fill := CLAY if held else BONE
-	draw_circle(center, radius, fill * Color(1, 1, 1, 0.30 if held else 0.14))
-	draw_arc(center, radius, 0.0, TAU, 48, fill * Color(1, 1, 1, 0.55), 3.0, true)
+	draw_circle(center, radius, INK * Color(1, 1, 1, 0.75 if held else 0.45))
+	var edge := CLAY if held else BONE
+	draw_circle(center, radius * 0.82, edge * Color(1, 1, 1, 0.35 if held else 0.16))
+	draw_arc(center, radius, 0.0, TAU, 48, edge, 4.0, true)
 
 
 func _pedal_held(role: String) -> bool:

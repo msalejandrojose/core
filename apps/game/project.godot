@@ -25,6 +25,7 @@ config/icon="res://icon.png"
 [autoload]
 
 VehicleInput="*res://scripts/input/vehicle_input.gd"
+RaceRecords="*res://scripts/state/race_records.gd"
 
 [display]
 

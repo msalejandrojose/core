@@ -10,6 +10,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/touch-controls.tscn" id="12_touch"]
 [ext_resource type="PackedScene" path="res://scenes/timing/checkpoint.tscn" id="13_cp"]
 [ext_resource type="Script" path="res://scripts/timing/lap_timer.gd" id="14_timer"]
+[ext_resource type="Script" path="res://scripts/race/race_director.gd" id="15_dir"]
+[ext_resource type="PackedScene" path="res://scenes/ui/race-hud.tscn" id="16_hud"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ya4ey"]
 size = Vector3(60, 0, 60)
@@ -92,4 +94,9 @@ index = 2
 [node name="LapTimer" type="Node" parent="."]
 script = ExtResource("14_timer")
 
+[node name="RaceDirector" type="Node" parent="."]
+script = ExtResource("15_dir")
+
 [node name="TouchControls" parent="." instance=ExtResource("12_touch")]
+
+[node name="RaceHud" parent="." instance=ExtResource("16_hud")]
