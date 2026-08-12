@@ -17,6 +17,8 @@ const BONE := Color("f0ece6")
 const INK := Color(0.11, 0.098, 0.09)
 
 var _best_label: Label
+var _account_label: Label
+var _account_button: Button
 var _track_buttons: Array[Button] = []
 var _direction_buttons: Array[Button] = []
 
@@ -113,6 +115,11 @@ func _build() -> void:
 	_best_label.add_theme_color_override("font_color", BONE * Color(1, 1, 1, 0.7))
 	column.add_child(_best_label)
 
+	_account_label = Label.new()
+	_account_label.add_theme_font_size_override("font_size", 24)
+	_account_label.add_theme_color_override("font_color", BONE * Color(1, 1, 1, 0.55))
+	column.add_child(_account_label)
+
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
@@ -123,6 +130,9 @@ func _build() -> void:
 
 	row.add_child(_button("Ajustes", 240, func() -> void:
 		add_child(load("res://scenes/ui/settings-screen.tscn").instantiate())))
+
+	_account_button = _button("Cuenta", 240, _open_account)
+	row.add_child(_account_button)
 
 	var push := Control.new()
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -156,6 +166,7 @@ func _sync() -> void:
 	for i in _direction_buttons.size():
 		_direction_buttons[i].button_pressed = (i == 1) == GameSettings.reverse
 
+	_refresh_account()
 	_refresh_best()
 
 
@@ -168,6 +179,28 @@ func _refresh_best() -> void:
 		_best_label.text = "Tu mejor vuelta aquí:  %s" % script.format_ms(RaceRecords.best_ms(key))
 	else:
 		_best_label.text = "Aún no has corrido este circuito en este sentido."
+
+
+## Entrar no es obligatorio para jugar: sin cuenta se corre igual y los tiempos
+## se guardan en el dispositivo. La cuenta es para que cuenten fuera.
+func _open_account() -> void:
+	if Session.is_logged_in():
+		Session.logout()
+		_refresh_account()
+		return
+
+	var screen: CanvasLayer = load("res://scenes/ui/login-screen.tscn").instantiate()
+	screen.closed.connect(_refresh_account)
+	add_child(screen)
+
+
+func _refresh_account() -> void:
+	if Session.is_logged_in():
+		_account_label.text = "Conectado como %s — tus tiempos se suben." % Session.email
+		_account_button.text = "Salir"
+	else:
+		_account_label.text = "Sin cuenta: se guardan en este dispositivo, pero no salen en la clasificación."
+		_account_button.text = "Entrar"
 
 
 # --- Piezas -------------------------------------------------------------------

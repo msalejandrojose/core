@@ -197,3 +197,17 @@ func _on_sector_completed(sector: int, split_ms: int) -> void:
 func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 	if RaceRecords.submit(record_key(), duration_ms, splits_ms):
 		record_beaten.emit(duration_ms)
+
+	# La marca local se guarda SIEMPRE, haya cuenta o no y haya red o no. Subirla
+	# es un extra: el juego no puede quedarse esperando a un servidor justo
+	# después de cruzar la meta.
+	if Session.is_logged_in():
+		_upload_lap(duration_ms, splits_ms)
+
+
+func _upload_lap(duration_ms: int, splits_ms: Array) -> void:
+	var response = await RacingApi.submit_lap(record_key(), duration_ms, splits_ms)
+	if not response.ok:
+		# Sin cola de reintentos todavía (TASK-205): de momento solo se deja
+		# constancia, en vez de fingir que se subió.
+		push_warning("No se pudo subir la vuelta (%s): %s" % [response.code, response.message])

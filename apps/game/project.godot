@@ -27,6 +27,9 @@ config/icon="res://icon.png"
 VehicleInput="*res://scripts/input/vehicle_input.gd"
 RaceRecords="*res://scripts/state/race_records.gd"
 GameSettings="*res://scripts/state/game_settings.gd"
+Api="*res://scripts/net/api_client.gd"
+Session="*res://scripts/state/session.gd"
+RacingApi="*res://scripts/net/racing_api.gd"
 
 [display]
 
@@ -37,6 +40,12 @@ window/size/viewport_height=1080
 window/handheld/orientation=0
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[racing]
+
+; Dónde vive la API. En un móvil real `localhost` es el propio teléfono, así que
+; para probar contra el ordenador hay que poner aquí su IP en la red local.
+api/base_url="http://localhost:3000/v1"
 
 [filesystem]
 
