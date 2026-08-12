@@ -29,6 +29,11 @@ func _ready() -> void:
 	var sphere: RigidBody3D = main.get_node("Vehicle/Sphere")
 
 	director.track_id = TRACK
+
+	# El semáforo tiene su propio test (countdown_test). Aquí se congela para
+	# que no suelte el coche a mitad de las comprobaciones.
+	director.set_process(false)
+	VehicleInput.locked = false
 	timer.auto_start_on_throttle = false
 	director.sector_delta.connect(func(cp, d, has): _deltas.append([cp, d, has]))
 	director.record_beaten.connect(func(d): _records.append(d))
@@ -77,6 +82,7 @@ func _ready() -> void:
 	_check(sphere.linear_velocity.length() < 0.001, true, "el reinicio quita la inercia")
 	_check_eq(vehicle.linear_speed, 0.0, "el reinicio limpia la velocidad interna")
 	_check(timer.running, false, "el reinicio para el crono")
+	_check(director.counting_down, true, "el reinicio rearma el semáforo")
 	_check_eq(timer.remaining_checkpoints(), 3, "el reinicio olvida los checkpoints")
 
 	# --- Formato --------------------------------------------------------------

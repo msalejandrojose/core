@@ -53,6 +53,13 @@ func _process(delta: float) -> void:
 	var touching := _steer_finger != -1 or not _pedal_fingers.is_empty()
 	VehicleInput.touch_active = touching
 
+	# Durante la cuenta atrás manda el semáforo. Se sigue registrando qué dedos
+	# hay puestos, para que al dar el GO el coche salga si ya tenías el gas
+	# apretado — que es exactamente lo que hace todo el mundo.
+	if VehicleInput.locked:
+		queue_redraw()
+		return
+
 	if not touching:
 		# Al levantar el dedo se suelta todo en el acto. Sin esto el coche
 		# arrastra el último giro hasta que el teclado vuelve a mandar.

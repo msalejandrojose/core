@@ -18,8 +18,18 @@ var throttle: float = 0.0
 ## true el teclado se ignora, para que un dedo apoyado no pelee con una tecla.
 var touch_active: bool = false
 
+## Bloquea el coche del todo. Lo usa el semáforo: durante la cuenta atrás se
+## puede tocar la pantalla, pero el coche no se mueve. Se comprueba aquí y en
+## `touch_controls.gd`, porque ambos escriben en `steer`/`throttle`.
+var locked: bool = false
+
 
 func _process(_delta: float) -> void:
+	if locked:
+		steer = 0.0
+		throttle = 0.0
+		return
+
 	if touch_active:
 		return
 

@@ -12,6 +12,11 @@ extends Node
 ## estén donde toca, que la máscara de colisión vea al coche y solo al coche
 ## (el suelo del GridMap también es un cuerpo estático), y que la meta cierre.
 
+## Pista propia del test. Sin esto, la vuelta que completa este arnés se guarda
+## como récord real del jugador en `user://records.cfg` — un 0:00.082 imposible
+## que aparece en el HUD y parece un bug del juego.
+const TRACK := "test-integration"
+
 var _failures := 0
 var _completed := false
 
@@ -23,6 +28,12 @@ func _ready() -> void:
 
 	var timer: LapTimer = main.get_node("LapTimer")
 	var sphere: RigidBody3D = main.get_node("Vehicle/Sphere")
+	var director: RaceDirector = main.get_node("RaceDirector")
+
+	director.track_id = TRACK
+	director.set_process(false)
+	VehicleInput.locked = false
+	RaceRecords.clear(TRACK)
 
 	_check_eq(timer.checkpoint_count, 3, "la escena aporta 3 checkpoints")
 
@@ -38,6 +49,8 @@ func _ready() -> void:
 
 	await _move_to(sphere, main.get_node("Finish").global_position)
 	_check(_completed, true, "la meta cierra la vuelta")
+
+	RaceRecords.clear(TRACK)
 
 	if _failures == 0:
 		print("\nOK — 3/3")
