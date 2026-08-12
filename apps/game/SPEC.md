@@ -52,7 +52,7 @@ en F0 no se toca.
 
 ### Dentro
 
-1. **Juego** — Starter kit adaptado: 3 circuitos, 1 coche, modo contrarreloj.
+1. **Juego** — Starter kit adaptado: 4 circuitos, 1 coche, modo contrarreloj.
    - Cronómetro con precisión de milisegundos.
    - Detección de vuelta válida por checkpoints en orden (evita atajos).
    - Salida con semáforo, para que todas las vueltas empiecen igual.
@@ -65,6 +65,9 @@ en F0 no se toca.
    - Los circuitos se construyen en tiempo de ejecución desde una lista de
      celdas (`scripts/track/track_catalog.gd`): añadir uno es añadir
      coordenadas, no montar una escena.
+   - Cada circuito lleva su ambientación y su agarre. El nevado repinta la
+     paleta compartida de los modelos (verde → blanco) y baja el agarre, así
+     que el coche gira tarde y frena largo.
 2. **Cuenta** — login vía IAM de `core` (email/password + Google/Apple).
    Usuarios de tipo `APP`.
 3. **Leaderboard global** — subir tiempo al terminar vuelta, ver top N + tu posición.

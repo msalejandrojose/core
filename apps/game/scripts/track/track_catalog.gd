@@ -22,19 +22,32 @@ class Layout:
 	var name: String
 	var path: Array[Vector2i]
 	var checkpoints: int
+	var theme: TrackTheme.Kind
+	## Agarre de la superficie: 1.0 asfalto seco. Por debajo, el coche tarda más
+	## en girar, en acelerar y sobre todo en frenar.
+	var grip: float
 
-	func _init(p_id: String, p_name: String, p_path: Array[Vector2i], p_checkpoints: int = 3) -> void:
+	func _init(
+		p_id: String,
+		p_name: String,
+		p_path: Array[Vector2i],
+		p_checkpoints: int = 3,
+		p_theme: TrackTheme.Kind = TrackTheme.Kind.MEADOW,
+		p_grip: float = 1.0,
+	) -> void:
 		id = p_id
 		name = p_name
 		path = p_path
 		checkpoints = p_checkpoints
+		theme = p_theme
+		grip = p_grip
 
 
 const DEFAULT_ID := "kenney-01"
 
 
 static func all() -> Array:
-	return [_kenney(), _herradura(), _chicane()]
+	return [_kenney(), _herradura(), _chicane(), _nevado()]
 
 
 static func by_id(id: String) -> Layout:
@@ -79,6 +92,28 @@ static func _herradura() -> Layout:
 		Vector2i(-3, -1), Vector2i(-2, -1), Vector2i(-1, -1), Vector2i(0, -1),
 	]
 	return Layout.new("herradura", "Herradura", path)
+
+
+## Nevado y lleno de curvas: cuatro peines conectados por los extremos y una
+## ese en el pasillo de vuelta. Doce curvas en veintiséis celdas.
+##
+## El agarre bajo no es decoración: con 0.55 el coche gira tarde y frena largo,
+## así que las horquillas hay que preparlas antes de llegar. Es el circuito en
+## el que el freno importa.
+static func _nevado() -> Layout:
+	var path: Array[Vector2i] = [
+		Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 3),
+		Vector2i(-1, 3),
+		Vector2i(-2, 3), Vector2i(-2, 2), Vector2i(-2, 1),
+		Vector2i(-3, 1),
+		Vector2i(-4, 1), Vector2i(-4, 2), Vector2i(-4, 3),
+		Vector2i(-5, 3),
+		Vector2i(-6, 3), Vector2i(-6, 2), Vector2i(-6, 1), Vector2i(-6, 0), Vector2i(-6, -1),
+		Vector2i(-5, -1), Vector2i(-4, -1), Vector2i(-3, -1),
+		Vector2i(-3, -2), Vector2i(-2, -2), Vector2i(-2, -1),
+		Vector2i(-1, -1), Vector2i(0, -1),
+	]
+	return Layout.new("nevado", "Nevado", path, 4, TrackTheme.Kind.SNOW, 0.55)
 
 
 ## Corto y técnico: una ese seguida, donde se gana o se pierde por frenar bien.

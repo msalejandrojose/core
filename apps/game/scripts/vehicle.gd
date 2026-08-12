@@ -48,6 +48,12 @@ var prev_position: Vector3
 
 var calculated_lean: float
 
+## Agarre de la superficie, 1.0 asfalto seco. Lo pone el director según el
+## circuito. Multiplica la rapidez con la que el coche responde: girar,
+## acelerar y frenar. Con poco agarre todo llega tarde, que es exactamente la
+## sensación de ir sobre nieve.
+var grip: float = 1.0
+
 # Public Functions
 
 func get_vehicle_position() -> Vector3: return vehicle_model.global_position
@@ -88,7 +94,7 @@ func _physics_process(delta):
 	var steering_grip = clamp(abs(linear_speed), 0.2, 1.0)
 
 	var target_angular = -input.x * steering_grip * 4 * direction
-	angular_speed = lerp(angular_speed, target_angular, delta * 4)
+	angular_speed = lerp(angular_speed, target_angular, delta * 4 * grip)
 
 	vehicle_model.rotate_y(angular_speed * delta)
 
@@ -112,12 +118,12 @@ func _physics_process(delta):
 	var target_speed = input.z
 
 	if (target_speed < 0 and linear_speed > 0.01):
-		linear_speed = lerp(linear_speed, 0.0, delta * 8)
+		linear_speed = lerp(linear_speed, 0.0, delta * 8 * grip)
 	else:
 		if (target_speed < 0):
-			linear_speed = lerp(linear_speed, target_speed / 2, delta * 2)
+			linear_speed = lerp(linear_speed, target_speed / 2, delta * 2 * grip)
 		else:
-			linear_speed = lerp(linear_speed, target_speed, delta * 6)
+			linear_speed = lerp(linear_speed, target_speed, delta * 6 * grip)
 
 	acceleration = lerpf(acceleration, linear_speed + (abs(sphere.angular_velocity.length() * linear_speed) / 100), delta * 1)
 

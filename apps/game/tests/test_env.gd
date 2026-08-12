@@ -12,6 +12,10 @@ extends Node
 ## ⚠️ Correr la suite deja tus preferencias en los valores por defecto.
 
 static func reset() -> void:
+	# El circuito también: los trazados no tienen el mismo número de
+	# checkpoints, así que heredar el que dejó puesto otra ejecución cambia lo
+	# que valida el cronómetro. Pasó al añadir el nevado, que tiene cuatro.
+	GameSettings.set_track_id(TrackCatalog.DEFAULT_ID)
 	GameSettings.set_control_scheme(GameSettings.ControlScheme.WHEEL)
 	GameSettings.set_reverse(false)
 	VehicleInput.locked = false

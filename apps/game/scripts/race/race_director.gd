@@ -112,8 +112,10 @@ func record_key() -> String:
 ## Solo hace falta al arrancar y al cambiarlo en ajustes; reiniciar una vuelta
 ## no reconstruye nada, que por eso es instantáneo.
 func rebuild_track() -> void:
-	track_builder.build(TrackCatalog.by_id(GameSettings.track_id))
+	var layout := TrackCatalog.by_id(GameSettings.track_id)
+	track_builder.build(layout)
 	lap_timer.rescan()
+	vehicle.grip = layout.grip
 
 
 ## Reinicio rápido. No recarga la escena ni reconstruye la pista: recoloca el

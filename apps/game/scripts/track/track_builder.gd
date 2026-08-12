@@ -30,8 +30,17 @@ const DECORATION_MARGIN := 2
 const CHECKPOINT_SCENE := preload("res://scenes/timing/checkpoint.tscn")
 
 @export var grid_map_path: NodePath = ^"../GridMap"
+@export var world_environment_path: NodePath = ^"../Environment"
+@export var sun_path: NodePath = ^"../Sun"
 
 var grid_map: GridMap
+var world_environment: WorldEnvironment
+var sun: DirectionalLight3D
+
+## La librería y el entorno tal cual venían: son la base de la que se derivan
+## los temas, así que hay que guardarlas antes de sustituir nada.
+var _base_library: MeshLibrary
+var _base_environment: Environment
 
 ## Transform de salida del último circuito construido.
 var start_position: Vector3
@@ -40,11 +49,17 @@ var start_yaw: float
 
 func _ready() -> void:
 	grid_map = get_node(grid_map_path)
+	world_environment = get_node(world_environment_path)
+	sun = get_node(sun_path)
+
+	_base_library = grid_map.mesh_library
+	_base_environment = world_environment.environment
 
 
 ## Devuelve el nº de checkpoints intermedios colocados.
 func build(layout: TrackCatalog.Layout) -> int:
 	_clear()
+	_apply_theme(layout.theme)
 
 	var size := layout.path.size()
 	for i in size:
@@ -73,6 +88,14 @@ func build(layout: TrackCatalog.Layout) -> int:
 ## desplazamiento del nodo se respetan solos.
 func cell_center(cell: Vector2i) -> Vector3:
 	return grid_map.to_global(grid_map.map_to_local(Vector3i(cell.x, 0, cell.y)))
+
+
+## El tema se aplica ANTES de colocar celdas: cambiar la mesh library con el
+## circuito ya puesto obliga a GridMap a reconstruir todas las instancias.
+func _apply_theme(theme: TrackTheme.Kind) -> void:
+	grid_map.mesh_library = TrackTheme.mesh_library(_base_library, theme)
+	world_environment.environment = TrackTheme.environment(_base_environment, theme)
+	sun.light_color = TrackTheme.sun_color(theme)
 
 
 # --- Piezas -------------------------------------------------------------------

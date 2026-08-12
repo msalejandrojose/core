@@ -34,6 +34,8 @@ func _ready() -> void:
 	for layout in TrackCatalog.all():
 		await _validate_build(builder, timer, layout)
 
+	await _validate_themes(main, builder)
+
 	# Un id desconocido no puede dejar el juego sin pista.
 	_check_eq(TrackCatalog.by_id("no-existe").id, TrackCatalog.DEFAULT_ID, "un id desconocido cae al primero")
 
@@ -100,6 +102,40 @@ func _validate_build(builder: TrackBuilder, timer: LapTimer, layout) -> void:
 	var forward: Vector2i = layout.path[1] - layout.path[0]
 	var facing := Vector2(sin(builder.start_yaw), cos(builder.start_yaw))
 	_check(facing.distance_to(Vector2(forward.x, forward.y)) < 0.01, true, "%s: mira hacia el primer tramo" % id)
+
+
+# --- Temas y agarre -----------------------------------------------------------
+
+## El tema nevado repinta la paleta compartida por TODOS los modelos. Si al
+## construirlo se tocara el material original en vez de una copia, los
+## circuitos verdes se quedarían nevados para siempre.
+func _validate_themes(main: Node, builder: TrackBuilder) -> void:
+	var director: RaceDirector = main.get_node("RaceDirector")
+	var vehicle: Vehicle = main.get_node("Vehicle")
+	var base_library: MeshLibrary = load("res://models/Library/mesh-library.tres")
+	var original_texture := _albedo_of(base_library)
+
+	GameSettings.set_track_id("nevado")
+	await get_tree().physics_frame
+
+	_check(builder.grid_map.mesh_library != base_library, true, "el nevado usa una librería propia")
+	_check(_albedo_of(builder.grid_map.mesh_library) != original_texture, true, "y una paleta repintada")
+	_check_eq(_albedo_of(base_library), original_texture, "la paleta original queda intacta")
+	_check(vehicle.grip < 1.0, true, "el nevado agarra menos")
+
+	GameSettings.set_track_id(TrackCatalog.DEFAULT_ID)
+	await get_tree().physics_frame
+
+	_check_eq(_albedo_of(builder.grid_map.mesh_library), original_texture, "al volver a un circuito verde, paleta normal")
+	_check_eq(vehicle.grip, 1.0, "y agarre normal")
+
+	director.set_process(false)
+
+
+func _albedo_of(library: MeshLibrary) -> Texture2D:
+	var mesh := library.get_item_mesh(library.get_item_list()[0])
+	var material: Material = mesh.surface_get_material(0)
+	return (material as StandardMaterial3D).albedo_texture
 
 
 # --- Utilidades ---------------------------------------------------------------
