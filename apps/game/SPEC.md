@@ -91,7 +91,9 @@ model Track {
   id        String   @id @default(uuid()) @db.Char(36)
   slug      String   @unique @db.VarChar(64)   // "kenney-01"
   name      String   @db.VarChar(120)
-  /// Nº de checkpoints que una vuelta válida debe cruzar en orden.
+  /// Nº de SECTORES de la vuelta = checkpoints intermedios + la meta. Es
+  /// también la longitud que debe tener `splitsMs`. En el cliente el
+  /// equivalente es `LapTimer.sector_count()`.
   checkpointCount Int @map("checkpoint_count")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
