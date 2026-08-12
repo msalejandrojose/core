@@ -7,6 +7,15 @@ extends Node3D
 
 # Functions
 
+## Salta a donde esté el coche, sin suavizado. Al reiniciar o al cambiar de
+## circuito el coche aparece en la meta de golpe; una cámara que llega
+## suavizando desde el punto anterior hace parecer que la salida está en otro
+## sitio, o directamente enseña un trozo de mundo vacío.
+
+func snap():
+
+	self.position = target.get_vehicle_position()
+
 func _physics_process(delta):
 	
 	# Ease position towards target vehicle position

@@ -103,6 +103,19 @@ func _validate_build(builder: TrackBuilder, timer: LapTimer, layout) -> void:
 	var facing := Vector2(sin(builder.start_yaw), cos(builder.start_yaw))
 	_check(facing.distance_to(Vector2(forward.x, forward.y)) < 0.01, true, "%s: mira hacia el primer tramo" % id)
 
+	# El suelo con colisión tiene que cubrir todo lo que se ve: las piezas de
+	# decoración son solo malla, y donde no llega el plano el coche se cae.
+	var box := builder.ground_shape.shape as BoxShape3D
+	var centre := builder.ground_shape.global_position
+	var outside := 0
+	for cell in layout.path:
+		for dx in [-TrackBuilder.DECORATION_MARGIN, 0, TrackBuilder.DECORATION_MARGIN]:
+			for dz in [-TrackBuilder.DECORATION_MARGIN, 0, TrackBuilder.DECORATION_MARGIN]:
+				var corner: Vector3 = builder.cell_center(cell + Vector2i(dx, dz))
+				if absf(corner.x - centre.x) > box.size.x * 0.5 or absf(corner.z - centre.z) > box.size.z * 0.5:
+					outside += 1
+	_check_eq(outside, 0, "%s: el suelo cubre todo el escenario" % id)
+
 
 # --- Temas y agarre -----------------------------------------------------------
 
@@ -128,6 +141,12 @@ func _validate_themes(main: Node, builder: TrackBuilder) -> void:
 
 	_check_eq(_albedo_of(builder.grid_map.mesh_library), original_texture, "al volver a un circuito verde, paleta normal")
 	_check_eq(vehicle.grip, 1.0, "y agarre normal")
+
+	# Al cambiar de circuito la cámara tiene que estar ya sobre la meta, no
+	# viajando hacia ella desde el circuito anterior.
+	var view: Node3D = main.get_node("View")
+	_check(view.global_position.distance_to(builder.start_position) < 0.5, true,
+		"la cámara aterriza en la meta al cambiar de circuito")
 
 	director.set_process(false)
 

@@ -32,10 +32,12 @@ const CHECKPOINT_SCENE := preload("res://scenes/timing/checkpoint.tscn")
 @export var grid_map_path: NodePath = ^"../GridMap"
 @export var world_environment_path: NodePath = ^"../Environment"
 @export var sun_path: NodePath = ^"../Sun"
+@export var ground_shape_path: NodePath = ^"../Plane/CollisionShape3D"
 
 var grid_map: GridMap
 var world_environment: WorldEnvironment
 var sun: DirectionalLight3D
+var ground_shape: CollisionShape3D
 
 ## La librería y el entorno tal cual venían: son la base de la que se derivan
 ## los temas, así que hay que guardarlas antes de sustituir nada.
@@ -51,6 +53,7 @@ func _ready() -> void:
 	grid_map = get_node(grid_map_path)
 	world_environment = get_node(world_environment_path)
 	sun = get_node(sun_path)
+	ground_shape = get_node(ground_shape_path)
 
 	_base_library = grid_map.mesh_library
 	_base_environment = world_environment.environment
@@ -69,6 +72,7 @@ func build(layout: TrackCatalog.Layout) -> int:
 		_place_track(cell, into, out, i == 0)
 
 	_place_decorations(layout)
+	_fit_ground(layout)
 
 	var checkpoints := _place_checkpoints(layout)
 
@@ -161,6 +165,36 @@ func _place_decorations(layout: TrackCatalog.Layout) -> void:
 					Vector3i(neighbour.x, 0, neighbour.y),
 					ITEM_FOREST if wooded else ITEM_GRASS,
 					ROT_NONE)
+
+
+## Ajusta el suelo con colisión al circuito construido.
+##
+## Las piezas de decoración son solo malla: quien sostiene al coche fuera del
+## asfalto es este plano. Venía fijo a 60x60 desde el kit, que daba de sobra
+## para el circuito original pero no para los nuevos — el nevado llega a x=-41
+## y la herradura a z=34, así que el coche se caía por el borde del mundo en
+## cuanto se salía de la pista.
+func _fit_ground(layout: TrackCatalog.Layout) -> void:
+	var box := ground_shape.shape as BoxShape3D
+	if box == null:
+		return
+
+	var low := layout.path[0]
+	var high := layout.path[0]
+	for cell in layout.path:
+		low = Vector2i(mini(low.x, cell.x), mini(low.y, cell.y))
+		high = Vector2i(maxi(high.x, cell.x), maxi(high.y, cell.y))
+
+	low -= Vector2i(DECORATION_MARGIN, DECORATION_MARGIN)
+	high += Vector2i(DECORATION_MARGIN, DECORATION_MARGIN)
+
+	# Media celda a cada lado: los centros no llegan al borde de su propia pieza.
+	var half := (cell_center(Vector2i(1, 0)) - cell_center(Vector2i(0, 0))).x * 0.5
+	var from := cell_center(low) - Vector3(half, 0, half)
+	var to := cell_center(high) + Vector3(half, 0, half)
+
+	box.size = Vector3(to.x - from.x, 0, to.z - from.z)
+	ground_shape.global_position = Vector3((from.x + to.x) * 0.5, ground_shape.global_position.y, (from.z + to.z) * 0.5)
 
 
 # --- Checkpoints --------------------------------------------------------------

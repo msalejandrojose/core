@@ -29,10 +29,12 @@ const _EPSILON := 0.0001
 @export var vehicle_path: NodePath = ^"../Vehicle"
 @export var lap_timer_path: NodePath = ^"../LapTimer"
 @export var track_builder_path: NodePath = ^"../TrackBuilder"
+@export var view_path: NodePath = ^"../View"
 
 var vehicle: Vehicle
 var lap_timer: LapTimer
 var track_builder: TrackBuilder
+var view: Node3D
 
 var counting_down: bool = false
 var _countdown_elapsed: float = 0.0
@@ -43,6 +45,7 @@ func _ready() -> void:
 	vehicle = get_node(vehicle_path)
 	lap_timer = get_node(lap_timer_path)
 	track_builder = get_node(track_builder_path)
+	view = get_node(view_path)
 
 	lap_timer.sector_completed.connect(_on_sector_completed)
 	lap_timer.lap_completed.connect(_on_lap_completed)
@@ -127,6 +130,7 @@ func restart() -> void:
 	vehicle.position = track_builder.start_position
 	vehicle.reset_to_start(track_builder.start_yaw + (PI if GameSettings.reverse else 0.0))
 	lap_timer.set_reversed(GameSettings.reverse)
+	view.snap()
 	VehicleInput.release()
 	begin_countdown()
 	restarted.emit()
