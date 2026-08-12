@@ -56,6 +56,10 @@ en F0 no se toca.
    - Cronómetro con precisión de milisegundos.
    - Detección de vuelta válida por checkpoints en orden (evita atajos).
    - Salida con semáforo, para que todas las vueltas empiecen igual.
+   - Nitro con depósito que se gasta y se recarga: sin límite no sería una
+     decisión, sería ir siempre más rápido.
+   - Menú principal para elegir circuito y sentido, con vista previa del
+     trazado detrás.
    - Reinicio rápido (el gesto más usado de un contrarreloj — debe ser instantáneo).
    - Controles táctiles: acelerador/freno + dirección. **Reescritos**: el starter
      kit usa teclado. Dos esquemas elegibles: volante flotante analógico y toque

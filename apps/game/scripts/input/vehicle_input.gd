@@ -14,6 +14,10 @@ var steer: float = 0.0
 ## Acelerador: +1 acelera, -1 frena/marcha atrás, 0 punto muerto.
 var throttle: float = 0.0
 
+## Nitro pedido por el jugador. Que llegue a aplicarse depende de que quede
+## depósito, y eso lo decide el coche: aquí solo se registra la intención.
+var nitro: bool = false
+
 ## Lo pone a true la capa táctil mientras haya un dedo en pantalla. Cuando es
 ## true el teclado se ignora, para que un dedo apoyado no pelee con una tecla.
 var touch_active: bool = false
@@ -28,6 +32,7 @@ func _process(_delta: float) -> void:
 	if locked:
 		steer = 0.0
 		throttle = 0.0
+		nitro = false
 		return
 
 	if touch_active:
@@ -35,6 +40,8 @@ func _process(_delta: float) -> void:
 
 	steer = Input.get_axis("left", "right")
 	throttle = Input.get_axis("back", "forward")
+	# Mayúsculas para probar el nitro con teclado desde el editor.
+	nitro = Input.is_key_pressed(KEY_SHIFT)
 
 
 ## Suelta todo. Lo llama el reinicio de vuelta para que el coche no arranque
@@ -42,4 +49,5 @@ func _process(_delta: float) -> void:
 func release() -> void:
 	steer = 0.0
 	throttle = 0.0
+	nitro = false
 	touch_active = false

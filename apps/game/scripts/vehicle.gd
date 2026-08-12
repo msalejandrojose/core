@@ -54,6 +54,28 @@ var calculated_lean: float
 ## sensación de ir sobre nieve.
 var grip: float = 1.0
 
+# --- Nitro --------------------------------------------------------------------
+#
+# El depósito es lo que convierte el nitro en una decisión. Sin él, pulsarlo
+# siempre sería la jugada correcta y dejaría de ser una jugada.
+
+## Cuánto empuja por encima del máximo normal mientras está activo.
+const NITRO_BOOST := 1.5
+## Segundos de nitro continuo que da el depósito lleno.
+const NITRO_DURATION_S := 2.0
+## Segundos en recargarlo entero desde vacío. Más largo que el gasto: la gracia
+## está en elegir DÓNDE se usa, no en tenerlo siempre disponible.
+const NITRO_RECHARGE_S := 8.0
+## Por debajo de esto no arranca. Evita el tartamudeo de dar empujoncitos con
+## los restos del depósito.
+const NITRO_MIN_CHARGE := 0.15
+
+## Depósito, de 0 a 1. Lo lee el HUD para dibujar la carga en el propio botón.
+var nitro_charge: float = 1.0
+## Si el nitro está empujando AHORA. No es lo mismo que pulsarlo: sin depósito
+## se pulsa igual y no pasa nada.
+var nitro_active: bool = false
+
 # Public Functions
 
 func get_vehicle_position() -> Vector3: return vehicle_model.global_position
@@ -74,6 +96,8 @@ func reset_to_start(yaw: float = 0.0) -> void:
 		vehicle_model.rotate_y(yaw)
 
 	input = Vector3.ZERO
+	nitro_charge = 1.0
+	nitro_active = false
 	linear_speed = 0.0
 	angular_speed = 0.0
 	acceleration = 0.0
@@ -115,7 +139,13 @@ func _physics_process(delta):
 
 	colliding = raycast.is_colliding()
 
+	update_nitro(delta)
+
+	# El nitro solo empuja hacia delante: no sirve para frenar antes ni para dar
+	# marcha atrás a lo loco.
 	var target_speed = input.z
+	if nitro_active and target_speed > 0.0:
+		target_speed *= NITRO_BOOST
 
 	if (target_speed < 0 and linear_speed > 0.01):
 		linear_speed = lerp(linear_speed, 0.0, delta * 8 * grip)
@@ -143,6 +173,20 @@ func _physics_process(delta):
 	effect_body(delta)
 	effect_wheels(delta)
 	effect_trails()
+
+## Gasta o recarga el depósito. Se pide desde el input y se concede aquí: el
+## coche es quien sabe si queda.
+
+func update_nitro(delta):
+
+	var wants = VehicleInput.nitro and input.z > 0.0
+
+	if wants and (nitro_active or nitro_charge >= NITRO_MIN_CHARGE) and nitro_charge > 0.0:
+		nitro_active = true
+		nitro_charge = maxf(nitro_charge - delta / NITRO_DURATION_S, 0.0)
+	else:
+		nitro_active = false
+		nitro_charge = minf(nitro_charge + delta / NITRO_RECHARGE_S, 1.0)
 
 # Handle input when vehicle is colliding with ground
 

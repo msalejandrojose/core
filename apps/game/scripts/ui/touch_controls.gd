@@ -31,6 +31,9 @@ const TAP_BRAKE_RADIUS_RATIO := 0.065
 ## El freno se dibuja y se detecta algo más pequeño que el acelerador: se usa
 ## menos y así el pulgar no lo pilla por error al buscar el gas.
 const BRAKE_RADIUS_FACTOR := 0.78
+## El nitro, igual de pequeño que el freno y separado del gas, para no darle
+## sin querer en mitad de una curva.
+const NITRO_RADIUS_FACTOR := 0.72
 
 ## Suavizado del giro. Alto a propósito: quita el jitter del dedo sin añadir
 ## retardo perceptible. El coche ya suaviza otra vez en `vehicle.gd`.
@@ -49,13 +52,19 @@ var _steer_origin := Vector2.ZERO
 var _steer_point := Vector2.ZERO
 var _steer_target := 0.0
 
-## índice de dedo -> "accel" | "brake"
+## índice de dedo -> "accel" | "brake" | "nitro" (o "left"/"right" en toque)
 var _pedal_fingers: Dictionary = {}
+
+## El coche, solo para leer la carga del nitro y dibujarla en su botón. Se
+## resuelve tarde porque los controles no dependen de que exista un coche.
+@export var vehicle_path: NodePath = ^"../../Vehicle"
+var _vehicle: Vehicle
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(true)
+	_vehicle = get_node_or_null(vehicle_path)
 
 
 func _process(delta: float) -> void:
@@ -95,6 +104,8 @@ func _process(delta: float) -> void:
 	if brake: VehicleInput.throttle = -1.0
 	elif accel: VehicleInput.throttle = 1.0
 	else: VehicleInput.throttle = 0.0
+
+	VehicleInput.nitro = _pedal_held("nitro")
 
 	queue_redraw()
 
@@ -144,6 +155,7 @@ func _process_tap(delta: float) -> void:
 
 	VehicleInput.steer = move_toward(VehicleInput.steer, target, delta * TAP_STEER_RATE)
 	VehicleInput.throttle = -1.0 if _tap_held("brake") else 1.0
+	VehicleInput.nitro = _tap_held("nitro")
 
 	queue_redraw()
 
@@ -151,6 +163,10 @@ func _process_tap(delta: float) -> void:
 func _press_tap(index: int, pos: Vector2) -> bool:
 	if pos.distance_to(_tap_brake_center()) <= _tap_brake_radius():
 		_pedal_fingers[index] = "brake"
+		return true
+
+	if pos.distance_to(_tap_nitro_center()) <= _tap_brake_radius():
+		_pedal_fingers[index] = "nitro"
 		return true
 
 	_pedal_fingers[index] = "left" if pos.x < size.x * 0.5 else "right"
@@ -166,7 +182,13 @@ func _tap_brake_radius() -> float:
 
 
 func _tap_brake_center() -> Vector2:
-	return Vector2(size.x * 0.5, size.y - size.x * PEDAL_MARGIN_RATIO - _tap_brake_radius())
+	return Vector2(size.x * 0.5 - _tap_brake_radius() * 1.4, size.y - size.x * PEDAL_MARGIN_RATIO - _tap_brake_radius())
+
+
+## Junto al freno, en el centro de abajo. No puede ir en los laterales: ahí
+## toda la mitad de la pantalla es el volante.
+func _tap_nitro_center() -> Vector2:
+	return Vector2(size.x * 0.5 + _tap_brake_radius() * 1.4, size.y - size.x * PEDAL_MARGIN_RATIO - _tap_brake_radius())
 
 
 # --- Volante flotante ---------------------------------------------------------
@@ -181,6 +203,10 @@ func _on_press(index: int, pos: Vector2) -> bool:
 
 	if pos.distance_to(_brake_center()) <= _brake_radius():
 		_pedal_fingers[index] = "brake"
+		return true
+
+	if pos.distance_to(_nitro_center()) <= _nitro_radius():
+		_pedal_fingers[index] = "nitro"
 		return true
 
 	# Volante flotante: nace donde caiga el pulgar, no en un punto fijo. Evita
@@ -235,6 +261,10 @@ func _brake_radius() -> float:
 	return _pedal_radius() * BRAKE_RADIUS_FACTOR
 
 
+func _nitro_radius() -> float:
+	return _pedal_radius() * NITRO_RADIUS_FACTOR
+
+
 func _accel_center() -> Vector2:
 	var m := size.x * PEDAL_MARGIN_RATIO
 	return Vector2(size.x - m - _pedal_radius(), size.y - m - _pedal_radius())
@@ -243,6 +273,13 @@ func _accel_center() -> Vector2:
 func _brake_center() -> Vector2:
 	var c := _accel_center()
 	return Vector2(c.x - _pedal_radius() * 2.4, c.y - _pedal_radius() * 0.35)
+
+
+## Encima del acelerador: se llega con el mismo pulgar sin soltar el gas, que
+## es justo cuando se usa.
+func _nitro_center() -> Vector2:
+	var c := _accel_center()
+	return Vector2(c.x, c.y - _pedal_radius() * 2.5)
 
 
 # --- Dibujo -------------------------------------------------------------------
@@ -256,6 +293,7 @@ func _draw() -> void:
 
 	_draw_pedal(_accel_center(), r, _pedal_held("accel"))
 	_draw_pedal(_brake_center(), _brake_radius(), _pedal_held("brake"))
+	_draw_nitro(_nitro_center(), _nitro_radius())
 
 	if _steer_finger != -1:
 		var travel := size.x * STEER_TRAVEL_RATIO
@@ -274,6 +312,41 @@ func _draw_pedal(center: Vector2, radius: float, held: bool) -> void:
 	var edge := CLAY if held else BONE
 	draw_circle(center, radius * 0.82, edge * Color(1, 1, 1, 0.35 if held else 0.16))
 	draw_arc(center, radius, 0.0, TAU, 48, edge, 4.0, true)
+
+
+## El propio botón es el indicador: el arco exterior marca lo que queda. Un
+## medidor en otra esquina obligaría a apartar la vista de la pista justo
+## cuando vas más rápido.
+func _draw_nitro(center: Vector2, radius: float) -> void:
+	var charge := _vehicle.nitro_charge if _vehicle != null else 1.0
+	var firing := _vehicle != null and _vehicle.nitro_active
+	var ready := charge >= Vehicle.NITRO_MIN_CHARGE
+
+	draw_circle(center, radius, INK * Color(1, 1, 1, 0.75 if firing else 0.45))
+
+	# Apagado cuando no queda: pulsar y que no pase nada sin explicación es
+	# peor que ver que no está disponible.
+	var edge := CLAY if firing else (BONE if ready else BONE * Color(1, 1, 1, 0.35))
+	# El aro de fondo va muy apagado para que lo que se lea de un vistazo sea
+	# cuánto queda, no dónde está el botón.
+	draw_arc(center, radius, 0.0, TAU, 40, edge * Color(1, 1, 1, 0.18), 4.0, true)
+	if charge > 0.0:
+		draw_arc(center, radius, -PI / 2, -PI / 2 + TAU * charge, 40, edge, 8.0, true)
+
+	# Rayo: dos triángulos que comparten el quiebro.
+	var h := radius * 0.46
+	var w := radius * 0.26
+	var ink := edge * Color(1, 1, 1, 0.95 if firing else 0.8)
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(w * 0.35, -h),
+		center + Vector2(-w, h * 0.1),
+		center + Vector2(w * 0.05, h * 0.1),
+	]), ink)
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(-w * 0.35, h),
+		center + Vector2(w, -h * 0.1),
+		center + Vector2(-w * 0.05, -h * 0.1),
+	]), ink)
 
 
 func _pedal_held(role: String) -> bool:
@@ -299,6 +372,8 @@ func _draw_tap() -> void:
 	# Barra: el símbolo universal de "para".
 	var bar := Vector2(brake_r * 0.42, brake_r * 0.12)
 	draw_rect(Rect2(_tap_brake_center() - bar, bar * 2.0), (CLAY if held else BONE) * Color(1, 1, 1, 0.9))
+
+	_draw_nitro(_tap_nitro_center(), brake_r)
 
 
 func _draw_arrow(center: Vector2, radius: float, direction: float, held: bool) -> void:
