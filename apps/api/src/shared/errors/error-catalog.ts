@@ -246,6 +246,22 @@ export const ERROR_CATALOG = {
       'Este formulario ha alcanzado el número máximo de respuestas.',
   },
 
+  // Racing
+  RACING_TRACK_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Circuito no encontrado.',
+  },
+  // 422 y no 400: el payload está bien formado, lo que no cuadra es que la
+  // vuelta pueda haber ocurrido. `warn` y no `error` porque un rechazo aislado
+  // es ruido esperado — lo interesante es si se repite mucho con un mismo
+  // motivo, que apuntaría a un agujero del juego o a un límite mal calibrado.
+  RACING_IMPLAUSIBLE_LAP_TIME: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La vuelta no se ha podido validar.',
+  },
+
   // Leads
   LEAD_NOT_FOUND: {
     httpStatus: 404,

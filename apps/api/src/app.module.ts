@@ -15,6 +15,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { GeoModule } from './modules/geo/geo.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { RacingModule } from './modules/racing/racing.module';
 import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
@@ -65,6 +66,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     NotificationsModule,
     UserNotificationsModule,
     DevicesModule,
+    RacingModule,
     WhatsappModule,
     ErrorLogModule,
     HealthModule,
