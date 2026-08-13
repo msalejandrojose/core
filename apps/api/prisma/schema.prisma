@@ -245,6 +245,9 @@ model User {
   notifications             UserNotification[]
   devices                   Device[]
   lapTimes                  LapTime[]
+  carArchetypes             PlayerCarArchetype[]
+  carParts                  PlayerCarPart[]
+  carLoadout                PlayerCarLoadout?
 
   @@map("user")
 }
@@ -1368,4 +1371,126 @@ model LapTime {
   /// El rate limit del anti-cheat mira el último intento de cada usuario.
   @@index([userId, createdAt])
   @@map("racing_lap_time")
+}
+
+/// Hueco de equipamiento de una `CarPart`. Un jugador lleva como mucho una
+/// pieza por categoría a la vez (TASK-263): no tiene sentido llevar dos
+/// juegos de neumáticos montados.
+enum CarPartCategory {
+  TIRES
+  WING
+  CHASSIS
+}
+
+/// Catálogo de arquetipos de coche (TASK-262): normal/F1/4x4, cada uno con su
+/// propio perfil de partida sobre los mismos ejes que ya usa `Vehicle` en el
+/// cliente — `speedScale` (velocidad punta) y `grip` (agarre en asfalto seco).
+///
+/// `offroadGripModifier` es el eje que decide TASK-264: multiplica el grip
+/// efectivo del circuito/celda cuando la superficie NO es asfalto seco (tema
+/// `SNOW`, o una celda con terreno de sección pintado). En asfalto seco no se
+/// aplica ningún ajuste.
+model CarArchetype {
+  id   String @id @default(uuid()) @db.Char(36)
+  /// Identificador estable, independiente del nombre visible.
+  code String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  speedScale          Float @map("speed_scale")
+  grip                Float
+  offroadGripModifier Float @map("offroad_grip_modifier")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  playerOwnerships PlayerCarArchetype[]
+  loadouts         PlayerCarLoadout[]
+
+  @@index([isActive])
+  @@map("racing_car_archetype")
+}
+
+/// Catálogo de piezas montables (TASK-263). Independientes del arquetipo:
+/// una misma pieza vale para cualquier arquetipo. Los efectos son DELTAS que
+/// se suman al perfil base del arquetipo equipado, no valores absolutos —
+/// ver `computeCarStats` en el dominio.
+model CarPart {
+  id       String          @id @default(uuid()) @db.Char(36)
+  code     String          @unique @db.VarChar(64)
+  category CarPartCategory
+  name     String          @db.VarChar(120)
+
+  speedScale Float @map("speed_scale")
+  grip       Float
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  playerOwnerships PlayerCarPart[]
+  loadoutTires     PlayerCarLoadout[] @relation("LoadoutTires")
+  loadoutWing      PlayerCarLoadout[] @relation("LoadoutWing")
+  loadoutChassis   PlayerCarLoadout[] @relation("LoadoutChassis")
+
+  @@index([category, isActive])
+  @@map("racing_car_part")
+}
+
+/// Qué arquetipos tiene desbloqueados cada jugador. Separado del equipamiento
+/// (`PlayerCarLoadout`): tener uno no implica llevarlo puesto. Vive aparte
+/// desde ya aunque hoy todos los arquetipos se concedan por igual, porque la
+/// economía de monedas (TASK-286) todavía no ha cerrado en qué se gastan —
+/// este es el sitio natural para "comprar" un arquetipo el día que se decida.
+model PlayerCarArchetype {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String   @map("user_id") @db.Char(36)
+  archetypeId String   @map("archetype_id") @db.Char(36)
+  unlockedAt  DateTime @default(now()) @map("unlocked_at")
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  archetype CarArchetype @relation(fields: [archetypeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, archetypeId])
+  @@map("racing_player_car_archetype")
+}
+
+/// Qué piezas tiene desbloqueadas cada jugador. Mismo motivo que
+/// `PlayerCarArchetype` para separarlo del equipamiento.
+model PlayerCarPart {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String   @map("user_id") @db.Char(36)
+  partId     String   @map("part_id") @db.Char(36)
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  part CarPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, partId])
+  @@map("racing_player_car_part")
+}
+
+/// Configuración de coche que un jugador tiene puesta AHORA MISMO. Una fila
+/// por jugador (no por circuito ni por intento): es una preferencia global,
+/// igual que la cilindrada o el sentido en `GameSettings`.
+///
+/// Sin fila = configuración por defecto (el primer arquetipo del catálogo,
+/// sin piezas) — no hace falta backfill al desplegar esto ni al dar de alta
+/// un jugador nuevo, la fila se crea la primera vez que alguien cambia algo.
+model PlayerCarLoadout {
+  userId      String  @id @map("user_id") @db.Char(36)
+  archetypeId String  @map("archetype_id") @db.Char(36)
+  tiresPartId String? @map("tires_part_id") @db.Char(36)
+  wingPartId  String? @map("wing_part_id") @db.Char(36)
+  chassisPartId String? @map("chassis_part_id") @db.Char(36)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  archetype   CarArchetype @relation(fields: [archetypeId], references: [id])
+  tiresPart   CarPart?     @relation("LoadoutTires", fields: [tiresPartId], references: [id])
+  wingPart    CarPart?     @relation("LoadoutWing", fields: [wingPartId], references: [id])
+  chassisPart CarPart?     @relation("LoadoutChassis", fields: [chassisPartId], references: [id])
+
+  @@map("racing_player_car_loadout")
 }
