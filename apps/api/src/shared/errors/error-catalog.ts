@@ -276,6 +276,31 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'El trazado del circuito no es válido.',
   },
+  RACING_CAR_ARCHETYPE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Arquetipo de coche no encontrado.',
+  },
+  RACING_CAR_ARCHETYPE_CODE_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un arquetipo con ese código.',
+  },
+  RACING_CAR_PART_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Pieza de coche no encontrada.',
+  },
+  RACING_CAR_PART_CODE_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe una pieza con ese código.',
+  },
+  RACING_INVALID_CAR_LOADOUT: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'La configuración de coche no es válida.',
+  },
 
   // Leads
   LEAD_NOT_FOUND: {
