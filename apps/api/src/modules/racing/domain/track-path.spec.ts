@@ -1,4 +1,5 @@
 import { TrackCell, validateTrackPath } from './track-path';
+import { TerrainType } from './track-terrain';
 
 // Los cuatro trazados reales del catálogo del cliente
 // (apps/game/scripts/track/track_catalog.gd), celda a celda. Si el servidor
@@ -164,5 +165,27 @@ describe('validateTrackPath', () => {
     ]);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toContain('recta');
+  });
+
+  describe('terreno de sección', () => {
+    it('acepta un trazado sin terreno marcado en ninguna celda (todo asfalto implícito)', () => {
+      expect(validateTrackPath(KENNEY).ok).toBe(true);
+    });
+
+    it('acepta terreno mixto: solo algunas celdas marcadas', () => {
+      const path: TrackCell[] = KENNEY.map((cell, i) =>
+        i === 3 ? { ...cell, terrain: TerrainType.ICE } : cell,
+      );
+      expect(validateTrackPath(path).ok).toBe(true);
+    });
+
+    it('rechaza un tipo de terreno desconocido', () => {
+      const path = KENNEY.map((cell, i) =>
+        i === 3 ? { ...cell, terrain: 'LAVA' as TerrainType } : cell,
+      );
+      const result = validateTrackPath(path);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.reason).toContain('terreno');
+    });
   });
 });

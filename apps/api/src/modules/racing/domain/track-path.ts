@@ -1,3 +1,5 @@
+import { TerrainType } from './track-terrain';
+
 /**
  * Reglas de un trazado válido, las mismas que valida
  * `apps/game/tests/track_catalog_test.gd` en el cliente:
@@ -17,7 +19,14 @@
 export interface TrackCell {
   x: number;
   y: number;
+  /**
+   * Terreno de sección de esta celda. Ausente = asfalto: por defecto todas
+   * las celdas son asfalto, sin obligar a marcar nada (TASK-271).
+   */
+  terrain?: TerrainType;
 }
+
+const VALID_TERRAINS = new Set<string>(Object.values(TerrainType));
 
 export type TrackPathValidationResult =
   | { ok: true }
@@ -54,6 +63,10 @@ export function validateTrackPath(
       return reject('el trazado repite una celda', { cell });
     }
     seen.add(key);
+
+    if (cell.terrain !== undefined && !VALID_TERRAINS.has(cell.terrain)) {
+      return reject('la celda tiene un tipo de terreno desconocido', { cell });
+    }
   }
 
   for (let i = 0; i < path.length; i++) {
