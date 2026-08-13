@@ -133,6 +133,11 @@ const CountriesPage = lazy(() =>
     default: m.CountriesPage,
   })),
 );
+const TracksPage = lazy(() =>
+  import('@/features/racing/tracks/TracksPage').then((m) => ({
+    default: m.TracksPage,
+  })),
+);
 const RegionsPage = lazy(() =>
   import('@/features/geo/regions/RegionsPage').then((m) => ({
     default: m.RegionsPage,
@@ -281,6 +286,7 @@ export default function App() {
                 path="/notifications/message-types/:id/editor"
                 element={<MessageTypeEditorPage />}
               />
+              <Route path="/racing/tracks" element={<TracksPage />} />
               <Route path="/geo/countries" element={<CountriesPage />} />
               <Route path="/geo/regions" element={<RegionsPage />} />
               <Route path="/geo/provinces" element={<ProvincesPage />} />
