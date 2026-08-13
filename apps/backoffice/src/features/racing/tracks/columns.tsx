@@ -71,9 +71,10 @@ export const columns: ColumnDef<TrackRow>[] = [
 ];
 
 function TrackRowActions({ track }: { track: TrackRow }) {
-  const update = useUpdateTrack();
+  const update = useUpdateTrack(track.id);
   return (
     <RowActions
+      editHref={`/racing/tracks/${track.id}`}
       extra={
         <Button
           variant="ghost"
@@ -81,9 +82,7 @@ function TrackRowActions({ track }: { track: TrackRow }) {
           className="size-8"
           title={track.isActive ? 'Desactivar' : 'Activar'}
           disabled={update.isPending}
-          onClick={() =>
-            update.mutate({ id: track.id, isActive: !track.isActive })
-          }
+          onClick={() => update.mutate({ isActive: !track.isActive })}
         >
           {track.isActive ? <PowerOff size={14} /> : <Power size={14} />}
         </Button>
