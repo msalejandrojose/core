@@ -186,6 +186,21 @@ const BACKOFFICE_TREE: SeedNode[] = [
     ],
   },
   {
+    code: 'racing',
+    name: 'Racing',
+    icon: 'Flag',
+    order: 9,
+    children: [
+      {
+        code: 'racing.tracks',
+        name: 'Circuitos',
+        icon: 'MapPin',
+        route: '/racing/tracks',
+        order: 0,
+      },
+    ],
+  },
+  {
     code: 'workflows',
     name: 'Workflows',
     icon: 'Workflow',

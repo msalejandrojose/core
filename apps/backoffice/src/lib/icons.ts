@@ -4,10 +4,12 @@ import {
   ClipboardList,
   Contact,
   Files,
+  Flag,
   Inbox,
   Layers,
   LayoutDashboard,
   LayoutList,
+  MapPin,
   MessageSquare,
   Newspaper,
   Play,
@@ -42,6 +44,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Layers,
   Inbox,
   Webhook,
+  Flag,
+  MapPin,
   // Añadir según se creen secciones nuevas.
 };
 
