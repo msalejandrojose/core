@@ -1,13 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
+import { Prisma } from '../generated/prisma/client';
+import { TrackTheme } from '../modules/racing/domain/entities/track.entity';
+import {
+  TrackCell,
+  validateTrackPath,
+} from '../modules/racing/domain/track-path';
 import { PrismaService } from '../infrastructure/database/prisma/prisma.service';
 
 // Seed idempotente de los circuitos.
 //
-// El trazado en sí NO vive en la base de datos: lo construye el cliente desde
-// su propio catálogo (`apps/game/scripts/track/track_catalog.gd`). Esta tabla
-// es el ancla de los tiempos, así que aquí solo hay lo que el servidor
-// necesita para validarlos y ordenarlos.
+// La geometría (path/theme/grip) es una transcripción celda a celda del
+// catálogo del cliente (`apps/game/scripts/track/track_catalog.gd`) — hasta
+// que TASK-242/243 permitan crear circuitos directamente en el servidor, este
+// es el único sitio donde se define. El sentido inverso reutiliza el mismo
+// `path`: es la misma pista recorrida al revés, no otra geometría.
 //
 // Cada circuito se siembra en TODAS sus variantes jugables: dos sentidos por
 // tres cilindradas. Un tiempo al revés no es comparable con uno normal, y uno a
@@ -32,10 +39,12 @@ const RACING_LINE_FACTOR = 0.75;
 interface TrackSeed {
   slug: string;
   name: string;
-  /// Celdas del trazado en el catálogo del cliente.
-  cells: number;
+  /// Celdas del trazado, en orden de recorrido hacia adelante.
+  path: TrackCell[];
   /// Checkpoints intermedios; los sectores son uno más (la meta).
   checkpoints: number;
+  theme: TrackTheme;
+  grip: number;
 }
 
 // Multiplicador de velocidad punta de cada cilindrada. Tiene que coincidir con
@@ -48,10 +57,116 @@ const ENGINE_CLASSES: ReadonlyArray<{ name: string; speed: number }> = [
 ];
 
 const TRACKS: readonly TrackSeed[] = [
-  { slug: 'kenney-01', name: 'Kenney', cells: 16, checkpoints: 3 },
-  { slug: 'herradura', name: 'Herradura', cells: 18, checkpoints: 3 },
-  { slug: 'chicane', name: 'Chicane', cells: 14, checkpoints: 3 },
-  { slug: 'nevado', name: 'Nevado', cells: 26, checkpoints: 4 },
+  {
+    slug: 'kenney-01',
+    name: 'Kenney',
+    checkpoints: 3,
+    theme: TrackTheme.MEADOW,
+    grip: 1.0,
+    path: [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+      { x: -1, y: 2 },
+      { x: -2, y: 2 },
+      { x: -2, y: 1 },
+      { x: -2, y: 0 },
+      { x: -2, y: -1 },
+      { x: -3, y: -1 },
+      { x: -3, y: -2 },
+      { x: -3, y: -3 },
+      { x: -2, y: -3 },
+      { x: -1, y: -3 },
+      { x: 0, y: -3 },
+      { x: 0, y: -2 },
+      { x: 0, y: -1 },
+    ],
+  },
+  {
+    slug: 'herradura',
+    name: 'Herradura',
+    checkpoints: 3,
+    theme: TrackTheme.MEADOW,
+    grip: 1.0,
+    path: [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+      { x: 0, y: 3 },
+      { x: 0, y: 4 },
+      { x: -1, y: 4 },
+      { x: -2, y: 4 },
+      { x: -2, y: 3 },
+      { x: -2, y: 2 },
+      { x: -3, y: 2 },
+      { x: -4, y: 2 },
+      { x: -4, y: 1 },
+      { x: -4, y: 0 },
+      { x: -4, y: -1 },
+      { x: -3, y: -1 },
+      { x: -2, y: -1 },
+      { x: -1, y: -1 },
+      { x: 0, y: -1 },
+    ],
+  },
+  {
+    slug: 'chicane',
+    name: 'Chicane',
+    checkpoints: 3,
+    theme: TrackTheme.MEADOW,
+    grip: 1.0,
+    path: [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+      { x: -1, y: 2 },
+      { x: -1, y: 3 },
+      { x: -2, y: 3 },
+      { x: -2, y: 2 },
+      { x: -3, y: 2 },
+      { x: -3, y: 1 },
+      { x: -3, y: 0 },
+      { x: -3, y: -1 },
+      { x: -2, y: -1 },
+      { x: -1, y: -1 },
+      { x: 0, y: -1 },
+    ],
+  },
+  {
+    slug: 'nevado',
+    name: 'Nevado',
+    checkpoints: 4,
+    theme: TrackTheme.SNOW,
+    grip: 0.55,
+    path: [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+      { x: 0, y: 3 },
+      { x: -1, y: 3 },
+      { x: -2, y: 3 },
+      { x: -2, y: 2 },
+      { x: -2, y: 1 },
+      { x: -3, y: 1 },
+      { x: -4, y: 1 },
+      { x: -4, y: 2 },
+      { x: -4, y: 3 },
+      { x: -5, y: 3 },
+      { x: -6, y: 3 },
+      { x: -6, y: 2 },
+      { x: -6, y: 1 },
+      { x: -6, y: 0 },
+      { x: -6, y: -1 },
+      { x: -5, y: -1 },
+      { x: -4, y: -1 },
+      { x: -3, y: -1 },
+      { x: -3, y: -2 },
+      { x: -2, y: -2 },
+      { x: -2, y: -1 },
+      { x: -1, y: -1 },
+      { x: 0, y: -1 },
+    ],
+  },
 ];
 
 /**
@@ -82,6 +197,16 @@ async function main(): Promise<void> {
   let seeded = 0;
 
   for (const track of TRACKS) {
+    // El servidor no confía ni en su propio seed: si alguien edita `path` a
+    // mano y rompe una de las cuatro reglas del trazado, falla aquí, no
+    // silenciosamente en el cliente.
+    const validation = validateTrackPath(track.path);
+    if (!validation.ok) {
+      throw new Error(
+        `Trazado inválido para ${track.slug}: ${validation.reason} (${JSON.stringify(validation.details)})`,
+      );
+    }
+
     for (const reversed of [false, true]) {
       for (const engine of ENGINE_CLASSES) {
         const slug = `${track.slug}${reversed ? '-rev' : ''}-${engine.name}`;
@@ -90,8 +215,11 @@ async function main(): Promise<void> {
         const data = {
           name,
           sectorCount: track.checkpoints + 1,
-          minPlausibleMs: minPlausibleMs(track.cells, engine.speed),
+          minPlausibleMs: minPlausibleMs(track.path.length, engine.speed),
           isActive: true,
+          path: track.path as unknown as Prisma.InputJsonValue,
+          theme: track.theme,
+          grip: track.grip,
         };
 
         await prisma.track.upsert({
