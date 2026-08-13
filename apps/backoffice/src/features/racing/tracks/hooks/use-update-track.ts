@@ -2,17 +2,27 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/lib/toast';
 import { apiClient } from '@/api/client';
 import { getApiErrorMessage } from '@/lib/api-error';
+import type { TrackCellRow, TrackTheme } from '../../types';
 
 export interface UpdateTrackInput {
+  name?: string;
+  sectorCount?: number;
+  minPlausibleMs?: number;
+  path?: TrackCellRow[];
+  theme?: TrackTheme;
+  grip?: number;
   isActive?: boolean;
 }
 
 const KEY = ['racing-tracks'];
 
-export function useUpdateTrack({ onSuccess }: { onSuccess?: () => void } = {}) {
+export function useUpdateTrack(
+  id: string,
+  { onSuccess }: { onSuccess?: () => void } = {},
+) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...body }: UpdateTrackInput & { id: string }) => {
+    mutationFn: async (body: UpdateTrackInput) => {
       const { data, error } = await apiClient.PATCH(
         '/admin/racing/tracks/{id}',
         { params: { path: { id } }, body },
@@ -22,6 +32,7 @@ export function useUpdateTrack({ onSuccess }: { onSuccess?: () => void } = {}) {
     },
     onSuccess() {
       qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ['racing-track', id] });
       toast.success('Circuito actualizado');
       onSuccess?.();
     },

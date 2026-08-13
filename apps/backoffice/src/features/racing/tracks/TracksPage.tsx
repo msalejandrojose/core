@@ -1,6 +1,9 @@
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { DataTable } from '@/components/data-table/DataTable';
 import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
 import type { TrackRow } from '../types';
 import { columns } from './columns';
 import { useTracks } from './hooks/use-tracks';
@@ -24,6 +27,14 @@ export function TracksPage() {
       <PageHeader
         title="Circuitos"
         description="Circuitos de racing, activos e inactivos, con su geometría y físicas."
+        actions={
+          <Button asChild>
+            <Link to="/racing/tracks/new">
+              <Plus size={16} />
+              Nuevo circuito
+            </Link>
+          </Button>
+        }
       />
       <DataTable
         data={rows}
