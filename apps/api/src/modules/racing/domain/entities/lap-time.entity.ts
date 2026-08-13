@@ -8,6 +8,8 @@ export class LapTime {
     readonly splitsMs: number[],
     readonly clientVersion: string,
     readonly createdAt: Date,
+    // Anulado desde el backoffice sin borrar la fila. Nulo = válido.
+    readonly invalidatedAt: Date | null = null,
   ) {}
 }
 
