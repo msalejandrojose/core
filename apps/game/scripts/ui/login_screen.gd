@@ -2,10 +2,9 @@ extends CanvasLayer
 
 ## Entrar o crear cuenta contra el IAM de `core`.
 ##
-## Solo email y contraseña. Google y Apple necesitan plugins nativos que Godot
-## no trae, y la vía sin código nativo (navegador + callback en la API) es una
-## tarea aparte — está anotada, con el aviso de que Apple exige ofrecer Sign in
-## with Apple si se ofrece Google.
+## Con email y contraseña, o con Google (abre el navegador del sistema y
+## espera a que el jugador complete el consentimiento ahí — Godot no trae
+## WebView ni deep links, así que no hay vuelta directa a la app).
 
 const BONE := Color("f0ece6")
 const INK := Color(0.11, 0.098, 0.09)
@@ -85,6 +84,7 @@ func _build() -> void:
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(push)
 
+	row.add_child(_button("Entrar con Google", 320, func() -> void: _submit_google()))
 	row.add_child(_button("Crear cuenta", 280, func() -> void: _submit(true)))
 	row.add_child(_button("Entrar", 240, func() -> void: _submit(false)))
 
@@ -140,6 +140,23 @@ func _submit(create: bool) -> void:
 		_say("No hay conexión con el servidor. Puedes seguir corriendo: los tiempos se guardan y se subirán luego.", BAD)
 	else:
 		_say(response.message, BAD)
+
+
+func _submit_google() -> void:
+	_set_busy(true)
+	_say("Abriendo el navegador para entrar con Google…", BONE)
+
+	var response: Dictionary = await Session.login_with_google()
+
+	_set_busy(false)
+
+	if response.get("ok", false):
+		_say("Listo. Tus tiempos ya se suben.", GOOD)
+		await get_tree().create_timer(0.8).timeout
+		_close()
+		return
+
+	_say(str(response.get("message", "No se pudo iniciar sesión con Google.")), BAD)
 
 
 func _set_busy(busy: bool) -> void:

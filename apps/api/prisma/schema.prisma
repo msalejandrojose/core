@@ -401,6 +401,37 @@ model ErrorLog {
   @@map("error_log")
 }
 
+/// Estado de una sesión de login social iniciada desde un cliente sin SDK
+/// nativo del proveedor (hoy Godot; el mismo mecanismo sirve para Apple el
+/// día que se necesite — TASK-216).
+enum GoogleAuthSessionStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+/// Sesión de login con Google vía navegador del sistema: la app abre
+/// `authUrl` en el navegador, Google redirige al callback de la API (no a la
+/// app — Godot no expone deep links sin un shim nativo), y la app hace
+/// polling de esta fila hasta que deja de estar `PENDING`.
+///
+/// `state` viaja como parámetro `state` de OAuth y es distinto de `id`: filtrar
+/// el `id` (p.ej. en un log) no basta para completar el canje sin conocer
+/// también el `state`, que solo lo tienen quien inició la sesión y Google.
+model GoogleAuthSession {
+  id            String                  @id @default(uuid()) @db.Char(36)
+  state         String                  @unique @db.VarChar(64)
+  status        GoogleAuthSessionStatus @default(PENDING)
+  accessToken   String?                 @map("access_token") @db.Text
+  userId        String?                 @map("user_id") @db.Char(36)
+  failureReason String?                 @map("failure_reason") @db.VarChar(255)
+  createdAt     DateTime                @default(now()) @map("created_at")
+  expiresAt     DateTime                @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("google_auth_session")
+}
+
 // ---------------------------------------------------------------------------
 // Blog de noticias (módulo `blog`)
 // ---------------------------------------------------------------------------
