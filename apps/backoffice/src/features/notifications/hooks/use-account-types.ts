@@ -9,7 +9,7 @@ export function useAccountTypes() {
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/sending-account-types');
       if (error) throw error;
-      return (data ?? []) as SendingAccountType[];
+      return (data ?? []) as unknown as SendingAccountType[];
     },
     staleTime: 1000 * 60 * 5,
   });
