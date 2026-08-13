@@ -1351,6 +1351,11 @@ model LapTime {
   /// con datos mentirosos.
   clientVersion String @map("client_version") @db.VarChar(32)
 
+  /// Anulado desde el backoffice (TASK-239/242) sin borrar la fila, para que
+  /// quede constancia. Nulo = válido. Un tiempo anulado no cuenta para el
+  /// leaderboard, la posición ni la mejor marca personal.
+  invalidatedAt DateTime? @map("invalidated_at")
+
   createdAt DateTime @default(now()) @map("created_at")
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)

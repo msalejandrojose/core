@@ -261,6 +261,21 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'La vuelta no se ha podido validar.',
   },
+  RACING_TRACK_SLUG_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un circuito con ese slug.',
+  },
+  RACING_LAP_TIME_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Tiempo de vuelta no encontrado.',
+  },
+  RACING_INVALID_TRACK_PATH: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'El trazado del circuito no es válido.',
+  },
 
   // Leads
   LEAD_NOT_FOUND: {

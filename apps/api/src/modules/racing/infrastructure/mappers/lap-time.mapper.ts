@@ -18,5 +18,6 @@ export function toLapTimeDomain(row: PrismaLapTime): LapTime {
     toSplits(row.splitsMs),
     row.clientVersion,
     row.createdAt,
+    row.invalidatedAt,
   );
 }

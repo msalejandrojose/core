@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import {
   CreateLapTimeData,
@@ -40,9 +39,22 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
         userId: data.userId,
         trackId: data.trackId,
         durationMs: data.durationMs,
-        splitsMs: data.splitsMs as Prisma.InputJsonValue,
+        splitsMs: data.splitsMs,
         clientVersion: data.clientVersion,
       },
+    });
+    return toLapTimeDomain(row);
+  }
+
+  async findById(id: string): Promise<LapTime | null> {
+    const row = await this.prisma.lapTime.findUnique({ where: { id } });
+    return row === null ? null : toLapTimeDomain(row);
+  }
+
+  async invalidate(id: string): Promise<LapTime> {
+    const row = await this.prisma.lapTime.update({
+      where: { id },
+      data: { invalidatedAt: new Date() },
     });
     return toLapTimeDomain(row);
   }
@@ -52,7 +64,7 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
     trackId: string,
   ): Promise<LapTime | null> {
     const row = await this.prisma.lapTime.findFirst({
-      where: { userId, trackId },
+      where: { userId, trackId, invalidatedAt: null },
       orderBy: [{ durationMs: 'asc' }, { createdAt: 'asc' }],
     });
     return row === null ? null : toLapTimeDomain(row);
@@ -92,11 +104,13 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
            FROM racing_lap_time x
           WHERE x.track_id = b.track_id
             AND x.user_id  = b.user_id
-            AND x.duration_ms = b.best)               AS achievedAt
+            AND x.duration_ms = b.best
+            AND x.invalidated_at IS NULL)             AS achievedAt
       FROM (
         SELECT track_id, user_id, MIN(duration_ms) AS best
           FROM racing_lap_time
          WHERE track_id = ${trackId}
+           AND invalidated_at IS NULL
          GROUP BY track_id, user_id
       ) b
       JOIN user u ON u.id = b.user_id
@@ -122,7 +136,7 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
    */
   async positionOf(trackId: string, userId: string): Promise<number | null> {
     const best = await this.prisma.lapTime.aggregate({
-      where: { trackId, userId },
+      where: { trackId, userId, invalidatedAt: null },
       _min: { durationMs: true },
     });
 
@@ -134,6 +148,7 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
         SELECT user_id, MIN(duration_ms) AS best
           FROM racing_lap_time
          WHERE track_id = ${trackId}
+           AND invalidated_at IS NULL
          GROUP BY user_id
         HAVING best < ${mine}
       ) faster
