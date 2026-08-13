@@ -22,3 +22,13 @@ export const TRACK_THEME_LABELS: Record<TrackTheme, string> = {
   MEADOW: 'Pradera',
   SNOW: 'Nieve',
 };
+
+export const TERRAIN_LABELS: Record<
+  NonNullable<TrackCellRow['terrain']>,
+  string
+> = {
+  ASPHALT: 'Asfalto',
+  ICE: 'Hielo',
+  MUD: 'Barro',
+  WATER: 'Agua',
+};
