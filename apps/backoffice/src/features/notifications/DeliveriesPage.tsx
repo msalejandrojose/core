@@ -42,8 +42,6 @@ export function DeliveriesPage() {
   });
 
   const rows: Delivery[] = data?.data ?? [];
-  const { data, isLoading } = useDeliveries({ limit, cursor: currentCursor });
-  const rows = data?.data ?? [];
   const resetPaging = () => setCursors([undefined]);
 
   return (
