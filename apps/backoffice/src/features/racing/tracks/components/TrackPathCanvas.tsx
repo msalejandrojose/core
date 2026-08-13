@@ -2,8 +2,31 @@ import { Redo2, Undo2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { TrackCellRow, TrackTheme } from '../../types';
+import { TERRAIN_LABELS, type TrackCellRow, type TrackTheme } from '../../types';
 import { validateTrackPath } from '../validate-track-path';
+
+type Terrain = NonNullable<TrackCellRow['terrain']>;
+
+// Ciclo de pintado: clicar una celda ya dibujada avanza al siguiente terreno.
+// Ausente (asfalto) es el punto de partida y de llegada — no hace falta
+// pintar nada para tener un circuito válido (TASK-272, criterio de done).
+const TERRAIN_CYCLE: (Terrain | undefined)[] = [undefined, 'ICE', 'MUD', 'WATER'];
+
+function nextTerrain(current?: Terrain): Terrain | undefined {
+  const i = TERRAIN_CYCLE.indexOf(current);
+  return TERRAIN_CYCLE[(i + 1) % TERRAIN_CYCLE.length];
+}
+
+const TERRAIN_FILL: Record<Terrain, string> = {
+  ASPHALT: 'fill-primary',
+  ICE: 'fill-cyan-400',
+  MUD: 'fill-amber-800',
+  WATER: 'fill-blue-500',
+};
+
+function terrainFill(terrain?: Terrain): string {
+  return terrain ? TERRAIN_FILL[terrain] : 'fill-primary';
+}
 
 // Rango fijo del lienzo: sobra para cualquier circuito real (el más largo
 // sembrado, "nevado", va de x:-6..0, y:-2..4) y evita la complejidad de un
@@ -47,15 +70,14 @@ interface TrackPathCanvasProps {
 
 // Editor de trazado celda a celda. Las reglas de bucle cerrado, pasos
 // ortogonales y sin repetir celda se garantizan POR CONSTRUCCIÓN: solo se
-// puede clicar una celda vacía adyacente a la última — nunca una diagonal,
-// un salto o una ya usada. Lo único que puede fallar al cerrar el bucle es
-// que la celda de salida no quede en recta (`validateTrackPath` lo detecta
-// igual que el dominio del servidor).
+// puede clicar una celda vacía adyacente a la última para AÑADIRLA — nunca
+// una diagonal, un salto o una ya usada. Lo único que puede fallar al cerrar
+// el bucle es que la celda de salida no quede en recta (`validateTrackPath`
+// lo detecta igual que el dominio del servidor).
 //
-// Punto de extensión para TASK-272 (pintar terreno): el terreno de cada
-// celda ya viaja en `TrackCellRow.terrain`, así que un futuro modo "pintar"
-// puede reusar este mismo grid y solo cambiar qué hace `handleCellClick`
-// sobre una celda que YA está en el trazado, en vez de añadir/quitar.
+// Pintar terreno (TASK-272) no es un paso aparte: clicar una celda que YA
+// está en el trazado avanza su terreno al siguiente del ciclo (asfalto →
+// hielo → barro → agua → asfalto), en vez de añadirla de nuevo.
 export function TrackPathCanvas({ path, onChange, theme }: TrackPathCanvasProps) {
   const used = useMemo(() => new Set(path.map(cellKey)), [path]);
 
@@ -73,8 +95,16 @@ export function TrackPathCanvas({ path, onChange, theme }: TrackPathCanvasProps)
   const status = describeDrawingState(path, validation);
 
   function handleCellClick(cell: { x: number; y: number }) {
-    if (used.has(cellKey(cell))) return; // ya está en el trazado
-    if (path.length > 0 && !candidates?.has(cellKey(cell))) return; // no adyacente
+    const key = cellKey(cell);
+    if (used.has(key)) {
+      onChange(
+        path.map((c) =>
+          cellKey(c) === key ? { ...c, terrain: nextTerrain(c.terrain) } : c,
+        ),
+      );
+      return;
+    }
+    if (path.length > 0 && !candidates?.has(key)) return; // no adyacente
     onChange([...path, cell]);
   }
 
@@ -184,8 +214,18 @@ export function TrackPathCanvas({ path, onChange, theme }: TrackPathCanvasProps)
                 cx={toScreen(cell.x) + CELL / 2}
                 cy={toScreen(cell.y) + CELL / 2}
                 r={CELL / 2 - 3}
-                className={index === 0 ? 'fill-amber-500' : 'fill-primary'}
+                className={terrainFill(cell.terrain)}
               />
+              {index === 0 && (
+                <circle
+                  cx={toScreen(cell.x) + CELL / 2}
+                  cy={toScreen(cell.y) + CELL / 2}
+                  r={CELL / 2 - 1.5}
+                  fill="none"
+                  className="stroke-amber-500"
+                  strokeWidth={2}
+                />
+              )}
               <text
                 x={toScreen(cell.x) + CELL / 2}
                 y={toScreen(cell.y) + CELL / 2}
@@ -199,11 +239,30 @@ export function TrackPathCanvas({ path, onChange, theme }: TrackPathCanvasProps)
           ))}
         </svg>
       </div>
-      <p className="text-muted-foreground text-xs">
-        Clic para añadir una celda adyacente a la última. La celda{' '}
-        <span className="font-medium text-amber-600">0</span> (ámbar) es la
-        meta.
-      </p>
+      <div className="text-muted-foreground space-y-1 text-xs">
+        <p>
+          Clic en una celda vacía para añadirla al trazado. Clic en una celda
+          ya dibujada para cambiar su terreno (asfalto por defecto). La celda
+          con el anillo{' '}
+          <span className="font-medium text-amber-600">ámbar</span> es la
+          meta.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {(Object.entries(TERRAIN_LABELS) as [Terrain, string][]).map(
+            ([terrain, label]) => (
+              <span key={terrain} className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    'inline-block size-3 rounded-full',
+                    TERRAIN_FILL[terrain],
+                  )}
+                />
+                {label}
+              </span>
+            ),
+          )}
+        </div>
+      </div>
     </div>
   );
 }
