@@ -20,6 +20,7 @@ import {
   Users,
   Webhook,
   Workflow,
+  Wrench,
   Zap,
   type LucideIcon,
 } from 'lucide-react';
@@ -46,6 +47,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Webhook,
   Flag,
   MapPin,
+  Wrench,
   // Añadir según se creen secciones nuevas.
 };
 

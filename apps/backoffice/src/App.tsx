@@ -143,6 +143,11 @@ const TrackEditorPage = lazy(() =>
     default: m.TrackEditorPage,
   })),
 );
+const CarsPage = lazy(() =>
+  import('@/features/racing/cars/CarsPage').then((m) => ({
+    default: m.CarsPage,
+  })),
+);
 const RegionsPage = lazy(() =>
   import('@/features/geo/regions/RegionsPage').then((m) => ({
     default: m.RegionsPage,
@@ -294,6 +299,7 @@ export default function App() {
               <Route path="/racing/tracks" element={<TracksPage />} />
               <Route path="/racing/tracks/new" element={<TrackEditorPage />} />
               <Route path="/racing/tracks/:id" element={<TrackEditorPage />} />
+              <Route path="/racing/cars" element={<CarsPage />} />
               <Route path="/geo/countries" element={<CountriesPage />} />
               <Route path="/geo/regions" element={<RegionsPage />} />
               <Route path="/geo/provinces" element={<ProvincesPage />} />

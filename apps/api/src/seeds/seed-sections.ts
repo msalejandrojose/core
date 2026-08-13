@@ -198,6 +198,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/racing/tracks',
         order: 0,
       },
+      {
+        code: 'racing.cars',
+        name: 'Coches',
+        icon: 'Wrench',
+        route: '/racing/cars',
+        order: 1,
+      },
     ],
   },
   {
