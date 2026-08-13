@@ -4,8 +4,10 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
@@ -14,6 +16,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
 import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
 import { GetCurrentUserUseCase } from '../../application/use-cases/get-current-user.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
@@ -23,6 +26,9 @@ import { RegisterUserUseCase } from '../../application/use-cases/register-user.u
 import { VerifyEmailUseCase } from '../../application/use-cases/verify-email.use-case';
 import { RequestPasswordResetUseCase } from '../../application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
+import { StartGoogleAuthSessionUseCase } from '../../application/use-cases/start-google-auth-session.use-case';
+import { CompleteGoogleAuthSessionUseCase } from '../../application/use-cases/complete-google-auth-session.use-case';
+import { GetGoogleAuthSessionUseCase } from '../../application/use-cases/get-google-auth-session.use-case';
 import { type AccessTokenPayload } from '../../application/ports/token-issuer.port';
 import { Auth } from './decorators/auth.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -37,6 +43,10 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RequestResetDto } from './dto/request-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { GoogleAuthCallbackDto } from './dto/google-auth-callback.dto';
+import { GoogleAuthStartResponseDto } from './dto/google-auth-start-response.dto';
+import { GoogleAuthSessionResponseDto } from './dto/google-auth-session-response.dto';
+import { renderGoogleAuthCallbackPage } from './google-auth-callback-page';
 
 // Límite estricto para los endpoints públicos sensibles a fuerza bruta
 // (login, register, reset): 10 peticiones/minuto por IP, por encima del límite
@@ -56,6 +66,9 @@ export class AuthController {
     private readonly requestPasswordReset: RequestPasswordResetUseCase,
     private readonly resetPassword: ResetPasswordUseCase,
     private readonly changePassword: ChangePasswordUseCase,
+    private readonly startGoogleAuthSession: StartGoogleAuthSessionUseCase,
+    private readonly completeGoogleAuthSession: CompleteGoogleAuthSessionUseCase,
+    private readonly getGoogleAuthSession: GetGoogleAuthSessionUseCase,
   ) {}
 
   @Post('register')
@@ -117,6 +130,57 @@ export class AuthController {
       dto.accessToken,
     );
     return { accessToken, user: UserResponseDto.fromUser(user) };
+  }
+
+  @Post('google/start')
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Inicia un login con Google desde un cliente sin navegador embebido (Godot). ' +
+      'Devuelve la URL de consentimiento a abrir en el navegador del sistema y un ' +
+      'id de sesión para hacer polling.',
+  })
+  @ApiOkResponse({ type: GoogleAuthStartResponseDto })
+  async startGoogleAuthSessionAction(): Promise<GoogleAuthStartResponseDto> {
+    const start = await this.startGoogleAuthSession.execute();
+    return GoogleAuthStartResponseDto.from(start);
+  }
+
+  @Get('google/callback')
+  @Public()
+  @ApiOperation({
+    summary:
+      'Callback al que Google redirige el navegador tras el consentimiento. ' +
+      'No lo llama la app: solo Google.',
+  })
+  async googleAuthCallbackAction(
+    @Query() dto: GoogleAuthCallbackDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    let ok: boolean;
+    try {
+      ok = await this.completeGoogleAuthSession.execute(dto.state, dto.code);
+    } catch {
+      ok = false;
+    }
+    res.type('html').send(renderGoogleAuthCallbackPage(ok));
+  }
+
+  @Get('google/session/:id')
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @ApiOperation({
+    summary:
+      'Consulta el estado de una sesión de login con Google (polling desde la app).',
+  })
+  @ApiOkResponse({ type: GoogleAuthSessionResponseDto })
+  async getGoogleAuthSessionAction(
+    @Param('id') id: string,
+  ): Promise<GoogleAuthSessionResponseDto> {
+    const result = await this.getGoogleAuthSession.execute(id);
+    return GoogleAuthSessionResponseDto.from(result);
   }
 
   @Get('me')

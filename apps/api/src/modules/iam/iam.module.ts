@@ -15,6 +15,9 @@ import { VerifyEmailUseCase } from './application/use-cases/verify-email.use-cas
 import { RequestPasswordResetUseCase } from './application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case';
+import { StartGoogleAuthSessionUseCase } from './application/use-cases/start-google-auth-session.use-case';
+import { CompleteGoogleAuthSessionUseCase } from './application/use-cases/complete-google-auth-session.use-case';
+import { GetGoogleAuthSessionUseCase } from './application/use-cases/get-google-auth-session.use-case';
 // ===== Users CRUD =====
 import { CreateUserUseCase } from './application/use-cases/create-user.use-case';
 import { DeactivateUserUseCase } from './application/use-cases/deactivate-user.use-case';
@@ -54,6 +57,8 @@ import { TOKEN_ISSUER } from './application/ports/token-issuer.port';
 import { USER_REPOSITORY } from './application/ports/user-repository.port';
 import { GOOGLE_TOKEN_VERIFIER } from './application/ports/google-token-verifier.port';
 import { FACEBOOK_TOKEN_VERIFIER } from './application/ports/facebook-token-verifier.port';
+import { GOOGLE_AUTH_CODE_EXCHANGER } from './application/ports/google-auth-code-exchanger.port';
+import { GOOGLE_AUTH_SESSION_REPOSITORY } from './application/ports/google-auth-session-repository.port';
 
 // ===== Adapters =====
 import { Argon2PasswordHasher } from './infrastructure/crypto/argon2-password-hasher';
@@ -64,6 +69,8 @@ import { PrismaRoleRepository } from './infrastructure/persistence/prisma-role.r
 import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.repository';
 import { GoogleTokenVerifier } from './infrastructure/social/google-token-verifier';
 import { FacebookTokenVerifier } from './infrastructure/social/facebook-token-verifier';
+import { GoogleAuthCodeExchanger } from './infrastructure/social/google-auth-code-exchanger';
+import { PrismaGoogleAuthSessionRepository } from './infrastructure/persistence/prisma-google-auth-session.repository';
 
 // ===== HTTP =====
 import { ApiSectionsController } from './infrastructure/http/api-sections.controller';
@@ -116,6 +123,9 @@ import { MailerModule } from '../mailer/mailer.module';
     RequestPasswordResetUseCase,
     ResetPasswordUseCase,
     ChangePasswordUseCase,
+    StartGoogleAuthSessionUseCase,
+    CompleteGoogleAuthSessionUseCase,
+    GetGoogleAuthSessionUseCase,
 
     // Users use cases
     ListUsersUseCase,
@@ -159,6 +169,14 @@ import { MailerModule } from '../mailer/mailer.module';
     { provide: TOKEN_ISSUER, useClass: JwtTokenIssuer },
     { provide: GOOGLE_TOKEN_VERIFIER, useClass: GoogleTokenVerifier },
     { provide: FACEBOOK_TOKEN_VERIFIER, useClass: FacebookTokenVerifier },
+    {
+      provide: GOOGLE_AUTH_CODE_EXCHANGER,
+      useClass: GoogleAuthCodeExchanger,
+    },
+    {
+      provide: GOOGLE_AUTH_SESSION_REPOSITORY,
+      useClass: PrismaGoogleAuthSessionRepository,
+    },
 
     // Guards locales como singletons del container (los reusan los APP_GUARD
     // de abajo vía `useExisting` para no duplicar instancias).

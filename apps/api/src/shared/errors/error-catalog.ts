@@ -59,6 +59,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'No se pudo verificar el inicio de sesión social.',
   },
+  GOOGLE_AUTH_SESSION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Sesión de login con Google no encontrada.',
+  },
   USER_ALREADY_EXISTS: {
     httpStatus: 409,
     level: 'warn',
