@@ -244,6 +244,7 @@ model User {
   dashboards                Dashboard[]
   notifications             UserNotification[]
   devices                   Device[]
+  lapTimes                  LapTime[]
 
   @@map("user")
 }
@@ -1259,4 +1260,82 @@ model Device {
 
   @@index([userId])
   @@map("device")
+}
+
+// ---------------------------------------------------------------------------
+// Racing
+// ---------------------------------------------------------------------------
+
+/// Circuito jugable.
+///
+/// Cada SENTIDO es una fila distinta ("kenney-01" y "kenney-01-rev"): una
+/// vuelta al revés no es comparable con una normal, así que son leaderboards
+/// separados. Modelarlo como `Track` hace que la separación sea estructural,
+/// en vez de depender de que cada consulta se acuerde de filtrar por sentido.
+///
+/// El trazado en sí no vive aquí: lo construye el cliente desde su catálogo.
+/// Esta tabla es el ancla de los tiempos, no la definición del circuito.
+model Track {
+  id   String @id @default(uuid()) @db.Char(36)
+  /// Coincide con el id del catálogo del cliente, con sufijo "-rev" en inverso.
+  slug String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  /// Nº de SECTORES de la vuelta = checkpoints intermedios + la meta. Es
+  /// también la longitud que debe tener `splitsMs`. En el cliente es
+  /// `LapTimer.sector_count()`.
+  sectorCount Int @map("sector_count")
+
+  /// Suelo de plausibilidad, en ms. Nadie da una vuelta más rápida que esto,
+  /// así que un tiempo por debajo se rechaza sin más análisis. Es la validación
+  /// más barata que existe contra el manipulador casual.
+  minPlausibleMs Int @map("min_plausible_ms")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lapTimes LapTime[]
+
+  @@index([isActive])
+  @@map("racing_track")
+}
+
+/// Un intento de vuelta subido por un jugador.
+///
+/// Se guardan TODOS los intentos, no solo el mejor: el histórico es la materia
+/// prima de los KPIs y de cualquier detección de trampas posterior. El mejor
+/// tiempo se calcula consultando, no guardando estado aparte que pueda
+/// desincronizarse.
+model LapTime {
+  id      String @id @default(uuid()) @db.Char(36)
+  userId  String @map("user_id") @db.Char(36)
+  trackId String @map("track_id") @db.Char(36)
+
+  /// Tiempo total en milisegundos. Entero: un tiempo se compara y se ordena, y
+  /// con floats dos vueltas idénticas dejan de serlo.
+  durationMs Int @map("duration_ms")
+
+  /// Splits acumulados por sector, en ms. JSON porque el nº varía por circuito.
+  /// Monótono creciente y con el último igual a `durationMs`.
+  splitsMs Json @map("splits_ms")
+
+  /// Versión del build que generó el tiempo. Cualquier cambio en la física
+  /// invalida la comparabilidad con los tiempos anteriores; sin este campo, el
+  /// primer ajuste de manejo obliga a borrar el leaderboard entero o a vivir
+  /// con datos mentirosos.
+  clientVersion String @map("client_version") @db.VarChar(32)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  /// El leaderboard consulta por circuito ordenando por tiempo.
+  @@index([trackId, durationMs])
+  /// Y la mejor marca propia, por circuito y usuario.
+  @@index([userId, trackId, durationMs])
+  /// El rate limit del anti-cheat mira el último intento de cada usuario.
+  @@index([userId, createdAt])
+  @@map("racing_lap_time")
 }

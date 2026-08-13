@@ -23,6 +23,12 @@ WORKDIR /repo
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY apps/api/package.json apps/api/prisma.config.ts ./apps/api/
 COPY apps/api/prisma ./apps/api/prisma
+#    Los paquetes del workspace TIENEN que estar aquí: `--filter @core/api...`
+#    incluye a sus dependencias internas, pero pnpm no puede resolver lo que no
+#    está en el contexto. Sin esta línea el build falla al compilar, con
+#    "Cannot find module '@core/shared-types'". Van enteros (manifest y fuente)
+#    porque son paquetes pequeños y hay que compilarlos igual.
+COPY packages/ ./packages/
 
 # 2) Instalamos dependencias del workspace de la api (incluye dev, las
 #    necesitamos para `nest build`). --frozen-lockfile = imagen reproducible.
@@ -32,7 +38,9 @@ RUN pnpm install --frozen-lockfile --filter @core/api...
 #    `prebuild` regenera el cliente de Prisma en `src/generated/prisma/`
 #    antes de que `nest build` lo transpile a `dist/generated/prisma/`.
 COPY apps/api/ apps/api/
-RUN pnpm --filter @core/api build
+#    Con `...` se compilan antes las dependencias internas: la api importa el
+#    `dist/` de shared-types, no su fuente.
+RUN pnpm --filter @core/api... build
 
 # 4) `pnpm deploy` genera una carpeta autocontenida con solo deps de prod
 #    y los archivos del paquete (incluido dist/). Es la forma oficial de

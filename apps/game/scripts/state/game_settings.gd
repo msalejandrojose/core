@@ -1,0 +1,137 @@
+extends Node
+
+## Preferencias del jugador, guardadas en el dispositivo.
+##
+## Autoload registrado como `GameSettings` en project.godot.
+
+const PATH := "user://settings.cfg"
+
+## Cilindrada. Un tiempo a 150cc no es comparable con uno a 50cc, igual que no
+## lo es una vuelta al revés: cada una tiene su propia clasificación.
+enum EngineClass {
+	CC50,
+	CC100,
+	CC150,
+}
+
+## Multiplicador de velocidad punta de cada clase.
+const ENGINE_SPEED := {
+	EngineClass.CC50: 0.72,
+	EngineClass.CC100: 1.0,
+	EngineClass.CC150: 1.32,
+}
+
+const ENGINE_NAMES := {
+	EngineClass.CC50: "50cc",
+	EngineClass.CC100: "100cc",
+	EngineClass.CC150: "150cc",
+}
+
+
+enum ControlScheme {
+	## Volante flotante analógico con acelerador y freno. El de TASK-197.
+	WHEEL,
+	## Se pulsa un lado u otro de la pantalla para girar y el gas va puesto.
+	TAP,
+}
+
+signal changed()
+
+var control_scheme: ControlScheme = ControlScheme.WHEEL
+var reverse: bool = false
+var track_id: String = TrackCatalog.DEFAULT_ID
+
+## Dirección de la API elegida en Ajustes. Vacía = la del proyecto. Existe para
+## poder apuntar a otro backend desde el propio móvil: recompilar y reinstalar
+## solo para cambiar una URL es un ciclo demasiado lento.
+var api_base_url: String = ""
+
+var engine_class: EngineClass = EngineClass.CC100
+
+var _cfg := ConfigFile.new()
+
+
+func _ready() -> void:
+	_cfg.load(PATH)
+	control_scheme = _cfg.get_value("controls", "scheme", ControlScheme.WHEEL)
+	reverse = _cfg.get_value("track", "reverse", false)
+	track_id = _cfg.get_value("track", "id", TrackCatalog.DEFAULT_ID)
+	api_base_url = _cfg.get_value("api", "base_url", "")
+	engine_class = _cfg.get_value("race", "engine_class", EngineClass.CC100)
+	# Un circuito que ya no existe (renombrado, retirado) no debe dejar el juego
+	# sin pista: se cae al primero del catálogo.
+	if not TrackCatalog.ids().has(track_id):
+		track_id = TrackCatalog.DEFAULT_ID
+
+
+func set_control_scheme(scheme: ControlScheme) -> void:
+	if scheme == control_scheme:
+		return
+	control_scheme = scheme
+	_cfg.set_value("controls", "scheme", scheme)
+	_save()
+
+
+func set_track_id(id: String) -> void:
+	if id == track_id:
+		return
+	track_id = id
+	_cfg.set_value("track", "id", id)
+	_save()
+
+
+func set_api_base_url(url: String) -> void:
+	var clean := url.strip_edges()
+	if clean == api_base_url:
+		return
+	api_base_url = clean
+	_cfg.set_value("api", "base_url", clean)
+	_save()
+
+
+func set_engine_class(value: EngineClass) -> void:
+	if value == engine_class:
+		return
+	engine_class = value
+	_cfg.set_value("race", "engine_class", value)
+	_save()
+
+
+func engine_speed() -> float:
+	return ENGINE_SPEED[engine_class]
+
+
+func engine_name() -> String:
+	return ENGINE_NAMES[engine_class]
+
+
+func set_reverse(value: bool) -> void:
+	if value == reverse:
+		return
+	reverse = value
+	_cfg.set_value("track", "reverse", value)
+	_save()
+
+
+## Clave de récord: circuito y sentido. Correr al revés es, a efectos de
+## tiempos, otro circuito — una vuelta inversa no se puede comparar con una
+## normal — así que cada combinación guarda su propia marca. En la API esto
+## será una `Track` distinta por cada una.
+func track_key() -> String:
+	return key_for(track_id)
+
+
+## Misma regla aplicada a un circuito cualquiera. Existe para que la clave se
+## componga en un único sitio: cuando el director tenía su propia concatenación,
+## la sobreescritura de los tests se saltaba el "-rev" y el récord inverso
+## acababa pisando al normal.
+##
+## Entran circuito, sentido Y cilindrada, porque los tres cambian el tiempo. Un
+## 150cc contra un 50cc no es una comparación, es otro juego.
+func key_for(id: String) -> String:
+	return "%s%s-%s" % [id, "-rev" if reverse else "", engine_name()]
+
+
+func _save() -> void:
+	_cfg.save(PATH)
+	changed.emit()

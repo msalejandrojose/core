@@ -32,7 +32,7 @@ provisional).
 | Decisión | Elección | Motivo |
 |---|---|---|
 | Ubicación | Todo dentro del monorepo `core` | Reaprovechar IAM, Prisma, Docker, backoffice |
-| Proyecto Godot | `apps/game/` | Carpeta fuera del workspace pnpm (no tiene `package.json`, pnpm la ignora) |
+| Proyecto Godot | `apps/game/` | Paquete del workspace (`@core/game`). El `package.json` no tiene dependencias: existe solo para que el proyecto tenga los mismos comandos `pnpm` que el resto de apps |
 | Backend | `apps/api` → `src/modules/racing/` | Módulo de dominio en la rama `racing-dev`, nunca en `main` |
 | Auth | IAM existente de `core` (`modules/iam`) | Email/password + social login ya construidos y probados |
 | Multijugador | Ninguno en F0 | Ver §7 |
@@ -52,12 +52,29 @@ en F0 no se toca.
 
 ### Dentro
 
-1. **Juego** — Starter kit adaptado: 1 pista, 1 coche, modo contrarreloj.
+1. **Juego** — Starter kit adaptado: 4 circuitos, 1 coche, modo contrarreloj.
    - Cronómetro con precisión de milisegundos.
    - Detección de vuelta válida por checkpoints en orden (evita atajos).
+   - Salida con semáforo, para que todas las vueltas empiecen igual.
+   - Nitro con depósito que se gasta y se recarga: sin límite no sería una
+     decisión, sería ir siempre más rápido.
+   - Tres cilindradas (50cc / 100cc / 150cc). Cada combinación de circuito,
+     sentido y cilindrada es una clasificación propia: un 150cc contra un 50cc
+     no es una comparación.
+   - Menú principal para elegir circuito y sentido, con vista previa del
+     trazado detrás.
    - Reinicio rápido (el gesto más usado de un contrarreloj — debe ser instantáneo).
    - Controles táctiles: acelerador/freno + dirección. **Reescritos**: el starter
-     kit usa teclado.
+     kit usa teclado. Dos esquemas elegibles: volante flotante analógico y toque
+     lateral con acelerador automático.
+   - Ajustes con circuito y sentido (normal / inverso). Cada combinación de
+     circuito y sentido es un circuito distinto a efectos de tiempos.
+   - Los circuitos se construyen en tiempo de ejecución desde una lista de
+     celdas (`scripts/track/track_catalog.gd`): añadir uno es añadir
+     coordenadas, no montar una escena.
+   - Cada circuito lleva su ambientación y su agarre. El nevado repinta la
+     paleta compartida de los modelos (verde → blanco) y baja el agarre, así
+     que el coche gira tarde y frena largo.
 2. **Cuenta** — login vía IAM de `core` (email/password + Google/Apple).
    Usuarios de tipo `APP`.
 3. **Leaderboard global** — subir tiempo al terminar vuelta, ver top N + tu posición.
@@ -67,8 +84,8 @@ en F0 no se toca.
 
 ### Fuera (explícito)
 
-Ghosts, amigos, temporadas, IAP, skills/skins, editor de circuitos, backoffice,
-múltiples pistas, múltiples coches, sonido propio, live racing.
+Ghosts, amigos, temporadas, IAP, skills/skins, editor de circuitos en la app,
+backoffice, múltiples coches, sonido propio, live racing.
 
 ### Criterio de "hecho"
 
@@ -86,12 +103,20 @@ justifica la Fase 1. Si no engancha, ninguna cantidad de IAP lo arregla.
 Mínimo viable. Se añade a `apps/api/prisma/schema.prisma` en la rama `racing-dev`.
 
 ```prisma
-/// Circuito jugable. En F0 hay exactamente uno, sembrado por seed.
+/// Circuito jugable. En F0 hay uno, sembrado por seed — pero corriéndose en
+/// los dos sentidos, y cada sentido es una fila distinta.
+///
+/// Por qué una fila y no un flag en LapTime: una vuelta al revés no es
+/// comparable con una normal, así que son leaderboards separados. Modelarlo
+/// como `Track` hace que esa separación sea estructural en vez de depender de
+/// que cada consulta se acuerde de filtrar por sentido.
 model Track {
   id        String   @id @default(uuid()) @db.Char(36)
-  slug      String   @unique @db.VarChar(64)   // "kenney-01"
+  slug      String   @unique @db.VarChar(64)   // "kenney-01", "kenney-01-rev"
   name      String   @db.VarChar(120)
-  /// Nº de checkpoints que una vuelta válida debe cruzar en orden.
+  /// Nº de SECTORES de la vuelta = checkpoints intermedios + la meta. Es
+  /// también la longitud que debe tener `splitsMs`. En el cliente el
+  /// equivalente es `LapTimer.sector_count()`.
   checkpointCount Int @map("checkpoint_count")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
