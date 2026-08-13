@@ -32,3 +32,33 @@ export const TERRAIN_LABELS: Record<
   MUD: 'Barro',
   WATER: 'Agua',
 };
+
+export interface CarArchetypeRow {
+  id: string;
+  code: string;
+  name: string;
+  speedScale: number;
+  grip: number;
+  offroadGripModifier: number;
+  isActive: boolean;
+}
+
+export type CarPartCategory = 'TIRES' | 'WING' | 'CHASSIS';
+
+export const CAR_PART_CATEGORY_LABELS: Record<CarPartCategory, string> = {
+  TIRES: 'Neumáticos',
+  WING: 'Alerón',
+  CHASSIS: 'Chasis',
+};
+
+export interface CarPartRow {
+  id: string;
+  code: string;
+  category: CarPartCategory;
+  name: string;
+  /** Delta sobre el speedScale del arquetipo equipado. */
+  speedScale: number;
+  /** Delta sobre el grip del arquetipo equipado. */
+  grip: number;
+  isActive: boolean;
+}
