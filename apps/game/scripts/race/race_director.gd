@@ -95,6 +95,12 @@ func _ready() -> void:
 	# el circuito entero.
 	CarLoadout.changed.connect(_apply_car_loadout)
 
+	# Se pone una sola vez: el terreno bajo el coche (TASK-273) lo lee
+	# `Vehicle` cada frame directamente del `TrackBuilder`, sin pasar por el
+	# director — es el mismo nodo durante toda la partida, cambie o no de
+	# circuito.
+	vehicle.track_builder = track_builder
+
 	rebuild_track()
 	restart()
 
@@ -169,21 +175,17 @@ func rebuild_track() -> void:
 	_apply_car_loadout()
 
 
-## Combina el circuito (agarre de tema + si es asfalto seco) con el coche
-## equipado (arquetipo + piezas, y su modificador fuera de asfalto) en los
-## campos reales de `Vehicle`. Es la misma fórmula que `effectiveGrip` en la
-## API (`car-stats.ts`): grip del coche × grip de la superficie × modificador
-## offroad si toca.
-##
-## Por ahora "offroad" es el tema del circuito entero (SNOW); cuando el
-## terreno por celda se lea en tiempo real (TASK-273) esto se refinará por
-## celda sin tocar esta fórmula, solo qué `surfaceGrip`/`isOffroad` se le pasa.
+## Pone en `Vehicle` la parte del coche que NO cambia frame a frame: el coche
+## equipado (arquetipo + piezas) combinado con el circuito (grip de tema, y si
+## el tema entero ya cuenta como offroad). El agarre EFECTIVO final —
+## cruzando esto con el terreno de sección bajo el coche ahora mismo — lo
+## termina de calcular `Vehicle._update_terrain` cada frame, con la misma
+## fórmula que `effectiveGrip` en la API (`car-stats.ts`).
 func _apply_car_loadout() -> void:
-	var is_offroad := _layout.theme == TrackTheme.Kind.SNOW
-	var offroad_factor := CarLoadout.offroad_grip_modifier if is_offroad else 1.0
-
-	vehicle.grip = CarLoadout.grip * _layout.grip * offroad_factor
-	vehicle.speed_scale = CarLoadout.speed_scale * GameSettings.engine_speed()
+	vehicle.base_grip = CarLoadout.grip * _layout.grip
+	vehicle.base_speed_scale = CarLoadout.speed_scale * GameSettings.engine_speed()
+	vehicle.theme_is_offroad = _layout.theme == TrackTheme.Kind.SNOW
+	vehicle.offroad_grip_modifier = CarLoadout.offroad_grip_modifier
 	vehicle.set_body(_body_scene_for(CarLoadout.archetype_code))
 
 
