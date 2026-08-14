@@ -40,3 +40,21 @@ func tracks():
 ## sin cuenta, `CarLoadout` no llega a llamar a esto y usa el default local.
 func car_loadout():
 	return await Api.get_json("/racing/cars/me")
+
+
+## Arquetipos y piezas disponibles para el taller (`WorkshopScreen`).
+func car_catalog():
+	return await Api.get_json("/racing/cars/catalog")
+
+
+## Cambia el arquetipo y las piezas equipadas. Los tres huecos de pieza se
+## mandan siempre explícitos (null = vacío): el taller conoce el estado
+## completo en todo momento, así que no hace falta la semántica de "ausente =
+## no tocar" que soporta la API para clientes que solo cambian un hueco.
+func set_car_loadout(archetype_id: String, tires_part_id, wing_part_id, chassis_part_id):
+	return await Api.patch_json("/racing/cars/me", {
+		"archetypeId": archetype_id,
+		"tiresPartId": tires_part_id,
+		"wingPartId": wing_part_id,
+		"chassisPartId": chassis_part_id,
+	})
