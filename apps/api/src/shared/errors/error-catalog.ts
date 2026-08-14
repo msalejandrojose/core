@@ -311,6 +311,31 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Efecto de terreno no encontrado.',
   },
+  RACING_GRAND_PRIX_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Grand Prix no encontrado.',
+  },
+  RACING_GRAND_PRIX_SLUG_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un Grand Prix con ese slug.',
+  },
+  RACING_INVALID_GRAND_PRIX_STAGES: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'Los circuitos del Grand Prix no son válidos.',
+  },
+  RACING_GRAND_PRIX_ATTEMPT_STAGE_MISMATCH: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ese circuito no es la siguiente manga pendiente.',
+  },
+  RACING_GRAND_PRIX_ATTEMPT_NOT_IN_PROGRESS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'No hay un intento en curso de ese Grand Prix.',
+  },
 
   // Leads
   LEAD_NOT_FOUND: {
