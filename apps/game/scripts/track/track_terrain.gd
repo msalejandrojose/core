@@ -37,3 +37,15 @@ static var _effects := {
 
 static func effect(kind: Kind) -> Effect:
 	return _effects[kind]
+
+
+## Traduce el código de tipo que manda la API (string) al enum local. Devuelve
+## -1 si no lo reconoce — un tipo que este cliente aún no sabe pintar ni
+## aplicar es mejor ignorarlo que reventar (TASK-304).
+static func kind_from_code(code: String) -> int:
+	match code:
+		"ASPHALT": return Kind.ASPHALT
+		"ICE": return Kind.ICE
+		"MUD": return Kind.MUD
+		"WATER": return Kind.WATER
+		_: return -1

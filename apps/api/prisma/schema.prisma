@@ -1525,3 +1525,34 @@ model PlayerCarLoadout {
 
   @@map("racing_player_car_loadout")
 }
+
+/// Terreno de sección dentro de UN circuito (TASK-270/271), distinto del tema
+/// visual del circuito entero (`Track.theme`). Conjunto CERRADO: a diferencia
+/// de `CarArchetype`/`CarPart`, estos cuatro tipos están cableados en el
+/// dominio (`validateTrackPath`) y en el cliente (`TrackTerrain.gd`), así que
+/// esta tabla no tiene create/delete — solo ajustar los factores de los
+/// cuatro sin desplegar el juego (TASK-304).
+enum RacingTerrainType {
+  ASPHALT
+  ICE
+  MUD
+  WATER
+}
+
+/// Efecto numérico de cada tipo de terreno de sección. Sembrado con la
+/// decisión de partida de TASK-270; `RacingApi.terrain_effects()` en el
+/// cliente Godot los trae en cada arranque y cae a sus propios valores por
+/// defecto si no hay red.
+model RacingTerrainEffect {
+  id   String            @id @default(uuid()) @db.Char(36)
+  type RacingTerrainType @unique
+
+  /// Multiplicador de agarre. Mismo eje que `Track.grip` y `Vehicle.grip`.
+  grip Float
+  /// Si además de perder agarre, frena la velocidad punta mientras se pisa.
+  slowsTopSpeed Boolean @map("slows_top_speed")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_terrain_effect")
+}

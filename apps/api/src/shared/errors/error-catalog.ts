@@ -306,6 +306,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'La configuración de coche no es válida.',
   },
+  RACING_TERRAIN_EFFECT_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Efecto de terreno no encontrado.',
+  },
 
   // Leads
   LEAD_NOT_FOUND: {

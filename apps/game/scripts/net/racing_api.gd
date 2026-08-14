@@ -58,3 +58,10 @@ func set_car_loadout(archetype_id: String, tires_part_id, wing_part_id, chassis_
 		"wingPartId": wing_part_id,
 		"chassisPartId": chassis_part_id,
 	})
+
+
+## Factores de terreno de sección (grip, si frena la velocidad punta), para
+## poder ajustarlos desde el backoffice sin desplegar el juego (TASK-304).
+## Público: hace falta hasta sin cuenta, todo el mundo pisa el mismo hielo.
+func terrain_effects():
+	return await Api.get_json("/racing/terrain-effects", false)

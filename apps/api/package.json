@@ -32,6 +32,7 @@
     "seed:notifications": "pnpm build && node dist/seeds/seed-notifications.js",
     "seed:racing": "pnpm build && node dist/seeds/seed-racing.js",
     "seed:racing:cars": "pnpm build && node dist/seeds/seed-racing-cars.js",
+    "seed:racing:terrain": "pnpm build && node dist/seeds/seed-racing-terrain.js",
     "sync:sections": "pnpm build && node dist/seeds/sync-api-sections.js"
   },
   "dependencies": {

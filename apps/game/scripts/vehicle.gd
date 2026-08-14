@@ -290,7 +290,7 @@ func _update_terrain(delta: float) -> void:
 	if track_builder != null and raycast.is_colliding():
 		terrain = track_builder.terrain_at(raycast.get_collision_point())
 
-	var effect := TrackTerrain.effect(terrain)
+	var effect := TerrainCatalog.effect(terrain)
 	var is_offroad := theme_is_offroad or terrain != TrackTerrain.Kind.ASPHALT
 	var offroad_factor := offroad_grip_modifier if is_offroad else 1.0
 
