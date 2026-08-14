@@ -23,6 +23,21 @@ const ROT_QUARTER_CCW := 22
 ## Altura del volumen de los checkpoints sobre el asfalto.
 const CHECKPOINT_HEIGHT := 1.1
 
+## Cuánto se levanta el overlay de terreno sobre el asfalto. Nada que ver con
+## la altura de un checkpoint: aquí basta con lo justo para no parpadear
+## contra la pieza de debajo (z-fighting), no con despegarse del suelo.
+const TERRAIN_OVERLAY_HEIGHT := 0.03
+
+## Color por tipo de terreno de sección (TASK-271/274). El reskin de TEMA
+## remapea la paleta del circuito ENTERO — aquí hace falta marcar la celda
+## concreta, así que es una mancha translúcida encima del asfalto en vez de
+## un cambio de textura. Sin entrada = asfalto = sin overlay.
+const TERRAIN_COLORS := {
+	TrackTerrain.Kind.ICE: Color(0.75, 0.88, 1.0, 0.55),
+	TrackTerrain.Kind.MUD: Color(0.32, 0.22, 0.10, 0.65),
+	TrackTerrain.Kind.WATER: Color(0.25, 0.55, 0.8, 0.55),
+}
+
 ## Celdas de margen alrededor del circuito. Con menos, el asfalto acaba en un
 ## borde recto y se ve el vacío justo detrás de las vallas.
 const DECORATION_MARGIN := 2
@@ -77,6 +92,7 @@ func build(layout: TrackCatalog.Layout) -> int:
 		var out := layout.path[(i + 1) % size] - cell
 		_place_track(cell, into, out, i == 0)
 
+	_place_terrain_overlays(layout)
 	_place_decorations(layout)
 	_fit_ground(layout)
 
@@ -128,6 +144,9 @@ func _clear() -> void:
 		# `queue_free` no saca del grupo hasta el final del frame, y el
 		# cronómetro vuelve a escanear inmediatamente después de construir.
 		node.remove_from_group("checkpoint")
+	for node in get_tree().get_nodes_in_group("terrain-overlay"):
+		node.queue_free()
+		node.remove_from_group("terrain-overlay")
 
 
 func _place_track(cell: Vector2i, into: Vector2i, out: Vector2i, is_finish: bool) -> void:
@@ -154,6 +173,39 @@ func _corner_rotation(a: Vector2i, b: Vector2i) -> int:
 	if west:
 		return ROT_NONE if north else ROT_QUARTER_CCW
 	return ROT_QUARTER_CW if north else ROT_HALF
+
+
+## Mancha translúcida sobre cada celda con terreno de sección pintado, para
+## que hielo/barro/agua se distingan a simple vista y no solo en el editor
+## del backoffice (TASK-274). Una por celda pintada; el asfalto no lleva
+## overlay, que por eso `TERRAIN_COLORS` no tiene entrada para él.
+func _place_terrain_overlays(layout: TrackCatalog.Layout) -> void:
+	if layout.terrain.is_empty():
+		return
+
+	var half := (cell_center(Vector2i(1, 0)) - cell_center(Vector2i(0, 0))).x * 0.5
+
+	for cell in layout.terrain:
+		var kind: TrackTerrain.Kind = layout.terrain[cell]
+		if not TERRAIN_COLORS.has(kind):
+			continue
+
+		var plane := PlaneMesh.new()
+		plane.size = Vector2(half * 2.0, half * 2.0)
+
+		var material := StandardMaterial3D.new()
+		material.albedo_color = TERRAIN_COLORS[kind]
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.disable_receive_shadows = true
+
+		var overlay := MeshInstance3D.new()
+		overlay.mesh = plane
+		overlay.material_override = material
+		overlay.add_to_group("terrain-overlay")
+
+		add_child(overlay)
+		overlay.global_position = cell_center(cell) + Vector3(0, TERRAIN_OVERLAY_HEIGHT, 0)
 
 
 ## Entorno del circuito: bosque alternado con hierba lisa.
