@@ -19,6 +19,7 @@ import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
 import { GetPersonalBestUseCase } from '../../application/use-cases/get-personal-best.use-case';
+import { GetTrackUseCase } from '../../application/use-cases/get-track.use-case';
 import { ListTracksUseCase } from '../../application/use-cases/list-tracks.use-case';
 import { SubmitLapTimeUseCase } from '../../application/use-cases/submit-lap-time.use-case';
 import {
@@ -30,6 +31,7 @@ import {
   LeaderboardResponseDto,
 } from './dto/leaderboard.response.dto';
 import { SubmitLapTimeDto } from './dto/submit-lap-time.dto';
+import { TrackDetailResponseDto } from './dto/track-detail.response.dto';
 import { TrackResponseDto } from './dto/track.response.dto';
 
 // Cuántas filas devuelve el leaderboard por defecto y como mucho. El tope
@@ -52,6 +54,7 @@ export class RacingController {
     private readonly submitLapTime: SubmitLapTimeUseCase,
     private readonly getLeaderboard: GetLeaderboardUseCase,
     private readonly getPersonalBest: GetPersonalBestUseCase,
+    private readonly getTrack: GetTrackUseCase,
   ) {}
 
   @Get('tracks')
@@ -66,10 +69,21 @@ export class RacingController {
       cursor: query.cursor,
     });
     return CursorPaginatedResponseDto.of(
-      page.items.map(TrackResponseDto.fromTrack),
+      page.items.map((track) => TrackResponseDto.fromTrack(track)),
       page.nextCursor,
       limit,
     );
+  }
+
+  @Get('tracks/:slug')
+  @ApiOperation({
+    summary: 'Circuito completo por slug, con geometría',
+    description:
+      'Para construir un circuito que no esté en el catálogo local del cliente (TASK-245) — típicamente uno nacido en el backoffice, o una manga de Grand Prix.',
+  })
+  @ApiOkResponse({ type: TrackDetailResponseDto })
+  async detail(@Param('slug') slug: string): Promise<TrackDetailResponseDto> {
+    return TrackDetailResponseDto.fromTrack(await this.getTrack.execute(slug));
   }
 
   @Post('tracks/:slug/lap-times')
@@ -109,7 +123,11 @@ export class RacingController {
   async leaderboard(
     @CurrentUser() current: AccessTokenPayload,
     @Param('slug') slug: string,
-    @Query('limit', new DefaultValuePipe(DEFAULT_LEADERBOARD_LIMIT), ParseIntPipe)
+    @Query(
+      'limit',
+      new DefaultValuePipe(DEFAULT_LEADERBOARD_LIMIT),
+      ParseIntPipe,
+    )
     limit: number,
   ): Promise<LeaderboardResponseDto> {
     const result = await this.getLeaderboard.execute(
@@ -119,7 +137,9 @@ export class RacingController {
     );
 
     return {
-      entries: result.entries.map(LeaderboardEntryDto.fromEntry),
+      entries: result.entries.map((entry) =>
+        LeaderboardEntryDto.fromEntry(entry),
+      ),
       yourPosition: result.yourPosition,
     };
   }

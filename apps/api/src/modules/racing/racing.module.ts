@@ -32,6 +32,7 @@ import { GetGrandPrixUseCase } from './application/use-cases/get-grand-prix.use-
 import { GetLeaderboardUseCase } from './application/use-cases/get-leaderboard.use-case';
 import { GetPersonalBestUseCase } from './application/use-cases/get-personal-best.use-case';
 import { GetPlayerCarLoadoutUseCase } from './application/use-cases/get-player-car-loadout.use-case';
+import { GetTrackUseCase } from './application/use-cases/get-track.use-case';
 import { InvalidateLapTimeUseCase } from './application/use-cases/invalidate-lap-time.use-case';
 import { ListCarCatalogUseCase } from './application/use-cases/list-car-catalog.use-case';
 import { ListGrandPrixUseCase } from './application/use-cases/list-grand-prix.use-case';
@@ -83,6 +84,7 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     SubmitLapTimeUseCase,
     GetLeaderboardUseCase,
     GetPersonalBestUseCase,
+    GetTrackUseCase,
     AdminListTracksUseCase,
     AdminGetTrackUseCase,
     AdminCreateTrackUseCase,

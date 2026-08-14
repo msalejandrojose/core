@@ -33,6 +33,7 @@ RacingApi="*res://scripts/net/racing_api.gd"
 LapQueue="*res://scripts/state/lap_queue.gd"
 CarLoadout="*res://scripts/state/car_loadout.gd"
 TerrainCatalog="*res://scripts/state/terrain_catalog.gd"
+TrackCache="*res://scripts/state/track_cache.gd"
 
 [display]
 

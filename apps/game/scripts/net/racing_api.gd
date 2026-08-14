@@ -36,6 +36,12 @@ func tracks():
 	return await Api.get_json("/racing/tracks")
 
 
+## Circuito completo (con geometría), por slug — para construir uno que no
+## esté en el catálogo local. Ver `TrackCache` (TASK-245).
+func track(slug: String):
+	return await Api.get_json("/racing/tracks/%s" % slug)
+
+
 ## Arquetipo, piezas equipadas y sus stats ya combinados. Requiere sesión —
 ## sin cuenta, `CarLoadout` no llega a llamar a esto y usa el default local.
 func car_loadout():
