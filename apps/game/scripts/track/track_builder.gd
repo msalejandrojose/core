@@ -48,6 +48,11 @@ var _base_environment: Environment
 var start_position: Vector3
 var start_yaw: float
 
+## Terreno de sección del circuito activo, tal cual venía en el `Layout`
+## (TASK-271/273). Vive aquí y no en `Vehicle` porque es el circuito quien
+## sabe qué hay en cada celda; `Vehicle` solo pregunta.
+var _terrain_by_cell: Dictionary = {}
+
 
 func _ready() -> void:
 	grid_map = get_node(grid_map_path)
@@ -63,6 +68,7 @@ func _ready() -> void:
 func build(layout: TrackCatalog.Layout) -> int:
 	_clear()
 	_apply_theme(layout.theme)
+	_terrain_by_cell = layout.terrain
 
 	var size := layout.path.size()
 	for i in size:
@@ -92,6 +98,17 @@ func build(layout: TrackCatalog.Layout) -> int:
 ## desplazamiento del nodo se respetan solos.
 func cell_center(cell: Vector2i) -> Vector3:
 	return grid_map.to_global(grid_map.map_to_local(Vector3i(cell.x, 0, cell.y)))
+
+
+## Terreno de sección bajo un punto del mundo (TASK-273). El GridMap colisiona
+## como un único cuerpo — no dice qué celda golpeó un raycast — así que se
+## convierte el punto de impacto a coordenadas de celda y se mira ahí. Encaja
+## con el raycast que `Vehicle` ya dispara cada frame para orientar el modelo:
+## no hace falta detección nueva, solo esta traducción.
+func terrain_at(world_position: Vector3) -> TrackTerrain.Kind:
+	var map_cell := grid_map.local_to_map(grid_map.to_local(world_position))
+	var cell := Vector2i(map_cell.x, map_cell.z)
+	return _terrain_by_cell.get(cell, TrackTerrain.Kind.ASPHALT)
 
 
 ## El tema se aplica ANTES de colocar celdas: cambiar la mesh library con el

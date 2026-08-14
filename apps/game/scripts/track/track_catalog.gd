@@ -26,6 +26,9 @@ class Layout:
 	## Agarre de la superficie: 1.0 asfalto seco. Por debajo, el coche tarda más
 	## en girar, en acelerar y sobre todo en frenar.
 	var grip: float
+	## Terreno de sección por celda (TASK-271). Ausente = asfalto, igual que en
+	## la API: no hace falta marcar nada para que un circuito sea todo asfalto.
+	var terrain: Dictionary
 
 	func _init(
 		p_id: String,
@@ -34,6 +37,7 @@ class Layout:
 		p_checkpoints: int = 3,
 		p_theme: TrackTheme.Kind = TrackTheme.Kind.MEADOW,
 		p_grip: float = 1.0,
+		p_terrain: Dictionary = {},
 	) -> void:
 		id = p_id
 		name = p_name
@@ -41,6 +45,7 @@ class Layout:
 		checkpoints = p_checkpoints
 		theme = p_theme
 		grip = p_grip
+		terrain = p_terrain
 
 
 const DEFAULT_ID := "kenney-01"
@@ -100,6 +105,10 @@ static func _herradura() -> Layout:
 ## El agarre bajo no es decoración: con 0.55 el coche gira tarde y frena largo,
 ## así que las horquillas hay que preparlas antes de llegar. Es el circuito en
 ## el que el freno importa.
+##
+## Un hielo de sección (TASK-271/273) en la entrada de la horquilla final:
+## encima del agarre ya bajo del tema, castiga aún más llegar rápido y sin
+## frenar — el mismo sitio que el comentario de arriba ya señalaba.
 static func _nevado() -> Layout:
 	var path: Array[Vector2i] = [
 		Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 3),
@@ -113,10 +122,18 @@ static func _nevado() -> Layout:
 		Vector2i(-3, -2), Vector2i(-2, -2), Vector2i(-2, -1),
 		Vector2i(-1, -1), Vector2i(0, -1),
 	]
-	return Layout.new("nevado", "Nevado", path, 4, TrackTheme.Kind.SNOW, 0.55)
+	var terrain := {
+		Vector2i(-3, -1): TrackTerrain.Kind.ICE,
+		Vector2i(-3, -2): TrackTerrain.Kind.ICE,
+	}
+	return Layout.new("nevado", "Nevado", path, 4, TrackTheme.Kind.SNOW, 0.55, terrain)
 
 
 ## Corto y técnico: una ese seguida, donde se gana o se pierde por frenar bien.
+##
+## Aquí el terreno de sección (TASK-271/273) prueba que no hace falta un tema
+## de circuito distinto para tener una mancha de barro: dos celdas de la ese
+## son barro sobre un circuito de asfalto normal.
 static func _chicane() -> Layout:
 	var path: Array[Vector2i] = [
 		Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2),
@@ -125,4 +142,8 @@ static func _chicane() -> Layout:
 		Vector2i(-3, 2), Vector2i(-3, 1), Vector2i(-3, 0), Vector2i(-3, -1),
 		Vector2i(-2, -1), Vector2i(-1, -1), Vector2i(0, -1),
 	]
-	return Layout.new("chicane", "Chicane", path)
+	var terrain := {
+		Vector2i(-2, 3): TrackTerrain.Kind.MUD,
+		Vector2i(-2, 2): TrackTerrain.Kind.MUD,
+	}
+	return Layout.new("chicane", "Chicane", path, 3, TrackTheme.Kind.MEADOW, 1.0, terrain)

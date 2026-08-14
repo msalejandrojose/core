@@ -7,6 +7,13 @@ const TestEnv := preload("res://tests/test_env.gd")
 ## de asfalto penaliza distinto a cada arquetipo en un circuito nevado:
 ##
 ##     godot --headless --quit-after 200 res://tests/car_loadout_test.tscn
+##
+## `Vehicle.grip`/`speed_scale` ya no se asignan de fuera: se recalculan cada
+## `_physics_process` con un lerp hacia el terreno bajo el coche (TASK-273),
+## así que cada comprobación espera unos frames de física a que converja en
+## vez de leer el valor justo después de tocar `CarLoadout`.
+
+const SETTLE_FRAMES := 60
 
 var _failures := 0
 var _director: RaceDirector
@@ -24,7 +31,7 @@ func _ready() -> void:
 	_vehicle = main.get_node("Vehicle")
 	_director.set_process(false)
 
-	_test_default_normal_en_asfalto()
+	await _test_default_normal_en_asfalto()
 	await _test_arquetipo_cambia_grip_y_velocidad()
 	await _test_modelo_cambia_con_el_arquetipo()
 	await _test_offroad_penaliza_distinto_por_arquetipo()
@@ -45,9 +52,11 @@ func _ready() -> void:
 func _test_default_normal_en_asfalto() -> void:
 	_reset_car_loadout()
 	_director.rebuild_track()
+	await _settle()
 
-	_check_eq(_vehicle.grip, 1.0, "sin equipar nada, grip normal en asfalto es 1.0")
-	_check_eq(_vehicle.speed_scale, GameSettings.engine_speed(), "sin equipar nada, speed_scale es solo la cilindrada")
+	_check_almost_eq(_vehicle.grip, 1.0, "sin equipar nada, grip normal en asfalto es 1.0")
+	_check_almost_eq(_vehicle.speed_scale, GameSettings.engine_speed(),
+		"sin equipar nada, speed_scale es solo la cilindrada")
 
 
 func _test_arquetipo_cambia_grip_y_velocidad() -> void:
@@ -59,7 +68,7 @@ func _test_arquetipo_cambia_grip_y_velocidad() -> void:
 	CarLoadout.grip = 1.1
 	CarLoadout.offroad_grip_modifier = 0.85
 	CarLoadout.changed.emit()
-	await get_tree().physics_frame
+	await _settle()
 
 	_check_almost_eq(_vehicle.grip, 1.1, "el grip del arquetipo se aplica en asfalto")
 	_check_almost_eq(_vehicle.speed_scale, 1.2 * GameSettings.engine_speed(),
@@ -93,7 +102,7 @@ func _test_offroad_penaliza_distinto_por_arquetipo() -> void:
 	CarLoadout.grip = 1.0
 	CarLoadout.offroad_grip_modifier = 0.85
 	CarLoadout.changed.emit()
-	await get_tree().physics_frame
+	await _settle()
 	var f1_grip := _vehicle.grip
 
 	_reset_car_loadout()
@@ -101,7 +110,7 @@ func _test_offroad_penaliza_distinto_por_arquetipo() -> void:
 	CarLoadout.grip = 1.0
 	CarLoadout.offroad_grip_modifier = 1.15
 	CarLoadout.changed.emit()
-	await get_tree().physics_frame
+	await _settle()
 	var suv_grip := _vehicle.grip
 
 	_check(suv_grip > f1_grip, true,
@@ -120,6 +129,11 @@ func _reset_car_loadout() -> void:
 	CarLoadout.offroad_grip_modifier = 1.0
 
 
+func _settle() -> void:
+	for i in SETTLE_FRAMES:
+		await get_tree().physics_frame
+
+
 func _check(got, want, label: String) -> void:
 	_report(got == want, label, want, got)
 
@@ -129,7 +143,7 @@ func _check_eq(got, want, label: String) -> void:
 
 
 func _check_almost_eq(got: float, want: float, label: String) -> void:
-	_report(absf(got - want) < 0.001, label, want, got)
+	_report(absf(got - want) < 0.005, label, want, got)
 
 
 func _report(ok: bool, label: String, want, got) -> void:

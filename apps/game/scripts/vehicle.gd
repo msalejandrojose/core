@@ -48,14 +48,49 @@ var prev_position: Vector3
 
 var calculated_lean: float
 
-## Agarre de la superficie, 1.0 asfalto seco. Lo pone el director según el
-## circuito. Multiplica la rapidez con la que el coche responde: girar,
-## acelerar y frenar. Con poco agarre todo llega tarde, que es exactamente la
-## sensación de ir sobre nieve.
+## Agarre EFECTIVO ahora mismo: lo usa la física cada frame. Se recalcula solo
+## en `_update_terrain`, cruzando `base_grip` con el terreno de sección bajo
+## el coche — nadie más debería escribir en este campo. Con poco agarre todo
+## llega tarde (girar, acelerar, frenar), que es la sensación de ir sobre
+## nieve o hielo.
 var grip: float = 1.0
 
-## Cilindrada elegida: multiplica la velocidad punta. Lo pone el director.
+## Velocidad punta EFECTIVA ahora mismo: igual que `grip`, recalculada cada
+## frame (el barro la frena; el hielo no).
 var speed_scale: float = 1.0
+
+## Agarre del coche (arquetipo + piezas) × agarre del TEMA del circuito
+## entero. Lo pone el director al construir o reequipar — es la base sobre la
+## que `_update_terrain` monta el efecto del terreno de sección, que sí
+## cambia solo con la posición y no necesita que el director haga nada.
+var base_grip: float = 1.0
+
+## Velocidad del coche (arquetipo + piezas) × cilindrada. Misma idea que
+## `base_grip` para el otro eje.
+var base_speed_scale: float = 1.0
+
+## Si el TEMA del circuito entero ya cuenta como fuera de asfalto (nieve). El
+## terreno de sección puede activar lo mismo aunque el tema sea asfalto seco
+## (TASK-264/270): los dos casos convergen en el mismo `offroad_grip_modifier`.
+var theme_is_offroad: bool = false
+
+## Cuánto multiplica el arquetipo el agarre cuando la superficie no es
+## asfalto seco, por tema o por terreno de sección.
+var offroad_grip_modifier: float = 1.0
+
+## De aquí se lee qué terreno hay bajo cada celda. Lo pone el director una vez
+## (no cambia con el circuito: es el mismo nodo durante toda la partida).
+var track_builder: TrackBuilder
+
+## Cuánto se acerca cada segundo el efecto de terreno "en vivo" a su valor
+## objetivo. Alto a propósito: una mancha de terreno puede ser de solo un par
+## de celdas, y si tarda mucho en notarse el coche ya la habrá cruzado sin
+## sentir nada — pero seguir siendo un lerp (no un salto) es lo que evita el
+## tirón de manejo al cruzar el borde.
+const TERRAIN_BLEND_RATE := 6.0
+
+var _terrain_grip_factor: float = 1.0
+var _terrain_speed_factor: float = 1.0
 
 # --- Nitro --------------------------------------------------------------------
 #
@@ -131,6 +166,12 @@ func reset_to_start(yaw: float = 0.0) -> void:
 	prev_position = vehicle_model.position
 	colliding = false
 
+	# No tiene sentido que un reinicio herede el derrape a medio converger de
+	# la celda de terreno donde se cayó el intento anterior; `_update_terrain`
+	# recalcula `grip`/`speed_scale` de verdad en el siguiente frame de física.
+	_terrain_grip_factor = 1.0
+	_terrain_speed_factor = 1.0
+
 # Functions
 
 func _physics_process(delta):
@@ -163,6 +204,8 @@ func _physics_process(delta):
 			vehicle_model.global_transform = vehicle_model.global_transform.interpolate_with(xform, 0.2).orthonormalized()
 
 	colliding = raycast.is_colliding()
+
+	_update_terrain(delta)
 
 	update_nitro(delta)
 
@@ -198,6 +241,32 @@ func _physics_process(delta):
 	effect_body(delta)
 	effect_wheels(delta)
 	effect_trails()
+
+## Cruza el terreno de sección bajo el coche (TASK-271/273) con el agarre del
+## coche/tema y el modificador offroad del arquetipo (TASK-264), y los
+## acerca (no salta) a `grip`/`speed_scale`. Mismo sitio único para la fórmula
+## tanto si el circuito entero es offroad (tema nieve) como si es solo esta
+## celda: los dos casos convergen en el mismo `offroad_grip_modifier`, así que
+## no hay que aplicarlo dos veces si coinciden.
+func _update_terrain(delta: float) -> void:
+
+	var terrain := TrackTerrain.Kind.ASPHALT
+	if track_builder != null and raycast.is_colliding():
+		terrain = track_builder.terrain_at(raycast.get_collision_point())
+
+	var effect := TrackTerrain.effect(terrain)
+	var is_offroad := theme_is_offroad or terrain != TrackTerrain.Kind.ASPHALT
+	var offroad_factor := offroad_grip_modifier if is_offroad else 1.0
+
+	var target_grip_factor := effect.grip * offroad_factor
+	var target_speed_factor := effect.grip if effect.slows_top_speed else 1.0
+
+	var blend := clampf(delta * TERRAIN_BLEND_RATE, 0.0, 1.0)
+	_terrain_grip_factor = lerp(_terrain_grip_factor, target_grip_factor, blend)
+	_terrain_speed_factor = lerp(_terrain_speed_factor, target_speed_factor, blend)
+
+	grip = base_grip * _terrain_grip_factor
+	speed_scale = base_speed_scale * _terrain_speed_factor
 
 ## Gasta o recarga el depósito. Se pide desde el input y se concede aquí: el
 ## coche es quien sabe si queda.
