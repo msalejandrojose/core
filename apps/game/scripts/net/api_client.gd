@@ -50,6 +50,10 @@ func post_json(path: String, body: Dictionary, authorized: bool = true) -> ApiRe
 	return await _request(HTTPClient.METHOD_POST, path, body, authorized, true)
 
 
+func patch_json(path: String, body: Dictionary, authorized: bool = true) -> ApiResponse:
+	return await _request(HTTPClient.METHOD_PATCH, path, body, authorized, true)
+
+
 # --- Interno ------------------------------------------------------------------
 
 func _request(
