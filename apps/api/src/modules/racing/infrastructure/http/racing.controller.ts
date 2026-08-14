@@ -17,11 +17,13 @@ import {
 import { type AccessTokenPayload } from '../../../iam/application/ports/token-issuer.port';
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
+import { GetGhostUseCase } from '../../application/use-cases/get-ghost.use-case';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
 import { GetPersonalBestUseCase } from '../../application/use-cases/get-personal-best.use-case';
 import { GetTrackUseCase } from '../../application/use-cases/get-track.use-case';
 import { ListTracksUseCase } from '../../application/use-cases/list-tracks.use-case';
 import { SubmitLapTimeUseCase } from '../../application/use-cases/submit-lap-time.use-case';
+import { GhostResponseDto } from './dto/ghost.response.dto';
 import {
   LapTimeResponseDto,
   SubmitLapTimeResponseDto,
@@ -55,6 +57,7 @@ export class RacingController {
     private readonly getLeaderboard: GetLeaderboardUseCase,
     private readonly getPersonalBest: GetPersonalBestUseCase,
     private readonly getTrack: GetTrackUseCase,
+    private readonly getGhost: GetGhostUseCase,
   ) {}
 
   @Get('tracks')
@@ -104,6 +107,7 @@ export class RacingController {
       durationMs: body.durationMs,
       splitsMs: body.splitsMs,
       clientVersion: body.clientVersion,
+      ghostSnapshots: body.ghostSnapshots,
     });
 
     return {
@@ -142,6 +146,21 @@ export class RacingController {
       ),
       yourPosition: result.yourPosition,
     };
+  }
+
+  @Get('tracks/:slug/ghosts/:userId')
+  @ApiOperation({
+    summary: 'Fantasma de la mejor marca de OTRO jugador en un circuito',
+    description:
+      'Para correr contra el fantasma de un rival (TASK-221). Null si ese jugador no tiene marca ahí, o si la tiene de antes de que existiera el fantasma — no es un error, es un estado normal.',
+  })
+  @ApiOkResponse({ type: GhostResponseDto, nullable: true })
+  async ghost(
+    @Param('slug') slug: string,
+    @Param('userId') userId: string,
+  ): Promise<GhostResponseDto | null> {
+    const result = await this.getGhost.execute(slug, userId);
+    return result === null ? null : GhostResponseDto.fromResult(result);
   }
 
   @Get('me/best/:slug')

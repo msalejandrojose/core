@@ -1,3 +1,5 @@
+import { GhostSnapshot } from './ghost-snapshot';
+
 // Un intento de vuelta subido por un jugador.
 export class LapTime {
   constructor(
@@ -10,6 +12,10 @@ export class LapTime {
     readonly createdAt: Date,
     // Anulado desde el backoffice sin borrar la fila. Nulo = válido.
     readonly invalidatedAt: Date | null = null,
+    // Solo presente si esta fila es (o fue) la mejor marca del jugador en el
+    // circuito (TASK-221): el resto de intentos no lo necesitan, y
+    // guardarlo en todos multiplicaría el almacenamiento sin uso claro.
+    readonly ghostSnapshots: GhostSnapshot[] | null = null,
   ) {}
 }
 

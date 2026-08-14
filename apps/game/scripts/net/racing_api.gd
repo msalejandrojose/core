@@ -16,12 +16,19 @@ const CLIENT_VERSION := "0.1.0"
 
 ## Sube un intento. Devuelve la respuesta tal cual: quien llama decide si
 ## reintentar, encolar o ignorar.
-func submit_lap(track_key: String, duration_ms: int, splits_ms: Array):
-	return await Api.post_json("/racing/tracks/%s/lap-times" % track_key, {
+## `ghost_snapshots`: instantáneas ya en formato de red (pos como {x,y,z}, no
+## Vector3 — ver `RaceDirector._on_lap_completed`). Vacío si la vuelta no bate
+## la marca local: el servidor la descarta igual si no es su mejor marca, pero
+## no tiene sentido gastar payload en fantasmas que nunca se van a guardar.
+func submit_lap(track_key: String, duration_ms: int, splits_ms: Array, ghost_snapshots: Array = []):
+	var body := {
 		"durationMs": duration_ms,
 		"splitsMs": splits_ms,
 		"clientVersion": CLIENT_VERSION,
-	})
+	}
+	if not ghost_snapshots.is_empty():
+		body["ghostSnapshots"] = ghost_snapshots
+	return await Api.post_json("/racing/tracks/%s/lap-times" % track_key, body)
 
 
 func leaderboard(track_key: String, limit: int = 20):

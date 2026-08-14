@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { GhostSnapshot } from '../../domain/entities/ghost-snapshot';
 import { LapTime } from '../../domain/entities/lap-time.entity';
 import { ImplausibleLapTimeError } from '../../domain/errors/implausible-lap-time.error';
 import { TrackNotFoundError } from '../../domain/errors/track-not-found.error';
@@ -18,6 +19,10 @@ export interface SubmitLapTimeInput {
   durationMs: number;
   splitsMs: number[];
   clientVersion: string;
+  /** El cliente solo lo manda cuando esta vuelta bate su marca local
+   *  (TASK-220/221) — igualmente, aquí se descarta si no resulta ser la
+   *  mejor marca del jugador en el servidor, para no guardar de más. */
+  ghostSnapshots?: GhostSnapshot[];
 }
 
 export interface SubmitLapTimeResult {
@@ -62,18 +67,21 @@ export class SubmitLapTimeUseCase {
       });
     }
 
+    const isPersonalBest =
+      previousBest === null || input.durationMs < previousBest.durationMs;
+
     const lapTime = await this.laps.create({
       userId: input.userId,
       trackId: track.id,
       durationMs: input.durationMs,
       splitsMs: input.splitsMs,
       clientVersion: input.clientVersion,
+      ghostSnapshots: isPersonalBest ? input.ghostSnapshots : undefined,
     });
 
     return {
       lapTime,
-      personalBest:
-        previousBest === null || input.durationMs < previousBest.durationMs,
+      personalBest: isPersonalBest,
       position: await this.laps.positionOf(track.id, input.userId),
     };
   }

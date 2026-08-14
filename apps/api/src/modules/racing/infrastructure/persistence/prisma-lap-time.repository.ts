@@ -67,6 +67,9 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
         durationMs: data.durationMs,
         splitsMs: data.splitsMs,
         clientVersion: data.clientVersion,
+        ghostSnapshots: (data.ghostSnapshots ?? undefined) as
+          | Prisma.InputJsonValue
+          | undefined,
       },
     });
     return toLapTimeDomain(row);

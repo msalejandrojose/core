@@ -398,7 +398,16 @@ func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 	# es un extra: el juego no puede quedarse esperando a un servidor justo
 	# después de cruzar la meta, así que se encola y ya se ocupa la cola.
 	if Session.is_logged_in():
-		LapQueue.enqueue(key, duration_ms, splits_ms)
+		var ghost_snapshots_net: Array = []
+		if is_new_record:
+			for snapshot in this_lap_recording:
+				var pos: Vector3 = snapshot["pos"]
+				ghost_snapshots_net.append({
+					"t": snapshot["t"],
+					"pos": {"x": pos.x, "y": pos.y, "z": pos.z},
+					"yaw": snapshot["yaw"],
+				})
+		LapQueue.enqueue(key, duration_ms, splits_ms, ghost_snapshots_net)
 
 	if track_id_override.is_empty():
 		lap_finished.emit(duration_ms, previous_best_ms, is_new_record)
