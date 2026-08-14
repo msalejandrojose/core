@@ -10,11 +10,6 @@ extends CanvasLayer
 ## Requiere cuenta: el equipamiento vive en el servidor por jugador
 ## (`GET/PATCH /racing/cars/me`), así que sin sesión no hay dónde guardarlo.
 
-const BONE := Color("f0ece6")
-const INK := Color(0.11, 0.098, 0.09)
-const BAD := Color("c4544a")
-const CLAY := Color("b4552f")
-
 ## category → etiqueta visible, en el orden en que se muestran.
 const CATEGORIES := [
 	["TIRES", "Ruedas"],
@@ -51,7 +46,7 @@ func _ready() -> void:
 
 func _build_shell() -> void:
 	var backdrop := ColorRect.new()
-	backdrop.color = Color(INK.r, INK.g, INK.b, 0.985)
+	backdrop.color = UiTheme.ink_alpha(0.985)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
@@ -70,13 +65,13 @@ func _build_shell() -> void:
 	_status = _label(
 		"Por ahora todos los coches compiten en la misma clasificación, "
 		+ "sin importar el arquetipo o las piezas — eso cambiará cuando el "
-		+ "arquetipo tenga su propia clasificación.", 22)
+		+ "arquetipo tenga su propia clasificación.", UiTheme.FONT_XS)
 	_column.add_child(_status)
 
 
 func _show_locked() -> void:
 	_status.text = "Necesitas una cuenta para usar el taller: entra desde \"Cuenta\" en el menú."
-	_status.add_theme_color_override("font_color", BAD)
+	_status.add_theme_color_override("font_color", UiTheme.BAD)
 
 	var row := HBoxContainer.new()
 	_column.add_child(row)
@@ -99,7 +94,7 @@ func _load() -> void:
 	if not catalog_response.ok or not (catalog_response.data is Dictionary) \
 		or not loadout_response.ok or not (loadout_response.data is Dictionary):
 		_status.text = "No se pudo cargar el taller. Comprueba la conexión e inténtalo de nuevo."
-		_status.add_theme_color_override("font_color", BAD)
+		_status.add_theme_color_override("font_color", UiTheme.BAD)
 		_column.add_child(_button("Cerrar", close_screen))
 		return
 
@@ -156,8 +151,8 @@ func _part_field(category: String) -> String:
 func _build_loaded() -> void:
 	_status.text = _status.text.replace("\n\nCargando…", "")
 
-	_stats_label = _label("", 26)
-	_stats_label.add_theme_color_override("font_color", CLAY)
+	_stats_label = _label("", UiTheme.FONT_SM)
+	_stats_label.add_theme_color_override("font_color", UiTheme.CLAY)
 	_column.add_child(_stats_label)
 
 	_column.add_child(_heading("Arquetipo"))
@@ -255,7 +250,7 @@ func _flash_error(message: String) -> void:
 	var previous := _status.text
 	var previous_color := _status.get_theme_color("font_color")
 	_status.text = message
-	_status.add_theme_color_override("font_color", BAD)
+	_status.add_theme_color_override("font_color", UiTheme.BAD)
 	await get_tree().create_timer(2.5).timeout
 	if is_instance_valid(_status):
 		_status.text = previous
@@ -272,16 +267,16 @@ func _set_buttons_disabled(disabled: bool) -> void:
 func _title(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 52)
-	label.add_theme_color_override("font_color", BONE)
+	label.add_theme_font_size_override("font_size", UiTheme.FONT_XL)
+	label.add_theme_color_override("font_color", UiTheme.BONE)
 	return label
 
 
 func _heading(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 28)
-	label.add_theme_color_override("font_color", BONE)
+	label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
+	label.add_theme_color_override("font_color", UiTheme.BONE)
 	return label
 
 
@@ -290,26 +285,20 @@ func _label(text: String, font_size: int) -> Label:
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", BONE * Color(1, 1, 1, 0.7))
+	label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.7))
 	return label
 
 
 func _toggle_button(text: String, group: ButtonGroup) -> Button:
-	var button := Button.new()
-	button.text = text
+	var button := UiTheme.make_button(text, UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
 	button.toggle_mode = true
 	button.button_group = group
-	button.custom_minimum_size = Vector2(200, 84)
-	button.add_theme_font_size_override("font_size", 26)
 	_all_buttons.append(button)
 	return button
 
 
 func _button(text: String, on_pressed: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(240, 96)
-	button.add_theme_font_size_override("font_size", 32)
+	var button := UiTheme.make_button(text)
 	button.pressed.connect(on_pressed)
 	_all_buttons.append(button)
 	return button

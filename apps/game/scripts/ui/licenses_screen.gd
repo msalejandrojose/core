@@ -49,9 +49,6 @@ Godot Engine está bajo licencia MIT.
 Copyright (c) 2014-presente Juan Linietsky, Ariel Manzur y contribuidores de
 Godot Engine."""
 
-const BONE := Color("f0ece6")
-const INK := Color(0.11, 0.098, 0.09)
-
 signal closed()
 
 
@@ -62,9 +59,9 @@ func _ready() -> void:
 
 func _build() -> void:
 	var backdrop := ColorRect.new()
-	# Casi opaco: con el juego translúcido detrás, un texto legal a cuerpo 26
-	# se lee mal justo donde más importa que se lea.
-	backdrop.color = Color(INK.r, INK.g, INK.b, 0.985)
+	# Casi opaco: con el juego translúcido detrás, un texto legal a cuerpo
+	# pequeño se lee mal justo donde más importa que se lea.
+	backdrop.color = UiTheme.ink_alpha(0.985)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
@@ -80,8 +77,8 @@ func _build() -> void:
 
 	var title := Label.new()
 	title.text = "Licencias"
-	title.add_theme_font_size_override("font_size", 52)
-	title.add_theme_color_override("font_color", BONE)
+	title.add_theme_font_size_override("font_size", UiTheme.FONT_XL)
+	title.add_theme_color_override("font_color", UiTheme.BONE)
 	column.add_child(title)
 
 	# El texto tiene que poder leerse entero: en horizontal en un móvil no cabe
@@ -96,16 +93,13 @@ func _build() -> void:
 	var body := Label.new()
 	body.text = LICENSE_TEXT
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.add_theme_font_size_override("font_size", 26)
-	body.add_theme_color_override("font_color", BONE * Color(1, 1, 1, 0.85))
+	body.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
+	body.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.85))
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(body)
 
-	var close := Button.new()
-	close.text = "Cerrar"
-	close.custom_minimum_size = Vector2(240, 96)
+	var close := UiTheme.make_button("Cerrar")
 	close.size_flags_horizontal = Control.SIZE_SHRINK_END
-	close.add_theme_font_size_override("font_size", 32)
 	close.pressed.connect(close_screen)
 	column.add_child(close)
 

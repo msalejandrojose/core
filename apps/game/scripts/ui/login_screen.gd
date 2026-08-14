@@ -6,11 +6,6 @@ extends CanvasLayer
 ## espera a que el jugador complete el consentimiento ahí — Godot no trae
 ## WebView ni deep links, así que no hay vuelta directa a la app).
 
-const BONE := Color("f0ece6")
-const INK := Color(0.11, 0.098, 0.09)
-const BAD := Color("c4544a")
-const GOOD := Color("4c9a68")
-
 signal closed()
 
 var _email: LineEdit
@@ -28,7 +23,7 @@ func _build() -> void:
 	var backdrop := ColorRect.new()
 	# Opaco del todo: detrás está el menú, y no hay nada que previsualizar
 	# mientras escribes una contraseña.
-	backdrop.color = INK
+	backdrop.color = UiTheme.INK
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
@@ -44,15 +39,15 @@ func _build() -> void:
 
 	var title := Label.new()
 	title.text = "Tu cuenta"
-	title.add_theme_font_size_override("font_size", 52)
-	title.add_theme_color_override("font_color", BONE)
+	title.add_theme_font_size_override("font_size", UiTheme.FONT_XL)
+	title.add_theme_color_override("font_color", UiTheme.BONE)
 	column.add_child(title)
 
 	var intro := Label.new()
 	intro.text = "La cuenta sirve para subir tus tiempos y salir en la clasificación. Puedes jugar sin ella: los tiempos se guardan en este dispositivo."
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	intro.add_theme_font_size_override("font_size", 24)
-	intro.add_theme_color_override("font_color", BONE * Color(1, 1, 1, 0.6))
+	intro.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	intro.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.6))
 	column.add_child(intro)
 
 	_email = _field("Email", false)
@@ -64,7 +59,7 @@ func _build() -> void:
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status.add_theme_font_size_override("font_size", 24)
+	_status.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
 	column.add_child(_status)
 
 	var spacer := Control.new()
@@ -94,15 +89,12 @@ func _field(placeholder: String, secret: bool) -> LineEdit:
 	edit.placeholder_text = placeholder
 	edit.secret = secret
 	edit.custom_minimum_size = Vector2(0, 88)
-	edit.add_theme_font_size_override("font_size", 30)
+	edit.add_theme_font_size_override("font_size", UiTheme.FONT_MD)
 	return edit
 
 
 func _button(text: String, width: int, on_pressed: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(width, 96)
-	button.add_theme_font_size_override("font_size", 30)
+	var button := UiTheme.make_button(text, Vector2(width, UiTheme.BUTTON_MIN_SIZE.y))
 	button.pressed.connect(on_pressed)
 	_buttons.append(button)
 	return button
@@ -113,13 +105,13 @@ func _button(text: String, width: int, on_pressed: Callable) -> Button:
 func _submit(create: bool) -> void:
 	var email := _email.text.strip_edges()
 	if email == "" or _password.text == "":
-		_say("Rellena email y contraseña.", BAD)
+		_say("Rellena email y contraseña.", UiTheme.BAD)
 		return
 
 	# Se bloquean los botones mientras va la llamada: dos toques seguidos
 	# lanzarían dos registros y el segundo fallaría con un error confuso.
 	_set_busy(true)
-	_say("Conectando…", BONE)
+	_say("Conectando…", UiTheme.BONE)
 
 	var response = (
 		await Session.register(email, _password.text, email.split("@")[0])
@@ -129,7 +121,7 @@ func _submit(create: bool) -> void:
 	_set_busy(false)
 
 	if response.ok:
-		_say("Listo. Tus tiempos ya se suben.", GOOD)
+		_say("Listo. Tus tiempos ya se suben.", UiTheme.GOOD)
 		await get_tree().create_timer(0.8).timeout
 		_close()
 		return
@@ -137,26 +129,26 @@ func _submit(create: bool) -> void:
 	# El mensaje del servidor es mejor que uno inventado aquí: sabe si es
 	# contraseña incorrecta, email ya registrado o cuenta sin verificar.
 	if response.is_network_error():
-		_say("No hay conexión con el servidor. Puedes seguir corriendo: los tiempos se guardan y se subirán luego.", BAD)
+		_say("No hay conexión con el servidor. Puedes seguir corriendo: los tiempos se guardan y se subirán luego.", UiTheme.BAD)
 	else:
-		_say(response.message, BAD)
+		_say(response.message, UiTheme.BAD)
 
 
 func _submit_google() -> void:
 	_set_busy(true)
-	_say("Abriendo el navegador para entrar con Google…", BONE)
+	_say("Abriendo el navegador para entrar con Google…", UiTheme.BONE)
 
 	var response: Dictionary = await Session.login_with_google()
 
 	_set_busy(false)
 
 	if response.get("ok", false):
-		_say("Listo. Tus tiempos ya se suben.", GOOD)
+		_say("Listo. Tus tiempos ya se suben.", UiTheme.GOOD)
 		await get_tree().create_timer(0.8).timeout
 		_close()
 		return
 
-	_say(str(response.get("message", "No se pudo iniciar sesión con Google.")), BAD)
+	_say(str(response.get("message", "No se pudo iniciar sesión con Google.")), UiTheme.BAD)
 
 
 func _set_busy(busy: bool) -> void:
