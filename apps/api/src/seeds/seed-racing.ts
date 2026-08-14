@@ -17,10 +17,18 @@ import { PrismaService } from '../infrastructure/database/prisma/prisma.service'
 // `path`: es la misma pista recorrida al revés, no otra geometría.
 //
 // Cada circuito se siembra en TODAS sus variantes jugables: dos sentidos por
-// tres cilindradas. Un tiempo al revés no es comparable con uno normal, y uno a
-// 150cc tampoco lo es con uno a 50cc, así que cada combinación es su propio
-// leaderboard. El slug se compone igual que la clave de récord del cliente
-// (`GameSettings.key_for`): "kenney-01-rev-150cc".
+// tres cilindradas por tres arquetipos. Un tiempo al revés no es comparable
+// con uno normal, uno a 150cc tampoco lo es con uno a 50cc, y desde TASK-233
+// tampoco lo es un F1 con un 4x4 — cada combinación es su propio leaderboard.
+// El slug se compone igual que la clave de récord del cliente
+// (`GameSettings.key_for`): "kenney-01-rev-150cc-f1".
+//
+// Las PIEZAS (ruedas/alerón/chasis) NO entran en la clave (decisión TASK-269):
+// afectan al tiempo pero no fragmentan más la clasificación, así que un F1
+// con piezas de velocidad compite en el mismo leaderboard que un F1 sin
+// piezas. Eso sí, el suelo de plausibilidad de más abajo tiene que seguir
+// siendo válido para CUALQUIER combinación de piezas dentro de esa
+// clasificación, no solo para el arquetipo desnudo.
 
 // Velocidad punta del coche, medida en el juego: 9,75 u/s a fondo en recta,
 // prácticamente igual con y sin agarre (el agarre cambia lo que tardas en
@@ -55,6 +63,27 @@ const ENGINE_CLASSES: ReadonlyArray<{ name: string; speed: number }> = [
   { name: '100cc', speed: 1.0 },
   { name: '150cc', speed: 1.32 },
 ];
+
+// Multiplicador de velocidad punta de cada arquetipo. Tiene que coincidir con
+// `ARCHETYPES` en `seed-racing-cars.ts` y con `CarLoadout.DEFAULT_ARCHETYPE_CODE`
+// en el cliente.
+const ARCHETYPES: ReadonlyArray<{
+  code: string;
+  name: string;
+  speedScale: number;
+}> = [
+  { code: 'normal', name: 'Normal', speedScale: 1.0 },
+  { code: 'f1', name: 'F1', speedScale: 1.25 },
+  { code: '4x4', name: '4x4', speedScale: 0.85 },
+];
+
+// Mejor bonus de velocidad posible sumando una pieza de cada hueco: ruedas de
+// velocidad (+0.10), alerón bajo (+0.08), chasis ligero (+0.05) — ver
+// `seed-racing-cars.ts` (PARTS). Como las piezas no entran en la clave, el
+// suelo de plausibilidad de un arquetipo tiene que asumir la combinación más
+// rápida posible dentro de él; si no, una vuelta legítima con piezas de
+// velocidad podría caer por debajo y rechazarse como imposible.
+const MAX_PARTS_SPEED_BONUS = 0.23;
 
 const TRACKS: readonly TrackSeed[] = [
   {
@@ -182,9 +211,17 @@ const TRACKS: readonly TrackSeed[] = [
  * criterio: preferimos dejar pasar tramposos sutiles a llamar tramposo a
  * alguien que solo es rápido.
  */
-function minPlausibleMs(cells: number, engineSpeed: number): number {
+function minPlausibleMs(
+  cells: number,
+  engineSpeed: number,
+  archetypeSpeedScale: number,
+): number {
   const distance = cells * CELL_SIZE_UNITS * RACING_LINE_FACTOR;
-  const topSpeed = TOP_SPEED_UNITS_PER_SECOND * engineSpeed;
+  const topSpeed =
+    TOP_SPEED_UNITS_PER_SECOND *
+    engineSpeed *
+    archetypeSpeedScale *
+    (1 + MAX_PARTS_SPEED_BONUS);
   return Math.floor((distance / topSpeed) * 1000);
 }
 
@@ -209,31 +246,37 @@ async function main(): Promise<void> {
 
     for (const reversed of [false, true]) {
       for (const engine of ENGINE_CLASSES) {
-        const slug = `${track.slug}${reversed ? '-rev' : ''}-${engine.name}`;
-        const name = `${track.name}${reversed ? ' (inverso)' : ''} · ${engine.name}`;
+        for (const archetype of ARCHETYPES) {
+          const slug = `${track.slug}${reversed ? '-rev' : ''}-${engine.name}-${archetype.code}`;
+          const name = `${track.name}${reversed ? ' (inverso)' : ''} · ${engine.name} · ${archetype.name}`;
 
-        const data = {
-          name,
-          sectorCount: track.checkpoints + 1,
-          minPlausibleMs: minPlausibleMs(track.path.length, engine.speed),
-          isActive: true,
-          path: track.path as unknown as Prisma.InputJsonValue,
-          theme: track.theme,
-          grip: track.grip,
-        };
+          const data = {
+            name,
+            sectorCount: track.checkpoints + 1,
+            minPlausibleMs: minPlausibleMs(
+              track.path.length,
+              engine.speed,
+              archetype.speedScale,
+            ),
+            isActive: true,
+            path: track.path as unknown as Prisma.InputJsonValue,
+            theme: track.theme,
+            grip: track.grip,
+          };
 
-        await prisma.track.upsert({
-          where: { slug },
-          create: { slug, ...data },
-          update: data,
-        });
+          await prisma.track.upsert({
+            where: { slug },
+            create: { slug, ...data },
+            update: data,
+          });
 
-        seeded += 1;
-        console.log(
-          `✓ ${slug.padEnd(24)} sectores=${data.sectorCount} mínimo=${(
-            data.minPlausibleMs / 1000
-          ).toFixed(1)}s`,
-        );
+          seeded += 1;
+          console.log(
+            `✓ ${slug.padEnd(30)} sectores=${data.sectorCount} mínimo=${(
+              data.minPlausibleMs / 1000
+            ).toFixed(1)}s`,
+          );
+        }
       }
     }
   }
