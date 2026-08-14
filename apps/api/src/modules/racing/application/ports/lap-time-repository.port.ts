@@ -43,6 +43,18 @@ export interface AdminLapTimeListEntry {
   isPersonalBest: boolean;
 }
 
+// Resumen por circuito para la ficha de usuario (TASK-251): a diferencia de
+// `AdminLapTimeListEntry` (una fila por intento), esta es una fila por
+// circuito ya agregada. `bestDurationMs` es null si el jugador solo tiene
+// intentos anulados en ese circuito.
+export interface AdminUserTrackSummary {
+  trackId: string;
+  trackSlug: string;
+  trackName: string;
+  attempts: number;
+  bestDurationMs: number | null;
+}
+
 export interface LapTimeRepositoryPort {
   create(data: CreateLapTimeData): Promise<LapTime>;
 
@@ -73,4 +85,9 @@ export interface LapTimeRepositoryPort {
   listAllAdmin(
     opts: AdminListLapTimesOptions,
   ): Promise<PaginatedResult<AdminLapTimeListEntry>>;
+
+  /** Un jugador, agrupado por circuito: en cuáles tiene al menos un intento,
+   *  cuántos, y su mejor tiempo válido (TASK-251). La posición en el ranking
+   *  de cada circuito se calcula aparte con `positionOf`. */
+  summarizeForUserAdmin(userId: string): Promise<AdminUserTrackSummary[]>;
 }

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DangerZone } from '@/components/DangerZone';
+import { RacingProfileCard } from '@/features/racing/user-profile/RacingProfileCard';
 import { DeactivateUserDialog } from './components/DeactivateUserDialog';
 import { EditUserForm } from './components/EditUserForm';
 import { ReactivateUserButton } from './components/ReactivateUserButton';
@@ -77,6 +78,18 @@ export function UserDetailPage() {
                 <UserRolesCard userId={user.id} />
               </CardContent>
             </Card>
+
+            {'userType' in user &&
+              (user as { userType: string }).userType === 'APP' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Racing</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <RacingProfileCard userId={user.id} />
+                  </CardContent>
+                </Card>
+              )}
 
             <Card>
               <CardHeader>
