@@ -1393,6 +1393,14 @@ model LapTime {
   /// leaderboard, la posición ni la mejor marca personal.
   invalidatedAt DateTime? @map("invalidated_at")
 
+  /// Instantáneas de posición/rotación de la vuelta, para reproducirla como
+  /// fantasma (TASK-219/220/221). Solo se guarda si esta fila es la mejor
+  /// marca del jugador en el circuito — el resto de intentos no lo
+  /// necesitan, y guardarlo en todos multiplicaría el almacenamiento sin
+  /// uso claro. Formato: snapshots a ~20 Hz, decisión de partida de
+  /// TASK-219.
+  ghostSnapshots Json? @map("ghost_snapshots")
+
   createdAt DateTime @default(now()) @map("created_at")
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -1,4 +1,5 @@
 import { PaginatedResult } from '../../../../shared/types/paginated-result';
+import { GhostSnapshot } from '../../domain/entities/ghost-snapshot';
 import {
   LapTime,
   LeaderboardEntry,
@@ -12,6 +13,8 @@ export interface CreateLapTimeData {
   durationMs: number;
   splitsMs: number[];
   clientVersion: string;
+  /** Solo se persiste si el use-case decide que esta vuelta es la mejor marca del jugador (TASK-221). */
+  ghostSnapshots?: GhostSnapshot[] | null;
 }
 
 export interface AdminListLapTimesOptions {

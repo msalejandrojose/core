@@ -1,13 +1,17 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsInt,
+  IsOptional,
   IsString,
   Length,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { GhostSnapshotDto } from './ghost-snapshot.dto';
 
 export class SubmitLapTimeDto {
   @ApiProperty({
@@ -41,4 +45,15 @@ export class SubmitLapTimeDto {
   @IsString()
   @Length(1, 32)
   clientVersion!: string;
+
+  @ApiPropertyOptional({
+    type: [GhostSnapshotDto],
+    description:
+      'Instantáneas de la vuelta para reproducirla como fantasma (TASK-220/221). Solo hace falta mandarlo cuando el cliente sabe que bate su marca local — el servidor lo descarta igualmente si no resulta ser la mejor marca del jugador.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GhostSnapshotDto)
+  ghostSnapshots?: GhostSnapshotDto[];
 }

@@ -48,11 +48,16 @@ func pending_count() -> int:
 
 ## Encola un tiempo y trata de subirlo ya. Se guarda ANTES de intentarlo: si la
 ## app muere a mitad del envío, el tiempo sigue estando.
-func enqueue(track_key: String, duration_ms: int, splits_ms: Array) -> void:
+##
+## `ghost_snapshots` ya viene en formato de red (ver `RaceDirector`) para poder
+## guardarse tal cual en el `ConfigFile` — un `Vector3` no sobrevive esa
+## serialización sin más código, y aquí no hace falta.
+func enqueue(track_key: String, duration_ms: int, splits_ms: Array, ghost_snapshots: Array = []) -> void:
 	_pending.append({
 		"track": track_key,
 		"duration_ms": duration_ms,
 		"splits_ms": splits_ms,
+		"ghost_snapshots": ghost_snapshots,
 	})
 
 	while _pending.size() > MAX_PENDING:
@@ -73,7 +78,8 @@ func flush() -> void:
 	while not _pending.is_empty():
 		var lap: Dictionary = _pending[0]
 		var response = await RacingApi.submit_lap(
-			lap["track"], lap["duration_ms"], lap["splits_ms"])
+			lap["track"], lap["duration_ms"], lap["splits_ms"],
+			lap.get("ghost_snapshots", []))
 
 		if response.ok:
 			_pending.pop_front()
