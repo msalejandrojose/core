@@ -83,6 +83,28 @@ var nitro_active: bool = false
 
 func get_vehicle_position() -> Vector3: return vehicle_model.global_position
 
+## Cambia el modelo 3D montado en el contenedor sin tocar la física ni la
+## posición: la esfera y `Container` no se enteran, solo cambia lo que se ve.
+## Los camiones de cada arquetipo comparten la misma jerarquía de nodos
+## (body, wheel-*), así que basta con reinstanciar "Model" y volver a
+## resolver las referencias — a diferencia de la moto, que sí tiene una forma
+## distinta de verdad y por eso es una escena (y un script) aparte.
+func set_body(scene: PackedScene) -> void:
+	var old_model := vehicle_model.get_node_or_null("Model")
+	if old_model != null:
+		vehicle_model.remove_child(old_model)
+		old_model.queue_free()
+
+	var new_model: Node = scene.instantiate()
+	new_model.name = "Model"
+	vehicle_model.add_child(new_model)
+
+	vehicle_body = vehicle_model.get_node_or_null("Model/body")
+	wheel_fl = vehicle_model.get_node_or_null("Model/wheel-front-left")
+	wheel_fr = vehicle_model.get_node_or_null("Model/wheel-front-right")
+	wheel_bl = vehicle_model.get_node_or_null("Model/wheel-back-left")
+	wheel_br = vehicle_model.get_node_or_null("Model/wheel-back-right")
+
 ## Devuelve el coche a la salida sin recargar la escena. Hay que limpiar la
 ## velocidad de la esfera y el estado derivado: si solo se recoloca, el coche
 ## reaparece con la inercia del intento anterior y el crono nuevo empieza con

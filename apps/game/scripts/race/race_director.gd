@@ -33,6 +33,15 @@ const _EPSILON := 0.0001
 ## lleve allí.
 const RESCUE_BELOW_Y := -5.0
 
+## Modelo 3D por arquetipo. Los tres son camiones del starter kit de Kenney
+## recoloreados (mismo rig, cero geometría nueva) — solo la moto tiene una
+## forma de verdad distinta, y esa vive en su propia escena aparte.
+const ARCHETYPE_MODELS := {
+	"normal": "res://models/vehicle-truck-yellow.glb",
+	"f1": "res://models/vehicle-truck-red.glb",
+	"4x4": "res://models/vehicle-truck-green.glb",
+}
+
 ## Solo para los tests: fuerza la clave de récord y deja fuera al catálogo,
 ## para que un arnés no escriba en la marca real de un circuito del juego.
 @export var track_id_override: String = ""
@@ -56,6 +65,11 @@ var counting_down: bool = false
 var _countdown_elapsed: float = 0.0
 var _lights_on: int = 0
 
+## Circuito activo. Se guarda para poder reaplicar el coche (`CarLoadout`
+## puede cambiar, p.ej. al iniciar sesión, sin que cambie el circuito) sin
+## repetir `TrackCatalog.by_id`.
+var _layout: TrackCatalog.Layout
+
 
 func _ready() -> void:
 	vehicle = get_node(vehicle_path)
@@ -76,6 +90,10 @@ func _ready() -> void:
 	lap_timer.auto_start_on_throttle = false
 
 	GameSettings.changed.connect(_on_settings_changed)
+	# El equipamiento puede llegar después (login asíncrono, o el jugador
+	# entra a mitad de partida): cuando cambie, se reaplica sin reconstruir
+	# el circuito entero.
+	CarLoadout.changed.connect(_apply_car_loadout)
 
 	rebuild_track()
 	restart()
@@ -145,11 +163,33 @@ func record_key() -> String:
 ## Solo hace falta al arrancar y al cambiarlo en ajustes; reiniciar una vuelta
 ## no reconstruye nada, que por eso es instantáneo.
 func rebuild_track() -> void:
-	var layout := TrackCatalog.by_id(GameSettings.track_id)
-	track_builder.build(layout)
+	_layout = TrackCatalog.by_id(GameSettings.track_id)
+	track_builder.build(_layout)
 	lap_timer.rescan()
-	vehicle.grip = layout.grip
-	vehicle.speed_scale = GameSettings.engine_speed()
+	_apply_car_loadout()
+
+
+## Combina el circuito (agarre de tema + si es asfalto seco) con el coche
+## equipado (arquetipo + piezas, y su modificador fuera de asfalto) en los
+## campos reales de `Vehicle`. Es la misma fórmula que `effectiveGrip` en la
+## API (`car-stats.ts`): grip del coche × grip de la superficie × modificador
+## offroad si toca.
+##
+## Por ahora "offroad" es el tema del circuito entero (SNOW); cuando el
+## terreno por celda se lea en tiempo real (TASK-273) esto se refinará por
+## celda sin tocar esta fórmula, solo qué `surfaceGrip`/`isOffroad` se le pasa.
+func _apply_car_loadout() -> void:
+	var is_offroad := _layout.theme == TrackTheme.Kind.SNOW
+	var offroad_factor := CarLoadout.offroad_grip_modifier if is_offroad else 1.0
+
+	vehicle.grip = CarLoadout.grip * _layout.grip * offroad_factor
+	vehicle.speed_scale = CarLoadout.speed_scale * GameSettings.engine_speed()
+	vehicle.set_body(_body_scene_for(CarLoadout.archetype_code))
+
+
+func _body_scene_for(archetype_code: String) -> PackedScene:
+	var path: String = ARCHETYPE_MODELS.get(archetype_code, ARCHETYPE_MODELS[CarLoadout.DEFAULT_ARCHETYPE_CODE])
+	return load(path)
 
 
 ## Reinicio rápido. No recarga la escena ni reconstruye la pista: recoloca el
