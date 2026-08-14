@@ -145,6 +145,9 @@ func _build() -> void:
 	row.add_child(_button("Taller", 240, func() -> void:
 		add_child(load("res://scenes/ui/workshop-screen.tscn").instantiate())))
 
+	row.add_child(_button("Grand Prix", 240, func() -> void:
+		add_child(load("res://scenes/ui/grand-prix-screen.tscn").instantiate())))
+
 	_account_button = _button("Cuenta", 240, _open_account)
 	row.add_child(_account_button)
 
