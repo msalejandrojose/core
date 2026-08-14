@@ -19,10 +19,12 @@ import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import { GetGhostUseCase } from '../../application/use-cases/get-ghost.use-case';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
+import { GetOnlineRaceUseCase } from '../../application/use-cases/get-online-race.use-case';
 import { GetPersonalBestUseCase } from '../../application/use-cases/get-personal-best.use-case';
 import { GetTrackUseCase } from '../../application/use-cases/get-track.use-case';
 import { ListTracksUseCase } from '../../application/use-cases/list-tracks.use-case';
 import { SubmitLapTimeUseCase } from '../../application/use-cases/submit-lap-time.use-case';
+import { SubmitOnlineRaceResultUseCase } from '../../application/use-cases/submit-online-race-result.use-case';
 import { GhostResponseDto } from './dto/ghost.response.dto';
 import {
   LapTimeResponseDto,
@@ -32,7 +34,9 @@ import {
   LeaderboardEntryDto,
   LeaderboardResponseDto,
 } from './dto/leaderboard.response.dto';
+import { OnlineRaceResponseDto } from './dto/online-race.response.dto';
 import { SubmitLapTimeDto } from './dto/submit-lap-time.dto';
+import { SubmitOnlineRaceResultDto } from './dto/submit-online-race-result.dto';
 import { TrackDetailResponseDto } from './dto/track-detail.response.dto';
 import { TrackResponseDto } from './dto/track.response.dto';
 
@@ -58,6 +62,8 @@ export class RacingController {
     private readonly getPersonalBest: GetPersonalBestUseCase,
     private readonly getTrack: GetTrackUseCase,
     private readonly getGhost: GetGhostUseCase,
+    private readonly submitOnlineRaceResult: SubmitOnlineRaceResultUseCase,
+    private readonly getOnlineRace: GetOnlineRaceUseCase,
   ) {}
 
   @Get('tracks')
@@ -161,6 +167,39 @@ export class RacingController {
   ): Promise<GhostResponseDto | null> {
     const result = await this.getGhost.execute(slug, userId);
     return result === null ? null : GhostResponseDto.fromResult(result);
+  }
+
+  @Post('tracks/:slug/online-races')
+  @ApiOperation({
+    summary: 'Registra el resultado de una carrera online ya jugada',
+    description:
+      'El jugador contra hasta dos fantasmas rivales (TASK-283). No decide contra quién se corre — eso lo elige el emparejamiento (TASK-284) o el propio cliente al elegir un amigo — aquí solo se valida y se resuelve el podio, una única vez.',
+  })
+  @ApiOkResponse({ type: OnlineRaceResponseDto })
+  async submitOnlineRace(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('slug') slug: string,
+    @Body() body: SubmitOnlineRaceResultDto,
+  ): Promise<OnlineRaceResponseDto> {
+    const race = await this.submitOnlineRaceResult.execute({
+      userId: current.sub,
+      trackSlug: slug,
+      participants: body.participants,
+    });
+    return OnlineRaceResponseDto.fromRace(race);
+  }
+
+  @Get('online-races/:id')
+  @ApiOperation({
+    summary: 'Una carrera online ya jugada, con su podio',
+    description:
+      'Posición y diferencias ya vienen calculadas de cuando se registró la carrera — reconstruir el podio no recalcula nada.',
+  })
+  @ApiOkResponse({ type: OnlineRaceResponseDto })
+  async getOnlineRaceById(
+    @Param('id') id: string,
+  ): Promise<OnlineRaceResponseDto> {
+    return OnlineRaceResponseDto.fromRace(await this.getOnlineRace.execute(id));
   }
 
   @Get('me/best/:slug')
