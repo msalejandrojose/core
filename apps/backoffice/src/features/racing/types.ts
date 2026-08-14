@@ -62,3 +62,11 @@ export interface CarPartRow {
   grip: number;
   isActive: boolean;
 }
+
+export type TerrainType = NonNullable<TrackCellRow['terrain']>;
+
+export interface TerrainEffectRow {
+  type: TerrainType;
+  grip: number;
+  slowsTopSpeed: boolean;
+}

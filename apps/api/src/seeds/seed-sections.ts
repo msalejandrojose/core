@@ -205,6 +205,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/racing/cars',
         order: 1,
       },
+      {
+        code: 'racing.terrain',
+        name: 'Terreno',
+        icon: 'Mountain',
+        route: '/racing/terrain',
+        order: 2,
+      },
     ],
   },
   {
