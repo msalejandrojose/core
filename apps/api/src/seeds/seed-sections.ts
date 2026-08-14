@@ -212,6 +212,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/racing/terrain',
         order: 2,
       },
+      {
+        code: 'racing.lap_times',
+        name: 'Intentos',
+        icon: 'Timer',
+        route: '/racing/lap-times',
+        order: 3,
+      },
     ],
   },
   {

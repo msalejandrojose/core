@@ -70,3 +70,19 @@ export interface TerrainEffectRow {
   grip: number;
   slowsTopSpeed: boolean;
 }
+
+export interface AdminLapTimeRow {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userDisplayName: string;
+  trackId: string;
+  trackSlug: string;
+  trackName: string;
+  durationMs: number;
+  splitsMs: number[];
+  clientVersion: string;
+  createdAt: string;
+  invalidatedAt: string | null;
+  isPersonalBest: boolean;
+}

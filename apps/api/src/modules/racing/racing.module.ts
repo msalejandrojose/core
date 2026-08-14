@@ -13,6 +13,7 @@ import { AdminGetCarArchetypeUseCase } from './application/use-cases/admin-get-c
 import { AdminGetCarPartUseCase } from './application/use-cases/admin-get-car-part.use-case';
 import { AdminGetTrackUseCase } from './application/use-cases/admin-get-track.use-case';
 import { AdminListCarArchetypesUseCase } from './application/use-cases/admin-list-car-archetypes.use-case';
+import { AdminListLapTimesUseCase } from './application/use-cases/admin-list-lap-times.use-case';
 import { AdminListCarPartsUseCase } from './application/use-cases/admin-list-car-parts.use-case';
 import { AdminListTracksUseCase } from './application/use-cases/admin-list-tracks.use-case';
 import { AdminUpdateCarArchetypeUseCase } from './application/use-cases/admin-update-car-archetype.use-case';
@@ -67,6 +68,7 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     AdminCreateTrackUseCase,
     AdminUpdateTrackUseCase,
     InvalidateLapTimeUseCase,
+    AdminListLapTimesUseCase,
     ListCarCatalogUseCase,
     GetPlayerCarLoadoutUseCase,
     SetPlayerCarLoadoutUseCase,
