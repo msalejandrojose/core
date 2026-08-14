@@ -12,10 +12,6 @@ extends CanvasLayer
 
 signal play_pressed()
 
-const CLAY := Color("b4552f")
-const BONE := Color("f0ece6")
-const INK := Color(0.11, 0.098, 0.09)
-
 var _best_label: Label
 var _account_label: Label
 var _account_button: Button
@@ -55,7 +51,7 @@ func _build() -> void:
 	var backdrop := ColorRect.new()
 	# Menos opaco que Ajustes: aquí interesa entrever el circuito de detrás,
 	# que es de lo que va la pantalla.
-	backdrop.color = Color(INK.r, INK.g, INK.b, 0.88)
+	backdrop.color = UiTheme.ink_alpha(0.88)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
@@ -71,8 +67,8 @@ func _build() -> void:
 
 	var title := Label.new()
 	title.text = "Racing"
-	title.add_theme_font_size_override("font_size", 72)
-	title.add_theme_color_override("font_color", CLAY)
+	title.add_theme_font_size_override("font_size", UiTheme.FONT_DISPLAY)
+	title.add_theme_color_override("font_color", UiTheme.CLAY)
 	column.add_child(title)
 
 	column.add_child(_heading("Circuito"))
@@ -85,12 +81,9 @@ func _build() -> void:
 	var group := ButtonGroup.new()
 	for i in ids.size():
 		var layout := TrackCatalog.by_id(ids[i])
-		var button := Button.new()
-		button.text = layout.name
+		var button := UiTheme.make_button(layout.name, UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
 		button.toggle_mode = true
 		button.button_group = group
-		button.custom_minimum_size = Vector2(230, 84)
-		button.add_theme_font_size_override("font_size", 28)
 		var id: String = ids[i]
 		button.pressed.connect(func() -> void: _pick_track(id))
 		tracks.add_child(button)
@@ -104,12 +97,9 @@ func _build() -> void:
 
 	var direction_group := ButtonGroup.new()
 	for i in 2:
-		var button := Button.new()
-		button.text = "Normal" if i == 0 else "Inverso"
+		var button := UiTheme.make_button("Normal" if i == 0 else "Inverso", UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
 		button.toggle_mode = true
 		button.button_group = direction_group
-		button.custom_minimum_size = Vector2(230, 84)
-		button.add_theme_font_size_override("font_size", 28)
 		var reversed := i == 1
 		button.pressed.connect(func() -> void: _pick_direction(reversed))
 		directions.add_child(button)
@@ -123,25 +113,22 @@ func _build() -> void:
 
 	var engine_group := ButtonGroup.new()
 	for value in [GameSettings.EngineClass.CC50, GameSettings.EngineClass.CC100, GameSettings.EngineClass.CC150]:
-		var button := Button.new()
-		button.text = GameSettings.ENGINE_NAMES[value]
+		var button := UiTheme.make_button(GameSettings.ENGINE_NAMES[value], UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
 		button.toggle_mode = true
 		button.button_group = engine_group
-		button.custom_minimum_size = Vector2(200, 84)
-		button.add_theme_font_size_override("font_size", 28)
 		var chosen: int = value
 		button.pressed.connect(func() -> void: _pick_engine(chosen))
 		engines.add_child(button)
 		_engine_buttons.append(button)
 
 	_best_label = Label.new()
-	_best_label.add_theme_font_size_override("font_size", 28)
-	_best_label.add_theme_color_override("font_color", BONE * Color(1, 1, 1, 0.7))
+	_best_label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
+	_best_label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.7))
 	column.add_child(_best_label)
 
 	_account_label = Label.new()
-	_account_label.add_theme_font_size_override("font_size", 24)
-	_account_label.add_theme_color_override("font_color", BONE * Color(1, 1, 1, 0.55))
+	_account_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	_account_label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.55))
 	column.add_child(_account_label)
 
 	var spacer := Control.new()
@@ -166,7 +153,7 @@ func _build() -> void:
 	row.add_child(push)
 
 	var play := _button("Correr", 320, func() -> void: play_pressed.emit())
-	play.add_theme_font_size_override("font_size", 40)
+	play.add_theme_font_size_override("font_size", UiTheme.FONT_LG)
 	row.add_child(play)
 
 
@@ -243,15 +230,12 @@ func _refresh_account() -> void:
 func _heading(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 30)
-	label.add_theme_color_override("font_color", BONE)
+	label.add_theme_font_size_override("font_size", UiTheme.FONT_MD)
+	label.add_theme_color_override("font_color", UiTheme.BONE)
 	return label
 
 
 func _button(text: String, width: int, on_pressed: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(width, 100)
-	button.add_theme_font_size_override("font_size", 32)
+	var button := UiTheme.make_button(text, Vector2(width, UiTheme.BUTTON_MIN_SIZE.y))
 	button.pressed.connect(on_pressed)
 	return button

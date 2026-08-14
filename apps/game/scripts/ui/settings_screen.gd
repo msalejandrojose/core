@@ -8,9 +8,6 @@ extends CanvasLayer
 ## preferencia, y viven en el menú principal. Tenerlos en dos sitios sería tener
 ## dos sitios donde mirar cuando algo no cuadra.
 
-const BONE := Color("f0ece6")
-const INK := Color(0.11, 0.098, 0.09)
-
 signal closed()
 
 
@@ -21,7 +18,7 @@ func _ready() -> void:
 
 func _build() -> void:
 	var backdrop := ColorRect.new()
-	backdrop.color = Color(INK.r, INK.g, INK.b, 0.985)
+	backdrop.color = UiTheme.ink_alpha(0.985)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
@@ -37,7 +34,7 @@ func _build() -> void:
 
 	column.add_child(_title("Ajustes"))
 
-	column.add_child(_label("Controles", 30))
+	column.add_child(_label("Controles", UiTheme.FONT_MD))
 	column.add_child(_choice(
 		["Volante", "Toque lateral"],
 		1 if GameSettings.control_scheme == GameSettings.ControlScheme.TAP else 0,
@@ -45,9 +42,9 @@ func _build() -> void:
 			GameSettings.ControlScheme.TAP if index == 1 else GameSettings.ControlScheme.WHEEL)))
 	column.add_child(_label(
 		"Volante: arrastra el pulgar izquierdo para girar, pedales a la derecha.\n"
-		+ "Toque lateral: pulsa un lado para girar, el acelerador va puesto.", 22))
+		+ "Toque lateral: pulsa un lado para girar, el acelerador va puesto.", UiTheme.FONT_XS))
 
-	column.add_child(_label("Servidor", 30))
+	column.add_child(_label("Servidor", UiTheme.FONT_MD))
 
 	# Editable desde el propio móvil: recompilar y reinstalar solo para cambiar
 	# una URL es un ciclo demasiado lento cuando estás probando en dispositivo.
@@ -55,7 +52,7 @@ func _build() -> void:
 	server.text = GameSettings.api_base_url
 	server.placeholder_text = Api.base_url
 	server.custom_minimum_size = Vector2(0, 80)
-	server.add_theme_font_size_override("font_size", 26)
+	server.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
 	server.text_submitted.connect(func(value: String) -> void:
 		GameSettings.set_api_base_url(value))
 	server.focus_exited.connect(func() -> void:
@@ -64,7 +61,7 @@ func _build() -> void:
 
 	column.add_child(_label(
 		"Vacío usa el del juego (%s). Cambia esto si el backend está en otra máquina."
-		% Api.base_url, 22))
+		% Api.base_url, UiTheme.FONT_XS))
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -94,8 +91,8 @@ func close_screen() -> void:
 func _title(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 52)
-	label.add_theme_color_override("font_color", BONE)
+	label.add_theme_font_size_override("font_size", UiTheme.FONT_XL)
+	label.add_theme_color_override("font_color", UiTheme.BONE)
 	return label
 
 
@@ -104,7 +101,7 @@ func _label(text: String, font_size: int) -> Label:
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", BONE * Color(1, 1, 1, 0.6 if font_size < 26 else 1.0))
+	label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.6 if font_size < UiTheme.FONT_MD else 1.0))
 	return label
 
 
@@ -116,13 +113,10 @@ func _choice(options: Array, selected: int, on_pick: Callable) -> HBoxContainer:
 
 	var group := ButtonGroup.new()
 	for i in options.size():
-		var button := Button.new()
-		button.text = options[i]
+		var button := UiTheme.make_button(options[i], UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_MD)
 		button.toggle_mode = true
 		button.button_group = group
 		button.button_pressed = i == selected
-		button.custom_minimum_size = Vector2(220, 80)
-		button.add_theme_font_size_override("font_size", 30)
 		var index := i
 		button.pressed.connect(func() -> void: on_pick.call(index))
 		row.add_child(button)
@@ -131,9 +125,6 @@ func _choice(options: Array, selected: int, on_pick: Callable) -> HBoxContainer:
 
 
 func _button(text: String, on_pressed: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(240, 96)
-	button.add_theme_font_size_override("font_size", 32)
+	var button := UiTheme.make_button(text)
 	button.pressed.connect(on_pressed)
 	return button

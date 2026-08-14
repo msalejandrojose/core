@@ -39,12 +39,6 @@ const NITRO_RADIUS_FACTOR := 0.72
 ## retardo perceptible. El coche ya suaviza otra vez en `vehicle.gd`.
 const STEER_SMOOTHING := 22.0
 
-# --- Paleta (core-design-system: clay sobre hueso) ----------------------------
-
-const CLAY := Color("b4552f")
-const BONE := Color("f0ece6")
-const INK := Color(0.11, 0.098, 0.09)
-
 # --- Estado -------------------------------------------------------------------
 
 var _steer_finger := -1
@@ -298,18 +292,18 @@ func _draw() -> void:
 	if _steer_finger != -1:
 		var travel := size.x * STEER_TRAVEL_RATIO
 		var y := _steer_origin.y
-		draw_line(Vector2(_steer_origin.x - travel, y), Vector2(_steer_origin.x + travel, y), INK * Color(1, 1, 1, 0.45), 8.0, true)
-		draw_line(Vector2(_steer_origin.x - travel, y), Vector2(_steer_origin.x + travel, y), BONE * Color(1, 1, 1, 0.45), 3.0, true)
-		draw_circle(Vector2(_steer_point.x, y), r * 0.44, INK * Color(1, 1, 1, 0.55))
-		draw_circle(Vector2(_steer_point.x, y), r * 0.36, CLAY)
+		draw_line(Vector2(_steer_origin.x - travel, y), Vector2(_steer_origin.x + travel, y), UiTheme.INK * Color(1, 1, 1, 0.45), 8.0, true)
+		draw_line(Vector2(_steer_origin.x - travel, y), Vector2(_steer_origin.x + travel, y), UiTheme.BONE * Color(1, 1, 1, 0.45), 3.0, true)
+		draw_circle(Vector2(_steer_point.x, y), r * 0.44, UiTheme.INK * Color(1, 1, 1, 0.55))
+		draw_circle(Vector2(_steer_point.x, y), r * 0.36, UiTheme.CLAY)
 
 
 ## Fondo oscuro + borde claro. Un pedal dibujado solo en tono claro se
 ## desvanece sobre la hierba y el asfalto claro del circuito: se comprobó en
 ## captura, no se dedujo.
 func _draw_pedal(center: Vector2, radius: float, held: bool) -> void:
-	draw_circle(center, radius, INK * Color(1, 1, 1, 0.75 if held else 0.45))
-	var edge := CLAY if held else BONE
+	draw_circle(center, radius, UiTheme.INK * Color(1, 1, 1, 0.75 if held else 0.45))
+	var edge := UiTheme.CLAY if held else UiTheme.BONE
 	draw_circle(center, radius * 0.82, edge * Color(1, 1, 1, 0.35 if held else 0.16))
 	draw_arc(center, radius, 0.0, TAU, 48, edge, 4.0, true)
 
@@ -322,11 +316,11 @@ func _draw_nitro(center: Vector2, radius: float) -> void:
 	var firing := _vehicle != null and _vehicle.nitro_active
 	var ready := charge >= Vehicle.NITRO_MIN_CHARGE
 
-	draw_circle(center, radius, INK * Color(1, 1, 1, 0.75 if firing else 0.45))
+	draw_circle(center, radius, UiTheme.INK * Color(1, 1, 1, 0.75 if firing else 0.45))
 
 	# Apagado cuando no queda: pulsar y que no pase nada sin explicación es
 	# peor que ver que no está disponible.
-	var edge := CLAY if firing else (BONE if ready else BONE * Color(1, 1, 1, 0.35))
+	var edge := UiTheme.CLAY if firing else (UiTheme.BONE if ready else UiTheme.BONE * Color(1, 1, 1, 0.35))
 	# El aro de fondo va muy apagado para que lo que se lea de un vistazo sea
 	# cuánto queda, no dónde está el botón.
 	draw_arc(center, radius, 0.0, TAU, 40, edge * Color(1, 1, 1, 0.18), 4.0, true)
@@ -367,19 +361,19 @@ func _draw_tap() -> void:
 
 	var brake_r := _tap_brake_radius()
 	var held := _tap_held("brake")
-	draw_circle(_tap_brake_center(), brake_r, INK * Color(1, 1, 1, 0.75 if held else 0.45))
-	draw_arc(_tap_brake_center(), brake_r, 0.0, TAU, 40, CLAY if held else BONE, 4.0, true)
+	draw_circle(_tap_brake_center(), brake_r, UiTheme.INK * Color(1, 1, 1, 0.75 if held else 0.45))
+	draw_arc(_tap_brake_center(), brake_r, 0.0, TAU, 40, UiTheme.CLAY if held else UiTheme.BONE, 4.0, true)
 	# Barra: el símbolo universal de "para".
 	var bar := Vector2(brake_r * 0.42, brake_r * 0.12)
-	draw_rect(Rect2(_tap_brake_center() - bar, bar * 2.0), (CLAY if held else BONE) * Color(1, 1, 1, 0.9))
+	draw_rect(Rect2(_tap_brake_center() - bar, bar * 2.0), (UiTheme.CLAY if held else UiTheme.BONE) * Color(1, 1, 1, 0.9))
 
 	_draw_nitro(_tap_nitro_center(), brake_r)
 
 
 func _draw_arrow(center: Vector2, radius: float, direction: float, held: bool) -> void:
-	draw_circle(center, radius, INK * Color(1, 1, 1, 0.75 if held else 0.40))
+	draw_circle(center, radius, UiTheme.INK * Color(1, 1, 1, 0.75 if held else 0.40))
 
-	var edge := CLAY if held else BONE
+	var edge := UiTheme.CLAY if held else UiTheme.BONE
 	draw_arc(center, radius, 0.0, TAU, 48, edge, 4.0, true)
 
 	var tip := center + Vector2(direction * radius * 0.42, 0.0)

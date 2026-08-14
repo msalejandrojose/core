@@ -6,16 +6,15 @@ extends Control
 ## (ver `touch_controls.gd`), y cualquier cosa que pongas ahí se tapa sola en
 ## cuanto el jugador agarra el móvil.
 
-const CLAY := Color("b4552f")
-const BONE := Color("f0ece6")
-const INK := Color(0.11, 0.098, 0.09, 0.72)
-const GOOD := Color("4c9a68")
-const BAD := Color("c4544a")
-
 ## Cuánto se queda en pantalla el delta de un sector.
 const DELTA_HOLD_S := 2.0
 ## Cuánto dura el verde del semáforo tras el GO antes de desaparecer.
 const GO_HOLD_S := 1.0
+
+## Tamaños propios del HUD, más grandes que la escala de UiTheme a propósito:
+## son los números que se leen de reojo mientras conduces, no texto de menú.
+const FONT_TIME := 64
+const FONT_DELTA := 48
 
 @export var lap_timer_path: NodePath = ^"../../LapTimer"
 @export var director_path: NodePath = ^"../../RaceDirector"
@@ -89,58 +88,49 @@ static func format_delta_ms(ms: int) -> String:
 func _build() -> void:
 	var safe := _safe_inset()
 
-	_time_label = _make_label(64, BONE)
+	_time_label = _make_label(FONT_TIME, UiTheme.BONE)
 	_time_label.position = safe + Vector2(48, 40)
 	add_child(_time_label)
 
-	_best_label = _make_label(28, BONE * Color(1, 1, 1, 0.65))
+	_best_label = _make_label(UiTheme.FONT_SM, UiTheme.BONE * Color(1, 1, 1, 0.65))
 	_best_label.position = safe + Vector2(52, 124)
 	add_child(_best_label)
 
-	_delta_label = _make_label(48, BONE)
+	_delta_label = _make_label(FONT_DELTA, UiTheme.BONE)
 	_delta_label.position = safe + Vector2(48, 176)
 	add_child(_delta_label)
 
-	_restart_button = Button.new()
-	_restart_button.text = "Reiniciar"
-	# 96 px de alto: por encima del mínimo cómodo para un pulgar, y arriba a la
-	# derecha, lejos de acelerador y volante.
-	_restart_button.custom_minimum_size = Vector2(240, 96)
+	# 112 px de alto: el tamaño táctil de UiTheme, arriba a la derecha, lejos
+	# de acelerador y volante.
+	_restart_button = UiTheme.make_button("Reiniciar", Vector2(240, 112), UiTheme.FONT_MD)
 	_restart_button.anchor_left = 1.0
 	_restart_button.anchor_right = 1.0
 	_restart_button.offset_left = -288
 	_restart_button.offset_top = 40
 	_restart_button.offset_right = -48
-	_restart_button.offset_bottom = 136
-	_restart_button.add_theme_font_size_override("font_size", 32)
+	_restart_button.offset_bottom = 152
 	_restart_button.pressed.connect(_director.restart)
 	add_child(_restart_button)
 
 	# Las licencias viven dentro de Ajustes, que es su sitio según el SPEC.
-	_settings_button = Button.new()
-	_settings_button.text = "Ajustes"
-	_settings_button.custom_minimum_size = Vector2(200, 72)
+	_settings_button = UiTheme.make_button("Ajustes", Vector2(200, 88), UiTheme.FONT_SM)
 	_settings_button.anchor_left = 1.0
 	_settings_button.anchor_right = 1.0
 	_settings_button.offset_left = -248
-	_settings_button.offset_top = 152
+	_settings_button.offset_top = 168
 	_settings_button.offset_right = -48
-	_settings_button.offset_bottom = 224
-	_settings_button.add_theme_font_size_override("font_size", 26)
+	_settings_button.offset_bottom = 256
 	_settings_button.pressed.connect(open_settings)
 	add_child(_settings_button)
 
 	# Volver a elegir circuito sin salir de la app.
-	_menu_button = Button.new()
-	_menu_button.text = "Menú"
-	_menu_button.custom_minimum_size = Vector2(200, 72)
+	_menu_button = UiTheme.make_button("Menú", Vector2(200, 88), UiTheme.FONT_SM)
 	_menu_button.anchor_left = 1.0
 	_menu_button.anchor_right = 1.0
 	_menu_button.offset_left = -248
-	_menu_button.offset_top = 240
+	_menu_button.offset_top = 272
 	_menu_button.offset_right = -48
-	_menu_button.offset_bottom = 312
-	_menu_button.add_theme_font_size_override("font_size", 26)
+	_menu_button.offset_bottom = 360
 	_menu_button.pressed.connect(_director.open_menu)
 	add_child(_menu_button)
 
@@ -173,7 +163,7 @@ func _make_label(font_size: int, color: Color) -> Label:
 	var label := Label.new()
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
-	label.add_theme_color_override("font_outline_color", INK)
+	label.add_theme_color_override("font_outline_color", UiTheme.ink_alpha(0.72))
 	label.add_theme_constant_override("outline_size", maxi(font_size / 6, 4))
 	return label
 
@@ -186,14 +176,14 @@ func _on_sector_delta(_checkpoint: int, delta_ms: int, has_reference: bool) -> v
 		return
 
 	_delta_label.text = format_delta_ms(delta_ms)
-	_delta_label.add_theme_color_override("font_color", GOOD if delta_ms < 0 else BAD)
+	_delta_label.add_theme_color_override("font_color", UiTheme.GOOD if delta_ms < 0 else UiTheme.BAD)
 	_delta_left = DELTA_HOLD_S
 
 
 func _on_record_beaten(_duration_ms: int) -> void:
 	_refresh_best()
 	_delta_label.text = "RÉCORD"
-	_delta_label.add_theme_color_override("font_color", CLAY)
+	_delta_label.add_theme_color_override("font_color", UiTheme.CLAY)
 	_delta_left = DELTA_HOLD_S
 
 
@@ -233,19 +223,19 @@ func _draw() -> void:
 	var box := Rect2(
 		first - radius - pad, center.y - radius - pad,
 		gap * (_lights_total - 1) + radius * 2 + pad * 2, radius * 2 + pad * 2)
-	draw_rect(box, INK)
+	draw_rect(box, UiTheme.ink_alpha(0.72))
 
 	for i in _lights_total:
 		var at := Vector2(first + gap * i, center.y)
 		var lit := i < _lights_on
-		var color := BONE * Color(1, 1, 1, 0.10)
+		var color := UiTheme.BONE * Color(1, 1, 1, 0.10)
 		if _go_left > 0.0:
-			color = GOOD * Color(1, 1, 1, clampf(_go_left / GO_HOLD_S, 0.0, 1.0))
+			color = UiTheme.GOOD * Color(1, 1, 1, clampf(_go_left / GO_HOLD_S, 0.0, 1.0))
 		elif lit:
-			color = BAD
+			color = UiTheme.BAD
 
 		draw_circle(at, radius, color)
-		draw_arc(at, radius, 0.0, TAU, 32, BONE * Color(1, 1, 1, 0.35), 3.0, true)
+		draw_arc(at, radius, 0.0, TAU, 32, UiTheme.BONE * Color(1, 1, 1, 0.35), 3.0, true)
 
 
 
