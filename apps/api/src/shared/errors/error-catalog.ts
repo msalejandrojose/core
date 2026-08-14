@@ -336,6 +336,16 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'No hay un intento en curso de ese Grand Prix.',
   },
+  RACING_INVALID_ONLINE_RACE_PARTICIPANTS: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'Los corredores de la carrera online no son válidos.',
+  },
+  RACING_ONLINE_RACE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Carrera online no encontrada.',
+  },
 
   // Leads
   LEAD_NOT_FOUND: {

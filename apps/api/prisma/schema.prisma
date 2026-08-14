@@ -249,6 +249,8 @@ model User {
   carParts                  PlayerCarPart[]
   carLoadout                PlayerCarLoadout?
   grandPrixAttempts         RacingGrandPrixAttempt[]
+  onlineRaces               RacingOnlineRace[]
+  onlineRaceParticipations  RacingOnlineRaceParticipant[]
 
   @@map("user")
 }
@@ -1358,6 +1360,7 @@ model Track {
   lapTimes              LapTime[]
   grandPrixStages       RacingGrandPrixStage[]
   grandPrixStageResults RacingGrandPrixStageResult[]
+  onlineRaces           RacingOnlineRace[]
 
   @@index([isActive])
   @@map("racing_track")
@@ -1660,4 +1663,70 @@ model RacingGrandPrixStageResult {
 
   @@unique([attemptId, trackId])
   @@map("racing_grand_prix_stage_result")
+}
+
+/// Papel de un participante dentro de una carrera online (TASK-282): el
+/// jugador real, más hasta dos fantasmas rivales — uno ligeramente mejor
+/// (objetivo, a alcanzar) y uno ligeramente peor (amenaza, a no dejar pasar).
+/// Ninguno de los dos rivales es obligatorio: sin amenaza si nadie va peor,
+/// y el objetivo puede ser el propio fantasma si el jugador ya va primero.
+enum RacingOnlineRaceParticipantRole {
+  PLAYER
+  TARGET
+  THREAT
+}
+
+/// Una tanda de carrera asíncrona completa: el jugador contra hasta dos
+/// fantasmas rivales, ya jugada de principio a fin (TASK-283). Distinta de
+/// un `LapTime` suelto — esa tabla sigue siendo la fuente de los tiempos y
+/// de los propios fantasmas (TASK-219/220/221); esta es el PAQUETE de una
+/// carrera concreta con su resultado ya resuelto.
+///
+/// El emparejamiento en sí (qué dos rivales tocan) lo decide otra tarea
+/// (`API: emparejar rivales y armar una carrera`, TASK-284) — aquí solo se
+/// registra el resultado de una carrera ya corrida, con los rivales que el
+/// cliente ya conocía de antemano.
+model RacingOnlineRace {
+  id      String @id @default(uuid()) @db.Char(36)
+  userId  String @map("user_id") @db.Char(36)
+  trackId String @map("track_id") @db.Char(36)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user         User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track        Track                         @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  participants RacingOnlineRaceParticipant[]
+
+  /// El historial de carreras online de un jugador, más recientes primero.
+  @@index([userId, createdAt])
+  @@map("racing_online_race")
+}
+
+/// El resultado de UNO de los hasta 3 corredores de una `RacingOnlineRace`.
+/// `position` y `deltaMs` se calculan UNA VEZ al registrar la carrera y se
+/// guardan tal cual — reconstruir un podio pasado no debe recalcular nada
+/// (criterio de done de TASK-283), igual que `totalDurationMs` en
+/// `RacingGrandPrixAttempt`.
+model RacingOnlineRaceParticipant {
+  id     String                          @id @default(uuid()) @db.Char(36)
+  raceId String                          @map("race_id") @db.Char(36)
+  role   RacingOnlineRaceParticipantRole
+  /// De quién es este resultado: el propio jugador en el papel PLAYER, o el
+  /// rival cuyo fantasma se usó en TARGET/THREAT (puede coincidir con el
+  /// jugador si no había rival mejor y se corrió contra su propio récord).
+  userId String @map("user_id") @db.Char(36)
+
+  durationMs Int @map("duration_ms")
+  /// 1, 2 o 3 — puesto en ESTA carrera, no en el leaderboard general del circuito.
+  position   Int
+  /// Diferencia contra el ganador de la carrera, en ms. 0 para quien gana.
+  deltaMs    Int @map("delta_ms")
+
+  race RacingOnlineRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Un mismo rol como mucho una vez por carrera (un solo PLAYER, como mucho
+  /// un TARGET, como mucho un THREAT).
+  @@unique([raceId, role])
+  @@map("racing_online_race_participant")
 }

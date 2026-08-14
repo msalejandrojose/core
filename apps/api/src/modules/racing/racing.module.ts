@@ -5,6 +5,7 @@ import { CAR_PART_REPOSITORY } from './application/ports/car-part-repository.por
 import { GRAND_PRIX_ATTEMPT_REPOSITORY } from './application/ports/grand-prix-attempt-repository.port';
 import { GRAND_PRIX_REPOSITORY } from './application/ports/grand-prix-repository.port';
 import { LAP_TIME_REPOSITORY } from './application/ports/lap-time-repository.port';
+import { ONLINE_RACE_REPOSITORY } from './application/ports/online-race-repository.port';
 import { PLAYER_CAR_LOADOUT_REPOSITORY } from './application/ports/player-car-loadout-repository.port';
 import { RACING_TERRAIN_EFFECT_REPOSITORY } from './application/ports/racing-terrain-effect-repository.port';
 import { TRACK_REPOSITORY } from './application/ports/track-repository.port';
@@ -30,6 +31,7 @@ import { AdminUpdateTrackUseCase } from './application/use-cases/admin-update-tr
 import { GetGrandPrixLeaderboardUseCase } from './application/use-cases/get-grand-prix-leaderboard.use-case';
 import { GetGrandPrixUseCase } from './application/use-cases/get-grand-prix.use-case';
 import { GetLeaderboardUseCase } from './application/use-cases/get-leaderboard.use-case';
+import { GetOnlineRaceUseCase } from './application/use-cases/get-online-race.use-case';
 import { GetPersonalBestUseCase } from './application/use-cases/get-personal-best.use-case';
 import { GetGhostUseCase } from './application/use-cases/get-ghost.use-case';
 import { GetPlayerCarLoadoutUseCase } from './application/use-cases/get-player-car-loadout.use-case';
@@ -43,6 +45,7 @@ import { SetPlayerCarLoadoutUseCase } from './application/use-cases/set-player-c
 import { StartOrResumeGrandPrixAttemptUseCase } from './application/use-cases/start-or-resume-grand-prix-attempt.use-case';
 import { SubmitGrandPrixStageResultUseCase } from './application/use-cases/submit-grand-prix-stage-result.use-case';
 import { SubmitLapTimeUseCase } from './application/use-cases/submit-lap-time.use-case';
+import { SubmitOnlineRaceResultUseCase } from './application/use-cases/submit-online-race-result.use-case';
 import { AdminCarArchetypesController } from './infrastructure/http/admin-car-archetypes.controller';
 import { AdminCarPartsController } from './infrastructure/http/admin-car-parts.controller';
 import { AdminGrandPrixController } from './infrastructure/http/admin-grand-prix.controller';
@@ -59,6 +62,7 @@ import { PrismaCarPartRepository } from './infrastructure/persistence/prisma-car
 import { PrismaGrandPrixAttemptRepository } from './infrastructure/persistence/prisma-grand-prix-attempt.repository';
 import { PrismaGrandPrixRepository } from './infrastructure/persistence/prisma-grand-prix.repository';
 import { PrismaLapTimeRepository } from './infrastructure/persistence/prisma-lap-time.repository';
+import { PrismaOnlineRaceRepository } from './infrastructure/persistence/prisma-online-race.repository';
 import { PrismaPlayerCarLoadoutRepository } from './infrastructure/persistence/prisma-player-car-loadout.repository';
 import { PrismaRacingTerrainEffectRepository } from './infrastructure/persistence/prisma-racing-terrain-effect.repository';
 import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track.repository';
@@ -87,6 +91,8 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     GetPersonalBestUseCase,
     GetTrackUseCase,
     GetGhostUseCase,
+    SubmitOnlineRaceResultUseCase,
+    GetOnlineRaceUseCase,
     AdminListTracksUseCase,
     AdminGetTrackUseCase,
     AdminCreateTrackUseCase,
@@ -118,6 +124,7 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     AdminUpdateGrandPrixUseCase,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },
     { provide: LAP_TIME_REPOSITORY, useClass: PrismaLapTimeRepository },
+    { provide: ONLINE_RACE_REPOSITORY, useClass: PrismaOnlineRaceRepository },
     {
       provide: CAR_ARCHETYPE_REPOSITORY,
       useClass: PrismaCarArchetypeRepository,
