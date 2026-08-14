@@ -248,6 +248,7 @@ model User {
   carArchetypes             PlayerCarArchetype[]
   carParts                  PlayerCarPart[]
   carLoadout                PlayerCarLoadout?
+  grandPrixAttempts         RacingGrandPrixAttempt[]
 
   @@map("user")
 }
@@ -1354,7 +1355,9 @@ model Track {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  lapTimes LapTime[]
+  lapTimes              LapTime[]
+  grandPrixStages       RacingGrandPrixStage[]
+  grandPrixStageResults RacingGrandPrixStageResult[]
 
   @@index([isActive])
   @@map("racing_track")
@@ -1509,10 +1512,10 @@ model PlayerCarPart {
 /// sin piezas) — no hace falta backfill al desplegar esto ni al dar de alta
 /// un jugador nuevo, la fila se crea la primera vez que alguien cambia algo.
 model PlayerCarLoadout {
-  userId      String  @id @map("user_id") @db.Char(36)
-  archetypeId String  @map("archetype_id") @db.Char(36)
-  tiresPartId String? @map("tires_part_id") @db.Char(36)
-  wingPartId  String? @map("wing_part_id") @db.Char(36)
+  userId        String  @id @map("user_id") @db.Char(36)
+  archetypeId   String  @map("archetype_id") @db.Char(36)
+  tiresPartId   String? @map("tires_part_id") @db.Char(36)
+  wingPartId    String? @map("wing_part_id") @db.Char(36)
   chassisPartId String? @map("chassis_part_id") @db.Char(36)
 
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1548,11 +1551,105 @@ model RacingTerrainEffect {
   type RacingTerrainType @unique
 
   /// Multiplicador de agarre. Mismo eje que `Track.grip` y `Vehicle.grip`.
-  grip Float
+  grip          Float
   /// Si además de perder agarre, frena la velocidad punta mientras se pisa.
   slowsTopSpeed Boolean @map("slows_top_speed")
 
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("racing_terrain_effect")
+}
+
+/// Un Grand Prix agrupa varios circuitos en un orden fijo y agrega una
+/// clasificación propia (TASK-247): decisión de partida — suma de tiempos,
+/// no puntos por posición, porque el resto del juego es puramente
+/// contrarreloj y esto reutiliza ese mismo eje sin inventar un concepto de
+/// "ganar manga" nuevo.
+model RacingGrandPrix {
+  id   String @id @default(uuid()) @db.Char(36)
+  slug String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  stages   RacingGrandPrixStage[]
+  attempts RacingGrandPrixAttempt[]
+
+  @@index([isActive])
+  @@map("racing_grand_prix")
+}
+
+/// Un circuito del Grand Prix y su orden de disputa. Fila propia (no un
+/// array de ids en `RacingGrandPrix`) para poder indexar por circuito y
+/// para que el orden sea una columna consultable, no una posición dentro
+/// de un JSON.
+model RacingGrandPrixStage {
+  id          String @id @default(uuid()) @db.Char(36)
+  grandPrixId String @map("grand_prix_id") @db.Char(36)
+  trackId     String @map("track_id") @db.Char(36)
+  /// Orden de disputa dentro del Grand Prix, empezando en 0.
+  order       Int
+
+  grandPrix RacingGrandPrix @relation(fields: [grandPrixId], references: [id], onDelete: Cascade)
+  track     Track           @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([grandPrixId, order])
+  @@unique([grandPrixId, trackId])
+  @@map("racing_grand_prix_stage")
+}
+
+/// TASK-247: se puede abandonar y reanudar. `IN_PROGRESS` es el intento que
+/// se retoma la próxima vez que el jugador entra al Grand Prix; al terminar
+/// la última manga pasa a `COMPLETED` y `totalDurationMs` queda fijado.
+enum RacingGrandPrixAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// Un intento de un jugador de correr un Grand Prix entero. Puede haber
+/// muchos COMPLETED por (jugador, Grand Prix) — cada uno es una carrera
+/// distinta, igual que `LapTime` guarda todos los intentos — pero como
+/// mucho uno IN_PROGRESS a la vez, que es el que se reanuda.
+model RacingGrandPrixAttempt {
+  id          String @id @default(uuid()) @db.Char(36)
+  userId      String @map("user_id") @db.Char(36)
+  grandPrixId String @map("grand_prix_id") @db.Char(36)
+
+  status          RacingGrandPrixAttemptStatus @default(IN_PROGRESS)
+  /// Suma de `RacingGrandPrixStageResult.durationMs`. Nulo mientras está en
+  /// curso — se fija al completar la última manga, no se recalcula al vuelo.
+  totalDurationMs Int?                         @map("total_duration_ms")
+
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  user      User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grandPrix RacingGrandPrix              @relation(fields: [grandPrixId], references: [id], onDelete: Cascade)
+  results   RacingGrandPrixStageResult[]
+
+  /// Encontrar el intento en curso a reanudar, por jugador y Grand Prix.
+  @@index([userId, grandPrixId, status])
+  /// Clasificación agregada: mejor total completado por Grand Prix.
+  @@index([grandPrixId, status, totalDurationMs])
+  @@map("racing_grand_prix_attempt")
+}
+
+/// Resultado de UNA manga (un circuito) dentro de un intento de Grand Prix.
+/// Independiente de `LapTime`: una manga de Grand Prix no compite en el
+/// leaderboard normal del circuito, son clasificaciones separadas a
+/// propósito, igual que un circuito normal y su sentido inverso.
+model RacingGrandPrixStageResult {
+  id          String   @id @default(uuid()) @db.Char(36)
+  attemptId   String   @map("attempt_id") @db.Char(36)
+  trackId     String   @map("track_id") @db.Char(36)
+  durationMs  Int      @map("duration_ms")
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  attempt RacingGrandPrixAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  track   Track                  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, trackId])
+  @@map("racing_grand_prix_stage_result")
 }
