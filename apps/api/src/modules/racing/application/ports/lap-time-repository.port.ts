@@ -1,3 +1,4 @@
+import { PaginatedResult } from '../../../../shared/types/paginated-result';
 import {
   LapTime,
   LeaderboardEntry,
@@ -11,6 +12,35 @@ export interface CreateLapTimeData {
   durationMs: number;
   splitsMs: number[];
   clientVersion: string;
+}
+
+export interface AdminListLapTimesOptions {
+  page: number;
+  limit: number;
+  trackId?: string;
+  userId?: string;
+}
+
+// Fila enriquecida para el backoffice (TASK-246): a diferencia de `LapTime`
+// (dominio puro) trae ya el nombre del circuito y del jugador — igual que
+// `LeaderboardEntry` los junta para el ranking, esta los junta para la vista
+// admin de "todos los intentos".
+export interface AdminLapTimeListEntry {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userDisplayName: string;
+  trackId: string;
+  trackSlug: string;
+  trackName: string;
+  durationMs: number;
+  splitsMs: number[];
+  clientVersion: string;
+  createdAt: Date;
+  invalidatedAt: Date | null;
+  /** Es el mejor tiempo VÁLIDO de ese jugador en ese circuito (con empates,
+   *  varias filas pueden llevar `true` a la vez). */
+  isPersonalBest: boolean;
 }
 
 export interface LapTimeRepositoryPort {
@@ -37,4 +67,10 @@ export interface LapTimeRepositoryPort {
    *  válido. Se cuenta por MEJOR tiempo de cada jugador, no por número de
    *  filas. */
   positionOf(trackId: string, userId: string): Promise<number | null>;
+
+  /** Listado de administración: TODOS los intentos (válidos e inválidos),
+   *  sin los límites de tamaño del leaderboard del jugador. */
+  listAllAdmin(
+    opts: AdminListLapTimesOptions,
+  ): Promise<PaginatedResult<AdminLapTimeListEntry>>;
 }

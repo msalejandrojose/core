@@ -7,7 +7,12 @@ export class AdminLapTimeResponseDto {
   @ApiProperty() trackId!: string;
   @ApiProperty({ example: 42350 }) durationMs!: number;
   @ApiProperty() createdAt!: Date;
-  @ApiProperty({ nullable: true, description: 'Null = tiempo válido.' })
+  @ApiProperty({
+    type: String,
+    format: 'date-time',
+    nullable: true,
+    description: 'Null = tiempo válido.',
+  })
   invalidatedAt!: Date | null;
 
   static fromLapTime(lap: LapTime): AdminLapTimeResponseDto {
