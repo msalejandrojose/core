@@ -38,6 +38,8 @@ func _ready() -> void:
 	await _test_hielo_penaliza_solo_el_grip()
 	await _test_entra_y_sale_sin_reconstruir()
 	await _test_transicion_no_salta()
+	await _test_overlay_solo_en_celdas_pintadas()
+	await _test_estela_cambia_de_color()
 
 	GameSettings.set_track_id(TrackCatalog.DEFAULT_ID)
 
@@ -113,6 +115,44 @@ func _test_transicion_no_salta() -> void:
 	var distance_to_target := absf(after_two_frames - settled)
 	_check(distance_to_start < distance_to_target, true,
 		"la transición al barro se interpola en vez de saltar en 1-2 frames")
+
+
+func _test_overlay_solo_en_celdas_pintadas() -> void:
+	await _goto_track("kenney-01")
+	_check(get_tree().get_nodes_in_group("terrain-overlay").size(), 0,
+		"un circuito sin terreno pintado no monta overlays")
+
+	await _goto_track("chicane")
+	_check(get_tree().get_nodes_in_group("terrain-overlay").size(), 2,
+		"la chicane monta un overlay por celda de barro pintada")
+
+	# Reconstruir otra vez no debe ir acumulando overlays viejos.
+	await _goto_track("chicane")
+	_check(get_tree().get_nodes_in_group("terrain-overlay").size(), 2,
+		"reconstruir no deja overlays duplicados")
+
+
+func _test_estela_cambia_de_color() -> void:
+	await _goto_track("chicane")
+	var asphalt_color: Color = _vehicle._trail_material.color
+
+	_teleport(Vector2i(-2, 3))
+	# El raycast del coche solo se recoloca al FINAL de cada physics_process
+	# (`raycast.position = sphere.position`); hace falta más de un frame para
+	# que dé tiempo a moverlo y luego a leerlo, igual que con grip/speed_scale.
+	await _settle()
+
+	var mud_color: Color = _vehicle._trail_material.color
+	_check(mud_color != asphalt_color, true,
+		"la estela cambia de color al entrar en el barro")
+	_check(mud_color, _vehicle._terrain_trail_colors[TrackTerrain.Kind.MUD],
+		"y es justo el color de barro")
+
+	_teleport(Vector2i(0, 0))
+	await _settle()
+
+	_check(_vehicle._trail_material.color, asphalt_color,
+		"al volver al asfalto la estela recupera su color")
 
 
 # --- Utilidades ---------------------------------------------------------------

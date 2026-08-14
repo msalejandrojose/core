@@ -22,6 +22,13 @@ class_name Vehicle extends Node3D
 @onready var trail_left = get_node_or_null("Container/TrailLeft")
 @onready var trail_right = get_node_or_null("Container/TrailRight")
 
+## Las dos estelas comparten un único `ParticleProcessMaterial` en la escena
+## (mismo terreno bajo todo el coche, así que tiene sentido). Se duplica al
+## arrancar para poder cambiarle el color en vivo sin mutar el recurso
+## original — si no, el cambio se quedaría pegado entre partidas o entre
+## arneses de test que cargan la escena varias veces en el mismo proceso.
+@onready var _trail_material: ParticleProcessMaterial = _init_trail_material()
+
 # Sounds
 
 @onready var screech_sound: AudioStreamPlayer3D = $Container/ScreechSound
@@ -92,6 +99,12 @@ const TERRAIN_BLEND_RATE := 6.0
 var _terrain_grip_factor: float = 1.0
 var _terrain_speed_factor: float = 1.0
 
+## Color de las estelas por terreno (TASK-274): que el hielo derrape distinto
+## a simple vista, no solo que agarre distinto por dentro. El asfalto es el
+## gris humo que ya traía la escena — se lee de ahí, no se hardcodea aquí, así
+## que cambiarlo en el editor no desincroniza este mapa.
+var _terrain_trail_colors: Dictionary
+
 # --- Nitro --------------------------------------------------------------------
 #
 # El depósito es lo que convierte el nitro en una decisión. Sin él, pulsarlo
@@ -117,6 +130,29 @@ var nitro_active: bool = false
 # Public Functions
 
 func get_vehicle_position() -> Vector3: return vehicle_model.global_position
+
+## Duplica el material compartido de las estelas y arma el mapa de colores por
+## terreno a partir de su color original (asfalto), para no repetir ese
+## número mágico en dos sitios. Vive en `@onready` y no en `_ready` por lo
+## mismo que `_start_sphere_position`: la moto sobreescribe `_ready` sin
+## llamar a `super()`, y esto tiene que correr igual para las dos.
+func _init_trail_material() -> ParticleProcessMaterial:
+	if trail_left == null:
+		return null
+
+	var material: ParticleProcessMaterial = trail_left.process_material.duplicate()
+	trail_left.process_material = material
+	if trail_right != null:
+		trail_right.process_material = material
+
+	_terrain_trail_colors = {
+		TrackTerrain.Kind.ASPHALT: material.color,
+		TrackTerrain.Kind.ICE: Color(0.85, 0.93, 1.0, material.color.a),
+		TrackTerrain.Kind.MUD: Color(0.35, 0.24, 0.12, material.color.a),
+		TrackTerrain.Kind.WATER: Color(0.55, 0.75, 0.9, material.color.a),
+	}
+
+	return material
 
 ## Cambia el modelo 3D montado en el contenedor sin tocar la física ni la
 ## posición: la esfera y `Container` no se enteran, solo cambia lo que se ve.
@@ -267,6 +303,13 @@ func _update_terrain(delta: float) -> void:
 
 	grip = base_grip * _terrain_grip_factor
 	speed_scale = base_speed_scale * _terrain_speed_factor
+
+	# Sin lerp a propósito: cada partícula ya nacida conserva su color, así
+	# que el cambio se ve como una estela que va mudando de color con las
+	# partículas nuevas, no como un tirón — no hace falta interpolar nada más.
+	if _trail_material != null:
+		_trail_material.color = _terrain_trail_colors.get(
+			terrain, _terrain_trail_colors[TrackTerrain.Kind.ASPHALT])
 
 ## Gasta o recarga el depósito. Se pide desde el input y se concede aquí: el
 ## coche es quien sabe si queda.
