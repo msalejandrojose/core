@@ -34,8 +34,14 @@ func best_splits(track_id: String) -> Array:
 	return _cfg.get_value(track_id, "best_splits", [])
 
 
+## Instantáneas de posición/rotación de la vuelta récord, para reproducirla
+## como fantasma (TASK-220). Vacío si aún no hay récord.
+func best_ghost(track_id: String) -> Array:
+	return _cfg.get_value(track_id, "best_ghost", [])
+
+
 ## Registra una vuelta. Devuelve true si ha batido el récord.
-func submit(track_id: String, duration_ms: int, splits_ms: Array) -> bool:
+func submit(track_id: String, duration_ms: int, splits_ms: Array, ghost_snapshots: Array = []) -> bool:
 	if duration_ms <= 0:
 		return false
 
@@ -45,6 +51,7 @@ func submit(track_id: String, duration_ms: int, splits_ms: Array) -> bool:
 
 	_cfg.set_value(track_id, "best_ms", duration_ms)
 	_cfg.set_value(track_id, "best_splits", splits_ms)
+	_cfg.set_value(track_id, "best_ghost", ghost_snapshots)
 	_cfg.save(PATH)
 	record_set.emit(track_id, duration_ms)
 	return true

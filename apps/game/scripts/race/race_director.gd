@@ -26,6 +26,10 @@ signal grand_prix_ended()
 ## partida real con interfaz delante.
 signal lap_finished(duration_ms: int, previous_best_ms: Variant, is_new_record: bool)
 
+## Cada cuánto se toma una instantánea del fantasma, en ms — snapshots a
+## ~20 Hz (TASK-219, decisión de formato de grabación).
+const GHOST_SNAPSHOT_INTERVAL_MS := 50
+
 const LIGHT_COUNT := 3
 ## Intervalo entre luces. La cuenta dura un intervalo más que luces hay: las
 ## tres se encienden y la salida es el paso siguiente, así que la tercera llega
@@ -92,6 +96,16 @@ var _layout: TrackCatalog.Layout
 var _grand_prix_id: String = ""
 var _grand_prix_reverse: bool = false
 
+## Fantasma de la vuelta récord del circuito activo (TASK-220). Nace vacío
+## (sin fantasma) y se rellena en cuanto hay una marca que reproducir.
+var _ghost: Ghost
+## Grabación de la vuelta EN CURSO. Se consume y se vacía en
+## `_on_lap_completed`: `LapTimer.cross_finish()` encadena la vuelta
+## siguiente en el mismo instante, así que para cuando llega la señal ya
+## está corriendo otra.
+var _ghost_recording: Array = []
+var _ghost_last_snapshot_ms: int = -1
+
 
 func _ready() -> void:
 	vehicle = get_node(vehicle_path)
@@ -105,6 +119,14 @@ func _ready() -> void:
 	# Sin `@export`: quien abre la pantalla de Grand Prix se instancia fuera
 	# de este árbol y necesita encontrar al director sin conocer su ruta.
 	add_to_group("race_director")
+
+	# Hijo de este director y no del padre: durante `_ready()` el padre
+	# (`Main`) puede seguir montando sus propios hijos, y `add_child` en un
+	# nodo ocupado falla. `Node3D` no necesita un padre `Node3D` inmediato
+	# para que su transform global sea correcto — Godot ya salta los `Node`
+	# intermedios al buscar el ancestro 3D más cercano.
+	_ghost = Ghost.new()
+	add_child(_ghost)
 
 	main_menu.play_pressed.connect(_on_play_pressed)
 
@@ -141,6 +163,10 @@ func _process(delta: float) -> void:
 		restart()
 		return
 
+	_ghost.update_at(lap_timer.elapsed_ms)
+	if lap_timer.running and not in_grand_prix():
+		_record_ghost_snapshot()
+
 	if not counting_down:
 		return
 
@@ -174,8 +200,25 @@ func _release() -> void:
 	counting_down = false
 	_countdown_elapsed = 0.0
 	VehicleInput.locked = false
+	_ghost_recording = []
+	_ghost_last_snapshot_ms = -1
 	lap_timer.start()
 	countdown_finished.emit()
+
+
+## Una instantánea cada `GHOST_SNAPSHOT_INTERVAL_MS`, no cada frame: a 60 fps
+## eso sería 60 puntos por segundo para interpolar entre 20, todo gasto sin
+## beneficio.
+func _record_ghost_snapshot() -> void:
+	var elapsed := lap_timer.elapsed_ms
+	if elapsed - _ghost_last_snapshot_ms < GHOST_SNAPSHOT_INTERVAL_MS:
+		return
+	_ghost_last_snapshot_ms = elapsed
+	_ghost_recording.append({
+		"t": elapsed,
+		"pos": vehicle.global_position,
+		"yaw": vehicle.rotation.y,
+	})
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -244,6 +287,9 @@ func _apply_car_loadout() -> void:
 	vehicle.theme_is_offroad = _layout.theme == TrackTheme.Kind.SNOW
 	vehicle.offroad_grip_modifier = CarLoadout.offroad_grip_modifier
 	vehicle.set_body(_body_scene_for(CarLoadout.archetype_code))
+	# En Grand Prix no hay fantasma: el récord del circuito del menú no
+	# tiene nada que ver con la manga que se está corriendo.
+	_ghost.set_snapshots([] if in_grand_prix() else RaceRecords.best_ghost(record_key()))
 
 
 func _body_scene_for(archetype_code: String) -> PackedScene:
@@ -334,11 +380,19 @@ func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 		grand_prix_stage_completed.emit(duration_ms)
 		return
 
+	# Se consume y se vacía ya: `LapTimer` encadena la vuelta siguiente antes
+	# de emitir esta señal, así que `_ghost_recording` ya está acumulando la
+	# de después.
+	var this_lap_recording := _ghost_recording
+	_ghost_recording = []
+	_ghost_last_snapshot_ms = -1
+
 	var key := record_key()
 	var previous_best_ms: Variant = RaceRecords.best_ms(key) if RaceRecords.has_best(key) else null
-	var is_new_record := RaceRecords.submit(key, duration_ms, splits_ms)
+	var is_new_record := RaceRecords.submit(key, duration_ms, splits_ms, this_lap_recording)
 	if is_new_record:
 		record_beaten.emit(duration_ms)
+		_ghost.set_snapshots(this_lap_recording)
 
 	# La marca local se guarda SIEMPRE, haya cuenta o no y haya red o no. Subirla
 	# es un extra: el juego no puede quedarse esperando a un servidor justo
