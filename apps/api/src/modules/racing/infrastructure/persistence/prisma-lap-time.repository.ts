@@ -5,6 +5,7 @@ import { PaginatedResult } from '../../../../shared/types/paginated-result';
 import {
   AdminLapTimeListEntry,
   AdminListLapTimesOptions,
+  AdminUserTrackSummary,
   CreateLapTimeData,
   LapTimeRepositoryPort,
 } from '../../application/ports/lap-time-repository.port';
@@ -253,5 +254,58 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
       })),
       total: Number(countRows[0]?.total ?? 0),
     };
+  }
+
+  /**
+   * Resumen por circuito de un jugador, para su ficha (TASK-251). Dos
+   * `groupBy` en vez de uno porque "cuántos intentos" cuenta TODOS y "mejor
+   * tiempo" solo los válidos — un único `groupBy` con `_min` no puede aplicar
+   * un `WHERE` distinto a cada agregado. Sin SQL crudo: acotado a los
+   * circuitos de ESTE jugador, no hace falta la subconsulta correlacionada
+   * que sí hacía falta en `listAllAdmin` (ahí el filtro es por fila, entre
+   * jugadores distintos).
+   */
+  async summarizeForUserAdmin(
+    userId: string,
+  ): Promise<AdminUserTrackSummary[]> {
+    const [totals, bests] = await Promise.all([
+      this.prisma.lapTime.groupBy({
+        by: ['trackId'],
+        where: { userId },
+        _count: { _all: true },
+      }),
+      this.prisma.lapTime.groupBy({
+        by: ['trackId'],
+        where: { userId, invalidatedAt: null },
+        _min: { durationMs: true },
+      }),
+    ]);
+
+    if (totals.length === 0) return [];
+
+    const bestByTrack = new Map(
+      bests.map((b) => [b.trackId, b._min.durationMs]),
+    );
+
+    const tracks = await this.prisma.track.findMany({
+      where: { id: { in: totals.map((t) => t.trackId) } },
+      select: { id: true, slug: true, name: true },
+    });
+    const trackById = new Map(tracks.map((t) => [t.id, t]));
+
+    return totals
+      .map((t) => {
+        const track = trackById.get(t.trackId);
+        if (!track) return null;
+        return {
+          trackId: t.trackId,
+          trackSlug: track.slug,
+          trackName: track.name,
+          attempts: t._count._all,
+          bestDurationMs: bestByTrack.get(t.trackId) ?? null,
+        };
+      })
+      .filter((row): row is AdminUserTrackSummary => row !== null)
+      .sort((a, b) => a.trackName.localeCompare(b.trackName));
   }
 }

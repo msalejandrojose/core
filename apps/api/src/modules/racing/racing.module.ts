@@ -12,6 +12,7 @@ import { AdminCreateTrackUseCase } from './application/use-cases/admin-create-tr
 import { AdminGetCarArchetypeUseCase } from './application/use-cases/admin-get-car-archetype.use-case';
 import { AdminGetCarPartUseCase } from './application/use-cases/admin-get-car-part.use-case';
 import { AdminGetTrackUseCase } from './application/use-cases/admin-get-track.use-case';
+import { AdminGetUserRacingSummaryUseCase } from './application/use-cases/admin-get-user-racing-summary.use-case';
 import { AdminListCarArchetypesUseCase } from './application/use-cases/admin-list-car-archetypes.use-case';
 import { AdminListLapTimesUseCase } from './application/use-cases/admin-list-lap-times.use-case';
 import { AdminListCarPartsUseCase } from './application/use-cases/admin-list-car-parts.use-case';
@@ -32,6 +33,7 @@ import { SubmitLapTimeUseCase } from './application/use-cases/submit-lap-time.us
 import { AdminCarArchetypesController } from './infrastructure/http/admin-car-archetypes.controller';
 import { AdminCarPartsController } from './infrastructure/http/admin-car-parts.controller';
 import { AdminLapTimesController } from './infrastructure/http/admin-lap-times.controller';
+import { AdminRacingUsersController } from './infrastructure/http/admin-racing-users.controller';
 import { AdminTerrainEffectsController } from './infrastructure/http/admin-terrain-effects.controller';
 import { AdminTracksController } from './infrastructure/http/admin-tracks.controller';
 import { CarLoadoutController } from './infrastructure/http/car-loadout.controller';
@@ -57,6 +59,7 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     AdminCarPartsController,
     TerrainEffectsController,
     AdminTerrainEffectsController,
+    AdminRacingUsersController,
   ],
   providers: [
     ListTracksUseCase,
@@ -82,6 +85,7 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     AdminUpdateCarPartUseCase,
     ListTerrainEffectsUseCase,
     AdminUpdateTerrainEffectUseCase,
+    AdminGetUserRacingSummaryUseCase,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },
     { provide: LAP_TIME_REPOSITORY, useClass: PrismaLapTimeRepository },
     {
