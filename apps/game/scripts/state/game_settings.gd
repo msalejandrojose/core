@@ -126,10 +126,13 @@ func track_key() -> String:
 ## la sobreescritura de los tests se saltaba el "-rev" y el récord inverso
 ## acababa pisando al normal.
 ##
-## Entran circuito, sentido Y cilindrada, porque los tres cambian el tiempo. Un
-## 150cc contra un 50cc no es una comparación, es otro juego.
+## Entran circuito, sentido, cilindrada Y arquetipo (TASK-233), porque los
+## cuatro cambian el tiempo. Un 150cc contra un 50cc no es una comparación, y
+## un F1 contra un 4x4 tampoco — cada uno es otro juego. Las piezas equipadas
+## NO entran (decisión TASK-269): afectan al tiempo pero no fragmentan más la
+## clasificación.
 func key_for(id: String) -> String:
-	return "%s%s-%s" % [id, "-rev" if reverse else "", engine_name()]
+	return "%s%s-%s-%s" % [id, "-rev" if reverse else "", engine_name(), CarLoadout.archetype_code]
 
 
 func _save() -> void:

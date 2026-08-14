@@ -27,6 +27,10 @@ var _engine_buttons: Array[Button] = []
 func _ready() -> void:
 	layer = 8
 	_ensure_built()
+	# La mejor marca depende del arquetipo desde TASK-233: si cambia en el
+	# taller (que se abre encima de este menú, sin cerrarlo), el número tiene
+	# que refrescarse solo, sin esperar a que se toque circuito/sentido/cc.
+	CarLoadout.changed.connect(_refresh_best)
 
 
 ## El director abre el menú desde su propio `_ready`, que corre ANTES que el de

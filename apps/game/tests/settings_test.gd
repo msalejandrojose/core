@@ -11,8 +11,8 @@ const TestEnv := preload("res://tests/test_env.gd")
 ## sentido guarde su récord por separado.
 
 const TRACK := "test-settings"
-const KEY := "test-settings-100cc"
-const KEY_REV := "test-settings-rev-100cc"
+const KEY := "test-settings-100cc-normal"
+const KEY_REV := "test-settings-rev-100cc-normal"
 
 var _failures := 0
 var _now: int = 0

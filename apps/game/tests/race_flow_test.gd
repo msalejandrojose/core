@@ -11,10 +11,11 @@ const TestEnv := preload("res://tests/test_env.gd")
 ## récord salga con el signo correcto.
 
 const TRACK := "test-kenney-01"
-## La clave de récord compone circuito, sentido y cilindrada. Se escribe entera
-## a mano y no llamando a `key_for`: un test que usa la misma función que el
-## código no comprueba el formato, solo que coincide consigo mismo.
-const KEY := "test-kenney-01-100cc"
+## La clave de récord compone circuito, sentido, cilindrada y arquetipo. Se
+## escribe entera a mano y no llamando a `key_for`: un test que usa la misma
+## función que el código no comprueba el formato, solo que coincide consigo
+## mismo.
+const KEY := "test-kenney-01-100cc-normal"
 
 var _failures := 0
 var _now: int = 0
