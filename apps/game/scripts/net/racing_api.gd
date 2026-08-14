@@ -34,3 +34,9 @@ func personal_best(track_key: String):
 
 func tracks():
 	return await Api.get_json("/racing/tracks")
+
+
+## Arquetipo, piezas equipadas y sus stats ya combinados. Requiere sesión —
+## sin cuenta, `CarLoadout` no llega a llamar a esto y usa el default local.
+func car_loadout():
+	return await Api.get_json("/racing/cars/me")

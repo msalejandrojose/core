@@ -31,6 +31,7 @@ Api="*res://scripts/net/api_client.gd"
 Session="*res://scripts/state/session.gd"
 RacingApi="*res://scripts/net/racing_api.gd"
 LapQueue="*res://scripts/state/lap_queue.gd"
+CarLoadout="*res://scripts/state/car_loadout.gd"
 
 [display]
 
