@@ -158,6 +158,16 @@ const LapTimesPage = lazy(() =>
     default: m.LapTimesPage,
   })),
 );
+const GrandPrixPage = lazy(() =>
+  import('@/features/racing/grand-prix/GrandPrixPage').then((m) => ({
+    default: m.GrandPrixPage,
+  })),
+);
+const GrandPrixEditorPage = lazy(() =>
+  import('@/features/racing/grand-prix/GrandPrixEditorPage').then((m) => ({
+    default: m.GrandPrixEditorPage,
+  })),
+);
 const RegionsPage = lazy(() =>
   import('@/features/geo/regions/RegionsPage').then((m) => ({
     default: m.RegionsPage,
@@ -312,6 +322,15 @@ export default function App() {
               <Route path="/racing/cars" element={<CarsPage />} />
               <Route path="/racing/terrain" element={<TerrainPage />} />
               <Route path="/racing/lap-times" element={<LapTimesPage />} />
+              <Route path="/racing/grand-prix" element={<GrandPrixPage />} />
+              <Route
+                path="/racing/grand-prix/new"
+                element={<GrandPrixEditorPage />}
+              />
+              <Route
+                path="/racing/grand-prix/:id"
+                element={<GrandPrixEditorPage />}
+              />
               <Route path="/geo/countries" element={<CountriesPage />} />
               <Route path="/geo/regions" element={<RegionsPage />} />
               <Route path="/geo/provinces" element={<ProvincesPage />} />

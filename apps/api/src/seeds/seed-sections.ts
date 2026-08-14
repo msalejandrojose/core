@@ -219,6 +219,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/racing/lap-times',
         order: 3,
       },
+      {
+        code: 'racing.grand_prix',
+        name: 'Grand Prix',
+        icon: 'Trophy',
+        route: '/racing/grand-prix',
+        order: 4,
+      },
     ],
   },
   {

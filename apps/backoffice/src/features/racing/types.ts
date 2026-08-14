@@ -71,6 +71,29 @@ export interface TerrainEffectRow {
   slowsTopSpeed: boolean;
 }
 
+export interface GrandPrixStageRow {
+  trackId: string;
+  trackSlug: string;
+  trackName: string;
+  order: number;
+}
+
+export interface GrandPrixRow {
+  id: string;
+  slug: string;
+  name: string;
+  isActive: boolean;
+  stages: GrandPrixStageRow[];
+}
+
+export interface GrandPrixLeaderboardEntryRow {
+  position: number;
+  userId: string;
+  displayName: string;
+  totalDurationMs: number;
+  completedAt: string;
+}
+
 export interface AdminLapTimeRow {
   id: string;
   userId: string;
