@@ -71,3 +71,31 @@ func set_car_loadout(archetype_id: String, tires_part_id, wing_part_id, chassis_
 ## Público: hace falta hasta sin cuenta, todo el mundo pisa el mismo hielo.
 func terrain_effects():
 	return await Api.get_json("/racing/terrain-effects", false)
+
+
+# --- Grand Prix (TASK-250) -----------------------------------------------------
+
+func grand_prix_list():
+	return await Api.get_json("/racing/grand-prix")
+
+
+## Un Grand Prix con sus circuitos en orden (id, slug y nombre de cada uno) —
+## hace falta para resolver a qué manga corresponde `nextTrackId`.
+func grand_prix(id: String):
+	return await Api.get_json("/racing/grand-prix/%s" % id)
+
+
+## Devuelve el intento IN_PROGRESS de este jugador si ya había uno (se
+## reanuda, TASK-247), o crea uno nuevo.
+func grand_prix_start_or_resume(id: String):
+	return await Api.post_json("/racing/grand-prix/%s/attempts" % id, {})
+
+
+func grand_prix_submit_stage(id: String, track_id: String, duration_ms: int):
+	return await Api.post_json(
+		"/racing/grand-prix/%s/stages/%s/result" % [id, track_id],
+		{"durationMs": duration_ms})
+
+
+func grand_prix_leaderboard(id: String, limit: int = 20):
+	return await Api.get_json("/racing/grand-prix/%s/leaderboard?limit=%d" % [id, limit])

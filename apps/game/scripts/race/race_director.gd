@@ -10,6 +10,15 @@ signal sector_delta(checkpoint: int, delta_ms: int, has_reference: bool)
 ## Luces encendidas de `LIGHT_COUNT`. Al llegar a todas, sale el GO.
 signal countdown_changed(lights_on: int, total: int)
 signal countdown_finished()
+## Una manga de Grand Prix ha cruzado meta (TASK-250). No se toca el
+## leaderboard normal ni `RaceRecords`: quien orquesta el Grand Prix decide
+## qué pasa con el tiempo.
+signal grand_prix_stage_completed(duration_ms: int)
+## Se ha vuelto al menú estando en Grand Prix, terminado o abandonado a
+## mitad. Igual de seguro en los dos casos: el servidor conserva el intento
+## en curso si queda a medias (TASK-247, se reanuda la próxima vez), y quien
+## esté escuchando (la pantalla de Grand Prix) sabe que tiene que cerrarse.
+signal grand_prix_ended()
 
 const LIGHT_COUNT := 3
 ## Intervalo entre luces. La cuenta dura un intervalo más que luces hay: las
@@ -70,6 +79,13 @@ var _lights_on: int = 0
 ## repetir `TrackCatalog.by_id`.
 var _layout: TrackCatalog.Layout
 
+## Vacío = modo normal. Con Grand Prix en curso (TASK-250), `_on_lap_completed`
+## no toca `RaceRecords`/`LapQueue` (esa manga no compite en el leaderboard
+## normal, es una clasificación aparte) y `_on_settings_changed` no reconstruye
+## desde `TrackCatalog` — el layout activo es el de la manga, no el del menú.
+var _grand_prix_id: String = ""
+var _grand_prix_reverse: bool = false
+
 
 func _ready() -> void:
 	vehicle = get_node(vehicle_path)
@@ -79,6 +95,10 @@ func _ready() -> void:
 	main_menu = get_node(main_menu_path)
 	race_hud = get_node(race_hud_path)
 	touch_controls = get_node(touch_controls_path)
+
+	# Sin `@export`: quien abre la pantalla de Grand Prix se instancia fuera
+	# de este árbol y necesita encontrar al director sin conocer su ruta.
+	add_to_group("race_director")
 
 	main_menu.play_pressed.connect(_on_play_pressed)
 
@@ -175,6 +195,37 @@ func rebuild_track() -> void:
 	_apply_car_loadout()
 
 
+## Arranca una manga de Grand Prix (TASK-250): construye el layout dado — que
+## puede venir de `TrackCache`, no del catálogo local — en vez del circuito
+## elegido en el menú. `reversed` es propio de la manga (viene del slug del
+## servidor), no toca la preferencia guardada del jugador.
+func start_grand_prix_stage(
+	grand_prix_id: String,
+	layout: TrackCatalog.Layout,
+	reversed: bool,
+) -> void:
+	_grand_prix_id = grand_prix_id
+	_grand_prix_reverse = reversed
+	_layout = layout
+	track_builder.build(_layout)
+	lap_timer.rescan()
+	_apply_car_loadout()
+
+	main_menu.close()
+	race_hud.visible = true
+	touch_controls.visible = true
+	restart()
+	set_process(true)
+
+
+func in_grand_prix() -> bool:
+	return _grand_prix_id != ""
+
+
+func _effective_reverse() -> bool:
+	return _grand_prix_reverse if in_grand_prix() else GameSettings.reverse
+
+
 ## Pone en `Vehicle` la parte del coche que NO cambia frame a frame: el coche
 ## equipado (arquetipo + piezas) combinado con el circuito (grip de tema, y si
 ## el tema entero ya cuenta como offroad). El agarre EFECTIVO final —
@@ -200,9 +251,10 @@ func _body_scene_for(archetype_code: String) -> PackedScene:
 func restart() -> void:
 	# La salida es la línea de meta. En sentido inverso, mirando al otro lado:
 	# el circuito es el mismo, se recorre al revés.
+	var reversed := _effective_reverse()
 	vehicle.position = track_builder.start_position
-	vehicle.reset_to_start(track_builder.start_yaw + (PI if GameSettings.reverse else 0.0))
-	lap_timer.set_reversed(GameSettings.reverse)
+	vehicle.reset_to_start(track_builder.start_yaw + (PI if reversed else 0.0))
+	lap_timer.set_reversed(reversed)
 	view.snap()
 	VehicleInput.release()
 	begin_countdown()
@@ -212,6 +264,16 @@ func restart() -> void:
 ## Con un menú delante la salida se congela: la cuenta atrás no puede correr
 ## detrás de una pantalla, y el coche no puede salir sin que lo estén viendo.
 func open_menu() -> void:
+	# Volver al menú a mitad de un Grand Prix es abandonarlo: el intento se
+	# queda IN_PROGRESS en el servidor (TASK-247, se puede reanudar), y aquí
+	# solo hace falta soltar el layout de la manga y avisar a quien esté
+	# escuchando (la pantalla de Grand Prix, para que se cierre sola).
+	if in_grand_prix():
+		_grand_prix_id = ""
+		_grand_prix_reverse = false
+		rebuild_track()
+		grand_prix_ended.emit()
+
 	set_process(false)
 	VehicleInput.locked = true
 	# También los controles: los pedales se dibujan siempre, y sin esconderlos
@@ -230,7 +292,10 @@ func _on_play_pressed() -> void:
 
 
 func _on_settings_changed() -> void:
-	rebuild_track()
+	# En Grand Prix el layout activo es el de la manga, no el del menú: no se
+	# reconstruye desde `TrackCatalog` (ver comentario de `_grand_prix_id`).
+	if not in_grand_prix():
+		rebuild_track()
 	restart()
 	# Cambiar de circuito desde el menú no debe soltar el coche: se reconstruye
 	# la pista para verla de fondo, pero la salida sigue congelada.
@@ -243,6 +308,13 @@ func _on_settings_changed() -> void:
 
 
 func _on_sector_completed(sector: int, split_ms: int) -> void:
+	# Sin referencia con la que comparar: el récord del circuito elegido en el
+	# menú no tiene nada que ver con la manga de Grand Prix que se está
+	# corriendo.
+	if in_grand_prix():
+		sector_delta.emit(sector, 0, false)
+		return
+
 	var reference := RaceRecords.best_splits(record_key())
 	if sector >= reference.size():
 		sector_delta.emit(sector, 0, false)
@@ -252,6 +324,10 @@ func _on_sector_completed(sector: int, split_ms: int) -> void:
 
 
 func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
+	if in_grand_prix():
+		grand_prix_stage_completed.emit(duration_ms)
+		return
+
 	if RaceRecords.submit(record_key(), duration_ms, splits_ms):
 		record_beaten.emit(duration_ms)
 
