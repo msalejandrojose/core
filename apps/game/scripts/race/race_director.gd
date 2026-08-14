@@ -19,6 +19,12 @@ signal grand_prix_stage_completed(duration_ms: int)
 ## en curso si queda a medias (TASK-247, se reanuda la próxima vez), y quien
 ## esté escuchando (la pantalla de Grand Prix) sabe que tiene que cerrarse.
 signal grand_prix_ended()
+## Vuelta normal (no Grand Prix) cruzada, con lo que hace falta para el
+## resumen de resultado (TASK-260): el tiempo, la mejor marca ANTERIOR (null
+## si no había ninguna) y si esta vuelta la ha batido. No se emite con
+## `track_id_override` puesto: eso marca una carrera de arnés de test, no una
+## partida real con interfaz delante.
+signal lap_finished(duration_ms: int, previous_best_ms: Variant, is_new_record: bool)
 
 const LIGHT_COUNT := 3
 ## Intervalo entre luces. La cuenta dura un intervalo más que luces hay: las
@@ -328,11 +334,17 @@ func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 		grand_prix_stage_completed.emit(duration_ms)
 		return
 
-	if RaceRecords.submit(record_key(), duration_ms, splits_ms):
+	var key := record_key()
+	var previous_best_ms: Variant = RaceRecords.best_ms(key) if RaceRecords.has_best(key) else null
+	var is_new_record := RaceRecords.submit(key, duration_ms, splits_ms)
+	if is_new_record:
 		record_beaten.emit(duration_ms)
 
 	# La marca local se guarda SIEMPRE, haya cuenta o no y haya red o no. Subirla
 	# es un extra: el juego no puede quedarse esperando a un servidor justo
 	# después de cruzar la meta, así que se encola y ya se ocupa la cola.
 	if Session.is_logged_in():
-		LapQueue.enqueue(record_key(), duration_ms, splits_ms)
+		LapQueue.enqueue(key, duration_ms, splits_ms)
+
+	if track_id_override.is_empty():
+		lap_finished.emit(duration_ms, previous_best_ms, is_new_record)

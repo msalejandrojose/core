@@ -47,6 +47,7 @@ func _ready() -> void:
 	_director.restarted.connect(_on_restarted)
 	_director.countdown_changed.connect(_on_countdown_changed)
 	_director.countdown_finished.connect(_on_countdown_finished)
+	_director.lap_finished.connect(_on_lap_finished)
 
 	# El director arranca su cuenta atrás en su propio `_ready`, que corre antes
 	# que el de este nodo, así que la primera señal se pierde. Se lee el total
@@ -137,6 +138,15 @@ func _build() -> void:
 
 func open_settings() -> void:
 	add_child(load("res://scenes/ui/settings-screen.tscn").instantiate())
+
+
+## Resumen al completar una vuelta en solitario (TASK-260). Vive aquí y no en
+## el director: el HUD ya es quien instancia pantallas (Ajustes), el director
+## solo avisa de que ha pasado algo.
+func _on_lap_finished(duration_ms: int, previous_best_ms: Variant, is_new_record: bool) -> void:
+	var screen: CanvasLayer = load("res://scenes/ui/race-result-screen.tscn").instantiate()
+	add_child(screen)
+	screen.show_result(duration_ms, previous_best_ms, is_new_record)
 
 
 ## Desplazamiento para no quedar bajo el notch o la barra de estado. En
