@@ -251,6 +251,9 @@ model User {
   grandPrixAttempts         RacingGrandPrixAttempt[]
   onlineRaces               RacingOnlineRace[]
   onlineRaceParticipations  RacingOnlineRaceParticipant[]
+  friendCode                RacingFriendCode?
+  friendshipsRequested      RacingFriendship[]            @relation("FriendshipRequester")
+  friendshipsReceived       RacingFriendship[]            @relation("FriendshipAddressee")
 
   @@map("user")
 }
@@ -1729,4 +1732,56 @@ model RacingOnlineRaceParticipant {
   /// un TARGET, como mucho un THREAT).
   @@unique([raceId, role])
   @@map("racing_online_race_participant")
+}
+
+/// El código corto y permanente de un jugador (TASK-222): lo que comparte
+/// por fuera (WhatsApp, en persona) para que otro jugador lo añada como
+/// amigo. Se genera perezoso, la primera vez que se pide — no en el alta del
+/// usuario, para no gastar códigos de jugadores que nunca llegan a usar la
+/// parte social.
+model RacingFriendCode {
+  id     String @id @default(uuid()) @db.Char(36)
+  userId String @unique @map("user_id") @db.Char(36)
+  /// 8 caracteres, alfabeto sin ambigüedades (sin 0/O/1/I/L) — se puede
+  /// compartir de palabra o por texto sin que se confunda una letra con un
+  /// número al transcribirlo.
+  code   String @unique @db.VarChar(8)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("racing_friend_code")
+}
+
+/// Decisión de partida: la amistad es RECÍPROCA, con aceptación — no basta
+/// con introducir el código de alguien, la otra persona tiene que aceptar
+/// antes de contar como amigos. Una fila por solicitud, no por pareja: así
+/// queda historial de si una solicitud se rechazó, en vez de machacarlo.
+enum RacingFriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model RacingFriendship {
+  id          String                 @id @default(uuid()) @db.Char(36)
+  requesterId String                 @map("requester_id") @db.Char(36)
+  addresseeId String                 @map("addressee_id") @db.Char(36)
+  status      RacingFriendshipStatus @default(PENDING)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  respondedAt DateTime? @map("responded_at")
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  /// Sin `@@unique([requesterId, addresseeId])` a propósito: tras un rechazo
+  /// tiene que poder volver a pedirse, y eso es una fila NUEVA, no reescribir
+  /// la vieja — el historial de solicitudes queda intacto. Que no haya ya
+  /// una solicitud activa (PENDING/ACCEPTED) entre dos jugadores, en
+  /// cualquier dirección, lo comprueba el dominio antes de crear la fila.
+  @@index([requesterId, status])
+  @@index([addresseeId, status])
+  @@map("racing_friendship")
 }

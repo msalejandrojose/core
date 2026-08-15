@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { IamModule } from '../iam/iam.module';
 import { CAR_ARCHETYPE_REPOSITORY } from './application/ports/car-archetype-repository.port';
 import { CAR_PART_REPOSITORY } from './application/ports/car-part-repository.port';
+import { FRIEND_CODE_REPOSITORY } from './application/ports/friend-code-repository.port';
+import { FRIENDSHIP_REPOSITORY } from './application/ports/friendship-repository.port';
 import { GRAND_PRIX_ATTEMPT_REPOSITORY } from './application/ports/grand-prix-attempt-repository.port';
 import { GRAND_PRIX_REPOSITORY } from './application/ports/grand-prix-repository.port';
 import { LAP_TIME_REPOSITORY } from './application/ports/lap-time-repository.port';
@@ -31,6 +33,7 @@ import { AdminUpdateTrackUseCase } from './application/use-cases/admin-update-tr
 import { GetGrandPrixLeaderboardUseCase } from './application/use-cases/get-grand-prix-leaderboard.use-case';
 import { GetGrandPrixUseCase } from './application/use-cases/get-grand-prix.use-case';
 import { GetLeaderboardUseCase } from './application/use-cases/get-leaderboard.use-case';
+import { GetMyFriendCodeUseCase } from './application/use-cases/get-my-friend-code.use-case';
 import { GetOnlineRaceUseCase } from './application/use-cases/get-online-race.use-case';
 import { GetPersonalBestUseCase } from './application/use-cases/get-personal-best.use-case';
 import { GetGhostUseCase } from './application/use-cases/get-ghost.use-case';
@@ -38,10 +41,14 @@ import { GetPlayerCarLoadoutUseCase } from './application/use-cases/get-player-c
 import { GetTrackUseCase } from './application/use-cases/get-track.use-case';
 import { InvalidateLapTimeUseCase } from './application/use-cases/invalidate-lap-time.use-case';
 import { ListCarCatalogUseCase } from './application/use-cases/list-car-catalog.use-case';
+import { ListFriendsUseCase } from './application/use-cases/list-friends.use-case';
 import { ListGrandPrixUseCase } from './application/use-cases/list-grand-prix.use-case';
+import { ListPendingFriendRequestsUseCase } from './application/use-cases/list-pending-friend-requests.use-case';
 import { ListTerrainEffectsUseCase } from './application/use-cases/list-terrain-effects.use-case';
 import { ListTracksUseCase } from './application/use-cases/list-tracks.use-case';
 import { MatchOnlineRaceUseCase } from './application/use-cases/match-online-race.use-case';
+import { RequestFriendshipUseCase } from './application/use-cases/request-friendship.use-case';
+import { RespondFriendshipUseCase } from './application/use-cases/respond-friendship.use-case';
 import { SetPlayerCarLoadoutUseCase } from './application/use-cases/set-player-car-loadout.use-case';
 import { StartOrResumeGrandPrixAttemptUseCase } from './application/use-cases/start-or-resume-grand-prix-attempt.use-case';
 import { SubmitGrandPrixStageResultUseCase } from './application/use-cases/submit-grand-prix-stage-result.use-case';
@@ -55,11 +62,14 @@ import { AdminRacingUsersController } from './infrastructure/http/admin-racing-u
 import { AdminTerrainEffectsController } from './infrastructure/http/admin-terrain-effects.controller';
 import { AdminTracksController } from './infrastructure/http/admin-tracks.controller';
 import { CarLoadoutController } from './infrastructure/http/car-loadout.controller';
+import { FriendsController } from './infrastructure/http/friends.controller';
 import { GrandPrixController } from './infrastructure/http/grand-prix.controller';
 import { RacingController } from './infrastructure/http/racing.controller';
 import { TerrainEffectsController } from './infrastructure/http/terrain-effects.controller';
 import { PrismaCarArchetypeRepository } from './infrastructure/persistence/prisma-car-archetype.repository';
 import { PrismaCarPartRepository } from './infrastructure/persistence/prisma-car-part.repository';
+import { PrismaFriendCodeRepository } from './infrastructure/persistence/prisma-friend-code.repository';
+import { PrismaFriendshipRepository } from './infrastructure/persistence/prisma-friendship.repository';
 import { PrismaGrandPrixAttemptRepository } from './infrastructure/persistence/prisma-grand-prix-attempt.repository';
 import { PrismaGrandPrixRepository } from './infrastructure/persistence/prisma-grand-prix.repository';
 import { PrismaLapTimeRepository } from './infrastructure/persistence/prisma-lap-time.repository';
@@ -84,6 +94,7 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     AdminRacingUsersController,
     GrandPrixController,
     AdminGrandPrixController,
+    FriendsController,
   ],
   providers: [
     ListTracksUseCase,
@@ -124,9 +135,16 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     AdminGetGrandPrixUseCase,
     AdminCreateGrandPrixUseCase,
     AdminUpdateGrandPrixUseCase,
+    GetMyFriendCodeUseCase,
+    RequestFriendshipUseCase,
+    RespondFriendshipUseCase,
+    ListFriendsUseCase,
+    ListPendingFriendRequestsUseCase,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },
     { provide: LAP_TIME_REPOSITORY, useClass: PrismaLapTimeRepository },
     { provide: ONLINE_RACE_REPOSITORY, useClass: PrismaOnlineRaceRepository },
+    { provide: FRIEND_CODE_REPOSITORY, useClass: PrismaFriendCodeRepository },
+    { provide: FRIENDSHIP_REPOSITORY, useClass: PrismaFriendshipRepository },
     {
       provide: CAR_ARCHETYPE_REPOSITORY,
       useClass: PrismaCarArchetypeRepository,

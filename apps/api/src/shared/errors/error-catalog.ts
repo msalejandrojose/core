@@ -341,6 +341,26 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Los corredores de la carrera online no son válidos.',
   },
+  RACING_FRIEND_CODE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Ningún jugador tiene ese código.',
+  },
+  RACING_INVALID_FRIENDSHIP_REQUEST: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'La solicitud de amistad no es válida.',
+  },
+  RACING_FRIENDSHIP_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Solicitud de amistad no encontrada.',
+  },
+  RACING_FRIENDSHIP_NOT_RESPONDABLE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'No se puede responder a esa solicitud.',
+  },
   RACING_ONLINE_RACE_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
