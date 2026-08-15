@@ -168,7 +168,7 @@ func _ready() -> void:
 	# circuito.
 	vehicle.track_builder = track_builder
 
-	rebuild_track()
+	await rebuild_track()
 	restart()
 
 	# Se arranca en el menú: el juego no empieza a contar sin que nadie haya
@@ -258,11 +258,27 @@ func record_key() -> String:
 ## Levanta el circuito seleccionado y engancha el cronómetro a sus puertas.
 ## Solo hace falta al arrancar y al cambiarlo en ajustes; reiniciar una vuelta
 ## no reconstruye nada, que por eso es instantáneo.
+##
+## Async porque `GameSettings.track_id` puede ser el slug de un circuito del
+## servidor (creado en el backoffice) que no está en el catálogo local — para
+## esos hace falta pedirlo a la API (vía `TrackCache`, con su propia caché en
+## disco). Para los 4 del catálogo el `await` no llega a suspender nada: es
+## instantáneo igual que antes.
 func rebuild_track() -> void:
-	_layout = TrackCatalog.by_id(GameSettings.track_id)
+	_layout = await _resolve_layout(GameSettings.track_id)
 	track_builder.build(_layout)
 	lap_timer.rescan()
 	_apply_car_loadout()
+
+
+func _resolve_layout(id: String) -> TrackCatalog.Layout:
+	if TrackCatalog.ids().has(id):
+		return TrackCatalog.by_id(id)
+
+	var layout: Variant = await TrackCache.get_or_fetch(id)
+	# Sin red y sin caché previa, o el circuito ya no existe/no está activo:
+	# no puede dejar al jugador sin pista donde pisar.
+	return layout if layout != null else TrackCatalog.by_id(TrackCatalog.DEFAULT_ID)
 
 
 ## Arranca una manga de Grand Prix (TASK-250): construye el layout dado — que
@@ -344,7 +360,7 @@ func open_menu() -> void:
 	if in_grand_prix():
 		_grand_prix_id = ""
 		_grand_prix_reverse = false
-		rebuild_track()
+		await rebuild_track()
 		grand_prix_ended.emit()
 
 	# Volver al menú es también abandonar la carrera online en curso, si había
@@ -415,7 +431,7 @@ func _on_settings_changed() -> void:
 	# En Grand Prix el layout activo es el de la manga, no el del menú: no se
 	# reconstruye desde `TrackCatalog` (ver comentario de `_grand_prix_id`).
 	if not in_grand_prix():
-		rebuild_track()
+		await rebuild_track()
 	restart()
 	# Cambiar de circuito desde el menú no debe soltar el coche: se reconstruye
 	# la pista para verla de fondo, pero la salida sigue congelada.

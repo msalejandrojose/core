@@ -39,8 +39,8 @@ func personal_best(track_key: String):
 	return await Api.get_json("/racing/me/best/%s" % track_key)
 
 
-func tracks():
-	return await Api.get_json("/racing/tracks")
+func tracks(limit: int = 20):
+	return await Api.get_json("/racing/tracks?limit=%d" % limit)
 
 
 ## Circuito completo (con geometría), por slug — para construir uno que no

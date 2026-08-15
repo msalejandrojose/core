@@ -40,6 +40,12 @@ var _active_tab: int = Tab.JUGAR
 var _best_label: Label
 var _account_label: Label
 var _track_buttons: Array[Button] = []
+## Paralelo a `_track_buttons`: el id/slug de cada botón, en el mismo orden.
+## Hace falta porque un botón de circuito ya no tiene por qué venir de
+## `TrackCatalog.ids()` — puede ser un slug del servidor cargado aparte.
+var _track_button_ids: Array[String] = []
+var _tracks_row: HBoxContainer
+var _track_group: ButtonGroup
 var _direction_buttons: Array[Button] = []
 var _engine_buttons: Array[Button] = []
 var _online_button: Button
@@ -149,6 +155,9 @@ func _select_tab(tab: int) -> void:
 	_best_label = null
 	_account_label = null
 	_track_buttons.clear()
+	_track_button_ids.clear()
+	_tracks_row = null
+	_track_group = null
 	_direction_buttons.clear()
 	_engine_buttons.clear()
 	_online_button = null
@@ -184,17 +193,18 @@ func _build_jugar_tab() -> void:
 	tracks.add_theme_constant_override("separation", 16)
 	_content.add_child(tracks)
 
+	_tracks_row = tracks
+	_track_group = ButtonGroup.new()
+
 	var ids: Array = TrackCatalog.ids()
-	var track_group := ButtonGroup.new()
 	for i in ids.size():
 		var layout := TrackCatalog.by_id(ids[i])
-		var button := UiTheme.make_button(layout.name, UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
-		button.toggle_mode = true
-		button.button_group = track_group
-		var id: String = ids[i]
-		button.pressed.connect(func() -> void: _pick_track(id))
-		tracks.add_child(button)
-		_track_buttons.append(button)
+		_add_track_button(layout.name, ids[i])
+
+	# Los del servidor (creados en el backoffice) se cargan aparte y se van
+	# añadiendo a la misma fila en cuanto llegan — no bloquea el resto del
+	# menú, y sin red simplemente no aparece ninguno más que los 4 de fábrica.
+	_load_server_tracks()
 
 	_content.add_child(_heading("Sentido"))
 
@@ -282,8 +292,41 @@ func _build_placeholder_tab(title_text: String, message: String) -> void:
 
 # --- Estado -------------------------------------------------------------------
 
-func _pick_track(id: String) -> void:
-	GameSettings.set_track_id(id)
+func _add_track_button(label: String, id: String, is_server: bool = false) -> void:
+	var button := UiTheme.make_button(label, UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
+	button.toggle_mode = true
+	button.button_group = _track_group
+	button.pressed.connect(func() -> void: _pick_track(id, is_server))
+	_tracks_row.add_child(button)
+	_track_buttons.append(button)
+	_track_button_ids.append(id)
+
+
+## Circuitos creados en el backoffice, además de los 4 del catálogo local
+## (TASK "listar en Jugar todos los circuitos del servidor"). Se descartan
+## los que ya representan a uno de los 4 de fábrica (sus slugs siempre
+## empiezan por el id local seguido de "-": cilindrada + sentido + arquetipo,
+## ver `GameSettings.key_for`) para no duplicar la misma entrada.
+func _load_server_tracks() -> void:
+	var response = await RacingApi.tracks(100)
+	if not is_instance_valid(_tracks_row) or not response.ok or not (response.data is Dictionary):
+		return
+
+	var local_ids: Array = TrackCatalog.ids()
+	for item in response.data.get("data", []):
+		var slug: String = str(item.get("slug", ""))
+		if slug == "" or _track_button_ids.has(slug):
+			continue
+		var is_local_variant := local_ids.any(func(id: String) -> bool: return slug.begins_with(id + "-"))
+		if is_local_variant:
+			continue
+		_add_track_button(str(item.get("name", slug)), slug, true)
+
+	_sync_jugar()
+
+
+func _pick_track(id: String, is_server: bool = false) -> void:
+	GameSettings.set_track_id(id, is_server)
 	_refresh_best()
 
 
@@ -301,8 +344,10 @@ func _pick_engine(value: int) -> void:
 ## vez, porque Ajustes puede haber cambiado cosas mientras el menú estaba
 ## montado en otra pestaña.
 func _sync_jugar() -> void:
-	var ids: Array = TrackCatalog.ids()
-	var selected: int = maxi(ids.find(GameSettings.track_id), 0)
+	# Por id/slug y no por índice: el circuito elegido puede ser uno del
+	# servidor que todavía no había llegado cuando se montaron los botones
+	# locales, así que su posición en `_track_button_ids` no es fija.
+	var selected := _track_button_ids.find(GameSettings.track_id)
 	for i in _track_buttons.size():
 		_track_buttons[i].button_pressed = i == selected
 
