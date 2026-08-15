@@ -1,7 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { useForm, useWatch, type ControllerRenderProps } from 'react-hook-form';
+import {
+  useForm,
+  useWatch,
+  type ControllerRenderProps,
+  type FieldPath,
+} from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { FieldWrapper } from '@/components/forms/FieldWrapper';
@@ -52,11 +57,15 @@ type FormValues = z.infer<typeof schema>;
 // (`field.value`, `field.name`...) — de ahí el spread `{...field}` en vez
 // de desglosarlo, y `initialValue` aparte para sembrar el estado local sin
 // tocar `field.value` fuera de un manejador de evento.
+//
+// El tipo del `field` es el genérico de `FieldWrapper` (unión de TODOS los
+// campos del formulario), no uno estrecho de solo "grip" — `FieldWrapper`
+// no lo afina por `name` aunque en este punto solo pueda ser "grip".
 function DecimalInput({
   field,
   initialValue,
 }: {
-  field: ControllerRenderProps<FormValues, 'grip'>;
+  field: ControllerRenderProps<FormValues, FieldPath<FormValues>>;
   initialValue: number;
 }) {
   const [text, setText] = useState(() => String(initialValue));
