@@ -2,15 +2,20 @@ extends Node
 
 const TestEnv := preload("res://tests/test_env.gd")
 
-## Prueba de los circuitos del servidor en la pestaña Jugar (TASK "listar en
-## Jugar todos los circuitos del servidor"):
+## Prueba de la pantalla de selección de circuito (antes una fila de botones
+## dentro del menú principal — ver `git log` de `main_menu.gd` para el porqué
+## del traslado):
 ##
-##     godot --headless --quit-after 800 res://tests/server_tracks_test.tscn
+##     godot --headless --quit-after 800 res://tests/track_select_screen_test.tscn
 ##
 ## Servidor falso de verdad (TCPServer + HTTP a mano, no bloqueante — mismo
 ## motivo y diseño que `online_race_test.gd`).
 
 var _failures := 0
+## Miembro y no local: una lambda de GDScript captura las locales por VALOR
+## (mismo aviso que en `main_menu_hub_test.gd`/`race_flow_test.gd`), así que
+## escribir en una local desde dentro de la lambda no se vería fuera de ella.
+var _confirmed_fired := false
 
 var _server := TCPServer.new()
 var _port := 0
@@ -19,12 +24,7 @@ var _pending: Array = []  # cada uno: {"peer": StreamPeerTCP, "buffer": String}
 ## `kenney-01-50cc-normal` es una variante de uno de los 4 del catálogo local
 ## (empieza por "kenney-01-") — tiene que quedar filtrada. `circuito-del-
 ## puerto` es un circuito de verdad nacido en el backoffice — tiene que
-## aparecer.
-## La clave del array es "data" — el mismo nombre, confusamente, que
-## `ApiResponse.data` (el body entero ya parseado). La primera versión de
-## este test usaba "items" a juego con un bug real en `main_menu.gd` que
-## leía la misma clave equivocada — pasaba igual porque los dos lados
-## mentían del mismo modo. Aquí va la forma real de
+## aparecer. La clave del array es "data", la misma forma que
 ## `CursorPaginatedResponseDto` (`apps/api/.../cursor-paginated-response.dto.ts`).
 var _tracks_payload := {
 	"data": [
@@ -48,7 +48,8 @@ func _ready() -> void:
 
 	_test_key_for_sigue_componiendo_para_ids_de_prueba()
 	await _test_lista_circuitos_del_servidor_sin_duplicar_los_locales()
-	await _test_elegir_circuito_de_servidor_marca_track_is_server()
+	await _test_confirmar_aplica_la_seleccion_pendiente()
+	await _test_atras_no_aplica_nada()
 
 	_server.stop()
 	Session.logout()
@@ -118,60 +119,79 @@ func _test_key_for_sigue_componiendo_para_ids_de_prueba() -> void:
 
 
 func _test_lista_circuitos_del_servidor_sin_duplicar_los_locales() -> void:
-	var main: Node = load("res://scenes/main.tscn").instantiate()
-	add_child(main)
-	await get_tree().physics_frame
+	var screen := await _open_screen()
 
-	var director: RaceDirector = main.get_node("RaceDirector")
-	director.set_process(false)
-	var menu: CanvasLayer = main.get_node("MainMenu")
-
-	await _settle()
-
-	_check(_find_button(menu, "Circuito del Puerto") != null, true,
-		"el circuito del servidor aparece en la pestaña Jugar")
-	_check(_find_button(menu, "Kenney 50cc") == null, true,
+	_check(_find_label(screen, "Circuito del Puerto") != null, true,
+		"el circuito del servidor aparece en la rejilla")
+	_check(_find_label(screen, "Kenney 50cc") == null, true,
 		"la variante que ya representa a un circuito local no se duplica")
 
-	main.queue_free()
+	screen.close_screen()
 	await get_tree().process_frame
 
 
-func _test_elegir_circuito_de_servidor_marca_track_is_server() -> void:
-	var main: Node = load("res://scenes/main.tscn").instantiate()
-	add_child(main)
-	await get_tree().physics_frame
+func _test_confirmar_aplica_la_seleccion_pendiente() -> void:
+	GameSettings.set_track_id(TrackCatalog.DEFAULT_ID, false)
+	var screen := await _open_screen()
 
-	var director: RaceDirector = main.get_node("RaceDirector")
-	director.set_process(false)
-	var menu: CanvasLayer = main.get_node("MainMenu")
-
-	await _settle()
-
-	var button := _find_button(menu, "Circuito del Puerto")
-	_check(button != null, true, "encuentra el botón del circuito del servidor")
+	var button := _find_card_button(screen, "Circuito del Puerto")
+	_check(button != null, true, "encuentra el botón de la tarjeta del circuito del servidor")
 	if button == null:
-		main.queue_free()
+		screen.close_screen()
 		return
 
 	button.pressed.emit()
+	_check(GameSettings.track_id, TrackCatalog.DEFAULT_ID,
+		"elegir una tarjeta todavía no aplica nada")
+
+	_confirmed_fired = false
+	screen.confirmed.connect(func() -> void: _confirmed_fired = true)
+
+	var confirm_button := _find_button(screen, "Confirmar circuito")
+	confirm_button.pressed.emit()
 	await get_tree().process_frame
 
 	_check(GameSettings.track_id, "circuito-del-puerto",
-		"elegirlo actualiza el track_id al slug del servidor")
-	_check(GameSettings.track_is_server, true,
-		"y lo marca como circuito de servidor")
+		"confirmar aplica el track_id del servidor elegido")
+	_check(GameSettings.track_is_server, true, "y lo marca como circuito de servidor")
 	_check(GameSettings.track_key(), "circuito-del-puerto",
 		"track_key() lo usa tal cual, sin componer cilindrada/sentido/arquetipo")
+	_check(_confirmed_fired, true, "avisa con la señal `confirmed` de que cambió")
 
-	main.queue_free()
+
+func _test_atras_no_aplica_nada() -> void:
+	GameSettings.set_track_id(TrackCatalog.DEFAULT_ID, false)
+	var screen := await _open_screen()
+
+	var button := _find_card_button(screen, "Circuito del Puerto")
+	button.pressed.emit()
+
+	var back_button := _find_button(screen, "Atrás")
+	back_button.pressed.emit()
 	await get_tree().process_frame
+
+	_check(GameSettings.track_id, TrackCatalog.DEFAULT_ID,
+		"volver atrás no aplica la tarjeta que se había tocado")
 
 
 # --- Utilidades ---------------------------------------------------------------
 
+func _open_screen() -> Node:
+	# `GameSettings.set_track_id()` (confirmar una tarjeta) emite `changed`, y
+	# `Api` escucha esa señal para recalcular `base_url` desde los ajustes
+	# reales — en el juego de verdad eso no cambia nada (siempre vuelve al
+	# mismo valor configurado), pero aquí pisa el `base_url` que apunta al
+	# servidor falso. Se reafirma antes de cada apertura para no depender del
+	# orden de los casos.
+	Api.base_url = "http://127.0.0.1:%d/v1" % _port
+	var screen: CanvasLayer = load("res://scenes/ui/track-select-screen.tscn").instantiate()
+	add_child(screen)
+	await _settle()
+	return screen
+
+
 func _settle() -> void:
-	for i in 90:
+	for i in 60:
 		await get_tree().process_frame
 
 
@@ -183,6 +203,28 @@ func _find_button(root: Node, text: String) -> Button:
 		if found != null:
 			return found
 	return null
+
+
+func _find_label(root: Node, text: String) -> Label:
+	if root is Label and root.text == text:
+		return root
+	for child in root.get_children():
+		var found := _find_label(child, text)
+		if found != null:
+			return found
+	return null
+
+
+## El nombre del circuito vive en una `Label` dentro de la tarjeta (un
+## `VBoxContainer`); el botón "Seleccionar"/"Seleccionado" es el único
+## `Button` hijo de esa misma tarjeta.
+func _find_card_button(root: Node, track_name: String) -> Button:
+	var label := _find_label(root, track_name)
+	if label == null:
+		return null
+	return _find_button(label.get_parent(), "Seleccionar") \
+		if _find_button(label.get_parent(), "Seleccionar") != null \
+		else _find_button(label.get_parent(), "Seleccionado")
 
 
 func _check(got, want, label: String) -> void:
