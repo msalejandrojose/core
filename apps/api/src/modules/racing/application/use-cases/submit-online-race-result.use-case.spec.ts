@@ -51,24 +51,22 @@ describe('SubmitOnlineRaceResultUseCase', () => {
       uc.execute({
         userId: PLAYER_ID,
         trackSlug: 'no-existe',
-        participants: [
-          { role: 'PLAYER', userId: PLAYER_ID, durationMs: 42000 },
-        ],
+        durationMs: 42000,
+        rivals: [],
       }),
     ).rejects.toMatchObject({ code: 'RACING_TRACK_NOT_FOUND' });
   });
 
-  it('rechaza una lista de corredores inválida', async () => {
+  it('registra la carrera en solitario cuando no hay rivales', async () => {
     const { uc } = useCase(TRACK);
-    await expect(
-      uc.execute({
-        userId: PLAYER_ID,
-        trackSlug: 'kenney-01',
-        participants: [],
-      }),
-    ).rejects.toMatchObject({
-      code: 'RACING_INVALID_ONLINE_RACE_PARTICIPANTS',
+    const result = await uc.execute({
+      userId: PLAYER_ID,
+      trackSlug: 'kenney-01',
+      durationMs: 42000,
+      rivals: [],
     });
+    expect(result.participants).toHaveLength(1);
+    expect(result.participants[0].role).toBe('PLAYER');
   });
 
   it('registra la carrera resolviendo el trackId por slug y el podio', async () => {
@@ -76,10 +74,8 @@ describe('SubmitOnlineRaceResultUseCase', () => {
     const result = await uc.execute({
       userId: PLAYER_ID,
       trackSlug: 'kenney-01',
-      participants: [
-        { role: 'PLAYER', userId: PLAYER_ID, durationMs: 42000 },
-        { role: 'TARGET', userId: 'target-1', durationMs: 41000 },
-      ],
+      durationMs: 42000,
+      rivals: [{ role: 'TARGET', userId: 'target-1', durationMs: 41000 }],
     });
 
     expect(races.lastCreate?.trackId).toBe('track-1');
@@ -88,5 +84,16 @@ describe('SubmitOnlineRaceResultUseCase', () => {
       'PLAYER',
     ]);
     expect(result.participants.map((p) => p.position)).toEqual([1, 2]);
+  });
+
+  it('no hace falta que el cliente declare su propio id: se usa el del token', async () => {
+    const { uc } = useCase(TRACK);
+    const result = await uc.execute({
+      userId: PLAYER_ID,
+      trackSlug: 'kenney-01',
+      durationMs: 42000,
+      rivals: [],
+    });
+    expect(result.participants[0].userId).toBe(PLAYER_ID);
   });
 });

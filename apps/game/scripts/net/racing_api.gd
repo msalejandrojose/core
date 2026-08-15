@@ -106,3 +106,24 @@ func grand_prix_submit_stage(id: String, track_id: String, duration_ms: int):
 
 func grand_prix_leaderboard(id: String, limit: int = 20):
 	return await Api.get_json("/racing/grand-prix/%s/leaderboard?limit=%d" % [id, limit])
+
+
+# --- Carreras online (TASK-282/284/285) ----------------------------------------
+
+## Empareja rivales para una carrera online: `target` (ligeramente mejor, o el
+## propio fantasma si vas primero) y `threat` (ligeramente peor, sin repuesto
+## si no hay nadie), cada uno null o `{userId, durationMs, snapshots}`. Se
+## recalcula en cada llamada — no hay carrera fijada de antemano.
+func match_online_race(track_key: String):
+	return await Api.get_json("/racing/tracks/%s/online-races/match" % track_key)
+
+
+## Registra el resultado de una carrera online ya jugada. `rivals` son solo
+## el objetivo/amenaza (0 a 2, `{role, userId, durationMs}`) — el propio
+## resultado del jugador se manda aparte porque el servidor ya sabe quién
+## eres por el token, no hace falta declarar tu propio id.
+func submit_online_race(track_key: String, duration_ms: int, rivals: Array):
+	return await Api.post_json("/racing/tracks/%s/online-races" % track_key, {
+		"durationMs": duration_ms,
+		"rivals": rivals,
+	})

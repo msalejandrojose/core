@@ -92,12 +92,25 @@ func _test_volver_a_jugar_resincroniza() -> void:
 func _test_correr_emite_la_senal() -> void:
 	_menu.play_pressed.connect(func(): _play_signal_fired = true)
 
-	for child in _menu._content.get_children():
-		if child is Button and child.text == "Correr":
-			child.pressed.emit()
+	var button := _find_button(_menu._content, "Correr")
+	if button != null:
+		button.pressed.emit()
 
 	await get_tree().process_frame
 	_check(_play_signal_fired, true, "el botón Correr sigue emitiendo play_pressed")
+
+
+## "Correr" y "Carrera Online" (TASK-285) viven dentro de una fila propia, no
+## como hijos directos de `_content` — búsqueda recursiva y no un
+## `get_children()` plano.
+func _find_button(root: Node, text: String) -> Button:
+	if root is Button and root.text == text:
+		return root
+	for child in root.get_children():
+		var found := _find_button(child, text)
+		if found != null:
+			return found
+	return null
 
 
 func _check(got, want, label: String) -> void:
