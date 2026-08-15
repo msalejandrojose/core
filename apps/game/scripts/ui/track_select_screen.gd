@@ -13,8 +13,18 @@ extends CanvasLayer
 ## Sin dificultad ni longitud del boceto de referencia: no existen todavía
 ## como datos reales de un circuito, así que no se simulan. En su lugar se
 ## muestra lo que sí es real: sectores y tu mejor marca ahí.
+##
+## Tarjetas claras (`UiTheme.card_panel()`), como el menú y el taller — ver
+## comentario sobre el alcance del pase de diseño en `ui_theme.gd`.
 
 const COLUMNS := 4
+
+## Gris neutro del botón "Seleccionar" sin elegir — mismo tono que las
+## píldoras de opción del menú y el taller.
+const _OPTION_BG := Color("e9e4d9")
+## Tono algo más claro que `UiTheme.CARD` para las tarjetas individuales,
+## así se distinguen de la tarjeta grande que las contiene a todas.
+const _TILE_BG := Color("f4f1ea")
 
 signal closed()
 ## Solo se emite si se confirma un circuito distinto al que había — quien
@@ -24,6 +34,9 @@ signal confirmed()
 
 var _grid: GridContainer
 var _card_buttons: Array[Button] = []
+## Paralelo a `_card_buttons`: el `PanelContainer` de cada tarjeta, para
+## poder pintarle el borde de "elegida" en `_sync_selection()`.
+var _card_panels: Array[PanelContainer] = []
 var _card_ids: Array[String] = []
 var _card_is_server: Array[bool] = []
 
@@ -40,7 +53,9 @@ func _ready() -> void:
 
 func _build() -> void:
 	var backdrop := ColorRect.new()
-	backdrop.color = UiTheme.ink_alpha(0.985)
+	# Más claro que antes (0.985 → 0.45): la tarjeta grande de la rejilla
+	# flota sobre la escena 3D bien visible, no sobre un fondo casi negro.
+	backdrop.color = UiTheme.ink_alpha(0.45)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
@@ -56,9 +71,13 @@ func _build() -> void:
 
 	column.add_child(_title("Selección de circuito"))
 
+	var grid_card := UiTheme.card_panel()
+	grid_card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(grid_card)
+
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
+	grid_card.add_child(scroll)
 
 	_grid = GridContainer.new()
 	_grid.columns = COLUMNS
@@ -81,7 +100,7 @@ func _build() -> void:
 	footer.add_theme_constant_override("separation", 16)
 	column.add_child(footer)
 
-	var back := UiTheme.make_button("Atrás")
+	var back := UiTheme.pill_button("Atrás", UiTheme.STEEL, Color.WHITE)
 	back.pressed.connect(close_screen)
 	footer.add_child(back)
 
@@ -89,7 +108,7 @@ func _build() -> void:
 	footer_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(footer_spacer)
 
-	var confirm_button := UiTheme.make_button("Confirmar circuito")
+	var confirm_button := UiTheme.pill_button("Confirmar circuito", UiTheme.GOOD, Color.WHITE)
 	confirm_button.pressed.connect(_confirm)
 	footer.add_child(confirm_button)
 
@@ -133,31 +152,37 @@ func _add_card(label: String, id: String, is_server: bool, sector_count: int) ->
 	if _card_ids.has(id):
 		return
 
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiTheme.card_stylebox(_TILE_BG, 14))
+	_grid.add_child(panel)
+
 	var card := VBoxContainer.new()
 	card.add_theme_constant_override("separation", 8)
 	card.custom_minimum_size = Vector2(300, 0)
-	_grid.add_child(card)
+	panel.add_child(card)
 
 	var name_label := Label.new()
 	name_label.text = label
 	name_label.add_theme_font_size_override("font_size", UiTheme.FONT_MD)
-	name_label.add_theme_color_override("font_color", UiTheme.BONE)
+	name_label.add_theme_color_override("font_color", UiTheme.CARD_INK)
 	card.add_child(name_label)
 
 	var sectors_label := Label.new()
 	sectors_label.text = "%d sectores" % sector_count
 	sectors_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
-	sectors_label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.65))
+	sectors_label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
 	card.add_child(sectors_label)
 
 	var best_label := Label.new()
 	var key := id if is_server else GameSettings.key_for(id)
 	best_label.text = _best_text(key)
 	best_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
-	best_label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.65))
+	best_label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
 	card.add_child(best_label)
 
-	var button := UiTheme.make_button("Seleccionar", Vector2(0, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
+	var button := UiTheme.pill_button(
+		"Seleccionar", _OPTION_BG, UiTheme.CARD_INK, Vector2(0, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM,
+		UiTheme.GOOD, Color.WHITE)
 	# Sin `ButtonGroup`: la exclusividad la lleva `_sync_selection()` a mano,
 	# porque también tiene que apagar el botón de la tarjeta anterior cuando
 	# la selección llega de fuera (al abrir la pantalla, o tras cargar los
@@ -167,6 +192,7 @@ func _add_card(label: String, id: String, is_server: bool, sector_count: int) ->
 	card.add_child(button)
 
 	_card_buttons.append(button)
+	_card_panels.append(panel)
 	_card_ids.append(id)
 	_card_is_server.append(is_server)
 
@@ -189,6 +215,9 @@ func _sync_selection() -> void:
 		var matches := _card_ids[i] == _pending_id and _card_is_server[i] == _pending_is_server
 		_card_buttons[i].button_pressed = matches
 		_card_buttons[i].text = "Seleccionado" if matches else "Seleccionar"
+		var style := UiTheme.card_stylebox_selected(UiTheme.CLAY, _TILE_BG, 14) if matches \
+			else UiTheme.card_stylebox(_TILE_BG, 14)
+		_card_panels[i].add_theme_stylebox_override("panel", style)
 
 
 func _title(text: String) -> Label:

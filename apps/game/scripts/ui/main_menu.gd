@@ -14,6 +14,17 @@ extends CanvasLayer
 ## El circuito y el sentido viven en la pestaña "Jugar" y no en Ajustes: son
 ## lo que eliges para jugar, no una preferencia. Ajustes se queda con los
 ## controles y las licencias.
+##
+## Tarjetas claras (`UiTheme.card_panel()`/`pill_button()`) en vez del panel
+## oscuro translúcido de siempre — pase de diseño a partir de la misma
+## captura de referencia. Solo esta pantalla, el taller y la selección de
+## circuito la usan; el resto de la app se queda con la paleta oscura de
+## `UiTheme.make_button()`, a propósito (ver comentario en `ui_theme.gd`).
+
+## Colores de la lista de "modos" / botones de opción (sentido, cilindrada):
+## gris neutro sin elegir, verde al elegir — el mismo lenguaje que ya usa
+## `pill_button()` en el taller para el arquetipo resaltado.
+const _OPTION_BG := Color("e9e4d9")
 
 signal play_pressed()
 ## Emparejamiento resuelto (TASK-282/284/285): `target`/`threat` son lo que
@@ -89,9 +100,9 @@ func close() -> void:
 
 func _build() -> void:
 	var backdrop := ColorRect.new()
-	# Menos opaco que Ajustes: aquí interesa entrever el circuito de detrás,
-	# que es de lo que va la pestaña "Jugar".
-	backdrop.color = UiTheme.ink_alpha(0.88)
+	# Más claro que antes (0.88 → 0.45): las tarjetas del boceto flotan sobre
+	# la escena 3D bien visible, no sobre un fondo casi negro.
+	backdrop.color = UiTheme.ink_alpha(0.45)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
@@ -144,35 +155,42 @@ func _build() -> void:
 	body.add_child(_build_preview_panel())
 	_refresh_preview()
 
+	var content_card := UiTheme.card_panel()
+	content_card.custom_minimum_size = Vector2(420, 0)
+	content_card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(content_card)
+
 	_content = VBoxContainer.new()
-	_content.custom_minimum_size = Vector2(420, 0)
 	_content.add_theme_constant_override("separation", 12)
-	_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(_content)
+	content_card.add_child(_content)
 
 
 ## Columna izquierda ("MODOS DE JUEGO" del boceto): lista vertical de
 ## pestañas, en vez de la fila horizontal de antes.
 func _build_modes_panel() -> Control:
-	var panel := VBoxContainer.new()
-	panel.custom_minimum_size = Vector2(280, 0)
-	panel.add_theme_constant_override("separation", 12)
+	var card := UiTheme.card_panel()
+	card.custom_minimum_size = Vector2(280, 0)
 
-	panel.add_child(_heading("Modos de juego"))
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 12)
+	card.add_child(inner)
+
+	inner.add_child(_heading("Modos de juego"))
 
 	var tab_group := ButtonGroup.new()
 	for entry in TABS:
 		var tab: int = entry[0]
-		var button := UiTheme.make_button(entry[1], Vector2(0, 88), UiTheme.FONT_SM)
+		var button := UiTheme.pill_button(
+			entry[1], _OPTION_BG, UiTheme.CARD_INK, Vector2(0, 88), UiTheme.FONT_SM,
+			UiTheme.GOOD, Color.WHITE)
 		button.toggle_mode = true
 		button.button_group = tab_group
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.pressed.connect(func() -> void: _select_tab(tab))
-		panel.add_child(button)
+		inner.add_child(button)
 		_tab_buttons[tab] = button
 
-	return panel
+	return card
 
 
 ## Columna central: el coche equipado ahora mismo, en vivo (`VehiclePreview`,
@@ -237,13 +255,13 @@ func _build_jugar_tab() -> void:
 
 	_track_summary_label = Label.new()
 	_track_summary_label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
-	_track_summary_label.add_theme_color_override("font_color", UiTheme.BONE)
+	_track_summary_label.add_theme_color_override("font_color", UiTheme.CARD_INK)
 	_content.add_child(_track_summary_label)
 
 	# La rejilla de circuitos (locales + los del servidor) ya no cabe cómoda
 	# aquí — vive en su propia pantalla de selección a pantalla completa.
-	var select_track_button := UiTheme.make_button(
-		"Seleccionar circuito", Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
+	var select_track_button := UiTheme.pill_button(
+		"Seleccionar circuito", _OPTION_BG, UiTheme.CARD_INK, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
 	select_track_button.pressed.connect(_open_track_select)
 	_content.add_child(select_track_button)
 
@@ -255,7 +273,9 @@ func _build_jugar_tab() -> void:
 
 	var direction_group := ButtonGroup.new()
 	for i in 2:
-		var button := UiTheme.make_button("Normal" if i == 0 else "Inverso", UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
+		var button := UiTheme.pill_button(
+			"Normal" if i == 0 else "Inverso", _OPTION_BG, UiTheme.CARD_INK,
+			UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM, UiTheme.GOOD, Color.WHITE)
 		button.toggle_mode = true
 		button.button_group = direction_group
 		var reversed := i == 1
@@ -271,7 +291,9 @@ func _build_jugar_tab() -> void:
 
 	var engine_group := ButtonGroup.new()
 	for value in [GameSettings.EngineClass.CC50, GameSettings.EngineClass.CC100, GameSettings.EngineClass.CC150]:
-		var button := UiTheme.make_button(GameSettings.ENGINE_NAMES[value], UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
+		var button := UiTheme.pill_button(
+			GameSettings.ENGINE_NAMES[value], _OPTION_BG, UiTheme.CARD_INK,
+			UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM, UiTheme.GOOD, Color.WHITE)
 		button.toggle_mode = true
 		button.button_group = engine_group
 		var chosen: int = value
@@ -281,7 +303,7 @@ func _build_jugar_tab() -> void:
 
 	_best_label = Label.new()
 	_best_label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
-	_best_label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.7))
+	_best_label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
 	_content.add_child(_best_label)
 
 	var spacer := Control.new()
@@ -292,13 +314,15 @@ func _build_jugar_tab() -> void:
 	buttons_row.add_theme_constant_override("separation", 16)
 	_content.add_child(buttons_row)
 
-	var play := UiTheme.make_button("Correr", Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
+	var play := UiTheme.pill_button(
+		"Correr", UiTheme.GOOD, Color.WHITE, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
 	play.pressed.connect(func() -> void: play_pressed.emit())
 	buttons_row.add_child(play)
 
 	# Requiere cuenta: el emparejamiento necesita saber contra quién compite
 	# el jugador, y sin sesión no hay con qué identificarlo (TASK-284).
-	_online_button = UiTheme.make_button("Carrera Online", Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
+	_online_button = UiTheme.pill_button(
+		"Carrera Online", UiTheme.BLUE, Color.WHITE, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
 	_online_button.pressed.connect(_on_online_pressed)
 	buttons_row.add_child(_online_button)
 
@@ -315,7 +339,7 @@ func _build_launcher_tab(title_text: String, description: String, scene_path: St
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_content.add_child(spacer)
 
-	var open_button := UiTheme.make_button("Abrir")
+	var open_button := UiTheme.pill_button("Abrir", UiTheme.GOOD, Color.WHITE)
 	open_button.pressed.connect(func() -> void:
 		add_child(load(scene_path).instantiate()))
 	_content.add_child(open_button)
@@ -450,7 +474,7 @@ func _heading(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", UiTheme.FONT_MD)
-	label.add_theme_color_override("font_color", UiTheme.BONE)
+	label.add_theme_color_override("font_color", UiTheme.CARD_INK)
 	return label
 
 
@@ -459,11 +483,13 @@ func _label(text: String) -> Label:
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
-	label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.75))
+	label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
 	return label
 
 
+## Botón de cabecera (Ajustes/Cuenta): píldora metálica oscura sobre el fondo
+## atenuado, el mismo lenguaje que la barra superior del boceto.
 func _icon_button(text: String, on_pressed: Callable) -> Button:
-	var button := UiTheme.make_button(text, Vector2(160, 72), UiTheme.FONT_XS)
+	var button := UiTheme.pill_button(text, UiTheme.STEEL, Color.WHITE, Vector2(160, 72), UiTheme.FONT_XS)
 	button.pressed.connect(on_pressed)
 	return button

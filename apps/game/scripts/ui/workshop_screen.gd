@@ -27,6 +27,10 @@ const CATEGORIES := [
 const STAT_BAR_MIN := 0.5
 const STAT_BAR_MAX := 1.5
 
+## Gris neutro de las píldoras sin elegir (arquetipo, pieza) — mismo tono que
+## usa `main_menu.gd` para sus opciones, ver comentario en `ui_theme.gd`.
+const _OPTION_BG := Color("e9e4d9")
+
 signal closed()
 
 var _root: VBoxContainer
@@ -71,7 +75,9 @@ func _ready() -> void:
 
 func _build_shell() -> void:
 	var backdrop := ColorRect.new()
-	backdrop.color = UiTheme.ink_alpha(0.985)
+	# Más claro que antes (0.985 → 0.45): las tarjetas del boceto flotan sobre
+	# la escena 3D bien visible, no sobre un fondo casi negro.
+	backdrop.color = UiTheme.ink_alpha(0.45)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
@@ -98,6 +104,9 @@ func _build_shell() -> void:
 		"Por ahora todos los coches compiten en la misma clasificación, "
 		+ "sin importar el arquetipo o las piezas — eso cambiará cuando el "
 		+ "arquetipo tenga su propia clasificación.", UiTheme.FONT_XS)
+	# Sobre el fondo oscuro de la cabecera, no sobre una tarjeta clara — ver
+	# el comentario de `_label()`.
+	_status.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.7))
 	_root.add_child(_status)
 
 
@@ -199,9 +208,12 @@ func _build_loaded() -> void:
 ## arquetipos. Elegir uno solo cambia la vista previa — hace falta pulsar
 ## "Cambiar" para que se aplique de verdad y se guarde.
 func _build_variants_panel() -> Control:
+	var card := UiTheme.card_panel()
+	card.custom_minimum_size = Vector2(300, 0)
+
 	var panel := VBoxContainer.new()
-	panel.custom_minimum_size = Vector2(300, 0)
 	panel.add_theme_constant_override("separation", 12)
+	card.add_child(panel)
 
 	panel.add_child(_heading("Variantes disponibles"))
 
@@ -224,11 +236,13 @@ func _build_variants_panel() -> Control:
 		_variants_list.add_child(button)
 		_archetype_buttons[id] = button
 
-	_change_button = _button("Cambiar", _confirm_archetype)
+	_change_button = UiTheme.pill_button("Cambiar", UiTheme.GOOD, Color.WHITE)
+	_change_button.pressed.connect(_confirm_archetype)
 	_change_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_all_buttons.append(_change_button)
 	panel.add_child(_change_button)
 
-	return panel
+	return card
 
 
 ## Columna central: vista 3D en vivo del arquetipo resaltado en la lista
@@ -249,9 +263,12 @@ func _build_preview_panel() -> Control:
 ## como sistema real — solo lo que ya está implementado: rendimiento del
 ## arquetipo elegido y las piezas equipables (ruedas/alerón/chasis).
 func _build_upgrades_panel() -> Control:
+	var card := UiTheme.card_panel()
+	card.custom_minimum_size = Vector2(360, 0)
+
 	var panel := VBoxContainer.new()
-	panel.custom_minimum_size = Vector2(360, 0)
 	panel.add_theme_constant_override("separation", 12)
+	card.add_child(panel)
 
 	panel.add_child(_heading("Rendimiento"))
 	_speed_bar = _stat_bar()
@@ -301,7 +318,7 @@ func _build_upgrades_panel() -> Control:
 
 		_part_buttons[category] = buttons
 
-	return panel
+	return card
 
 
 func _stat_row(label: String, bar: ProgressBar) -> Control:
@@ -321,6 +338,17 @@ func _stat_bar() -> ProgressBar:
 	bar.show_percentage = false
 	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.custom_minimum_size = Vector2(0, 24)
+
+	var track := StyleBoxFlat.new()
+	track.bg_color = _OPTION_BG
+	track.set_corner_radius_all(12)
+	bar.add_theme_stylebox_override("background", track)
+
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = UiTheme.GOOD
+	fill.set_corner_radius_all(12)
+	bar.add_theme_stylebox_override("fill", fill)
+
 	return bar
 
 
@@ -426,29 +454,38 @@ func _heading(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
-	label.add_theme_color_override("font_color", UiTheme.BONE)
+	label.add_theme_color_override("font_color", UiTheme.CARD_INK)
 	return label
 
 
+## Texto atenuado dentro de una tarjeta clara — todo salvo `_status`, que se
+## repinta a `BONE` justo al crearse porque vive sobre el fondo oscuro de la
+## cabecera, no sobre una tarjeta.
 func _label(text: String, font_size: int) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.7))
+	label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
 	return label
 
 
+## Píldora gris sin elegir / verde al elegir — arquetipo y piezas comparten
+## el mismo lenguaje visual de "opción" (ver `main_menu.gd`).
 func _toggle_button(text: String, group: ButtonGroup) -> Button:
-	var button := UiTheme.make_button(text, UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
+	var button := UiTheme.pill_button(
+		text, _OPTION_BG, UiTheme.CARD_INK, UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM,
+		UiTheme.GOOD, Color.WHITE)
 	button.toggle_mode = true
 	button.button_group = group
 	_all_buttons.append(button)
 	return button
 
 
+## Píldora metálica oscura, para "Cerrar" en la cabecera — sobre el fondo
+## atenuado, no sobre una tarjeta clara.
 func _button(text: String, on_pressed: Callable) -> Button:
-	var button := UiTheme.make_button(text)
+	var button := UiTheme.pill_button(text, UiTheme.STEEL, Color.WHITE)
 	button.pressed.connect(on_pressed)
 	_all_buttons.append(button)
 	return button

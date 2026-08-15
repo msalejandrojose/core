@@ -42,6 +42,32 @@ func _ready() -> void:
 	_check(translucent.r == UiTheme.INK.r and translucent.g == UiTheme.INK.g and translucent.b == UiTheme.INK.b, true, "ink_alpha() no toca el RGB de INK")
 	_check(translucent.a, 0.5, "ink_alpha() aplica el alfa pedido")
 
+	# --- Tarjetas claras (pase de diseño en Taller/Menú/Selección de circuito) --
+
+	var card_box := UiTheme.card_stylebox()
+	_check(card_box.bg_color, UiTheme.CARD, "card_stylebox() usa CARD por defecto")
+	_check(card_box.corner_radius_top_left, UiTheme.CARD_CORNER_RADIUS, "card_stylebox() redondea las esquinas")
+	_check(card_box.shadow_size > 0, true, "card_stylebox() lleva sombra")
+
+	var selected_box := UiTheme.card_stylebox_selected(UiTheme.CLAY)
+	_check(selected_box.border_color, UiTheme.CLAY, "card_stylebox_selected() pinta el borde del color pedido")
+	_check(selected_box.border_width_left > 0, true, "y le da grosor de verdad")
+
+	var card := UiTheme.card_panel()
+	_check(card is PanelContainer, true, "card_panel() es un PanelContainer")
+	_check(card.has_theme_stylebox_override("panel"), true, "con el estilo de tarjeta ya puesto")
+
+	var pill := UiTheme.pill_button("Cambiar", UiTheme.GOOD)
+	_check(pill.text, "Cambiar", "pill_button() pone el texto")
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		_check(pill.has_theme_stylebox(state), true, "pill_button() define el estado '%s'" % state)
+	_check(pill.get_theme_color("font_color"), Color.WHITE, "pill_button() usa el color de texto pedido")
+
+	var pill_with_pressed := UiTheme.pill_button(
+		"Modo", Color("e9e4d9"), UiTheme.CARD_INK, UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM, UiTheme.GOOD, Color.WHITE)
+	_check(pill_with_pressed.get_theme_color("font_pressed_color"), Color.WHITE,
+		"pill_button() acepta un color de texto distinto para el estado pulsado")
+
 	if _failures == 0:
 		print("\nOK")
 		get_tree().quit(0)
