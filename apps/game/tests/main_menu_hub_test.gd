@@ -49,7 +49,8 @@ func _ready() -> void:
 
 func _test_abre_en_jugar() -> void:
 	_check_eq(_menu._active_tab, _menu.Tab.JUGAR, "al abrir, la pestaña activa es Jugar")
-	_check(_menu._track_buttons.size() > 0, true, "Jugar monta los botones de circuito")
+	_check(is_instance_valid(_menu._track_summary_label) and _menu._track_summary_label.text != "",
+		true, "Jugar muestra el resumen del circuito elegido")
 	_check(is_instance_valid(_menu._best_label), true, "Jugar monta la label de mejor marca")
 	_check(is_instance_valid(_menu._preview) and _menu._preview.has_model(), true,
 		"la columna central monta el coche equipado en vivo")
@@ -68,10 +69,17 @@ func _test_cambiar_de_pestana_conserva_cabecera() -> void:
 
 
 func _test_elegir_circuito_sentido_cilindrada() -> void:
+	# El circuito ya no se elige con un botón dentro del menú: vive en su
+	# propia pantalla (`TrackSelectScreen`), que al confirmar toca
+	# `GameSettings` directamente y avisa con la señal `confirmed` — aquí se
+	# simula ese mismo camino sin abrir la pantalla de verdad.
 	var ids: Array = TrackCatalog.ids()
 	var other_id: String = ids[1]
-	_menu._pick_track(other_id)
+	GameSettings.set_track_id(other_id)
+	_menu._sync_jugar()
 	_check_eq(GameSettings.track_id, other_id, "elegir circuito sigue cambiando GameSettings")
+	_check_eq(_menu._track_summary_label.text, TrackCatalog.by_id(other_id).name,
+		"y el resumen de la pestaña Jugar refleja el circuito elegido")
 
 	_menu._pick_direction(true)
 	_check_eq(GameSettings.reverse, true, "elegir sentido sigue cambiando GameSettings")
@@ -83,7 +91,8 @@ func _test_elegir_circuito_sentido_cilindrada() -> void:
 func _test_cambiar_de_pestana_limpia_la_anterior() -> void:
 	_menu._select_tab(_menu.Tab.TALLER)
 
-	_check_eq(_menu._track_buttons.size(), 0, "salir de Jugar libera sus botones de circuito")
+	_check(not is_instance_valid(_menu._track_summary_label), true,
+		"salir de Jugar libera el resumen del circuito")
 	_check(not is_instance_valid(_menu._best_label), true, "salir de Jugar libera la label de mejor marca")
 
 
@@ -98,9 +107,8 @@ func _test_evento_con_otra_pestana_no_revienta() -> void:
 func _test_volver_a_jugar_resincroniza() -> void:
 	_menu._select_tab(_menu.Tab.JUGAR)
 
-	var ids: Array = TrackCatalog.ids()
-	var selected := ids.find(GameSettings.track_id)
-	_check(_menu._track_buttons[selected].button_pressed, true, "al volver, el botón del circuito elegido sigue marcado")
+	_check_eq(_menu._track_summary_label.text, TrackCatalog.by_id(GameSettings.track_id).name,
+		"al volver, el resumen sigue mostrando el circuito elegido")
 	_check(_menu._direction_buttons[1].button_pressed, true, "y el de sentido inverso también")
 
 
