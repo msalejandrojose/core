@@ -8,6 +8,7 @@
     "build:api": "pnpm --filter @core/api... build",
     "dev:backoffice": "pnpm --filter @core/backoffice dev",
     "build:backoffice": "pnpm --filter @core/backoffice build",
+    "dev:backoffice-host": "pnpm --filter @core/backoffice dev -- --host 0.0.0.0",
     "preview:backoffice": "pnpm --filter @core/backoffice preview",
     "dev:web": "pnpm --filter @core/web dev",
     "build:web": "pnpm --filter @core/web build",

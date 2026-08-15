@@ -1,7 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import {
+  useForm,
+  useWatch,
+  type ControllerRenderProps,
+  type FieldPath,
+} from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { FieldWrapper } from '@/components/forms/FieldWrapper';
@@ -40,6 +45,55 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+// `<input type="number">` exige internamente el punto como separador
+// decimal, sea cual sea el idioma del sistema — al escribir la coma (lo
+// natural en es-ES) el navegador lo da por inválido y `valueAsNumber` se
+// vuelve NaN. Con texto libre se acepta cualquiera de los dos y se
+// normaliza a mano antes de convertir a número.
+//
+// `field` (de react-hook-form) lleva un `ref` dentro, así que el lint de
+// refs de React no deja leer sus propiedades sueltas durante el render
+// (`field.value`, `field.name`...) — de ahí el spread `{...field}` en vez
+// de desglosarlo, y `initialValue` aparte para sembrar el estado local sin
+// tocar `field.value` fuera de un manejador de evento.
+//
+// El tipo del `field` es el genérico de `FieldWrapper` (unión de TODOS los
+// campos del formulario), no uno estrecho de solo "grip" — `FieldWrapper`
+// no lo afina por `name` aunque en este punto solo pueda ser "grip".
+function DecimalInput({
+  field,
+  initialValue,
+}: {
+  field: ControllerRenderProps<FormValues, FieldPath<FormValues>>;
+  initialValue: number;
+}) {
+  const [text, setText] = useState(() => String(initialValue));
+
+  return (
+    <Input
+      {...field}
+      type="text"
+      inputMode="decimal"
+      value={text}
+      onChange={(e) => {
+        const raw = e.target.value;
+        setText(raw);
+        const normalized = raw.replace(',', '.');
+        const parsed = Number(normalized);
+        if (normalized.trim() !== '' && !Number.isNaN(parsed)) {
+          field.onChange(parsed);
+        }
+      }}
+      onBlur={() => {
+        // Al perder el foco, refleja el número que de verdad quedó en el
+        // formulario — así "0,70" se ve como "0.7" y no queda ambigüedad.
+        field.onBlur();
+        setText(String(field.value ?? ''));
+      }}
+    />
+  );
+}
 
 export function TrackEditorPage() {
   const { id } = useParams();
@@ -208,13 +262,7 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
               </FieldWrapper>
               <FieldWrapper control={form.control} name="grip" label="Agarre">
                 {(field) => (
-                  <Input
-                    type="number"
-                    step={0.05}
-                    min={0.01}
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                  />
+                  <DecimalInput field={field} initialValue={track?.grip ?? 1} />
                 )}
               </FieldWrapper>
             </div>
