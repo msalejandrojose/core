@@ -1,0 +1,199 @@
+extends CanvasLayer
+
+## Selección de circuito en pantalla completa (rejilla de tarjetas), a partir
+## de una captura de referencia. Antes se elegía con una fila de botones
+## apretada en la columna derecha del menú — con los circuitos del servidor
+## sumándose a la lista (TASK "listar en Jugar todos los circuitos del
+## servidor") esa fila ya no cabía cómoda, de ahí esta pantalla aparte.
+##
+## Selección pendiente, mismo patrón que el arquetipo en el taller: tocar una
+## tarjeta solo la resalta, no aplica nada hasta "Confirmar circuito" — así
+## se puede mirar la mejor marca de cada una sin comprometerse.
+##
+## Sin dificultad ni longitud del boceto de referencia: no existen todavía
+## como datos reales de un circuito, así que no se simulan. En su lugar se
+## muestra lo que sí es real: sectores y tu mejor marca ahí.
+
+const COLUMNS := 4
+
+signal closed()
+## Solo se emite si se confirma un circuito distinto al que había — quien
+## abre esta pantalla lo usa para refrescar su resumen sin tener que sondear
+## `GameSettings` por su cuenta.
+signal confirmed()
+
+var _grid: GridContainer
+var _card_buttons: Array[Button] = []
+var _card_ids: Array[String] = []
+var _card_is_server: Array[bool] = []
+
+var _pending_id: String
+var _pending_is_server: bool
+
+
+func _ready() -> void:
+	layer = 9
+	_pending_id = GameSettings.track_id
+	_pending_is_server = GameSettings.track_is_server
+	_build()
+
+
+func _build() -> void:
+	var backdrop := ColorRect.new()
+	backdrop.color = UiTheme.ink_alpha(0.985)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(backdrop)
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 56)
+	add_child(margin)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 16)
+	margin.add_child(column)
+
+	column.add_child(_title("Selección de circuito"))
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(scroll)
+
+	_grid = GridContainer.new()
+	_grid.columns = COLUMNS
+	_grid.add_theme_constant_override("h_separation", 16)
+	_grid.add_theme_constant_override("v_separation", 16)
+	scroll.add_child(_grid)
+
+	for id in TrackCatalog.ids():
+		var layout := TrackCatalog.by_id(id)
+		_add_card(layout.name, id, false, layout.checkpoints + 1)
+	_sync_selection()
+
+	# Los del servidor (creados en el backoffice) se cargan aparte y se van
+	# añadiendo a la misma rejilla en cuanto llegan — no bloquea el resto de
+	# la pantalla, y sin red simplemente no aparece ninguno más que los 4 de
+	# fábrica.
+	_load_server_tracks()
+
+	var footer := HBoxContainer.new()
+	footer.add_theme_constant_override("separation", 16)
+	column.add_child(footer)
+
+	var back := UiTheme.make_button("Atrás")
+	back.pressed.connect(close_screen)
+	footer.add_child(back)
+
+	var footer_spacer := Control.new()
+	footer_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	footer.add_child(footer_spacer)
+
+	var confirm_button := UiTheme.make_button("Confirmar circuito")
+	confirm_button.pressed.connect(_confirm)
+	footer.add_child(confirm_button)
+
+
+func close_screen() -> void:
+	closed.emit()
+	queue_free()
+
+
+func _confirm() -> void:
+	var track_changed := _pending_id != GameSettings.track_id or _pending_is_server != GameSettings.track_is_server
+	GameSettings.set_track_id(_pending_id, _pending_is_server)
+	if track_changed:
+		confirmed.emit()
+	close_screen()
+
+
+## Circuitos creados en el backoffice, además de los 4 del catálogo local. Se
+## descartan los que ya representan a uno de los 4 de fábrica (sus slugs
+## siempre empiezan por el id local seguido de "-": cilindrada + sentido +
+## arquetipo, ver `GameSettings.key_for`) para no duplicar la misma entrada.
+func _load_server_tracks() -> void:
+	var response = await RacingApi.tracks(100)
+	if not is_instance_valid(_grid) or not response.ok or not (response.data is Dictionary):
+		return
+
+	var local_ids: Array = TrackCatalog.ids()
+	for item in response.data.get("data", []):
+		var slug: String = str(item.get("slug", ""))
+		if slug == "" or _card_ids.has(slug):
+			continue
+		var is_local_variant := local_ids.any(func(id: String) -> bool: return slug.begins_with(id + "-"))
+		if is_local_variant:
+			continue
+		_add_card(str(item.get("name", slug)), slug, true, int(item.get("sectorCount", 1)))
+
+	_sync_selection()
+
+
+func _add_card(label: String, id: String, is_server: bool, sector_count: int) -> void:
+	if _card_ids.has(id):
+		return
+
+	var card := VBoxContainer.new()
+	card.add_theme_constant_override("separation", 8)
+	card.custom_minimum_size = Vector2(300, 0)
+	_grid.add_child(card)
+
+	var name_label := Label.new()
+	name_label.text = label
+	name_label.add_theme_font_size_override("font_size", UiTheme.FONT_MD)
+	name_label.add_theme_color_override("font_color", UiTheme.BONE)
+	card.add_child(name_label)
+
+	var sectors_label := Label.new()
+	sectors_label.text = "%d sectores" % sector_count
+	sectors_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	sectors_label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.65))
+	card.add_child(sectors_label)
+
+	var best_label := Label.new()
+	var key := id if is_server else GameSettings.key_for(id)
+	best_label.text = _best_text(key)
+	best_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	best_label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.65))
+	card.add_child(best_label)
+
+	var button := UiTheme.make_button("Seleccionar", Vector2(0, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
+	# Sin `ButtonGroup`: la exclusividad la lleva `_sync_selection()` a mano,
+	# porque también tiene que apagar el botón de la tarjeta anterior cuando
+	# la selección llega de fuera (al abrir la pantalla, o tras cargar los
+	# circuitos del servidor).
+	button.toggle_mode = true
+	button.pressed.connect(func() -> void: _pick(id, is_server))
+	card.add_child(button)
+
+	_card_buttons.append(button)
+	_card_ids.append(id)
+	_card_is_server.append(is_server)
+
+
+func _best_text(key: String) -> String:
+	if RaceRecords.has_best(key):
+		var script := load("res://scripts/ui/race_hud.gd")
+		return "Tu mejor: %s" % script.format_ms(RaceRecords.best_ms(key))
+	return "Sin marca todavía"
+
+
+func _pick(id: String, is_server: bool) -> void:
+	_pending_id = id
+	_pending_is_server = is_server
+	_sync_selection()
+
+
+func _sync_selection() -> void:
+	for i in _card_buttons.size():
+		var matches := _card_ids[i] == _pending_id and _card_is_server[i] == _pending_is_server
+		_card_buttons[i].button_pressed = matches
+		_card_buttons[i].text = "Seleccionado" if matches else "Seleccionar"
+
+
+func _title(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", UiTheme.FONT_XL)
+	label.add_theme_color_override("font_color", UiTheme.BONE)
+	return label

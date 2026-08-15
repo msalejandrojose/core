@@ -27,10 +27,6 @@ const CATEGORIES := [
 const STAT_BAR_MIN := 0.5
 const STAT_BAR_MAX := 1.5
 
-## Cuánto gira la vista previa por segundo (rad). Lento a propósito: es para
-## verse el coche desde todos los lados sin marear.
-const PREVIEW_SPIN_SPEED := 0.6
-
 signal closed()
 
 var _root: VBoxContainer
@@ -40,9 +36,7 @@ var _body: HBoxContainer
 var _variants_list: VBoxContainer
 var _change_button: Button
 
-var _preview_viewport: SubViewport
-var _preview_pivot: Node3D
-var _preview_model: Node
+var _preview: VehiclePreview
 
 var _speed_bar: ProgressBar
 var _grip_bar: ProgressBar
@@ -73,11 +67,6 @@ func _ready() -> void:
 		return
 
 	await _load()
-
-
-func _process(delta: float) -> void:
-	if _preview_pivot != null:
-		_preview_pivot.rotate_y(delta * PREVIEW_SPIN_SPEED)
 
 
 func _build_shell() -> void:
@@ -242,44 +231,15 @@ func _build_variants_panel() -> Control:
 	return panel
 
 
-## Columna central: vista 3D en vivo del arquetipo resaltado en la lista,
-## girando despacio (mismos modelos que monta `RaceDirector` en carrera —
-## `RaceDirector.ARCHETYPE_MODELS` es la única fuente de esa tabla).
+## Columna central: vista 3D en vivo del arquetipo resaltado en la lista
+## (`VehiclePreview`, compartida con el menú principal).
 func _build_preview_panel() -> Control:
 	var panel := VBoxContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
-	var viewport_container := SubViewportContainer.new()
-	viewport_container.stretch = true
-	viewport_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	viewport_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(viewport_container)
-
-	_preview_viewport = SubViewport.new()
-	_preview_viewport.size = Vector2i(640, 640)
-	_preview_viewport.transparent_bg = true
-	_preview_viewport.own_world_3d = true
-	viewport_container.add_child(_preview_viewport)
-
-	var camera := Camera3D.new()
-	# `look_at_from_position`, no `position` + `look_at`: este nodo todavía no
-	# está dentro del árbol en este punto (el panel se añade a `_body`
-	# después de construirse entero) y `look_at` necesita `global_transform`.
-	camera.look_at_from_position(Vector3(0, 2.3, 4.4), Vector3(0, 0.4, 0), Vector3.UP)
-	_preview_viewport.add_child(camera)
-
-	var key_light := DirectionalLight3D.new()
-	key_light.rotation_degrees = Vector3(-50, -30, 0)
-	_preview_viewport.add_child(key_light)
-
-	var fill_light := DirectionalLight3D.new()
-	fill_light.rotation_degrees = Vector3(-30, 150, 0)
-	fill_light.light_energy = 0.35
-	_preview_viewport.add_child(fill_light)
-
-	_preview_pivot = Node3D.new()
-	_preview_viewport.add_child(_preview_pivot)
+	_preview = VehiclePreview.new()
+	panel.add_child(_preview)
 
 	return panel
 
@@ -382,22 +342,13 @@ func _confirm_archetype() -> void:
 
 
 func _show_preview(archetype_id: String) -> void:
-	if not is_instance_valid(_preview_pivot):
+	if not is_instance_valid(_preview):
 		return
-
-	if _preview_model != null:
-		_preview_pivot.remove_child(_preview_model)
-		_preview_model.queue_free()
-		_preview_model = null
 
 	var archetype: Variant = _find(_catalog.get("archetypes", []), archetype_id)
 	var code: String = archetype.get("code", CarLoadout.DEFAULT_ARCHETYPE_CODE) if archetype is Dictionary \
 		else CarLoadout.DEFAULT_ARCHETYPE_CODE
-	var path: String = RaceDirector.ARCHETYPE_MODELS.get(
-		code, RaceDirector.ARCHETYPE_MODELS[CarLoadout.DEFAULT_ARCHETYPE_CODE])
-
-	_preview_model = load(path).instantiate()
-	_preview_pivot.add_child(_preview_model)
+	_preview.show_archetype(code)
 
 
 func _pick_part(category: String, id: String) -> void:

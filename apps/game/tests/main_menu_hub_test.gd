@@ -32,6 +32,7 @@ func _ready() -> void:
 	_menu = main.get_node("MainMenu")
 
 	_test_abre_en_jugar()
+	_test_cambiar_de_pestana_conserva_cabecera()
 	_test_elegir_circuito_sentido_cilindrada()
 	_test_cambiar_de_pestana_limpia_la_anterior()
 	_test_evento_con_otra_pestana_no_revienta()
@@ -50,6 +51,20 @@ func _test_abre_en_jugar() -> void:
 	_check_eq(_menu._active_tab, _menu.Tab.JUGAR, "al abrir, la pestaña activa es Jugar")
 	_check(_menu._track_buttons.size() > 0, true, "Jugar monta los botones de circuito")
 	_check(is_instance_valid(_menu._best_label), true, "Jugar monta la label de mejor marca")
+	_check(is_instance_valid(_menu._preview) and _menu._preview.has_model(), true,
+		"la columna central monta el coche equipado en vivo")
+	_check(_menu._account_subtitle.text != "", true, "la cabecera muestra el estado de cuenta")
+
+
+func _test_cambiar_de_pestana_conserva_cabecera() -> void:
+	var subtitle_before: String = _menu._account_subtitle.text
+	_menu._select_tab(_menu.Tab.TALLER)
+
+	_check(is_instance_valid(_menu._preview), true, "la vista 3D del coche no se limpia al cambiar de pestaña")
+	_check_eq(_menu._account_subtitle.text, subtitle_before,
+		"y el estado de cuenta de la cabecera tampoco")
+
+	_menu._select_tab(_menu.Tab.JUGAR)
 
 
 func _test_elegir_circuito_sentido_cilindrada() -> void:
