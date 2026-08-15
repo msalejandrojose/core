@@ -23,6 +23,7 @@ import { GetOnlineRaceUseCase } from '../../application/use-cases/get-online-rac
 import { GetPersonalBestUseCase } from '../../application/use-cases/get-personal-best.use-case';
 import { GetTrackUseCase } from '../../application/use-cases/get-track.use-case';
 import { ListTracksUseCase } from '../../application/use-cases/list-tracks.use-case';
+import { MatchOnlineRaceUseCase } from '../../application/use-cases/match-online-race.use-case';
 import { SubmitLapTimeUseCase } from '../../application/use-cases/submit-lap-time.use-case';
 import { SubmitOnlineRaceResultUseCase } from '../../application/use-cases/submit-online-race-result.use-case';
 import { GhostResponseDto } from './dto/ghost.response.dto';
@@ -34,6 +35,7 @@ import {
   LeaderboardEntryDto,
   LeaderboardResponseDto,
 } from './dto/leaderboard.response.dto';
+import { OnlineRaceMatchResponseDto } from './dto/online-race-match.response.dto';
 import { OnlineRaceResponseDto } from './dto/online-race.response.dto';
 import { SubmitLapTimeDto } from './dto/submit-lap-time.dto';
 import { SubmitOnlineRaceResultDto } from './dto/submit-online-race-result.dto';
@@ -64,6 +66,7 @@ export class RacingController {
     private readonly getGhost: GetGhostUseCase,
     private readonly submitOnlineRaceResult: SubmitOnlineRaceResultUseCase,
     private readonly getOnlineRace: GetOnlineRaceUseCase,
+    private readonly matchOnlineRace: MatchOnlineRaceUseCase,
   ) {}
 
   @Get('tracks')
@@ -167,6 +170,21 @@ export class RacingController {
   ): Promise<GhostResponseDto | null> {
     const result = await this.getGhost.execute(slug, userId);
     return result === null ? null : GhostResponseDto.fromResult(result);
+  }
+
+  @Get('tracks/:slug/online-races/match')
+  @ApiOperation({
+    summary: 'Empareja rivales para una carrera online (TASK-282/284)',
+    description:
+      'Objetivo (ligeramente mejor) y amenaza (ligeramente peor), con sus fantasmas completos listos para reproducir. Se recalcula en cada llamada — no hay carrera fijada de antemano. No persiste nada: la carrera solo se registra al subir su resultado con POST tracks/:slug/online-races.',
+  })
+  @ApiOkResponse({ type: OnlineRaceMatchResponseDto })
+  async matchOnline(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('slug') slug: string,
+  ): Promise<OnlineRaceMatchResponseDto> {
+    const match = await this.matchOnlineRace.execute(current.sub, slug);
+    return OnlineRaceMatchResponseDto.fromMatch(match);
   }
 
   @Post('tracks/:slug/online-races')

@@ -58,6 +58,23 @@ export interface AdminUserTrackSummary {
   bestDurationMs: number | null;
 }
 
+// Un vecino inmediato en el leaderboard QUE TIENE fantasma grabado — solo
+// interesan estos para emparejar una carrera online (TASK-282/284): un
+// rival sin fantasma no se puede reproducir en pista, así que no cuenta
+// como candidato aunque sea el más cercano en tiempo.
+export interface OnlineRaceGhostCandidate {
+  userId: string;
+  durationMs: number;
+  ghostSnapshots: GhostSnapshot[];
+}
+
+export interface OnlineRaceGhostCandidates {
+  /** El vecino justo por delante (mejor tiempo), o null si no hay ninguno así. */
+  target: OnlineRaceGhostCandidate | null;
+  /** El vecino justo por detrás (peor tiempo), o null si no hay ninguno así. */
+  threat: OnlineRaceGhostCandidate | null;
+}
+
 export interface LapTimeRepositoryPort {
   create(data: CreateLapTimeData): Promise<LapTime>;
 
@@ -82,6 +99,16 @@ export interface LapTimeRepositoryPort {
    *  válido. Se cuenta por MEJOR tiempo de cada jugador, no por número de
    *  filas. */
   positionOf(trackId: string, userId: string): Promise<number | null>;
+
+  /** Los vecinos inmediatos de `durationMs` en el leaderboard del circuito,
+   *  EXCLUYENDO a `userId` y limitado a quienes tienen fantasma grabado
+   *  (TASK-284). La regla de negocio de qué hacer con cada uno vive en
+   *  `resolveOnlineRaceRivals`, esto solo busca los candidatos. */
+  findGhostRivalCandidates(
+    trackId: string,
+    userId: string,
+    durationMs: number,
+  ): Promise<OnlineRaceGhostCandidates>;
 
   /** Listado de administración: TODOS los intentos (válidos e inválidos),
    *  sin los límites de tamaño del leaderboard del jugador. */

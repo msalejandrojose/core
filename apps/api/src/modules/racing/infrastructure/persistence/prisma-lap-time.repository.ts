@@ -8,12 +8,18 @@ import {
   AdminUserTrackSummary,
   CreateLapTimeData,
   LapTimeRepositoryPort,
+  OnlineRaceGhostCandidate,
+  OnlineRaceGhostCandidates,
 } from '../../application/ports/lap-time-repository.port';
 import {
   LapTime,
   LeaderboardEntry,
 } from '../../domain/entities/lap-time.entity';
-import { toLapTimeDomain, toSplits } from '../mappers/lap-time.mapper';
+import {
+  toGhostSnapshots,
+  toLapTimeDomain,
+  toSplits,
+} from '../mappers/lap-time.mapper';
 
 interface LeaderboardRow {
   userId: string;
@@ -22,6 +28,12 @@ interface LeaderboardRow {
   lastName: string | null;
   durationMs: number;
   achievedAt: Date;
+}
+
+interface GhostNeighborRow {
+  userId: string;
+  durationMs: number | bigint;
+  ghostSnapshots: unknown;
 }
 
 interface AdminLapTimeRow {
@@ -184,6 +196,68 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
     `;
 
     return Number(rows[0]?.ahead ?? 0) + 1;
+  }
+
+  /**
+   * Vecino inmediato mejor/peor CON fantasma grabado (TASK-284): une la
+   * misma subconsulta "mejor tiempo por jugador" de `leaderboard`/`positionOf`
+   * con la fila exacta que llevó ese tiempo, para poder exigir que esa fila
+   * tenga `ghost_snapshots`. Sin window functions, mismo motivo que el resto
+   * del fichero: MariaDB en producción.
+   */
+  async findGhostRivalCandidates(
+    trackId: string,
+    userId: string,
+    durationMs: number,
+  ): Promise<OnlineRaceGhostCandidates> {
+    const [target, threat] = await Promise.all([
+      this.nearestGhostNeighbor(trackId, userId, durationMs, 'better'),
+      this.nearestGhostNeighbor(trackId, userId, durationMs, 'worse'),
+    ]);
+    return { target, threat };
+  }
+
+  private async nearestGhostNeighbor(
+    trackId: string,
+    userId: string,
+    durationMs: number,
+    side: 'better' | 'worse',
+  ): Promise<OnlineRaceGhostCandidate | null> {
+    const comparator = side === 'better' ? Prisma.sql`<` : Prisma.sql`>`;
+    const order = side === 'better' ? Prisma.sql`DESC` : Prisma.sql`ASC`;
+
+    const rows = await this.prisma.$queryRaw<GhostNeighborRow[]>`
+      SELECT b.user_id AS userId, b.best AS durationMs, g.ghost_snapshots AS ghostSnapshots
+        FROM (
+          SELECT track_id, user_id, MIN(duration_ms) AS best
+            FROM racing_lap_time
+           WHERE track_id = ${trackId}
+             AND user_id != ${userId}
+             AND invalidated_at IS NULL
+           GROUP BY track_id, user_id
+          HAVING best ${comparator} ${durationMs}
+        ) b
+        JOIN racing_lap_time g
+          ON g.track_id = b.track_id
+         AND g.user_id = b.user_id
+         AND g.duration_ms = b.best
+         AND g.invalidated_at IS NULL
+       WHERE g.ghost_snapshots IS NOT NULL
+       ORDER BY b.best ${order}, g.created_at DESC
+       LIMIT 1
+    `;
+
+    const row = rows[0];
+    if (!row) return null;
+
+    const snapshots = toGhostSnapshots(row.ghostSnapshots);
+    if (!snapshots) return null;
+
+    return {
+      userId: row.userId,
+      durationMs: Number(row.durationMs),
+      ghostSnapshots: snapshots,
+    };
   }
 
   /**
