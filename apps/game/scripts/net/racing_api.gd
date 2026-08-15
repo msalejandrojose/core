@@ -127,3 +127,31 @@ func submit_online_race(track_key: String, duration_ms: int, rivals: Array):
 		"durationMs": duration_ms,
 		"rivals": rivals,
 	})
+
+
+# --- Amigos (TASK-222/258) ------------------------------------------------------
+
+## El código propio: se genera la primera vez que se pide y luego es siempre
+## el mismo.
+func friend_code():
+	return await Api.get_json("/racing/friends/me/code")
+
+
+## Pide amistad al dueño de ese código. Recíproca: esto solo crea una
+## solicitud PENDING, no hace amigos a nadie hasta que el otro la acepta.
+func add_friend(code: String):
+	return await Api.post_json("/racing/friends", {"code": code})
+
+
+## Solicitudes recibidas y aún sin responder.
+func friend_requests():
+	return await Api.get_json("/racing/friends/requests")
+
+
+func respond_friend_request(id: String, accept: bool):
+	return await Api.post_json(
+		"/racing/friends/%s/%s" % [id, "accept" if accept else "reject"], {})
+
+
+func friends():
+	return await Api.get_json("/racing/friends")
