@@ -6,10 +6,10 @@ extends CanvasLayer
 ## nueva es añadir una entrada a `TABS` y un `_build_*_tab()`, no reformar
 ## esta pantalla otra vez.
 ##
-## Va por encima de la partida, no en una escena aparte, y a propósito: al
-## seleccionar un circuito el de detrás se construye de verdad, así que la
-## pestaña "Jugar" es también la vista previa. Cambiar de escena obligaría a
-## montar la pista dos veces y a perder eso.
+## Tres columnas, a partir de una captura de referencia: la lista de modos a
+## la izquierda (antes una fila de pestañas horizontal), el coche equipado en
+## vivo en el centro (`VehiclePreview`, mismo componente que el taller) y el
+## contenido de la pestaña activa a la derecha.
 ##
 ## El circuito y el sentido viven en la pestaña "Jugar" y no en Ajustes: son
 ## lo que eliges para jugar, no una preferencia. Ajustes se queda con los
@@ -35,10 +35,14 @@ var _content: VBoxContainer
 var _tab_buttons: Dictionary = {}  # Tab (int) -> Button
 var _active_tab: int = Tab.JUGAR
 
+## Persistentes: viven en la cabecera/columna central, no en el contenido de
+## una pestaña, así que no se limpian al cambiar de pestaña.
+var _account_subtitle: Label
+var _preview: VehiclePreview
+
 ## Solo válidos mientras la pestaña "Jugar" está montada: se limpian al
 ## cambiar de pestaña, igual que el resto de su contenido.
 var _best_label: Label
-var _account_label: Label
 var _track_buttons: Array[Button] = []
 ## Paralelo a `_track_buttons`: el id/slug de cada botón, en el mismo orden.
 ## Hace falta porque un botón de circuito ya no tiene por qué venir de
@@ -61,6 +65,9 @@ func _ready() -> void:
 	# taller (que se abre encima de este menú, sin cerrarlo), el número tiene
 	# que refrescarse solo, sin esperar a que se toque circuito/sentido/cc.
 	CarLoadout.changed.connect(_refresh_best)
+	# El coche de la vista central es el equipado de verdad: si cambia en el
+	# taller, se nota aquí sin tener que reabrir el menú.
+	CarLoadout.changed.connect(_refresh_preview)
 
 
 ## El director abre el menú desde su propio `_ready`, que corre ANTES que el de
@@ -106,11 +113,21 @@ func _build() -> void:
 	header.add_theme_constant_override("separation", 16)
 	column.add_child(header)
 
+	var title_column := VBoxContainer.new()
+	header.add_child(title_column)
+
 	var title := Label.new()
 	title.text = "Racing"
 	title.add_theme_font_size_override("font_size", UiTheme.FONT_DISPLAY)
 	title.add_theme_color_override("font_color", UiTheme.CLAY)
-	header.add_child(title)
+	title_column.add_child(title)
+
+	# Estado de cuenta, siempre visible en la cabecera sea cual sea la
+	# pestaña activa — antes solo vivía dentro de la pestaña "Jugar".
+	_account_subtitle = Label.new()
+	_account_subtitle.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	_account_subtitle.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.6))
+	title_column.add_child(_account_subtitle)
 
 	var push := Control.new()
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -122,9 +139,30 @@ func _build() -> void:
 	_account_button = _icon_button("Cuenta", _open_account)
 	header.add_child(_account_button)
 
-	var tabs_row := HBoxContainer.new()
-	tabs_row.add_theme_constant_override("separation", 12)
-	column.add_child(tabs_row)
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 24)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(body)
+
+	body.add_child(_build_modes_panel())
+	body.add_child(_build_preview_panel())
+	_refresh_preview()
+
+	_content = VBoxContainer.new()
+	_content.custom_minimum_size = Vector2(420, 0)
+	_content.add_theme_constant_override("separation", 12)
+	_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(_content)
+
+
+## Columna izquierda ("MODOS DE JUEGO" del boceto): lista vertical de
+## pestañas, en vez de la fila horizontal de antes.
+func _build_modes_panel() -> Control:
+	var panel := VBoxContainer.new()
+	panel.custom_minimum_size = Vector2(280, 0)
+	panel.add_theme_constant_override("separation", 12)
+
+	panel.add_child(_heading("Modos de juego"))
 
 	var tab_group := ButtonGroup.new()
 	for entry in TABS:
@@ -133,14 +171,30 @@ func _build() -> void:
 		button.toggle_mode = true
 		button.button_group = tab_group
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.pressed.connect(func() -> void: _select_tab(tab))
-		tabs_row.add_child(button)
+		panel.add_child(button)
 		_tab_buttons[tab] = button
 
-	_content = VBoxContainer.new()
-	_content.add_theme_constant_override("separation", 12)
-	_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(_content)
+	return panel
+
+
+## Columna central: el coche equipado ahora mismo, en vivo (`VehiclePreview`,
+## compartido con el taller).
+func _build_preview_panel() -> Control:
+	var panel := VBoxContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	_preview = VehiclePreview.new()
+	panel.add_child(_preview)
+
+	return panel
+
+
+func _refresh_preview() -> void:
+	if is_instance_valid(_preview):
+		_preview.show_archetype(CarLoadout.archetype_code)
 
 
 # --- Pestañas -------------------------------------------------------------------
@@ -153,7 +207,6 @@ func _select_tab(tab: int) -> void:
 	for child in _content.get_children():
 		child.free()
 	_best_label = null
-	_account_label = null
 	_track_buttons.clear()
 	_track_button_ids.clear()
 	_tracks_row = null
@@ -242,11 +295,6 @@ func _build_jugar_tab() -> void:
 	_best_label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
 	_best_label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.7))
 	_content.add_child(_best_label)
-
-	_account_label = Label.new()
-	_account_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
-	_account_label.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.55))
-	_content.add_child(_account_label)
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -390,16 +438,15 @@ func _open_account() -> void:
 	add_child(screen)
 
 
-## El botón de cuenta es de cabecera (persistente); la frase de estado solo
-## vive en la pestaña "Jugar".
+## El botón y la frase de estado de cuenta son de cabecera: persistentes,
+## visibles con cualquier pestaña activa (antes la frase solo vivía dentro de
+## "Jugar").
 func _refresh_account() -> void:
 	if Session.is_logged_in():
-		if is_instance_valid(_account_label):
-			_account_label.text = "Conectado como %s — tus tiempos se suben." % Session.email
+		_account_subtitle.text = "Conectado como %s — tus tiempos se suben." % Session.email
 		_account_button.text = "Salir"
 	else:
-		if is_instance_valid(_account_label):
-			_account_label.text = "Juegas sin cuenta. Tus tiempos se guardan aquí; con cuenta salen además en la clasificación."
+		_account_subtitle.text = "Juegas sin cuenta. Tus tiempos se guardan aquí; con cuenta salen además en la clasificación."
 		_account_button.text = "Entrar"
 
 	# El emparejamiento necesita saber contra quién compite el jugador

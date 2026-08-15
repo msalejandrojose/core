@@ -178,7 +178,7 @@ func _test_elegir_variante_solo_previsualiza() -> void:
 	await _settle()
 
 	_check(screen._pending_archetype_id, "arch-f1", "elegirla actualiza la previsualización")
-	_check(screen._preview_model != null, true, "la vista 3D monta un modelo")
+	_check(screen._preview.has_model(), true, "la vista 3D monta un modelo")
 	_check(_patch_count, 0, "pero no guarda nada todavía, sin pulsar Cambiar")
 	_check(screen._loadout.get("archetype", {}).get("id", ""), "arch-normal",
 		"el arquetipo aplicado de verdad sigue siendo el normal")
