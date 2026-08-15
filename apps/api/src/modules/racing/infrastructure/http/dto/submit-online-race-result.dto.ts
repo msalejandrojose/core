@@ -1,31 +1,27 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
   IsIn,
   IsInt,
+  IsOptional,
   IsString,
   Min,
   ValidateNested,
 } from 'class-validator';
 
-export class OnlineRaceParticipantDto {
+export class OnlineRaceRivalDto {
   @ApiProperty({
-    enum: ['PLAYER', 'TARGET', 'THREAT'],
+    enum: ['TARGET', 'THREAT'],
     description:
-      'PLAYER es siempre quien sube la carrera. TARGET (objetivo) y THREAT ' +
-      '(amenaza) son opcionales — el emparejamiento (TASK-284) decide si ' +
-      'hay rival de cada tipo para esta carrera.',
+      'TARGET (objetivo, ligeramente mejor) o THREAT (amenaza, ligeramente peor) — el que devolvió el emparejamiento (TASK-284).',
   })
-  @IsIn(['PLAYER', 'TARGET', 'THREAT'])
-  role!: 'PLAYER' | 'TARGET' | 'THREAT';
+  @IsIn(['TARGET', 'THREAT'])
+  role!: 'TARGET' | 'THREAT';
 
   @ApiProperty({
-    description:
-      'De quién es este resultado: el propio jugador en PLAYER, o el rival ' +
-      'cuyo fantasma se corrió en TARGET/THREAT.',
+    description: 'De quién es el fantasma contra el que se corrió.',
   })
   @IsString()
   userId!: string;
@@ -38,15 +34,22 @@ export class OnlineRaceParticipantDto {
 
 export class SubmitOnlineRaceResultDto {
   @ApiProperty({
-    type: [OnlineRaceParticipantDto],
-    description:
-      'Entre 1 y 3 corredores: siempre el jugador, y hasta un objetivo y ' +
-      'una amenaza.',
+    example: 42350,
+    description: 'El tiempo del propio jugador en esta carrera.',
   })
+  @IsInt()
+  @Min(1)
+  durationMs!: number;
+
+  @ApiPropertyOptional({
+    type: [OnlineRaceRivalDto],
+    description:
+      'Hasta 2 rivales (objetivo/amenaza) contra los que se corrió, tal como los devolvió el emparejamiento. Sin ninguno si la carrera se corrió en solitario (p.ej. sin rivales disponibles).',
+  })
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(3)
+  @ArrayMaxSize(2)
   @ValidateNested({ each: true })
-  @Type(() => OnlineRaceParticipantDto)
-  participants!: OnlineRaceParticipantDto[];
+  @Type(() => OnlineRaceRivalDto)
+  rivals?: OnlineRaceRivalDto[];
 }

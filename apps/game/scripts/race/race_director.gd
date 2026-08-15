@@ -106,6 +106,20 @@ var _ghost: Ghost
 var _ghost_recording: Array = []
 var _ghost_last_snapshot_ms: int = -1
 
+## Rivales de la carrera online en curso (TASK-282/284/285). Vacío = no hay
+## carrera online activa, es una vuelta normal. Cada uno, si está presente,
+## es `{"userId": String, "durationMs": int}` — lo que hace falta para
+## anunciar el resultado, sus trayectorias ya viven en `_ghost_target`/
+## `_ghost_threat`.
+var _online_target: Dictionary = {}
+var _online_threat: Dictionary = {}
+## Objetivo (ligeramente mejor, verde) y amenaza (ligeramente peor, roja):
+## colores distintos para que se distingan a simple vista en pista.
+var _ghost_target: Ghost
+var _ghost_threat: Ghost
+const TARGET_COLOR := Color(0.35, 1.0, 0.45, 0.45)
+const THREAT_COLOR := Color(1.0, 0.35, 0.3, 0.45)
+
 
 func _ready() -> void:
 	vehicle = get_node(vehicle_path)
@@ -127,8 +141,13 @@ func _ready() -> void:
 	# intermedios al buscar el ancestro 3D más cercano.
 	_ghost = Ghost.new()
 	add_child(_ghost)
+	_ghost_target = Ghost.new(TARGET_COLOR)
+	add_child(_ghost_target)
+	_ghost_threat = Ghost.new(THREAT_COLOR)
+	add_child(_ghost_threat)
 
 	main_menu.play_pressed.connect(_on_play_pressed)
+	main_menu.play_online_pressed.connect(start_online_race)
 
 	lap_timer.sector_completed.connect(_on_sector_completed)
 	lap_timer.lap_completed.connect(_on_lap_completed)
@@ -164,6 +183,8 @@ func _process(delta: float) -> void:
 		return
 
 	_ghost.update_at(lap_timer.elapsed_ms)
+	_ghost_target.update_at(lap_timer.elapsed_ms)
+	_ghost_threat.update_at(lap_timer.elapsed_ms)
 	if lap_timer.running and not in_grand_prix():
 		_record_ghost_snapshot()
 
@@ -326,6 +347,11 @@ func open_menu() -> void:
 		rebuild_track()
 		grand_prix_ended.emit()
 
+	# Volver al menú es también abandonar la carrera online en curso, si había
+	# una: el jugador puede elegir otro circuito o pedir otro emparejamiento,
+	# y arrastrar rivales de una combinación distinta no tendría sentido.
+	_clear_online_race()
+
 	set_process(false)
 	VehicleInput.locked = true
 	# También los controles: los pedales se dibujan siempre, y sin esconderlos
@@ -341,6 +367,48 @@ func _on_play_pressed() -> void:
 	touch_controls.visible = true
 	restart()
 	set_process(true)
+
+
+## Arranca una carrera online (TASK-282/284/285): el circuito ya elegido en
+## el menú, con hasta dos fantasmas rivales corriendo a la vez. `target`/
+## `threat` son lo que devuelve `RacingApi.match_online_race()` — cada uno
+## vacío si ese rival no existe (báteta a ti mismo sin objetivo, o sin
+## amenaza si nadie va peor).
+func start_online_race(target: Dictionary, threat: Dictionary) -> void:
+	_online_target = _rival_summary(target)
+	_online_threat = _rival_summary(threat)
+	_ghost_target.set_snapshots(_to_native_snapshots(target.get("snapshots", [])))
+	_ghost_threat.set_snapshots(_to_native_snapshots(threat.get("snapshots", [])))
+	_on_play_pressed()
+
+
+## Solo lo que hace falta para anunciar el resultado — la trayectoria ya
+## vive en el `Ghost`, no hace falta arrastrarla también aquí.
+func _rival_summary(rival: Dictionary) -> Dictionary:
+	if rival.is_empty():
+		return {}
+	return {"userId": rival["userId"], "durationMs": rival["durationMs"]}
+
+
+## Convierte instantáneas de formato de red (`pos` como `{x,y,z}`, TASK-284)
+## al formato nativo que consume `Ghost` (`pos` como `Vector3`).
+func _to_native_snapshots(net_snapshots: Array) -> Array:
+	var native: Array = []
+	for snapshot in net_snapshots:
+		var pos: Dictionary = snapshot["pos"]
+		native.append({
+			"t": int(snapshot["t"]),
+			"pos": Vector3(pos["x"], pos["y"], pos["z"]),
+			"yaw": float(snapshot["yaw"]),
+		})
+	return native
+
+
+func _clear_online_race() -> void:
+	_online_target = {}
+	_online_threat = {}
+	_ghost_target.set_snapshots([])
+	_ghost_threat.set_snapshots([])
 
 
 func _on_settings_changed() -> void:
@@ -408,6 +476,29 @@ func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 					"yaw": snapshot["yaw"],
 				})
 		LapQueue.enqueue(key, duration_ms, splits_ms, ghost_snapshots_net)
+
+	# Una carrera online se registra aparte del tiempo de vuelta normal (que
+	# ya se acaba de guardar arriba, tenga rivales o no): es el paquete
+	# completo con el podio de esta tanda concreta (TASK-283), no solo el
+	# tiempo suelto. Sin cola de reintento a propósito: si falla, se pierde
+	# ese resultado histórico, pero el tiempo de vuelta del jugador ya está a
+	# salvo por el camino de siempre.
+	if not _online_target.is_empty() or not _online_threat.is_empty():
+		var rivals: Array = []
+		if not _online_target.is_empty():
+			rivals.append({
+				"role": "TARGET",
+				"userId": _online_target["userId"],
+				"durationMs": _online_target["durationMs"],
+			})
+		if not _online_threat.is_empty():
+			rivals.append({
+				"role": "THREAT",
+				"userId": _online_threat["userId"],
+				"durationMs": _online_threat["durationMs"],
+			})
+		RacingApi.submit_online_race(key, duration_ms, rivals)
+		_clear_online_race()
 
 	if track_id_override.is_empty():
 		lap_finished.emit(duration_ms, previous_best_ms, is_new_record)

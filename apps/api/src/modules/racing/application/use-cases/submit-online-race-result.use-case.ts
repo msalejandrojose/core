@@ -15,10 +15,17 @@ import {
   type TrackRepositoryPort,
 } from '../ports/track-repository.port';
 
+export interface OnlineRaceRivalInput {
+  role: 'TARGET' | 'THREAT';
+  userId: string;
+  durationMs: number;
+}
+
 export interface SubmitOnlineRaceResultInput {
   userId: string;
   trackSlug: string;
-  participants: OnlineRaceParticipantCandidate[];
+  durationMs: number;
+  rivals: OnlineRaceRivalInput[];
 }
 
 // Registra el resultado de una carrera online ya jugada de principio a fin
@@ -26,6 +33,11 @@ export interface SubmitOnlineRaceResultInput {
 // emparejamiento (TASK-284) o el propio cliente al elegir un amigo
 // (TASK-223) — aquí solo se valida la lista de corredores que llega y se
 // resuelve el podio una única vez.
+//
+// El propio resultado del jugador viaja aparte (`userId`/`durationMs`) y no
+// dentro de la lista de corredores: el servidor ya sabe quién eres por el
+// token, pedirle al cliente que declare su propio id sería una fuente de
+// verdad redundante que además el juego no tenía por qué conocer.
 @Injectable()
 export class SubmitOnlineRaceResultUseCase {
   constructor(
@@ -38,10 +50,12 @@ export class SubmitOnlineRaceResultUseCase {
     const track = await this.tracks.findBySlug(input.trackSlug);
     if (!track) throw new TrackNotFoundError(input.trackSlug);
 
-    const validation = validateOnlineRaceParticipants(
-      input.participants,
-      input.userId,
-    );
+    const candidates: OnlineRaceParticipantCandidate[] = [
+      { role: 'PLAYER', userId: input.userId, durationMs: input.durationMs },
+      ...input.rivals,
+    ];
+
+    const validation = validateOnlineRaceParticipants(candidates, input.userId);
     if (!validation.ok) {
       throw new InvalidOnlineRaceParticipantsError(
         validation.reason,

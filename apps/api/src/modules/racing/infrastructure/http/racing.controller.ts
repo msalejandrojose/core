@@ -202,7 +202,8 @@ export class RacingController {
     const race = await this.submitOnlineRaceResult.execute({
       userId: current.sub,
       trackSlug: slug,
-      participants: body.participants,
+      durationMs: body.durationMs,
+      rivals: body.rivals ?? [],
     });
     return OnlineRaceResponseDto.fromRace(race);
   }

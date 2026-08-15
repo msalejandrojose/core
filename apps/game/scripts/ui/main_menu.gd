@@ -16,6 +16,10 @@ extends CanvasLayer
 ## controles y las licencias.
 
 signal play_pressed()
+## Emparejamiento resuelto (TASK-282/284/285): `target`/`threat` son lo que
+## devolvió `RacingApi.match_online_race()`, cada uno vacío si ese rival no
+## existe para esta combinación.
+signal play_online_pressed(target: Dictionary, threat: Dictionary)
 
 enum Tab { JUGAR, TALLER, GRAND_PRIX, AMIGOS, CLASIFICACIONES }
 
@@ -38,6 +42,7 @@ var _account_label: Label
 var _track_buttons: Array[Button] = []
 var _direction_buttons: Array[Button] = []
 var _engine_buttons: Array[Button] = []
+var _online_button: Button
 
 ## Persistente entre pestañas: vive en la cabecera, no en el contenido.
 var _account_button: Button
@@ -146,6 +151,7 @@ func _select_tab(tab: int) -> void:
 	_track_buttons.clear()
 	_direction_buttons.clear()
 	_engine_buttons.clear()
+	_online_button = null
 
 	match tab:
 		Tab.JUGAR:
@@ -235,9 +241,19 @@ func _build_jugar_tab() -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_content.add_child(spacer)
 
+	var buttons_row := HBoxContainer.new()
+	buttons_row.add_theme_constant_override("separation", 16)
+	_content.add_child(buttons_row)
+
 	var play := UiTheme.make_button("Correr", Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
 	play.pressed.connect(func() -> void: play_pressed.emit())
-	_content.add_child(play)
+	buttons_row.add_child(play)
+
+	# Requiere cuenta: el emparejamiento necesita saber contra quién compite
+	# el jugador, y sin sesión no hay con qué identificarlo (TASK-284).
+	_online_button = UiTheme.make_button("Carrera Online", Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
+	_online_button.pressed.connect(_on_online_pressed)
+	buttons_row.add_child(_online_button)
 
 	_sync_jugar()
 
@@ -339,6 +355,38 @@ func _refresh_account() -> void:
 		if is_instance_valid(_account_label):
 			_account_label.text = "Juegas sin cuenta. Tus tiempos se guardan aquí; con cuenta salen además en la clasificación."
 		_account_button.text = "Entrar"
+
+	# El emparejamiento necesita saber contra quién compite el jugador
+	# (TASK-284): sin cuenta no hay identidad que emparejar.
+	if is_instance_valid(_online_button):
+		_online_button.disabled = not Session.is_logged_in()
+
+
+## Pide el emparejamiento (TASK-284) y, si hay respuesta, deja que
+## `RaceDirector` arranque la carrera con los rivales devueltos.
+func _on_online_pressed() -> void:
+	_online_button.disabled = true
+	_online_button.text = "Buscando rival…"
+
+	var response = await RacingApi.match_online_race(GameSettings.track_key())
+
+	# La pestaña pudo cambiar (o el menú cerrarse) mientras esperábamos la
+	# respuesta: sin esto, tocar un botón ya libre revienta el árbol.
+	if not is_instance_valid(_online_button):
+		return
+
+	_online_button.disabled = not Session.is_logged_in()
+	_online_button.text = "Carrera Online"
+
+	if not response.ok:
+		push_warning("No se pudo emparejar: %s" % response.message)
+		return
+
+	var target: Variant = response.data.get("target")
+	var threat: Variant = response.data.get("threat")
+	play_online_pressed.emit(
+		target if target is Dictionary else {},
+		threat if threat is Dictionary else {})
 
 
 # --- Piezas -------------------------------------------------------------------

@@ -13,11 +13,18 @@ class_name Ghost extends Node3D
 
 const MODEL_PATH := "res://models/vehicle-truck-yellow.glb"
 ## Azulado y medio transparente: tiene que verse a la legua que es un
-## fantasma, no otro coche de verdad en pista.
+## fantasma, no otro coche de verdad en pista. Color por defecto — el propio
+## récord y los amigos usan este; los rivales de una carrera online
+## (TASK-285) llevan uno propio para distinguirse entre ellos.
 const GHOST_COLOR := Color(0.45, 0.75, 1.0, 0.4)
 
 var _snapshots: Array = []
 var _model: Node
+var _color: Color
+
+
+func _init(color: Color = GHOST_COLOR) -> void:
+	_color = color
 
 
 func _ready() -> void:
@@ -81,7 +88,7 @@ func _tint(node: Node) -> void:
 	if node is MeshInstance3D:
 		var mesh: MeshInstance3D = node
 		var material := StandardMaterial3D.new()
-		material.albedo_color = GHOST_COLOR
+		material.albedo_color = _color
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		# Sin sombra propia: un fantasma que proyecta sombra sólida deja de

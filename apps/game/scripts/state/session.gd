@@ -21,6 +21,10 @@ signal changed()
 
 var access_token: String = ""
 var email: String = ""
+## Id propio, para lo que necesita saber "quién soy yo" además de estar
+## autenticado — p.ej. anunciarse como PLAYER en una carrera online
+## (TASK-284/285).
+var user_id: String = ""
 
 var _cfg := ConfigFile.new()
 
@@ -29,6 +33,7 @@ func _ready() -> void:
 	_cfg.load(PATH)
 	access_token = _cfg.get_value("session", "access_token", "")
 	email = _cfg.get_value("session", "email", "")
+	user_id = _cfg.get_value("session", "user_id", "")
 	Api.access_token = access_token
 
 
@@ -95,9 +100,11 @@ func login_with_google() -> Dictionary:
 func logout() -> void:
 	access_token = ""
 	email = ""
+	user_id = ""
 	Api.access_token = ""
 	_cfg.set_value("session", "access_token", "")
 	_cfg.set_value("session", "email", "")
+	_cfg.set_value("session", "user_id", "")
 	_cfg.save(PATH)
 	changed.emit()
 
@@ -115,9 +122,11 @@ func _adopt(response) -> void:
 
 	var user: Variant = response.data.get("user")
 	email = str(user.get("email", "")) if user is Dictionary else ""
+	user_id = str(user.get("id", "")) if user is Dictionary else ""
 
 	_cfg.set_value("session", "access_token", access_token)
 	_cfg.set_value("session", "email", email)
+	_cfg.set_value("session", "user_id", user_id)
 	_cfg.save(PATH)
 	changed.emit()
 
