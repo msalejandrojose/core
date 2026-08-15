@@ -43,13 +43,9 @@ var _preview: VehiclePreview
 ## Solo válidos mientras la pestaña "Jugar" está montada: se limpian al
 ## cambiar de pestaña, igual que el resto de su contenido.
 var _best_label: Label
-var _track_buttons: Array[Button] = []
-## Paralelo a `_track_buttons`: el id/slug de cada botón, en el mismo orden.
-## Hace falta porque un botón de circuito ya no tiene por qué venir de
-## `TrackCatalog.ids()` — puede ser un slug del servidor cargado aparte.
-var _track_button_ids: Array[String] = []
-var _tracks_row: HBoxContainer
-var _track_group: ButtonGroup
+## Nombre del circuito elegido — se abre y se confirma en su propia pantalla
+## (`TrackSelectScreen`), no aquí; ver `_open_track_select()`.
+var _track_summary_label: Label
 var _direction_buttons: Array[Button] = []
 var _engine_buttons: Array[Button] = []
 var _online_button: Button
@@ -207,10 +203,7 @@ func _select_tab(tab: int) -> void:
 	for child in _content.get_children():
 		child.free()
 	_best_label = null
-	_track_buttons.clear()
-	_track_button_ids.clear()
-	_tracks_row = null
-	_track_group = null
+	_track_summary_label = null
 	_direction_buttons.clear()
 	_engine_buttons.clear()
 	_online_button = null
@@ -242,22 +235,17 @@ func _select_tab(tab: int) -> void:
 func _build_jugar_tab() -> void:
 	_content.add_child(_heading("Circuito"))
 
-	var tracks := HBoxContainer.new()
-	tracks.add_theme_constant_override("separation", 16)
-	_content.add_child(tracks)
+	_track_summary_label = Label.new()
+	_track_summary_label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
+	_track_summary_label.add_theme_color_override("font_color", UiTheme.BONE)
+	_content.add_child(_track_summary_label)
 
-	_tracks_row = tracks
-	_track_group = ButtonGroup.new()
-
-	var ids: Array = TrackCatalog.ids()
-	for i in ids.size():
-		var layout := TrackCatalog.by_id(ids[i])
-		_add_track_button(layout.name, ids[i])
-
-	# Los del servidor (creados en el backoffice) se cargan aparte y se van
-	# añadiendo a la misma fila en cuanto llegan — no bloquea el resto del
-	# menú, y sin red simplemente no aparece ninguno más que los 4 de fábrica.
-	_load_server_tracks()
+	# La rejilla de circuitos (locales + los del servidor) ya no cabe cómoda
+	# aquí — vive en su propia pantalla de selección a pantalla completa.
+	var select_track_button := UiTheme.make_button(
+		"Seleccionar circuito", Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
+	select_track_button.pressed.connect(_open_track_select)
+	_content.add_child(select_track_button)
 
 	_content.add_child(_heading("Sentido"))
 
@@ -340,42 +328,20 @@ func _build_placeholder_tab(title_text: String, message: String) -> void:
 
 # --- Estado -------------------------------------------------------------------
 
-func _add_track_button(label: String, id: String, is_server: bool = false) -> void:
-	var button := UiTheme.make_button(label, UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM)
-	button.toggle_mode = true
-	button.button_group = _track_group
-	button.pressed.connect(func() -> void: _pick_track(id, is_server))
-	_tracks_row.add_child(button)
-	_track_buttons.append(button)
-	_track_button_ids.append(id)
+func _open_track_select() -> void:
+	var screen: CanvasLayer = load("res://scenes/ui/track-select-screen.tscn").instantiate()
+	screen.confirmed.connect(_sync_jugar)
+	add_child(screen)
 
 
-## Circuitos creados en el backoffice, además de los 4 del catálogo local
-## (TASK "listar en Jugar todos los circuitos del servidor"). Se descartan
-## los que ya representan a uno de los 4 de fábrica (sus slugs siempre
-## empiezan por el id local seguido de "-": cilindrada + sentido + arquetipo,
-## ver `GameSettings.key_for`) para no duplicar la misma entrada.
-func _load_server_tracks() -> void:
-	var response = await RacingApi.tracks(100)
-	if not is_instance_valid(_tracks_row) or not response.ok or not (response.data is Dictionary):
-		return
-
-	var local_ids: Array = TrackCatalog.ids()
-	for item in response.data.get("data", []):
-		var slug: String = str(item.get("slug", ""))
-		if slug == "" or _track_button_ids.has(slug):
-			continue
-		var is_local_variant := local_ids.any(func(id: String) -> bool: return slug.begins_with(id + "-"))
-		if is_local_variant:
-			continue
-		_add_track_button(str(item.get("name", slug)), slug, true)
-
-	_sync_jugar()
-
-
-func _pick_track(id: String, is_server: bool = false) -> void:
-	GameSettings.set_track_id(id, is_server)
-	_refresh_best()
+## El nombre solo se conoce de verdad para los 4 del catálogo local — uno del
+## servidor no tiene aquí un nombre en caché (vive en su propia pantalla), así
+## que se enseña el slug tal cual. Es una pérdida cosmética menor: sigue
+## identificando sin ambigüedad qué circuito hay elegido.
+func _track_display_name(id: String) -> String:
+	if TrackCatalog.ids().has(id):
+		return TrackCatalog.by_id(id).name
+	return id
 
 
 func _pick_direction(reversed: bool) -> void:
@@ -392,12 +358,8 @@ func _pick_engine(value: int) -> void:
 ## vez, porque Ajustes puede haber cambiado cosas mientras el menú estaba
 ## montado en otra pestaña.
 func _sync_jugar() -> void:
-	# Por id/slug y no por índice: el circuito elegido puede ser uno del
-	# servidor que todavía no había llegado cuando se montaron los botones
-	# locales, así que su posición en `_track_button_ids` no es fija.
-	var selected := _track_button_ids.find(GameSettings.track_id)
-	for i in _track_buttons.size():
-		_track_buttons[i].button_pressed = i == selected
+	if is_instance_valid(_track_summary_label):
+		_track_summary_label.text = _track_display_name(GameSettings.track_id)
 
 	for i in _direction_buttons.size():
 		_direction_buttons[i].button_pressed = (i == 1) == GameSettings.reverse
