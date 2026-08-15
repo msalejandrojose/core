@@ -46,16 +46,27 @@ type FormValues = z.infer<typeof schema>;
 // natural en es-ES) el navegador lo da por inválido y `valueAsNumber` se
 // vuelve NaN. Con texto libre se acepta cualquiera de los dos y se
 // normaliza a mano antes de convertir a número.
-function DecimalInput({ field }: { field: ControllerRenderProps<FormValues, 'grip'> }) {
-  const [text, setText] = useState(String(field.value ?? ''));
+//
+// `field` (de react-hook-form) lleva un `ref` dentro, así que el lint de
+// refs de React no deja leer sus propiedades sueltas durante el render
+// (`field.value`, `field.name`...) — de ahí el spread `{...field}` en vez
+// de desglosarlo, y `initialValue` aparte para sembrar el estado local sin
+// tocar `field.value` fuera de un manejador de evento.
+function DecimalInput({
+  field,
+  initialValue,
+}: {
+  field: ControllerRenderProps<FormValues, 'grip'>;
+  initialValue: number;
+}) {
+  const [text, setText] = useState(() => String(initialValue));
 
   return (
     <Input
+      {...field}
       type="text"
       inputMode="decimal"
       value={text}
-      name={field.name}
-      ref={field.ref}
       onChange={(e) => {
         const raw = e.target.value;
         setText(raw);
@@ -68,8 +79,8 @@ function DecimalInput({ field }: { field: ControllerRenderProps<FormValues, 'gri
       onBlur={() => {
         // Al perder el foco, refleja el número que de verdad quedó en el
         // formulario — así "0,70" se ve como "0.7" y no queda ambigüedad.
-        setText(String(field.value ?? ''));
         field.onBlur();
+        setText(String(field.value ?? ''));
       }}
     />
   );
@@ -241,7 +252,9 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
                 )}
               </FieldWrapper>
               <FieldWrapper control={form.control} name="grip" label="Agarre">
-                {(field) => <DecimalInput field={field} />}
+                {(field) => (
+                  <DecimalInput field={field} initialValue={track?.grip ?? 1} />
+                )}
               </FieldWrapper>
             </div>
             <div className="grid grid-cols-2 gap-3">
