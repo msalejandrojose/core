@@ -40,6 +40,12 @@ signal changed()
 var control_scheme: ControlScheme = ControlScheme.WHEEL
 var reverse: bool = false
 var track_id: String = TrackCatalog.DEFAULT_ID
+## true si `track_id` es el slug de un circuito del servidor (creado en el
+## backoffice), no un id de los 4 del catálogo local. Esos circuitos son una
+## única fila con un único slug — no tienen variantes de cilindrada/sentido/
+## arquetipo — así que `track_key()` no compone nada encima, usa el slug tal
+## cual.
+var track_is_server: bool = false
 
 ## Dirección de la API elegida en Ajustes. Vacía = la del proyecto. Existe para
 ## poder apuntar a otro backend desde el propio móvil: recompilar y reinstalar
@@ -56,12 +62,16 @@ func _ready() -> void:
 	control_scheme = _cfg.get_value("controls", "scheme", ControlScheme.WHEEL)
 	reverse = _cfg.get_value("track", "reverse", false)
 	track_id = _cfg.get_value("track", "id", TrackCatalog.DEFAULT_ID)
+	track_is_server = _cfg.get_value("track", "is_server", false)
 	api_base_url = _cfg.get_value("api", "base_url", "")
 	engine_class = _cfg.get_value("race", "engine_class", EngineClass.CC100)
-	# Un circuito que ya no existe (renombrado, retirado) no debe dejar el juego
-	# sin pista: se cae al primero del catálogo.
-	if not TrackCatalog.ids().has(track_id):
+	# `track_id` puede ser un id del catálogo local o el slug de un circuito
+	# del servidor (creado en el backoffice) — ese segundo caso no se puede
+	# validar aquí sin red, así que solo se cae al primero del catálogo si de
+	# verdad no hay nada guardado.
+	if track_id.is_empty():
 		track_id = TrackCatalog.DEFAULT_ID
+		track_is_server = false
 
 
 func set_control_scheme(scheme: ControlScheme) -> void:
@@ -72,11 +82,13 @@ func set_control_scheme(scheme: ControlScheme) -> void:
 	_save()
 
 
-func set_track_id(id: String) -> void:
-	if id == track_id:
+func set_track_id(id: String, is_server: bool = false) -> void:
+	if id == track_id and is_server == track_is_server:
 		return
 	track_id = id
+	track_is_server = is_server
 	_cfg.set_value("track", "id", id)
+	_cfg.set_value("track", "is_server", is_server)
 	_save()
 
 
@@ -117,7 +129,13 @@ func set_reverse(value: bool) -> void:
 ## tiempos, otro circuito — una vuelta inversa no se puede comparar con una
 ## normal — así que cada combinación guarda su propia marca. En la API esto
 ## será una `Track` distinta por cada una.
+##
+## Un circuito del servidor (`track_is_server`) es una única fila con un
+## único slug — no tiene variantes de cilindrada/sentido/arquetipo que
+## componer encima, así que se usa el slug tal cual.
 func track_key() -> String:
+	if track_is_server:
+		return track_id
 	return key_for(track_id)
 
 
@@ -131,6 +149,12 @@ func track_key() -> String:
 ## un F1 contra un 4x4 tampoco — cada uno es otro juego. Las piezas equipadas
 ## NO entran (decisión TASK-269): afectan al tiempo pero no fragmentan más la
 ## clasificación.
+##
+## Compone SIEMPRE — lo usan tanto el circuito real como `track_id_override`
+## de los tests, que también esperan la composición aunque su id no esté en
+## `TrackCatalog`. Para circuitos del servidor (sin variantes de cc/sentido/
+## arquetipo) la clave sin componer se resuelve en `track_key()`, que sí sabe
+## si el `track_id` actual es del catálogo local o no (ver `track_is_server`).
 func key_for(id: String) -> String:
 	return "%s%s-%s-%s" % [id, "-rev" if reverse else "", engine_name(), CarLoadout.archetype_code]
 
