@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, type ControllerRenderProps } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { FieldWrapper } from '@/components/forms/FieldWrapper';
@@ -40,6 +40,40 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+// `<input type="number">` exige internamente el punto como separador
+// decimal, sea cual sea el idioma del sistema — al escribir la coma (lo
+// natural en es-ES) el navegador lo da por inválido y `valueAsNumber` se
+// vuelve NaN. Con texto libre se acepta cualquiera de los dos y se
+// normaliza a mano antes de convertir a número.
+function DecimalInput({ field }: { field: ControllerRenderProps<FormValues, 'grip'> }) {
+  const [text, setText] = useState(String(field.value ?? ''));
+
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      value={text}
+      name={field.name}
+      ref={field.ref}
+      onChange={(e) => {
+        const raw = e.target.value;
+        setText(raw);
+        const normalized = raw.replace(',', '.');
+        const parsed = Number(normalized);
+        if (normalized.trim() !== '' && !Number.isNaN(parsed)) {
+          field.onChange(parsed);
+        }
+      }}
+      onBlur={() => {
+        // Al perder el foco, refleja el número que de verdad quedó en el
+        // formulario — así "0,70" se ve como "0.7" y no queda ambigüedad.
+        setText(String(field.value ?? ''));
+        field.onBlur();
+      }}
+    />
+  );
+}
 
 export function TrackEditorPage() {
   const { id } = useParams();
@@ -207,15 +241,7 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
                 )}
               </FieldWrapper>
               <FieldWrapper control={form.control} name="grip" label="Agarre">
-                {(field) => (
-                  <Input
-                    type="number"
-                    step={0.05}
-                    min={0.01}
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                  />
-                )}
+                {(field) => <DecimalInput field={field} />}
               </FieldWrapper>
             </div>
             <div className="grid grid-cols-2 gap-3">
