@@ -167,9 +167,10 @@ func _select_tab(tab: int) -> void:
 				"Corre varios circuitos seguidos y compite por la clasificación agregada.",
 				"res://scenes/ui/grand-prix-screen.tscn")
 		Tab.AMIGOS:
-			_build_placeholder_tab(
+			_build_launcher_tab(
 				"Amigos",
-				"Próximamente: añade amigos y compite contra su fantasma.")
+				"Comparte tu código, añade a alguien con el suyo y compite contra su fantasma.",
+				"res://scenes/ui/friends-screen.tscn")
 		Tab.CLASIFICACIONES:
 			_build_placeholder_tab(
 				"Clasificaciones",
