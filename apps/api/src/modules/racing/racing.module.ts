@@ -41,6 +41,7 @@ import { ListCarCatalogUseCase } from './application/use-cases/list-car-catalog.
 import { ListGrandPrixUseCase } from './application/use-cases/list-grand-prix.use-case';
 import { ListTerrainEffectsUseCase } from './application/use-cases/list-terrain-effects.use-case';
 import { ListTracksUseCase } from './application/use-cases/list-tracks.use-case';
+import { MatchOnlineRaceUseCase } from './application/use-cases/match-online-race.use-case';
 import { SetPlayerCarLoadoutUseCase } from './application/use-cases/set-player-car-loadout.use-case';
 import { StartOrResumeGrandPrixAttemptUseCase } from './application/use-cases/start-or-resume-grand-prix-attempt.use-case';
 import { SubmitGrandPrixStageResultUseCase } from './application/use-cases/submit-grand-prix-stage-result.use-case';
@@ -93,6 +94,7 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     GetGhostUseCase,
     SubmitOnlineRaceResultUseCase,
     GetOnlineRaceUseCase,
+    MatchOnlineRaceUseCase,
     AdminListTracksUseCase,
     AdminGetTrackUseCase,
     AdminCreateTrackUseCase,
