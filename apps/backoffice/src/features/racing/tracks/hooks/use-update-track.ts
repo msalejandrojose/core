@@ -12,6 +12,8 @@ export interface UpdateTrackInput {
   theme?: TrackTheme;
   grip?: number;
   isActive?: boolean;
+  /** `null` limpia la imagen; `undefined` la deja tal cual. */
+  imageId?: string | null;
 }
 
 const KEY = ['racing-tracks'];

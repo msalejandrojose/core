@@ -13,7 +13,7 @@ export class TrackDetailResponseDto {
   @ApiProperty({ type: [TrackCellDto] }) path!: TrackCellDto[];
   @ApiProperty({ enum: TrackTheme }) theme!: TrackTheme;
   @ApiProperty() grip!: number;
-  @ApiProperty({ nullable: true }) imageUrl!: string | null;
+  @ApiProperty({ type: String, nullable: true }) imageUrl!: string | null;
 
   // `imageUrl` se resuelve fuera (el controller, con `FileViewTokenService`):
   // el dominio guarda solo el id del fichero, no sabe construir URLs.

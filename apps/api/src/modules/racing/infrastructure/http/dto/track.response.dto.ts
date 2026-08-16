@@ -16,6 +16,7 @@ export class TrackResponseDto {
   sectorCount!: number;
 
   @ApiProperty({
+    type: String,
     nullable: true,
     description:
       'URL de visualización pública de la miniatura, ya lista para <img src>. null si el circuito no tiene una.',

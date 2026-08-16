@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, ImageOff, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import {
   useForm,
   useWatch,
@@ -23,10 +23,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/lib/toast';
+import { uploadFormFile } from '@/features/forms/upload';
 import { TrackPathCanvas } from './components/TrackPathCanvas';
 import { useCreateTrack } from './hooks/use-create-track';
 import { useTrack } from './hooks/use-track';
 import { useUpdateTrack } from './hooks/use-update-track';
+import { resolveTrackImageUrl } from './lib/track-image-url';
 import { TRACK_THEME_LABELS, type TrackCellRow, type TrackRow } from '../types';
 import { validateTrackPath } from './validate-track-path';
 
@@ -42,6 +45,7 @@ const schema = z.object({
   theme: z.enum(['MEADOW', 'SNOW']),
   grip: z.number().positive('Tiene que ser mayor que 0'),
   isActive: z.enum(['true', 'false']),
+  imageId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -128,10 +132,43 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
       theme: track?.theme ?? 'MEADOW',
       grip: track?.grip ?? 1,
       isActive: track && !track.isActive ? 'false' : 'true',
+      imageId: track?.imageId ?? undefined,
     },
   });
 
   const theme = useWatch({ control: form.control, name: 'theme' });
+
+  // Previsualización local: al elegir un fichero se enseña al momento con
+  // `URL.createObjectURL` (sin esperar a guardar ni a pedir una URL de
+  // visualización aparte); si se edita un circuito que ya tenía imagen,
+  // arranca con la que devuelve la API.
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    resolveTrackImageUrl(track?.imageUrl ?? null),
+  );
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const ref = await uploadFormFile(file);
+      form.setValue('imageId', ref.id ?? undefined, { shouldDirty: true });
+      setImagePreview(URL.createObjectURL(file));
+    } catch {
+      toast.error('No se pudo subir la imagen');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const onRemoveImage = () => {
+    form.setValue('imageId', undefined, { shouldDirty: true });
+    setImagePreview(null);
+  };
 
   const create = useCreateTrack({
     onSuccess: (newId) => navigate(`/racing/tracks/${newId}`, { replace: true }),
@@ -158,6 +195,10 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
         theme: v.theme,
         grip: v.grip,
         isActive,
+        // `undefined` (formulario sin imagen) se manda como `null`: en un
+        // PATCH, a diferencia del alta, "ausente" significaría "no tocar" —
+        // aquí siempre se resincroniza todo el estado del formulario.
+        imageId: v.imageId ?? null,
       });
     } else {
       create.mutate({
@@ -169,6 +210,7 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
         theme: v.theme,
         grip: v.grip,
         isActive,
+        imageId: v.imageId,
       });
     }
   });
@@ -217,6 +259,56 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
             <CardTitle>Datos del circuito</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <span className="text-sm font-medium">Imagen</span>
+              <div className="flex items-center gap-4">
+                <div className="bg-muted flex size-24 items-center justify-center overflow-hidden rounded-md">
+                  {imagePreview ? (
+                    <img
+                      src={imagePreview}
+                      alt=""
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <ImageOff size={24} className="text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onPickImage}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploadingImage}
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    <Upload size={14} />
+                    {isUploadingImage
+                      ? 'Subiendo…'
+                      : imagePreview
+                        ? 'Cambiar imagen'
+                        : 'Subir imagen'}
+                  </Button>
+                  {imagePreview && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={onRemoveImage}
+                    >
+                      <X size={14} />
+                      Quitar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <FieldWrapper control={form.control} name="name" label="Nombre">
                 {(field) => <Input placeholder="Circuito del Puerto" {...field} />}

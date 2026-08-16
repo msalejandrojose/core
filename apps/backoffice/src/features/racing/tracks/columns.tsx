@@ -1,12 +1,33 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { Power, PowerOff } from 'lucide-react';
+import { ImageOff, Power, PowerOff } from 'lucide-react';
 import { RowActions } from '@/components/data-table/RowActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TRACK_THEME_LABELS, type TrackRow } from '../types';
 import { useUpdateTrack } from './hooks/use-update-track';
+import { resolveTrackImageUrl } from './lib/track-image-url';
 
 export const columns: ColumnDef<TrackRow>[] = [
+  {
+    id: 'image',
+    header: '',
+    cell: ({ row }) => {
+      const url = resolveTrackImageUrl(row.original.imageUrl);
+      return (
+        <div className="bg-muted flex size-10 items-center justify-center overflow-hidden rounded">
+          {url ? (
+            <img
+              src={url}
+              alt=""
+              className="size-full object-cover"
+            />
+          ) : (
+            <ImageOff size={16} className="text-muted-foreground" />
+          )}
+        </div>
+      );
+    },
+  },
   { accessorKey: 'name', header: 'Nombre' },
   {
     accessorKey: 'slug',
