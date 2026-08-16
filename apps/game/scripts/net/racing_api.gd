@@ -155,3 +155,38 @@ func respond_friend_request(id: String, accept: bool):
 
 func friends():
 	return await Api.get_json("/racing/friends")
+
+
+# --- Imágenes de circuito -------------------------------------------------------
+
+## Descarga y decodifica la miniatura de un circuito. `relative_url` es el
+## `imageUrl` tal cual lo manda la API (`/files/view?token=...`, relativo a
+## `Api.base_url` — no lleva el host, así que no sirve pasárselo directo a
+## `HTTPRequest`). null si falla la descarga o el formato no se reconoce:
+## esto nunca debe tumbar la pantalla que la pidió por no tener miniatura.
+func fetch_image_texture(relative_url: String) -> ImageTexture:
+	var http := HTTPRequest.new()
+	add_child(http)
+	var error := http.request(Api.base_url + relative_url)
+	if error != OK:
+		http.queue_free()
+		return null
+
+	var result: Array = await http.request_completed
+	http.queue_free()
+
+	var outcome: int = result[0]
+	var raw: PackedByteArray = result[3]
+	if outcome != HTTPRequest.RESULT_SUCCESS or raw.is_empty():
+		return null
+
+	var image := Image.new()
+	var decoded := (
+		image.load_png_from_buffer(raw) == OK
+		or image.load_jpg_from_buffer(raw) == OK
+		or image.load_webp_from_buffer(raw) == OK
+	)
+	if not decoded:
+		return null
+
+	return ImageTexture.create_from_image(image)

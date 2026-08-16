@@ -143,12 +143,20 @@ func _load_server_tracks() -> void:
 		var is_local_variant := local_ids.any(func(id: String) -> bool: return slug.begins_with(id + "-"))
 		if is_local_variant:
 			continue
-		_add_card(str(item.get("name", slug)), slug, true, int(item.get("sectorCount", 1)))
+		# JSON: ausente o `null` llega como `Nil` (`get()` sin valor por
+		# defecto también), no como cadena vacía — hay que cubrir los dos.
+		var image_url_value: Variant = item.get("imageUrl")
+		var image_url: String = image_url_value if image_url_value is String else ""
+		_add_card(str(item.get("name", slug)), slug, true, int(item.get("sectorCount", 1)), image_url)
 
 	_sync_selection()
 
 
-func _add_card(label: String, id: String, is_server: bool, sector_count: int) -> void:
+## `image_url` es lo que manda la API en `Track.imageUrl` — relativo a
+## `Api.base_url` (ver `RacingApi.fetch_image_texture`). Vacío = sin
+## miniatura, que es siempre el caso de los 4 circuitos del catálogo local
+## (esa tabla no tiene imagen, solo los circuitos nacidos en el backoffice).
+func _add_card(label: String, id: String, is_server: bool, sector_count: int, image_url: String = "") -> void:
 	if _card_ids.has(id):
 		return
 
@@ -160,6 +168,15 @@ func _add_card(label: String, id: String, is_server: bool, sector_count: int) ->
 	card.add_theme_constant_override("separation", 8)
 	card.custom_minimum_size = Vector2(300, 0)
 	panel.add_child(card)
+
+	if image_url != "":
+		var thumbnail := TextureRect.new()
+		thumbnail.custom_minimum_size = Vector2(0, 140)
+		thumbnail.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		thumbnail.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		thumbnail.clip_contents = true
+		card.add_child(thumbnail)
+		_load_card_thumbnail(thumbnail, image_url)
 
 	var name_label := Label.new()
 	name_label.text = label
@@ -195,6 +212,15 @@ func _add_card(label: String, id: String, is_server: bool, sector_count: int) ->
 	_card_panels.append(panel)
 	_card_ids.append(id)
 	_card_is_server.append(is_server)
+
+
+## Descarga la miniatura sin bloquear el resto de la rejilla — cada tarjeta
+## se ve al momento con el hueco vacío y la imagen aparece en cuanto llega
+## (o se queda vacío para siempre si la descarga falla; no es un error).
+func _load_card_thumbnail(thumbnail: TextureRect, image_url: String) -> void:
+	var texture := await RacingApi.fetch_image_texture(image_url)
+	if is_instance_valid(thumbnail) and texture != null:
+		thumbnail.texture = texture
 
 
 func _best_text(key: String) -> String:

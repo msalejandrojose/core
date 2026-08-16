@@ -29,10 +29,18 @@ var _pending: Array = []  # cada uno: {"peer": StreamPeerTCP, "buffer": String}
 var _tracks_payload := {
 	"data": [
 		{"slug": "kenney-01-50cc-normal", "name": "Kenney 50cc", "sectorCount": 4},
-		{"slug": "circuito-del-puerto", "name": "Circuito del Puerto", "sectorCount": 3},
+		{
+			"slug": "circuito-del-puerto", "name": "Circuito del Puerto", "sectorCount": 3,
+			"imageUrl": "/files/view?token=test-token",
+		},
 	],
 	"nextCursor": null,
 }
+
+## PNG 1x1 transparente real (no un placeholder) — para probar la descarga y
+## decodificación de verdad en `_test_la_tarjeta_del_servidor_carga_miniatura`,
+## sin depender de un fichero en disco.
+const _TEST_PNG_BASE64 := "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
 
 
 func _ready() -> void:
@@ -48,6 +56,7 @@ func _ready() -> void:
 
 	_test_key_for_sigue_componiendo_para_ids_de_prueba()
 	await _test_lista_circuitos_del_servidor_sin_duplicar_los_locales()
+	await _test_la_tarjeta_del_servidor_carga_miniatura()
 	await _test_confirmar_aplica_la_seleccion_pendiente()
 	await _test_atras_no_aplica_nada()
 
@@ -95,6 +104,15 @@ func _is_request_complete(text: String) -> bool:
 
 func _reply(peer: StreamPeerTCP, text: String) -> void:
 	var request_line := text.split("\r\n")[0] if text.length() > 0 else ""
+
+	if request_line.begins_with("GET") and request_line.find("/files/view") != -1:
+		var png_bytes := Marshalls.base64_to_raw(_TEST_PNG_BASE64)
+		var image_header := (
+			"HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: %d\r\nConnection: close\r\n\r\n"
+			% png_bytes.size())
+		peer.put_data(image_header.to_utf8_buffer() + png_bytes)
+		return
+
 	var body := "{}"
 	if request_line.begins_with("GET") and request_line.find("/racing/tracks") != -1:
 		body = JSON.stringify(_tracks_payload)
@@ -128,6 +146,32 @@ func _test_lista_circuitos_del_servidor_sin_duplicar_los_locales() -> void:
 
 	screen.close_screen()
 	await get_tree().process_frame
+
+
+## El circuito local ("Kenney 50cc"/los 4 de fábrica) no manda `imageUrl` —
+## esa tabla no tiene miniatura, solo los circuitos nacidos en el backoffice.
+## Solo la tarjeta del servidor debe acabar con una `TextureRect` con textura
+## de verdad (descargada y decodificada, no un hueco vacío).
+func _test_la_tarjeta_del_servidor_carga_miniatura() -> void:
+	var screen := await _open_screen()
+	# Un frame más: la descarga de la imagen es su propia petición HTTP,
+	# aparte de la del listado, y necesita su propia vuelta del servidor
+	# falso.
+	await _settle()
+
+	var button := _find_card_button(screen, "Circuito del Puerto")
+	_check(button != null, true, "encuentra la tarjeta del circuito del servidor")
+	if button == null:
+		screen.close_screen()
+		return
+
+	var card: Node = button.get_parent()
+	var thumbnail := _find_texture_rect(card)
+	_check(thumbnail != null, true, "la tarjeta del servidor monta un TextureRect")
+	_check(thumbnail != null and thumbnail.texture != null, true,
+		"y la miniatura se descarga y decodifica de verdad")
+
+	screen.close_screen()
 
 
 func _test_confirmar_aplica_la_seleccion_pendiente() -> void:
@@ -218,6 +262,16 @@ func _find_label(root: Node, text: String) -> Label:
 ## El nombre del circuito vive en una `Label` dentro de la tarjeta (un
 ## `VBoxContainer`); el botón "Seleccionar"/"Seleccionado" es el único
 ## `Button` hijo de esa misma tarjeta.
+func _find_texture_rect(root: Node) -> TextureRect:
+	if root is TextureRect:
+		return root
+	for child in root.get_children():
+		var found := _find_texture_rect(child)
+		if found != null:
+			return found
+	return null
+
+
 func _find_card_button(root: Node, track_name: String) -> Button:
 	var label := _find_label(root, track_name)
 	if label == null:
