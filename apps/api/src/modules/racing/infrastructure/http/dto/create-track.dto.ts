@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  IsUUID,
   Matches,
   Min,
   ValidateNested,
@@ -70,4 +71,13 @@ export class CreateTrackDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description:
+      'Id de un fichero ya subido (módulo storage) para la miniatura del circuito.',
+  })
+  @IsOptional()
+  @IsUUID()
+  imageId?: string;
 }

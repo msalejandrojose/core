@@ -13,8 +13,14 @@ export class TrackDetailResponseDto {
   @ApiProperty({ type: [TrackCellDto] }) path!: TrackCellDto[];
   @ApiProperty({ enum: TrackTheme }) theme!: TrackTheme;
   @ApiProperty() grip!: number;
+  @ApiProperty({ nullable: true }) imageUrl!: string | null;
 
-  static fromTrack(track: Track): TrackDetailResponseDto {
+  // `imageUrl` se resuelve fuera (el controller, con `FileViewTokenService`):
+  // el dominio guarda solo el id del fichero, no sabe construir URLs.
+  static fromTrack(
+    track: Track,
+    imageUrl: string | null = null,
+  ): TrackDetailResponseDto {
     const dto = new TrackDetailResponseDto();
     dto.slug = track.slug;
     dto.name = track.name;
@@ -22,6 +28,7 @@ export class TrackDetailResponseDto {
     dto.path = track.path;
     dto.theme = track.theme;
     dto.grip = track.grip;
+    dto.imageUrl = imageUrl;
     return dto;
   }
 }

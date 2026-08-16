@@ -14,8 +14,15 @@ export class AdminTrackResponseDto {
   @ApiProperty({ enum: TrackTheme }) theme!: TrackTheme;
   @ApiProperty() grip!: number;
   @ApiProperty() isActive!: boolean;
+  @ApiProperty({ nullable: true, format: 'uuid' }) imageId!: string | null;
+  @ApiProperty({ nullable: true }) imageUrl!: string | null;
 
-  static fromTrack(track: Track): AdminTrackResponseDto {
+  // `imageUrl` se resuelve fuera (el controller, con `FileViewTokenService`):
+  // el dominio guarda solo el id del fichero, no sabe construir URLs.
+  static fromTrack(
+    track: Track,
+    imageUrl: string | null = null,
+  ): AdminTrackResponseDto {
     const dto = new AdminTrackResponseDto();
     dto.id = track.id;
     dto.slug = track.slug;
@@ -26,6 +33,8 @@ export class AdminTrackResponseDto {
     dto.theme = track.theme;
     dto.grip = track.grip;
     dto.isActive = track.isActive;
+    dto.imageId = track.imageId;
+    dto.imageUrl = imageUrl;
     return dto;
   }
 }

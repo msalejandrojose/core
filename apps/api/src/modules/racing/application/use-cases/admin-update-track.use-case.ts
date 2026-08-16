@@ -20,6 +20,8 @@ export interface UpdateTrackInput {
   theme?: TrackTheme;
   grip?: number;
   isActive?: boolean;
+  /** `null` limpia la imagen; `undefined` la deja tal cual. */
+  imageId?: string | null;
 }
 
 @Injectable()
@@ -47,6 +49,7 @@ export class AdminUpdateTrackUseCase {
       theme: input.theme,
       grip: input.grip,
       isActive: input.isActive,
+      imageId: input.imageId,
     });
   }
 }

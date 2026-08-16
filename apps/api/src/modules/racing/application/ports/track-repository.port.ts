@@ -26,6 +26,7 @@ export interface CreateTrackData {
   theme: TrackTheme;
   grip: number;
   isActive: boolean;
+  imageId?: string | null;
 }
 
 export interface UpdateTrackPatch {
@@ -36,6 +37,8 @@ export interface UpdateTrackPatch {
   theme?: TrackTheme;
   grip?: number;
   isActive?: boolean;
+  /** `null` limpia la imagen; `undefined` la deja tal cual. */
+  imageId?: string | null;
 }
 
 export interface TrackRepositoryPort {

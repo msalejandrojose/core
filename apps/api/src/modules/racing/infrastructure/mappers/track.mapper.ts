@@ -13,5 +13,6 @@ export function toTrackDomain(row: PrismaTrack): Track {
     row.path as unknown as TrackCell[],
     TrackTheme[row.theme],
     row.grip,
+    row.imageId,
   );
 }
