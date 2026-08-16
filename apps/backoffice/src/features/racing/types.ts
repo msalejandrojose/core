@@ -16,6 +16,9 @@ export interface TrackRow {
   theme: TrackTheme;
   grip: number;
   isActive: boolean;
+  imageId: string | null;
+  /** Ruta relativa (`/files/view?token=...`) — ver `resolveTrackImageUrl()`. */
+  imageUrl: string | null;
 }
 
 export const TRACK_THEME_LABELS: Record<TrackTheme, string> = {

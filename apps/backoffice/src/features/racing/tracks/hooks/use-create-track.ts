@@ -13,6 +13,7 @@ export interface CreateTrackInput {
   theme: TrackTheme;
   grip: number;
   isActive?: boolean;
+  imageId?: string;
 }
 
 export function useCreateTrack({ onSuccess }: { onSuccess?: (id: string) => void } = {}) {
