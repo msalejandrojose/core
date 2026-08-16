@@ -17,6 +17,7 @@ export interface CreateTrackInput {
   theme: TrackTheme;
   grip: number;
   isActive?: boolean;
+  imageId?: string | null;
 }
 
 @Injectable()
@@ -46,6 +47,7 @@ export class AdminCreateTrackUseCase {
       theme: input.theme,
       grip: input.grip,
       isActive: input.isActive ?? true,
+      imageId: input.imageId,
     });
   }
 }

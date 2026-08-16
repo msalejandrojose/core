@@ -15,11 +15,24 @@ export class TrackResponseDto {
   })
   sectorCount!: number;
 
-  static fromTrack(track: Track): TrackResponseDto {
+  @ApiProperty({
+    nullable: true,
+    description:
+      'URL de visualización pública de la miniatura, ya lista para <img src>. null si el circuito no tiene una.',
+  })
+  imageUrl!: string | null;
+
+  // `imageUrl` se resuelve fuera (el controller, con `FileViewTokenService`):
+  // el dominio guarda solo el id del fichero, no sabe construir URLs.
+  static fromTrack(
+    track: Track,
+    imageUrl: string | null = null,
+  ): TrackResponseDto {
     return {
       slug: track.slug,
       name: track.name,
       sectorCount: track.sectorCount,
+      imageUrl,
     };
   }
 }

@@ -68,6 +68,7 @@ export class PrismaTrackRepository implements TrackRepositoryPort {
         theme: data.theme,
         grip: data.grip,
         isActive: data.isActive,
+        imageId: data.imageId ?? null,
       },
     });
     return toTrackDomain(row);
@@ -86,6 +87,7 @@ export class PrismaTrackRepository implements TrackRepositoryPort {
     if (patch.theme !== undefined) data.theme = patch.theme;
     if (patch.grip !== undefined) data.grip = patch.grip;
     if (patch.isActive !== undefined) data.isActive = patch.isActive;
+    if (patch.imageId !== undefined) data.imageId = patch.imageId;
 
     const row = await this.prisma.track.update({ where: { id }, data });
     return toTrackDomain(row);

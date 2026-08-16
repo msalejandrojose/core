@@ -29,5 +29,7 @@ export class Track {
     // Agarre de la superficie: 1.0 asfalto seco. Mismo eje que `Vehicle.grip`
     // en el cliente.
     readonly grip: number = 1.0,
+    // FK suave a StoredFile (módulo storage), null si no tiene miniatura.
+    readonly imageId: string | null = null,
   ) {}
 }

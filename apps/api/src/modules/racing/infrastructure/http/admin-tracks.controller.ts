@@ -17,6 +17,7 @@ import {
 import { ApiPaginatedResponse } from '../../../../shared/http/decorators/api-paginated-response.decorator';
 import { PaginatedResponseDto } from '../../../../shared/http/dto/paginated-response.dto';
 import { RequiresPermission } from '../../../iam/infrastructure/http/decorators/requires-permission.decorator';
+import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
 import { AdminCreateTrackUseCase } from '../../application/use-cases/admin-create-track.use-case';
 import { AdminGetTrackUseCase } from '../../application/use-cases/admin-get-track.use-case';
 import { AdminListTracksUseCase } from '../../application/use-cases/admin-list-tracks.use-case';
@@ -37,6 +38,7 @@ export class AdminTracksController {
     private readonly getTrack: AdminGetTrackUseCase,
     private readonly createTrack: AdminCreateTrackUseCase,
     private readonly updateTrack: AdminUpdateTrackUseCase,
+    private readonly viewTokens: FileViewTokenService,
   ) {}
 
   @Get()
@@ -52,7 +54,9 @@ export class AdminTracksController {
       search: query.search,
     });
     return PaginatedResponseDto.of(
-      items.map((track) => AdminTrackResponseDto.fromTrack(track)),
+      items.map((track) =>
+        AdminTrackResponseDto.fromTrack(track, this.imageUrl(track.imageId)),
+      ),
       total,
       query.page,
       query.limit,
@@ -66,7 +70,8 @@ export class AdminTracksController {
   async get(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<AdminTrackResponseDto> {
-    return AdminTrackResponseDto.fromTrack(await this.getTrack.execute(id));
+    const track = await this.getTrack.execute(id);
+    return AdminTrackResponseDto.fromTrack(track, this.imageUrl(track.imageId));
   }
 
   @Post()
@@ -83,8 +88,9 @@ export class AdminTracksController {
       theme: dto.theme,
       grip: dto.grip,
       isActive: dto.isActive,
+      imageId: dto.imageId,
     });
-    return AdminTrackResponseDto.fromTrack(track);
+    return AdminTrackResponseDto.fromTrack(track, this.imageUrl(track.imageId));
   }
 
   @Patch(':id')
@@ -107,7 +113,15 @@ export class AdminTracksController {
       theme: dto.theme,
       grip: dto.grip,
       isActive: dto.isActive,
+      imageId: dto.imageId,
     });
-    return AdminTrackResponseDto.fromTrack(track);
+    return AdminTrackResponseDto.fromTrack(track, this.imageUrl(track.imageId));
+  }
+
+  // Ver el comentario homólogo en `RacingController`.
+  private imageUrl(imageId: string | null): string | null {
+    return imageId
+      ? `/files/view?token=${this.viewTokens.issue(imageId)}`
+      : null;
   }
 }

@@ -17,6 +17,7 @@ import {
 import { type AccessTokenPayload } from '../../../iam/application/ports/token-issuer.port';
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
+import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
 import { GetGhostUseCase } from '../../application/use-cases/get-ghost.use-case';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
 import { GetOnlineRaceUseCase } from '../../application/use-cases/get-online-race.use-case';
@@ -67,6 +68,7 @@ export class RacingController {
     private readonly submitOnlineRaceResult: SubmitOnlineRaceResultUseCase,
     private readonly getOnlineRace: GetOnlineRaceUseCase,
     private readonly matchOnlineRace: MatchOnlineRaceUseCase,
+    private readonly viewTokens: FileViewTokenService,
   ) {}
 
   @Get('tracks')
@@ -81,7 +83,9 @@ export class RacingController {
       cursor: query.cursor,
     });
     return CursorPaginatedResponseDto.of(
-      page.items.map((track) => TrackResponseDto.fromTrack(track)),
+      page.items.map((track) =>
+        TrackResponseDto.fromTrack(track, this.imageUrl(track.imageId)),
+      ),
       page.nextCursor,
       limit,
     );
@@ -95,7 +99,21 @@ export class RacingController {
   })
   @ApiOkResponse({ type: TrackDetailResponseDto })
   async detail(@Param('slug') slug: string): Promise<TrackDetailResponseDto> {
-    return TrackDetailResponseDto.fromTrack(await this.getTrack.execute(slug));
+    const track = await this.getTrack.execute(slug);
+    return TrackDetailResponseDto.fromTrack(
+      track,
+      this.imageUrl(track.imageId),
+    );
+  }
+
+  // El dominio guarda solo `imageId` (FK suave a StoredFile); la URL de
+  // visualización se acuña aquí, en el borde HTTP, porque `issue()` no toca
+  // la base de datos — es una firma, no una consulta — así que no hace falta
+  // comprobar que el fichero exista de verdad para construirla.
+  private imageUrl(imageId: string | null): string | null {
+    return imageId
+      ? `/files/view?token=${this.viewTokens.issue(imageId)}`
+      : null;
   }
 
   @Post('tracks/:slug/lap-times')

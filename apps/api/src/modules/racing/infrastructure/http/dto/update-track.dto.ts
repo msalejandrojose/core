@@ -9,7 +9,9 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  IsUUID,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { TrackTheme } from '../../../domain/entities/track.entity';
@@ -60,4 +62,16 @@ export class UpdateTrackDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description:
+      'Id de un fichero ya subido (módulo storage) para la miniatura del circuito. `null` la quita.',
+  })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null)
+  @IsUUID()
+  imageId?: string | null;
 }

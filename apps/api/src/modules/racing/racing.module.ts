@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IamModule } from '../iam/iam.module';
+import { StorageModule } from '../storage/storage.module';
 import { CAR_ARCHETYPE_REPOSITORY } from './application/ports/car-archetype-repository.port';
 import { CAR_PART_REPOSITORY } from './application/ports/car-part-repository.port';
 import { FRIEND_CODE_REPOSITORY } from './application/ports/friend-code-repository.port';
@@ -81,7 +82,9 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
 @Module({
   // IamModule exporta JwtAuthGuard/PermissionGuard (usados por
   // @RequiresPermission en los controllers admin) — mismo patrón que BlogModule.
-  imports: [IamModule],
+  // StorageModule exporta FileViewTokenService: hace falta para resolver
+  // `Track.imageId` a una URL de visualización pública en las respuestas.
+  imports: [IamModule, StorageModule],
   controllers: [
     RacingController,
     AdminTracksController,
