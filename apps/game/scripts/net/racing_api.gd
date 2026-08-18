@@ -157,6 +157,15 @@ func friends():
 	return await Api.get_json("/racing/friends")
 
 
+## El fantasma de un amigo en un circuito (TASK-223): su mejor marca ahí,
+## lista para reproducir junto al jugador. `data` es `null` (no un error) si
+## ese amigo todavía no tiene marca en este circuito — mismo formato que
+## `match_online_race` (sin `userId`, que ya lo sabe quien llama: es a quien
+## eligió en la lista de amigos).
+func friend_ghost(track_key: String, user_id: String):
+	return await Api.get_json("/racing/tracks/%s/ghosts/%s" % [track_key, user_id])
+
+
 # --- Imágenes de circuito -------------------------------------------------------
 
 ## Descarga y decodifica la miniatura de un circuito. `relative_url` es el
