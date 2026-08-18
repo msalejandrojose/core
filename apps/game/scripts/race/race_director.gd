@@ -168,7 +168,7 @@ func _ready() -> void:
 	_ghost_threat = Ghost.new(THREAT_COLOR)
 	add_child(_ghost_threat)
 
-	main_menu.play_pressed.connect(_on_play_pressed)
+	main_menu.play_pressed.connect(_on_normal_play_pressed)
 	main_menu.play_online_pressed.connect(start_online_race)
 	main_menu.time_trial_pressed.connect(start_time_trial)
 
@@ -430,6 +430,41 @@ func _on_play_pressed() -> void:
 	touch_controls.visible = true
 	restart()
 	set_process(true)
+
+
+## Vuelta suelta normal desde el botón "Correr" del menú: además de arrancar
+## como siempre, ofrece por defecto el fantasma de quien va justo por delante
+## en el ranking del circuito (TASK-277) — sin que el jugador tenga que
+## elegir nada, a diferencia de "Carrera Online" (emparejamiento explícito,
+## TASK-284) o de elegir a un amigo concreto (TASK-223). Complementa a las
+## dos, no las sustituye: aquí no hay podio ni resultado que subir, es solo
+## compañía visual para la vuelta suelta de siempre.
+func _on_normal_play_pressed() -> void:
+	_on_play_pressed()
+	_offer_auto_rival()
+
+
+## `await` sin bloquear el arranque: el circuito ya se ha construido y el
+## semáforo ya cuenta atrás cuando esto responde, igual que `CarLoadout` puede
+## llegar tarde por login asíncrono — el fantasma aparece en cuanto llega, no
+## hace falta esperarlo para salir.
+func _offer_auto_rival() -> void:
+	if in_grand_prix() or not Session.is_logged_in():
+		return
+
+	var response = await RacingApi.match_online_race(record_key())
+
+	# El jugador pudo volver al menú, o una carrera online explícita pudo
+	# arrancar de verdad, mientras esperábamos esta respuesta: ninguna de las
+	# dos se pisa con un rival "de regalo" que ya no pinta nada.
+	if main_menu.visible or not _online_target.is_empty():
+		return
+	if not response.ok or not (response.data is Dictionary):
+		return
+
+	var target: Variant = response.data.get("target")
+	if target is Dictionary:
+		_ghost_target.set_snapshots(_to_native_snapshots(target.get("snapshots", [])))
 
 
 ## Arranca una carrera online (TASK-282/284/285): el circuito ya elegido en
