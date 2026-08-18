@@ -25,6 +25,8 @@ var _director: RaceDirector
 var _time_label: Label
 var _best_label: Label
 var _delta_label: Label
+## Solo visible durante un contrarreloj de 3 vueltas (TASK-312): "Vuelta 2/3".
+var _lap_counter_label: Label
 var _restart_button: Button
 var _settings_button: Button
 var _menu_button: Button
@@ -48,6 +50,9 @@ func _ready() -> void:
 	_director.countdown_changed.connect(_on_countdown_changed)
 	_director.countdown_finished.connect(_on_countdown_finished)
 	_director.lap_finished.connect(_on_lap_finished)
+	_director.time_trial_started.connect(_on_time_trial_started)
+	_director.time_trial_lap_completed.connect(_on_time_trial_lap_completed)
+	_director.time_trial_finished.connect(_on_time_trial_finished)
 
 	# El director arranca su cuenta atrás en su propio `_ready`, que corre antes
 	# que el de este nodo, así que la primera señal se pierde. Se lee el total
@@ -96,6 +101,11 @@ func _build() -> void:
 	_best_label = _make_label(UiTheme.FONT_SM, UiTheme.BONE * Color(1, 1, 1, 0.65))
 	_best_label.position = safe + Vector2(52, 124)
 	add_child(_best_label)
+
+	_lap_counter_label = _make_label(UiTheme.FONT_SM, UiTheme.CLAY)
+	_lap_counter_label.position = safe + Vector2(52, 124)
+	_lap_counter_label.visible = false
+	add_child(_lap_counter_label)
 
 	_delta_label = _make_label(FONT_DELTA, UiTheme.BONE)
 	_delta_label.position = safe + Vector2(48, 176)
@@ -149,6 +159,29 @@ func _on_lap_finished(duration_ms: int, previous_best_ms: Variant, is_new_record
 	screen.show_result(duration_ms, previous_best_ms, is_new_record)
 
 
+## Contrarreloj de 3 vueltas (TASK-312): el contador de vuelta ocupa el mismo
+## hueco que "MEJOR ..." — no tiene sentido enseñar los dos a la vez, la
+## mejor marca es de la vuelta suelta y este modo no la toca.
+func _on_time_trial_started() -> void:
+	# La visibilidad la resincroniza `_on_restarted()`, que dispara justo
+	# después (`start_time_trial()` llama a `restart()` por dentro) — aquí
+	# solo hace falta el texto de la primera vuelta.
+	_lap_counter_label.text = "Vuelta 1/%d" % RaceDirector.TIME_TRIAL_LAPS
+
+
+func _on_time_trial_lap_completed(lap_number: int, _duration_ms: int, _total_ms: int) -> void:
+	_lap_counter_label.text = "Vuelta %d/%d" % [lap_number + 1, RaceDirector.TIME_TRIAL_LAPS]
+
+
+func _on_time_trial_finished(total_ms: int, lap_times_ms: Array) -> void:
+	_best_label.visible = true
+	_lap_counter_label.visible = false
+
+	var screen: CanvasLayer = load("res://scenes/ui/time-trial-result-screen.tscn").instantiate()
+	add_child(screen)
+	screen.show_result(total_ms, lap_times_ms)
+
+
 ## Desplazamiento para no quedar bajo el notch o la barra de estado. En
 ## escritorio el área segura es la ventana entera y esto devuelve cero.
 ##
@@ -200,6 +233,17 @@ func _on_record_beaten(_duration_ms: int) -> void:
 func _on_restarted() -> void:
 	_delta_label.text = ""
 	_delta_left = 0.0
+
+	# `restart()` es el punto de paso de TODA salida (vuelta suelta, manga de
+	# Grand Prix, cada vuelta del contrarreloj) — resincroniza aquí y no solo
+	# en `_on_time_trial_started()`/`_on_time_trial_finished()`: si se
+	# abandona un contrarreloj por el botón "Menú" (sin pasar por
+	# `time_trial_finished`) y luego se arranca una vuelta suelta, esta es la
+	# única señal común a las dos que dispara antes de que el jugador vea el
+	# HUD de nuevo.
+	var in_time_trial := _director.in_time_trial()
+	_lap_counter_label.visible = in_time_trial
+	_best_label.visible = not in_time_trial
 
 
 func _on_countdown_changed(lights_on: int, total: int) -> void:

@@ -26,6 +26,17 @@ signal grand_prix_ended()
 ## partida real con interfaz delante.
 signal lap_finished(duration_ms: int, previous_best_ms: Variant, is_new_record: bool)
 
+## Contrarreloj de 3 vueltas (TASK-312): modo nuevo y separado del
+## contrarreloj de una vuelta — mismo principio que Grand Prix, circuito
+## propio y resultado propio, sin tocar el leaderboard/fantasma/carrera
+## online de vuelta suelta.
+signal time_trial_started()
+## `lap_number` es la vuelta que se ACABA de completar (1, 2), no la que
+## empieza — la última (`TIME_TRIAL_LAPS`) llega por `time_trial_finished`,
+## no por esta señal.
+signal time_trial_lap_completed(lap_number: int, duration_ms: int, total_ms: int)
+signal time_trial_finished(total_ms: int, lap_times_ms: Array)
+
 ## Cada cuánto se toma una instantánea del fantasma, en ms — snapshots a
 ## ~20 Hz (TASK-219, decisión de formato de grabación).
 const GHOST_SNAPSHOT_INTERVAL_MS := 50
@@ -51,6 +62,9 @@ const _EPSILON := 0.0001
 ## reinicia a mano, y eso no puede pasar por muy raro que sea el camino que
 ## lleve allí.
 const RESCUE_BELOW_Y := -5.0
+
+## Vueltas de una carrera de contrarreloj (TASK-312).
+const TIME_TRIAL_LAPS := 3
 
 ## Modelo 3D por arquetipo. Los tres son camiones del starter kit de Kenney
 ## recoloreados (mismo rig, cero geometría nueva) — solo la moto tiene una
@@ -95,6 +109,14 @@ var _layout: TrackCatalog.Layout
 ## desde `TrackCatalog` — el layout activo es el de la manga, no el del menú.
 var _grand_prix_id: String = ""
 var _grand_prix_reverse: bool = false
+
+## Vacío/0 = no hay contrarreloj de 3 vueltas en curso. `_time_trial_lap` son
+## las vueltas YA completadas (0..TIME_TRIAL_LAPS); `_time_trial_times` sus
+## duraciones, en el mismo orden. El circuito/sentido/cilindrada son los que
+## ya hubiera elegidos en el menú — el modo no tiene su propia selección.
+var _time_trial_active: bool = false
+var _time_trial_lap: int = 0
+var _time_trial_times: Array = []
 
 ## Fantasma de la vuelta récord del circuito activo (TASK-220). Nace vacío
 ## (sin fantasma) y se rellena en cuanto hay una marca que reproducir.
@@ -148,6 +170,7 @@ func _ready() -> void:
 
 	main_menu.play_pressed.connect(_on_play_pressed)
 	main_menu.play_online_pressed.connect(start_online_race)
+	main_menu.time_trial_pressed.connect(start_time_trial)
 
 	lap_timer.sector_completed.connect(_on_sector_completed)
 	lap_timer.lap_completed.connect(_on_lap_completed)
@@ -185,7 +208,7 @@ func _process(delta: float) -> void:
 	_ghost.update_at(lap_timer.elapsed_ms)
 	_ghost_target.update_at(lap_timer.elapsed_ms)
 	_ghost_threat.update_at(lap_timer.elapsed_ms)
-	if lap_timer.running and not in_grand_prix():
+	if lap_timer.running and not in_grand_prix() and not in_time_trial():
 		_record_ghost_snapshot()
 
 	if not counting_down:
@@ -308,6 +331,22 @@ func in_grand_prix() -> bool:
 	return _grand_prix_id != ""
 
 
+## Arranca un contrarreloj de 3 vueltas (TASK-312) en el circuito YA elegido
+## en el menú — a diferencia de Grand Prix, este modo no tiene su propio
+## circuito, así que reutiliza `_on_play_pressed` entero (cierra el menú,
+## enseña el HUD, `restart()`, arranca `_process`).
+func start_time_trial() -> void:
+	_time_trial_active = true
+	_time_trial_lap = 0
+	_time_trial_times = []
+	time_trial_started.emit()
+	_on_play_pressed()
+
+
+func in_time_trial() -> bool:
+	return _time_trial_active
+
+
 func _effective_reverse() -> bool:
 	return _grand_prix_reverse if in_grand_prix() else GameSettings.reverse
 
@@ -362,6 +401,14 @@ func open_menu() -> void:
 		_grand_prix_reverse = false
 		await rebuild_track()
 		grand_prix_ended.emit()
+
+	# Igual que Grand Prix pero sin layout propio que deshacer: el contrarreloj
+	# corre en el circuito ya elegido en el menú, así que basta con soltar el
+	# estado del intento — no hay nada que reconstruir.
+	if in_time_trial():
+		_time_trial_active = false
+		_time_trial_lap = 0
+		_time_trial_times = []
 
 	# Volver al menú es también abandonar la carrera online en curso, si había
 	# una: el jugador puede elegir otro circuito o pedir otro emparejamiento,
@@ -446,8 +493,8 @@ func _on_settings_changed() -> void:
 func _on_sector_completed(sector: int, split_ms: int) -> void:
 	# Sin referencia con la que comparar: el récord del circuito elegido en el
 	# menú no tiene nada que ver con la manga de Grand Prix que se está
-	# corriendo.
-	if in_grand_prix():
+	# corriendo, ni con el intento de contrarreloj de 3 vueltas.
+	if in_grand_prix() or in_time_trial():
 		sector_delta.emit(sector, 0, false)
 		return
 
@@ -462,6 +509,34 @@ func _on_sector_completed(sector: int, split_ms: int) -> void:
 func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 	if in_grand_prix():
 		grand_prix_stage_completed.emit(duration_ms)
+		return
+
+	if in_time_trial():
+		# `LapTimer.cross_finish()` ya encadena la vuelta siguiente en el
+		# mismo instante del cruce (antes de emitir esta señal): no hace
+		# falta llamar a `restart()` entre vuelta y vuelta, conducir seguido
+		# ya es lo que pasa por defecto.
+		_time_trial_lap += 1
+		_time_trial_times.append(duration_ms)
+
+		if _time_trial_lap < TIME_TRIAL_LAPS:
+			var total_so_far: int = 0
+			for lap_ms in _time_trial_times:
+				total_so_far += lap_ms
+			time_trial_lap_completed.emit(_time_trial_lap, duration_ms, total_so_far)
+			return
+
+		_time_trial_active = false
+		# `cross_finish()` ya encadenó una vuelta 4ª que nadie pidió (es lo
+		# mismo que hace tras CUALQUIER vuelta, incluida la última). Sin
+		# pararla aquí, si el coche sigue rodando y vuelve a cruzar la meta
+		# ese tiempo caería por la rama normal de más abajo — justo lo que
+		# el modo tiene prohibido tocar.
+		lap_timer.abort()
+		var total: int = 0
+		for lap_ms in _time_trial_times:
+			total += lap_ms
+		time_trial_finished.emit(total, _time_trial_times)
 		return
 
 	# Se consume y se vacía ya: `LapTimer` encadena la vuelta siguiente antes
