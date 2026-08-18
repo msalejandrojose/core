@@ -129,7 +129,16 @@ var nitro_active: bool = false
 
 # Public Functions
 
+## `self` (el `Vehicle` de fuera) se queda fijo donde lo dejó `reset_to_start`
+## — quien de verdad se mueve conduciendo es `vehicle_model`, siguiendo a
+## `sphere` cada físico (línea 266). Cualquier código que quiera "dónde está
+## el coche ahora mismo" tiene que pasar por aquí, nunca por
+## `vehicle.global_position` directamente.
 func get_vehicle_position() -> Vector3: return vehicle_model.global_position
+
+## Mismo motivo que `get_vehicle_position`: el giro real está en
+## `vehicle_model.rotate_y()` (línea 225), no en `self.rotation`.
+func get_vehicle_yaw() -> float: return vehicle_model.rotation.y
 
 ## Duplica el material compartido de las estelas y arma el mapa de colores por
 ## terreno a partir de su color original (asfalto), para no repetir ese
