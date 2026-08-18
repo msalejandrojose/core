@@ -18,6 +18,7 @@ import { type AccessTokenPayload } from '../../../iam/application/ports/token-is
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
+import { GetCurrentSeasonUseCase } from '../../application/use-cases/get-current-season.use-case';
 import { GetGhostUseCase } from '../../application/use-cases/get-ghost.use-case';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
 import { GetOnlineRaceUseCase } from '../../application/use-cases/get-online-race.use-case';
@@ -38,6 +39,7 @@ import {
 } from './dto/leaderboard.response.dto';
 import { OnlineRaceMatchResponseDto } from './dto/online-race-match.response.dto';
 import { OnlineRaceResponseDto } from './dto/online-race.response.dto';
+import { SeasonResponseDto } from './dto/season.response.dto';
 import { SubmitLapTimeDto } from './dto/submit-lap-time.dto';
 import { SubmitOnlineRaceResultDto } from './dto/submit-online-race-result.dto';
 import { TrackDetailResponseDto } from './dto/track-detail.response.dto';
@@ -68,8 +70,21 @@ export class RacingController {
     private readonly submitOnlineRaceResult: SubmitOnlineRaceResultUseCase,
     private readonly getOnlineRace: GetOnlineRaceUseCase,
     private readonly matchOnlineRace: MatchOnlineRaceUseCase,
+    private readonly getCurrentSeason: GetCurrentSeasonUseCase,
     private readonly viewTokens: FileViewTokenService,
   ) {}
+
+  @Get('seasons/current')
+  @ApiOperation({
+    summary: 'Temporada abierta ahora mismo',
+    description:
+      'Null si todavía no se ha creado ninguna — el leaderboard sigue funcionando sin acotar en ese caso (TASK-227).',
+  })
+  @ApiOkResponse({ type: SeasonResponseDto })
+  async currentSeason(): Promise<SeasonResponseDto | null> {
+    const season = await this.getCurrentSeason.execute();
+    return season === null ? null : SeasonResponseDto.fromDomain(season);
+  }
 
   @Get('tracks')
   @ApiOperation({ summary: 'Circuitos activos' })
@@ -148,7 +163,7 @@ export class RacingController {
   @ApiOperation({
     summary: 'Top del circuito y posición propia',
     description:
-      'Un jugador aparece una sola vez, con su mejor marca. `yourPosition` llega siempre, aunque quedes fuera del top.',
+      'Un jugador aparece una sola vez, con su mejor marca. `yourPosition` llega siempre, aunque quedes fuera del top. Sin `seasonId`, acota a la temporada abierta ahora mismo (o al histórico completo si no hay ninguna, TASK-227); con `seasonId`, a esa temporada concreta, sea la actual o una pasada.',
   })
   @ApiOkResponse({ type: LeaderboardResponseDto })
   async leaderboard(
@@ -160,11 +175,13 @@ export class RacingController {
       ParseIntPipe,
     )
     limit: number,
+    @Query('seasonId') seasonId?: string,
   ): Promise<LeaderboardResponseDto> {
     const result = await this.getLeaderboard.execute(
       slug,
       current.sub,
       Math.min(Math.max(limit, 1), MAX_LEADERBOARD_LIMIT),
+      seasonId,
     );
 
     return {
@@ -172,6 +189,7 @@ export class RacingController {
         LeaderboardEntryDto.fromEntry(entry),
       ),
       yourPosition: result.yourPosition,
+      seasonId: result.seasonId,
     };
   }
 

@@ -13,11 +13,13 @@ import { ONLINE_RACE_REPOSITORY } from './application/ports/online-race-reposito
 import { PLAYER_CAR_LOADOUT_REPOSITORY } from './application/ports/player-car-loadout-repository.port';
 import { PLAYER_CAR_SKIN_REPOSITORY } from './application/ports/player-car-skin-repository.port';
 import { RACING_TERRAIN_EFFECT_REPOSITORY } from './application/ports/racing-terrain-effect-repository.port';
+import { SEASON_REPOSITORY } from './application/ports/season-repository.port';
 import { TRACK_REPOSITORY } from './application/ports/track-repository.port';
 import { AdminCreateCarArchetypeUseCase } from './application/use-cases/admin-create-car-archetype.use-case';
 import { AdminCreateCarPartUseCase } from './application/use-cases/admin-create-car-part.use-case';
 import { AdminCreateCarSkinUseCase } from './application/use-cases/admin-create-car-skin.use-case';
 import { AdminCreateGrandPrixUseCase } from './application/use-cases/admin-create-grand-prix.use-case';
+import { AdminCreateSeasonUseCase } from './application/use-cases/admin-create-season.use-case';
 import { AdminCreateTrackUseCase } from './application/use-cases/admin-create-track.use-case';
 import { AdminGetCarArchetypeUseCase } from './application/use-cases/admin-get-car-archetype.use-case';
 import { AdminGetCarPartUseCase } from './application/use-cases/admin-get-car-part.use-case';
@@ -31,6 +33,7 @@ import { AdminListGrandPrixUseCase } from './application/use-cases/admin-list-gr
 import { AdminListLapTimesUseCase } from './application/use-cases/admin-list-lap-times.use-case';
 import { AdminListCarPartsUseCase } from './application/use-cases/admin-list-car-parts.use-case';
 import { AdminListCarSkinsUseCase } from './application/use-cases/admin-list-car-skins.use-case';
+import { AdminListSeasonsUseCase } from './application/use-cases/admin-list-seasons.use-case';
 import { AdminListTracksUseCase } from './application/use-cases/admin-list-tracks.use-case';
 import { AdminUpdateCarArchetypeUseCase } from './application/use-cases/admin-update-car-archetype.use-case';
 import { AdminUpdateCarPartUseCase } from './application/use-cases/admin-update-car-part.use-case';
@@ -38,6 +41,7 @@ import { AdminUpdateCarSkinUseCase } from './application/use-cases/admin-update-
 import { AdminUpdateGrandPrixUseCase } from './application/use-cases/admin-update-grand-prix.use-case';
 import { AdminUpdateTerrainEffectUseCase } from './application/use-cases/admin-update-terrain-effect.use-case';
 import { AdminUpdateTrackUseCase } from './application/use-cases/admin-update-track.use-case';
+import { GetCurrentSeasonUseCase } from './application/use-cases/get-current-season.use-case';
 import { GetGrandPrixLeaderboardUseCase } from './application/use-cases/get-grand-prix-leaderboard.use-case';
 import { GetGrandPrixUseCase } from './application/use-cases/get-grand-prix.use-case';
 import { GetLeaderboardUseCase } from './application/use-cases/get-leaderboard.use-case';
@@ -68,6 +72,7 @@ import { AdminCarSkinsController } from './infrastructure/http/admin-car-skins.c
 import { AdminGrandPrixController } from './infrastructure/http/admin-grand-prix.controller';
 import { AdminLapTimesController } from './infrastructure/http/admin-lap-times.controller';
 import { AdminRacingUsersController } from './infrastructure/http/admin-racing-users.controller';
+import { AdminSeasonsController } from './infrastructure/http/admin-seasons.controller';
 import { AdminTerrainEffectsController } from './infrastructure/http/admin-terrain-effects.controller';
 import { AdminTracksController } from './infrastructure/http/admin-tracks.controller';
 import { CarLoadoutController } from './infrastructure/http/car-loadout.controller';
@@ -87,6 +92,7 @@ import { PrismaOnlineRaceRepository } from './infrastructure/persistence/prisma-
 import { PrismaPlayerCarLoadoutRepository } from './infrastructure/persistence/prisma-player-car-loadout.repository';
 import { PrismaPlayerCarSkinRepository } from './infrastructure/persistence/prisma-player-car-skin.repository';
 import { PrismaRacingTerrainEffectRepository } from './infrastructure/persistence/prisma-racing-terrain-effect.repository';
+import { PrismaSeasonRepository } from './infrastructure/persistence/prisma-season.repository';
 import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track.repository';
 
 @Module({
@@ -109,6 +115,7 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     GrandPrixController,
     AdminGrandPrixController,
     FriendsController,
+    AdminSeasonsController,
   ],
   providers: [
     ListTracksUseCase,
@@ -159,6 +166,9 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     RespondFriendshipUseCase,
     ListFriendsUseCase,
     ListPendingFriendRequestsUseCase,
+    AdminCreateSeasonUseCase,
+    AdminListSeasonsUseCase,
+    GetCurrentSeasonUseCase,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },
     { provide: LAP_TIME_REPOSITORY, useClass: PrismaLapTimeRepository },
     { provide: ONLINE_RACE_REPOSITORY, useClass: PrismaOnlineRaceRepository },
@@ -187,6 +197,7 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
       provide: GRAND_PRIX_ATTEMPT_REPOSITORY,
       useClass: PrismaGrandPrixAttemptRepository,
     },
+    { provide: SEASON_REPOSITORY, useClass: PrismaSeasonRepository },
   ],
 })
 export class RacingModule {}

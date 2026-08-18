@@ -1375,6 +1375,37 @@ model Track {
   @@map("racing_track")
 }
 
+/// Una temporada acota qué intentos entran en la clasificación (TASK-227):
+/// sin esto, el leaderboard de un circuito nunca cambia y quien llegó
+/// primero gana para siempre — una temporada es lo que lo convierte en algo
+/// a lo que merece la pena volver.
+///
+/// `endsAt` null = temporada abierta (la actual). Como mucho una fila puede
+/// estar abierta a la vez — lo exige la lógica de aplicación al crear, no una
+/// constraint de BBDD: MySQL no tiene índice único parcial ("WHERE ends_at IS
+/// NULL"), y forzarlo con un valor centinela sería peor que comprobarlo en
+/// el use-case.
+///
+/// El cierre y la rotación automática (crear la siguiente al cerrar esta)
+/// son aparte (TASK-228) — este modelo solo define la temporada y qué
+/// intentos caen dentro; quién decide cuándo cerrarla es otro problema.
+model RacingSeason {
+  id   String @id @default(uuid()) @db.Char(36)
+  name String @db.VarChar(80)
+
+  startsAt DateTime  @map("starts_at")
+  endsAt   DateTime? @map("ends_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lapTimes LapTime[]
+
+  /// Para encontrar la temporada actual y listar por fecha.
+  @@index([startsAt])
+  @@map("racing_season")
+}
+
 /// Un intento de vuelta subido por un jugador.
 ///
 /// Se guardan TODOS los intentos, no solo el mejor: el histórico es la materia
@@ -1385,6 +1416,16 @@ model LapTime {
   id      String @id @default(uuid()) @db.Char(36)
   userId  String @map("user_id") @db.Char(36)
   trackId String @map("track_id") @db.Char(36)
+
+  /// Temporada en la que se corrió (TASK-227): la que estuviera abierta en
+  /// el momento del intento, fijada al crear la fila y nunca recalculada —
+  /// si se editara `startsAt`/`endsAt` de una temporada ya cerrada, los
+  /// intentos que cayeron dentro no deben moverse de sitio. Null = intento
+  /// de antes de que existieran las temporadas, o subido sin ninguna
+  /// abierta; cuenta igual para la mejor marca personal y el emparejamiento
+  /// de fantasmas (sin cambios ahí), pero queda fuera de cualquier
+  /// clasificación acotada a una temporada concreta.
+  seasonId String? @map("season_id") @db.Char(36)
 
   /// Tiempo total en milisegundos. Entero: un tiempo se compara y se ordena, y
   /// con floats dos vueltas idénticas dejan de serlo.
@@ -1415,8 +1456,11 @@ model LapTime {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  track Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track  Track         @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  /// SetNull y no Cascade: borrar una temporada no puede llevarse por delante
+  /// tiempos de vuelta de verdad — la fila se queda, solo pierde la etiqueta.
+  season RacingSeason? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
 
   /// El leaderboard consulta por circuito ordenando por tiempo.
   @@index([trackId, durationMs])
@@ -1424,6 +1468,8 @@ model LapTime {
   @@index([userId, trackId, durationMs])
   /// El rate limit del anti-cheat mira el último intento de cada usuario.
   @@index([userId, createdAt])
+  /// La clasificación acotada a una temporada (TASK-227).
+  @@index([seasonId, trackId, durationMs])
   @@map("racing_lap_time")
 }
 

@@ -226,6 +226,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/racing/grand-prix',
         order: 4,
       },
+      {
+        code: 'racing.seasons',
+        name: 'Temporadas',
+        icon: 'CalendarClock',
+        route: '/racing/seasons',
+        order: 5,
+      },
     ],
   },
   {

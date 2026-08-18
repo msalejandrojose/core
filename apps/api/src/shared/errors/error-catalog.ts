@@ -381,6 +381,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Carrera online no encontrada.',
   },
+  RACING_SEASON_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Temporada no encontrada.',
+  },
 
   // Leads
   LEAD_NOT_FOUND: {

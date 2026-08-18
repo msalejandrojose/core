@@ -39,4 +39,11 @@ export class LeaderboardResponseDto {
       'Posición de quien consulta, aunque quede fuera del top devuelto. Null si aún no tiene tiempo.',
   })
   yourPosition!: number | null;
+
+  @ApiProperty({
+    nullable: true,
+    description:
+      'Temporada a la que está acotada esta clasificación (TASK-227). Null si es el histórico completo — no hay ninguna temporada configurada, ni pedida explícitamente.',
+  })
+  seasonId!: string | null;
 }

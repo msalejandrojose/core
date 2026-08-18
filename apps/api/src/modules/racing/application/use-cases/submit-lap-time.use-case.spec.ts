@@ -1,10 +1,12 @@
 import { GhostSnapshot } from '../../domain/entities/ghost-snapshot';
 import { LapTime } from '../../domain/entities/lap-time.entity';
+import { Season } from '../../domain/entities/season.entity';
 import { Track } from '../../domain/entities/track.entity';
 import {
   CreateLapTimeData,
   LapTimeRepositoryPort,
 } from '../ports/lap-time-repository.port';
+import { SeasonRepositoryPort } from '../ports/season-repository.port';
 import { TrackRepositoryPort } from '../ports/track-repository.port';
 import { SubmitLapTimeUseCase } from './submit-lap-time.use-case';
 
@@ -69,12 +71,21 @@ function input(
   };
 }
 
-function useCase(previousBest: LapTime | null) {
+class FakeSeasonRepository implements Partial<SeasonRepositoryPort> {
+  constructor(private readonly current: Season | null = null) {}
+
+  findCurrent(): Promise<Season | null> {
+    return Promise.resolve(this.current);
+  }
+}
+
+function useCase(previousBest: LapTime | null, currentSeason: Season | null = null) {
   const laps = new FakeLapTimeRepository(previousBest);
   return {
     useCase: new SubmitLapTimeUseCase(
       new FakeTrackRepository() as unknown as TrackRepositoryPort,
       laps as unknown as LapTimeRepositoryPort,
+      new FakeSeasonRepository(currentSeason) as unknown as SeasonRepositoryPort,
     ),
     laps,
   };
@@ -129,5 +140,24 @@ describe('SubmitLapTimeUseCase — fantasma (TASK-221)', () => {
     await uc.execute(input());
 
     expect(laps.created[0].ghostSnapshots).toBeUndefined();
+  });
+});
+
+describe('SubmitLapTimeUseCase — temporada (TASK-227)', () => {
+  it('sin temporada abierta, la vuelta se guarda igual sin season_id', async () => {
+    const { useCase: uc, laps } = useCase(null, null);
+
+    await uc.execute(input());
+
+    expect(laps.created[0].seasonId).toBeNull();
+  });
+
+  it('con una temporada abierta, la vuelta queda sellada con su id', async () => {
+    const season = new Season('season-1', 'Temporada 1', new Date(), null);
+    const { useCase: uc, laps } = useCase(null, season);
+
+    await uc.execute(input());
+
+    expect(laps.created[0].seasonId).toBe('season-1');
   });
 });
