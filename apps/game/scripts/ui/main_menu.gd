@@ -31,6 +31,9 @@ signal play_pressed()
 ## devolvió `RacingApi.match_online_race()`, cada uno vacío si ese rival no
 ## existe para esta combinación.
 signal play_online_pressed(target: Dictionary, threat: Dictionary)
+## Contrarreloj de 3 vueltas (TASK-312): mismo circuito/sentido/cilindrada ya
+## elegidos arriba, sin selección propia.
+signal time_trial_pressed()
 
 enum Tab { JUGAR, TALLER, GRAND_PRIX, AMIGOS, CLASIFICACIONES }
 
@@ -310,8 +313,12 @@ func _build_jugar_tab() -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_content.add_child(spacer)
 
-	var buttons_row := HBoxContainer.new()
-	buttons_row.add_theme_constant_override("separation", 16)
+	# `HFlowContainer`, no `HBoxContainer`: con tres botones de este ancho la
+	# fila ya no cabe siempre en una pantalla estrecha — así el tercero baja
+	# de línea en vez de salirse (mismo motivo que las piezas del taller).
+	var buttons_row := HFlowContainer.new()
+	buttons_row.add_theme_constant_override("h_separation", 16)
+	buttons_row.add_theme_constant_override("v_separation", 16)
 	_content.add_child(buttons_row)
 
 	var play := UiTheme.pill_button(
@@ -325,6 +332,14 @@ func _build_jugar_tab() -> void:
 		"Carrera Online", UiTheme.BLUE, Color.WHITE, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
 	_online_button.pressed.connect(_on_online_pressed)
 	buttons_row.add_child(_online_button)
+
+	# Contrarreloj de 3 vueltas (TASK-312): mismo circuito/sentido/cilindrada
+	# de arriba, sin selección propia — no requiere cuenta, es puramente local.
+	var time_trial_button := UiTheme.pill_button(
+		"Contrarreloj (3 vueltas)", UiTheme.STEEL, Color.WHITE,
+		Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
+	time_trial_button.pressed.connect(func() -> void: time_trial_pressed.emit())
+	buttons_row.add_child(time_trial_button)
 
 	_sync_jugar()
 
