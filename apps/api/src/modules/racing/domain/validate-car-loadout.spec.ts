@@ -1,5 +1,6 @@
 import { CarArchetype } from './entities/car-archetype.entity';
 import { CarPart, CarPartCategory } from './entities/car-part.entity';
+import { CarSkin } from './entities/car-skin.entity';
 import { validateCarLoadoutSelection } from './validate-car-loadout';
 
 const ACTIVE_ARCHETYPE = new CarArchetype(
@@ -49,7 +50,29 @@ const WING = new CarPart(
   true,
 );
 
-const EMPTY = { tiresPart: null, wingPart: null, chassisPart: null };
+const ACTIVE_SKIN = new CarSkin(
+  's1',
+  'purple',
+  'Púrpura',
+  'res://models/vehicle-truck-purple.glb',
+  true,
+  true,
+);
+const INACTIVE_SKIN = new CarSkin(
+  's2',
+  'retired',
+  'Retirado',
+  'res://models/vehicle-truck-purple.glb',
+  true,
+  false,
+);
+
+const EMPTY = {
+  tiresPart: null,
+  wingPart: null,
+  chassisPart: null,
+  skin: null,
+};
 
 describe('validateCarLoadoutSelection', () => {
   it('acepta un arquetipo activo sin ninguna pieza equipada', () => {
@@ -64,6 +87,7 @@ describe('validateCarLoadoutSelection', () => {
       tiresPart: ACTIVE_TIRES,
       wingPart: WING,
       chassisPart: null,
+      skin: ACTIVE_SKIN,
     });
     expect(result.ok).toBe(true);
   });
@@ -89,6 +113,7 @@ describe('validateCarLoadoutSelection', () => {
       tiresPart: INACTIVE_TIRES,
       wingPart: null,
       chassisPart: null,
+      skin: null,
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toContain('no está activa');
@@ -100,8 +125,29 @@ describe('validateCarLoadoutSelection', () => {
       tiresPart: WING, // pieza de alerón en el hueco de neumáticos
       wingPart: null,
       chassisPart: null,
+      skin: null,
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toContain('categoría');
+  });
+
+  it('acepta sin ningún skin equipado', () => {
+    const result = validateCarLoadoutSelection({
+      archetype: ACTIVE_ARCHETYPE,
+      ...EMPTY,
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('rechaza un skin inactivo', () => {
+    const result = validateCarLoadoutSelection({
+      archetype: ACTIVE_ARCHETYPE,
+      tiresPart: null,
+      wingPart: null,
+      chassisPart: null,
+      skin: INACTIVE_SKIN,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain('skin');
   });
 });

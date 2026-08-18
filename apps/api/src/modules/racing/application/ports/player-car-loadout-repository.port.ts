@@ -9,6 +9,7 @@ export interface UpsertPlayerCarLoadoutData {
   tiresPartId: string | null;
   wingPartId: string | null;
   chassisPartId: string | null;
+  skinId: string | null;
 }
 
 export interface PlayerCarLoadoutRepositoryPort {

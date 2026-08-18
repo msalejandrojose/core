@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CarStats, computeCarStats } from '../../domain/car-stats';
 import { CarArchetype } from '../../domain/entities/car-archetype.entity';
 import { CarPart } from '../../domain/entities/car-part.entity';
+import { CarSkin } from '../../domain/entities/car-skin.entity';
 import { CarArchetypeNotFoundError } from '../../domain/errors/car-archetype-not-found.error';
 import {
   CAR_ARCHETYPE_REPOSITORY,
@@ -11,6 +12,10 @@ import {
   CAR_PART_REPOSITORY,
   type CarPartRepositoryPort,
 } from '../ports/car-part-repository.port';
+import {
+  CAR_SKIN_REPOSITORY,
+  type CarSkinRepositoryPort,
+} from '../ports/car-skin-repository.port';
 import {
   PLAYER_CAR_LOADOUT_REPOSITORY,
   type PlayerCarLoadoutRepositoryPort,
@@ -27,6 +32,7 @@ export interface PlayerCarLoadoutResult {
   tiresPart: CarPart | null;
   wingPart: CarPart | null;
   chassisPart: CarPart | null;
+  skin: CarSkin | null;
   stats: CarStats;
 }
 
@@ -38,6 +44,7 @@ export class GetPlayerCarLoadoutUseCase {
     @Inject(CAR_ARCHETYPE_REPOSITORY)
     private readonly archetypes: CarArchetypeRepositoryPort,
     @Inject(CAR_PART_REPOSITORY) private readonly parts: CarPartRepositoryPort,
+    @Inject(CAR_SKIN_REPOSITORY) private readonly skins: CarSkinRepositoryPort,
   ) {}
 
   async execute(userId: string): Promise<PlayerCarLoadoutResult> {
@@ -50,10 +57,11 @@ export class GetPlayerCarLoadoutUseCase {
       throw new CarArchetypeNotFoundError(existing?.archetypeId ?? 'default');
     }
 
-    const [tiresPart, wingPart, chassisPart] = await Promise.all([
+    const [tiresPart, wingPart, chassisPart, skin] = await Promise.all([
       this.findPartIfSet(existing?.tiresPartId),
       this.findPartIfSet(existing?.wingPartId),
       this.findPartIfSet(existing?.chassisPartId),
+      this.findSkinIfSet(existing?.skinId),
     ]);
 
     const stats = computeCarStats(archetype, {
@@ -62,7 +70,7 @@ export class GetPlayerCarLoadoutUseCase {
       chassis: chassisPart ?? undefined,
     });
 
-    return { archetype, tiresPart, wingPart, chassisPart, stats };
+    return { archetype, tiresPart, wingPart, chassisPart, skin, stats };
   }
 
   private async defaultArchetype(): Promise<CarArchetype | null> {
@@ -76,5 +84,11 @@ export class GetPlayerCarLoadoutUseCase {
     id: string | null | undefined,
   ): Promise<CarPart | null> {
     return id ? this.parts.findById(id) : Promise.resolve(null);
+  }
+
+  private findSkinIfSet(
+    id: string | null | undefined,
+  ): Promise<CarSkin | null> {
+    return id ? this.skins.findById(id) : Promise.resolve(null);
   }
 }

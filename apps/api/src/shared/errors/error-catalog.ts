@@ -306,6 +306,21 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'La configuración de coche no es válida.',
   },
+  RACING_CAR_SKIN_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Skin de coche no encontrado.',
+  },
+  RACING_CAR_SKIN_CODE_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un skin con ese código.',
+  },
+  RACING_CAR_SKIN_NOT_OWNED: {
+    httpStatus: 403,
+    level: 'warn',
+    defaultMessage: 'El jugador no tiene desbloqueado ese skin.',
+  },
   RACING_TERRAIN_EFFECT_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',

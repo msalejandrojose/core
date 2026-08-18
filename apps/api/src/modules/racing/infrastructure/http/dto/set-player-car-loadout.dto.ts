@@ -26,4 +26,10 @@ export class SetPlayerCarLoadoutDto {
   @ValidateIf((_o, v) => v !== null)
   @IsUUID()
   chassisPartId?: string | null;
+
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null)
+  @IsUUID()
+  skinId?: string | null;
 }

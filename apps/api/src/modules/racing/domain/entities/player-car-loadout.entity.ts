@@ -8,5 +8,6 @@ export class PlayerCarLoadout {
     readonly tiresPartId: string | null,
     readonly wingPartId: string | null,
     readonly chassisPartId: string | null,
+    readonly skinId: string | null,
   ) {}
 }
