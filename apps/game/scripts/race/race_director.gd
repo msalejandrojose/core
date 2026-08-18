@@ -200,7 +200,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if vehicle.global_position.y < RESCUE_BELOW_Y:
+	if vehicle.get_vehicle_position().y < RESCUE_BELOW_Y:
 		push_warning("Coche fuera del mundo en %s, devuelto a la salida." % record_key())
 		restart()
 		return
@@ -260,8 +260,8 @@ func _record_ghost_snapshot() -> void:
 	_ghost_last_snapshot_ms = elapsed
 	_ghost_recording.append({
 		"t": elapsed,
-		"pos": vehicle.global_position,
-		"yaw": vehicle.rotation.y,
+		"pos": vehicle.get_vehicle_position(),
+		"yaw": vehicle.get_vehicle_yaw(),
 	})
 
 

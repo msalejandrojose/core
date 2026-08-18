@@ -233,6 +233,7 @@ func _refresh_friends() -> void:
 
 	for child in _friends_container.get_children():
 		child.free()
+	_forget_freed_buttons()
 
 	var friends: Array = response.data if response.ok and response.data is Array else []
 	if friends.is_empty():
@@ -241,7 +242,71 @@ func _refresh_friends() -> void:
 		return
 
 	for friend in friends:
-		_friends_container.add_child(_label(str(friend.get("displayName", "?"))))
+		_friends_container.add_child(_friend_row(friend))
+
+
+## Fila de un amigo con botón para correr contra su fantasma (TASK-223): pide
+## su mejor marca en el circuito ya elegido en el menú y, si tiene, arranca la
+## carrera reutilizando `RaceDirector.start_online_race` — es la misma
+## mecánica que un rival de emparejamiento (TASK-284/285), solo que aquí el
+## jugador elige contra quién en vez de que lo decida el servidor.
+func _friend_row(friend: Dictionary) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+
+	var name_label := _label(str(friend.get("displayName", "?")))
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_label)
+
+	var user_id: String = str(friend.get("userId", ""))
+	var display_name: String = str(friend.get("displayName", "?"))
+	var race_button := UiTheme.make_button("Correr")
+	_all_buttons.append(race_button)
+	race_button.pressed.connect(func() -> void: _race_against(user_id, display_name, race_button, name_label))
+	row.add_child(race_button)
+
+	return row
+
+
+func _race_against(
+	user_id: String,
+	display_name: String,
+	race_button: Button,
+	name_label: Label,
+) -> void:
+	var director: RaceDirector = get_tree().get_first_node_in_group("race_director")
+	if director == null:
+		return
+
+	_set_buttons_disabled(true)
+	race_button.text = "Cargando…"
+
+	var response = await RacingApi.friend_ghost(GameSettings.track_key(), user_id)
+
+	if not is_instance_valid(race_button):
+		return
+
+	if not response.ok:
+		_set_buttons_disabled(false)
+		race_button.text = "Correr"
+		name_label.text = "%s — no se pudo cargar su fantasma." % display_name
+		return
+
+	if response.data == null:
+		_set_buttons_disabled(false)
+		race_button.text = "Correr"
+		name_label.text = "%s — todavía no tiene marca en este circuito." % display_name
+		return
+
+	var ghost: Dictionary = response.data
+	close_screen()
+	director.start_online_race(
+		{
+			"userId": user_id,
+			"durationMs": ghost.get("durationMs", 0),
+			"snapshots": ghost.get("snapshots", []),
+		},
+		{})
 
 
 func _forget_freed_buttons() -> void:

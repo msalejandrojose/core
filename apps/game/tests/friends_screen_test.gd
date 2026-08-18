@@ -25,6 +25,17 @@ var _add_friend_status := 201
 var _add_friend_body := '{"id":"friendship-1","requesterId":"me","addresseeId":"other","status":"PENDING","createdAt":"2026-01-01T00:00:00.000Z","respondedAt":null}'
 var _last_add_friend_body := ""
 
+## Lo que sirve el servidor falso a `GET /racing/tracks/:key/ghosts/:userId`
+## (TASK-223): 200 con el fantasma, 200 con "null" (amigo sin marca), o un
+## error — se cambia entre pasos igual que el resto de payloads.
+var _ghost_status := 200
+var _ghost_body := "null"
+
+## `_race_against` busca un `RaceDirector` de verdad por grupo (igual que
+## `race_result_screen.gd`/`grand_prix_screen.gd`) — no vale un doble suelto,
+## así que estos tres casos montan `main.tscn` entero, como `online_race_test`.
+var _director: RaceDirector
+
 
 func _ready() -> void:
 	TestEnv.reset()
@@ -43,6 +54,16 @@ func _ready() -> void:
 	await _test_solicitud_pendiente_y_aceptarla()
 	await _test_anadir_amigo()
 	await _test_anadir_amigo_rechazado()
+
+	var main: Node = load("res://scenes/main.tscn").instantiate()
+	add_child(main)
+	await get_tree().physics_frame
+	_director = main.get_node("RaceDirector")
+	_director.set_process(false)
+
+	await _test_correr_contra_amigo_con_marca()
+	await _test_correr_contra_amigo_sin_marca()
+	await _test_correr_contra_amigo_error()
 
 	_server.stop()
 	Session.logout()
@@ -99,6 +120,9 @@ func _reply(peer: StreamPeerTCP, text: String) -> void:
 		reply_body = JSON.stringify(_requests_payload)
 	elif request_line.begins_with("GET") and request_line.find("/friends ") != -1:
 		reply_body = JSON.stringify(_friends_payload)
+	elif request_line.begins_with("GET") and request_line.find("/ghosts/") != -1:
+		status = _ghost_status
+		reply_body = _ghost_body
 	elif request_line.begins_with("POST") and request_line.find("/accept ") != -1:
 		reply_body = '{"id":"req-1","requesterId":"other","addresseeId":"me","status":"ACCEPTED","createdAt":"2026-01-01T00:00:00.000Z","respondedAt":"2026-01-01T00:00:01.000Z"}'
 	elif request_line.begins_with("POST") and request_line.find("/reject ") != -1:
@@ -217,6 +241,68 @@ func _test_anadir_amigo_rechazado() -> void:
 
 	screen.close_screen()
 	_add_friend_status = 201
+
+
+func _test_correr_contra_amigo_con_marca() -> void:
+	_friends_payload = [{"userId": "other", "displayName": "Ana", "friendsSince": "2026-01-01T00:00:01.000Z"}]
+	_ghost_status = 200
+	_ghost_body = '{"durationMs":45000,"snapshots":[{"t":0,"pos":{"x":0,"y":0,"z":0},"yaw":0.0},{"t":1000,"pos":{"x":5,"y":0,"z":0},"yaw":0.0}]}'
+
+	var screen := await _open_screen()
+
+	var race_button := _find_button(screen._friends_container, "Correr")
+	_check(race_button != null, true, "hay botón para correr contra el amigo")
+
+	race_button.pressed.emit()
+	await _settle()
+
+	_check(_director._online_target.get("userId"), "other", "arranca la carrera contra el amigo elegido")
+	_check(_director._online_target.get("durationMs"), 45000, "con la duración de su mejor marca")
+	_check(_director._ghost_target.visible, true, "y su fantasma se pone visible en pista")
+	_check(_director._online_threat, {}, "sin amenaza: aquí el rival lo elige el jugador, no hay un segundo")
+	_check(not is_instance_valid(screen), true, "la pantalla de amigos se cierra al arrancar")
+
+	_director.open_menu()
+
+
+func _test_correr_contra_amigo_sin_marca() -> void:
+	_friends_payload = [{"userId": "other", "displayName": "Ana", "friendsSince": "2026-01-01T00:00:01.000Z"}]
+	_ghost_status = 200
+	_ghost_body = "null"
+
+	var screen := await _open_screen()
+
+	var race_button := _find_button(screen._friends_container, "Correr")
+	race_button.pressed.emit()
+	await _settle()
+
+	_check(_director._online_target, {}, "sin marca del amigo, no arranca ninguna carrera")
+	_check(is_instance_valid(screen), true, "la pantalla de amigos sigue abierta")
+	_check(_find_label_containing(screen._friends_container, "todavía no tiene marca") != null, true,
+		"y avisa de que el amigo no tiene marca en este circuito")
+	_check(race_button.text, "Correr", "el botón vuelve a su texto normal")
+
+	screen.close_screen()
+
+
+func _test_correr_contra_amigo_error() -> void:
+	_friends_payload = [{"userId": "other", "displayName": "Ana", "friendsSince": "2026-01-01T00:00:01.000Z"}]
+	_ghost_status = 500
+	_ghost_body = '{"code":"INTERNAL","message":"error"}'
+
+	var screen := await _open_screen()
+
+	var race_button := _find_button(screen._friends_container, "Correr")
+	race_button.pressed.emit()
+	await _settle()
+
+	_check(_director._online_target, {}, "si falla la petición, tampoco arranca carrera")
+	_check(_find_label_containing(screen._friends_container, "no se pudo cargar su fantasma") != null, true,
+		"y avisa del fallo")
+
+	screen.close_screen()
+	_ghost_status = 200
+	_ghost_body = "null"
 
 
 # --- Utilidades ---------------------------------------------------------------
