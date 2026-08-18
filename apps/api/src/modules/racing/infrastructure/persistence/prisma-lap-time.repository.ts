@@ -82,6 +82,7 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
         ghostSnapshots: (data.ghostSnapshots ?? undefined) as
           | Prisma.InputJsonValue
           | undefined,
+        seasonId: data.seasonId ?? undefined,
       },
     });
     return toLapTimeDomain(row);
@@ -133,7 +134,16 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
   async leaderboard(
     trackId: string,
     limit: number,
+    seasonId?: string | null,
   ): Promise<LeaderboardEntry[]> {
+    // `null`/omitido = sin acotar (histórico completo, el comportamiento de
+    // siempre); un id concreto acota a esa temporada (TASK-227). No es
+    // "season_id IS NULL" — eso dejaría fuera justo los intentos de antes de
+    // que existieran las temporadas.
+    const seasonFilter = seasonId
+      ? Prisma.sql`AND season_id = ${seasonId}`
+      : Prisma.empty;
+
     const rows = await this.prisma.$queryRaw<LeaderboardRow[]>`
       SELECT
         b.user_id                                     AS userId,
@@ -146,12 +156,14 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
           WHERE x.track_id = b.track_id
             AND x.user_id  = b.user_id
             AND x.duration_ms = b.best
-            AND x.invalidated_at IS NULL)             AS achievedAt
+            AND x.invalidated_at IS NULL
+            ${seasonFilter})                          AS achievedAt
       FROM (
         SELECT track_id, user_id, MIN(duration_ms) AS best
           FROM racing_lap_time
          WHERE track_id = ${trackId}
            AND invalidated_at IS NULL
+           ${seasonFilter}
          GROUP BY track_id, user_id
       ) b
       JOIN user u ON u.id = b.user_id
@@ -175,14 +187,27 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
    * Posición del jugador contando JUGADORES por delante, no filas: si alguien
    * ha corrido cien veces sigue ocupando un solo puesto.
    */
-  async positionOf(trackId: string, userId: string): Promise<number | null> {
+  async positionOf(
+    trackId: string,
+    userId: string,
+    seasonId?: string | null,
+  ): Promise<number | null> {
     const best = await this.prisma.lapTime.aggregate({
-      where: { trackId, userId, invalidatedAt: null },
+      where: {
+        trackId,
+        userId,
+        invalidatedAt: null,
+        ...(seasonId ? { seasonId } : {}),
+      },
       _min: { durationMs: true },
     });
 
     const mine = best._min.durationMs;
     if (mine === null) return null;
+
+    const seasonFilter = seasonId
+      ? Prisma.sql`AND season_id = ${seasonId}`
+      : Prisma.empty;
 
     const rows = await this.prisma.$queryRaw<{ ahead: bigint }[]>`
       SELECT COUNT(*) AS ahead FROM (
@@ -190,6 +215,7 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
           FROM racing_lap_time
          WHERE track_id = ${trackId}
            AND invalidated_at IS NULL
+           ${seasonFilter}
          GROUP BY user_id
         HAVING best < ${mine}
       ) faster

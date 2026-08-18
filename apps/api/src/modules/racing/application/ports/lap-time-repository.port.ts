@@ -15,6 +15,9 @@ export interface CreateLapTimeData {
   clientVersion: string;
   /** Solo se persiste si el use-case decide que esta vuelta es la mejor marca del jugador (TASK-221). */
   ghostSnapshots?: GhostSnapshot[] | null;
+  /** La temporada abierta en el momento del intento, o null si no había
+   *  ninguna (TASK-227). Se fija al crear, nunca se recalcula. */
+  seasonId?: string | null;
 }
 
 export interface AdminListLapTimesOptions {
@@ -92,13 +95,25 @@ export interface LapTimeRepositoryPort {
   findLastAttemptAt(userId: string): Promise<Date | null>;
 
   /** Top del circuito entre tiempos VÁLIDOS: un jugador aparece una sola vez,
-   *  con su mejor marca. */
-  leaderboard(trackId: string, limit: number): Promise<LeaderboardEntry[]>;
+   *  con su mejor marca. `seasonId` acota a los intentos de esa temporada
+   *  (TASK-227); `null`/omitido = todo el histórico, sin acotar — el
+   *  comportamiento de siempre para cuando no hay temporada configurada. */
+  leaderboard(
+    trackId: string,
+    limit: number,
+    seasonId?: string | null,
+  ): Promise<LeaderboardEntry[]>;
 
   /** Posición de un jugador en ese mismo ranking, o null si no tiene tiempo
    *  válido. Se cuenta por MEJOR tiempo de cada jugador, no por número de
-   *  filas. */
-  positionOf(trackId: string, userId: string): Promise<number | null>;
+   *  filas. Mismo `seasonId` que `leaderboard` — tienen que acotar al mismo
+   *  conjunto o "tu posición" no correspondería al ranking que se está
+   *  mirando. */
+  positionOf(
+    trackId: string,
+    userId: string,
+    seasonId?: string | null,
+  ): Promise<number | null>;
 
   /** Los vecinos inmediatos de `durationMs` en el leaderboard del circuito,
    *  EXCLUYENDO a `userId` y limitado a quienes tienen fantasma grabado

@@ -9,6 +9,10 @@ import {
   type LapTimeRepositoryPort,
 } from '../ports/lap-time-repository.port';
 import {
+  SEASON_REPOSITORY,
+  type SeasonRepositoryPort,
+} from '../ports/season-repository.port';
+import {
   TRACK_REPOSITORY,
   type TrackRepositoryPort,
 } from '../ports/track-repository.port';
@@ -38,6 +42,7 @@ export class SubmitLapTimeUseCase {
   constructor(
     @Inject(TRACK_REPOSITORY) private readonly tracks: TrackRepositoryPort,
     @Inject(LAP_TIME_REPOSITORY) private readonly laps: LapTimeRepositoryPort,
+    @Inject(SEASON_REPOSITORY) private readonly seasons: SeasonRepositoryPort,
   ) {}
 
   async execute(input: SubmitLapTimeInput): Promise<SubmitLapTimeResult> {
@@ -45,10 +50,13 @@ export class SubmitLapTimeUseCase {
     if (track === null) throw new TrackNotFoundError(input.trackSlug);
 
     // La marca previa se lee ANTES de guardar: después ya no se puede saber si
-    // este intento la mejoró, porque él mismo pasaría a ser la mejor.
-    const [previousBest, previousAttemptAt] = await Promise.all([
+    // este intento la mejoró, porque él mismo pasaría a ser la mejor. Sin
+    // temporada configurada, `currentSeason` es null y el intento se guarda
+    // igual, solo que fuera de cualquier clasificación acotada (TASK-227).
+    const [previousBest, previousAttemptAt, currentSeason] = await Promise.all([
       this.laps.findPersonalBest(input.userId, track.id),
       this.laps.findLastAttemptAt(input.userId),
+      this.seasons.findCurrent(),
     ]);
 
     const validation = validateLap(
@@ -77,6 +85,7 @@ export class SubmitLapTimeUseCase {
       splitsMs: input.splitsMs,
       clientVersion: input.clientVersion,
       ghostSnapshots: isPersonalBest ? input.ghostSnapshots : undefined,
+      seasonId: currentSeason?.id ?? null,
     });
 
     return {
