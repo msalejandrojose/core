@@ -10,5 +10,6 @@ export function toPlayerCarLoadoutDomain(
     row.tiresPartId,
     row.wingPartId,
     row.chassisPartId,
+    row.skinId,
   );
 }

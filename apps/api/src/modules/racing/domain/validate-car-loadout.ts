@@ -1,14 +1,18 @@
 import { CarArchetype } from './entities/car-archetype.entity';
 import { CarPart, CarPartCategory } from './entities/car-part.entity';
+import { CarSkin } from './entities/car-skin.entity';
 
 // Selección YA resuelta a entidades (o null si el id no existe o el hueco
 // está vacío) — el use-case hace los `findById`, este validador solo mira
-// reglas de negocio puras sobre lo que le pasan.
+// reglas de negocio puras sobre lo que le pasan. La propiedad del skin
+// (`isUnlockedByDefault` / `PlayerCarSkin`) NO se comprueba aquí — necesita
+// I/O sobre el jugador, así que la resuelve el use-case antes de llegar.
 export interface CarLoadoutSelection {
   archetype: CarArchetype | null;
   tiresPart: CarPart | null;
   wingPart: CarPart | null;
   chassisPart: CarPart | null;
+  skin: CarSkin | null;
 }
 
 export type CarLoadoutValidationResult =
@@ -57,6 +61,12 @@ export function validateCarLoadoutSelection(
         { partId: part.id, expected: category, got: part.category },
       );
     }
+  }
+
+  if (selection.skin !== null && !selection.skin.isActive) {
+    return reject('el skin equipado no está activo', {
+      skinId: selection.skin.id,
+    });
   }
 
   return OK;

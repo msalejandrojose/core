@@ -247,6 +247,7 @@ model User {
   lapTimes                  LapTime[]
   carArchetypes             PlayerCarArchetype[]
   carParts                  PlayerCarPart[]
+  carSkins                  PlayerCarSkin[]
   carLoadout                PlayerCarLoadout?
   grandPrixAttempts         RacingGrandPrixAttempt[]
   onlineRaces               RacingOnlineRace[]
@@ -1523,19 +1524,71 @@ model PlayerCarPart {
   @@map("racing_player_car_part")
 }
 
+/// Catálogo de aspectos visuales del coche (TASK-229). Puramente cosmético:
+/// a diferencia de `CarArchetype`/`CarPart`, NO tiene `speedScale`/`grip` ni
+/// ningún otro eje de física — en cuanto un skin tocara rendimiento dejaría
+/// de ser cosmético y contaminaría las clasificaciones (eso sería la fase de
+/// mejoras del coche, discusión aparte). `modelPath` es la ruta al recurso
+/// del cliente Godot (reemplaza el modelo por defecto del arquetipo
+/// equipado, ver `apps/game/scripts/race/race_director.gd`).
+model CarSkin {
+  id   String @id @default(uuid()) @db.Char(36)
+  code String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  modelPath String @map("model_path") @db.VarChar(255)
+
+  /// Si es true, todos los jugadores lo tienen disponible sin necesidad de
+  /// una fila en `PlayerCarSkin` — es el caso de todos los skins mientras no
+  /// exista ningún sistema que los conceda (pagos, rachas...). Un skin
+  /// futuro con esto en false solo se puede equipar si el jugador tiene una
+  /// fila de propiedad.
+  isUnlockedByDefault Boolean @default(true) @map("is_unlocked_by_default")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  playerOwnerships PlayerCarSkin[]
+  loadouts         PlayerCarLoadout[]
+
+  @@index([isActive])
+  @@map("racing_car_skin")
+}
+
+/// Qué skins tiene desbloqueados cada jugador más allá de los que ya son
+/// gratis para todos (`CarSkin.isUnlockedByDefault`). Es el sitio donde un
+/// futuro sistema de recompensas o de pagos concede la propiedad de un skin
+/// exclusivo — hoy se concede a mano desde el backoffice
+/// (`AdminGrantCarSkinUseCase`), sin que exista todavía ese sistema.
+model PlayerCarSkin {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String   @map("user_id") @db.Char(36)
+  skinId     String   @map("skin_id") @db.Char(36)
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skin CarSkin @relation(fields: [skinId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skinId])
+  @@map("racing_player_car_skin")
+}
+
 /// Configuración de coche que un jugador tiene puesta AHORA MISMO. Una fila
 /// por jugador (no por circuito ni por intento): es una preferencia global,
 /// igual que la cilindrada o el sentido en `GameSettings`.
 ///
 /// Sin fila = configuración por defecto (el primer arquetipo del catálogo,
-/// sin piezas) — no hace falta backfill al desplegar esto ni al dar de alta
-/// un jugador nuevo, la fila se crea la primera vez que alguien cambia algo.
+/// sin piezas, sin skin) — no hace falta backfill al desplegar esto ni al
+/// dar de alta un jugador nuevo, la fila se crea la primera vez que alguien
+/// cambia algo.
 model PlayerCarLoadout {
   userId        String  @id @map("user_id") @db.Char(36)
   archetypeId   String  @map("archetype_id") @db.Char(36)
   tiresPartId   String? @map("tires_part_id") @db.Char(36)
   wingPartId    String? @map("wing_part_id") @db.Char(36)
   chassisPartId String? @map("chassis_part_id") @db.Char(36)
+  skinId        String? @map("skin_id") @db.Char(36)
 
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -1544,6 +1597,7 @@ model PlayerCarLoadout {
   tiresPart   CarPart?     @relation("LoadoutTires", fields: [tiresPartId], references: [id])
   wingPart    CarPart?     @relation("LoadoutWing", fields: [wingPartId], references: [id])
   chassisPart CarPart?     @relation("LoadoutChassis", fields: [chassisPartId], references: [id])
+  skin        CarSkin?     @relation(fields: [skinId], references: [id])
 
   @@map("racing_player_car_loadout")
 }

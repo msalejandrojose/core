@@ -24,10 +24,18 @@ export class CarLoadoutController {
   ) {}
 
   @Get('catalog')
-  @ApiOperation({ summary: 'Arquetipos y piezas disponibles' })
+  @ApiOperation({
+    summary: 'Arquetipos, piezas y skins disponibles',
+    description:
+      'Cada skin indica si el jugador que consulta lo tiene desbloqueado (owned).',
+  })
   @ApiOkResponse({ type: CarCatalogResponseDto })
-  async catalog(): Promise<CarCatalogResponseDto> {
-    return CarCatalogResponseDto.fromDomain(await this.listCatalog.execute());
+  async catalog(
+    @CurrentUser() current: AccessTokenPayload,
+  ): Promise<CarCatalogResponseDto> {
+    return CarCatalogResponseDto.fromDomain(
+      await this.listCatalog.execute(current.sub),
+    );
   }
 
   @Get('me')
@@ -60,6 +68,7 @@ export class CarLoadoutController {
       tiresPartId: dto.tiresPartId,
       wingPartId: dto.wingPartId,
       chassisPartId: dto.chassisPartId,
+      skinId: dto.skinId,
     });
     const result = await this.getLoadout.execute(current.sub);
     return PlayerCarLoadoutResponseDto.fromDomain(result);

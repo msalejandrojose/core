@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PlayerCarLoadout } from '../../domain/entities/player-car-loadout.entity';
 import { CarArchetypeNotFoundError } from '../../domain/errors/car-archetype-not-found.error';
 import { CarPartNotFoundError } from '../../domain/errors/car-part-not-found.error';
+import { CarSkinNotFoundError } from '../../domain/errors/car-skin-not-found.error';
+import { CarSkinNotOwnedError } from '../../domain/errors/car-skin-not-owned.error';
 import { InvalidCarLoadoutError } from '../../domain/errors/invalid-car-loadout.error';
 import { validateCarLoadoutSelection } from '../../domain/validate-car-loadout';
 import {
@@ -13,18 +15,28 @@ import {
   type CarPartRepositoryPort,
 } from '../ports/car-part-repository.port';
 import {
+  CAR_SKIN_REPOSITORY,
+  type CarSkinRepositoryPort,
+} from '../ports/car-skin-repository.port';
+import {
   PLAYER_CAR_LOADOUT_REPOSITORY,
   type PlayerCarLoadoutRepositoryPort,
 } from '../ports/player-car-loadout-repository.port';
+import {
+  PLAYER_CAR_SKIN_REPOSITORY,
+  type PlayerCarSkinRepositoryPort,
+} from '../ports/player-car-skin-repository.port';
 
-// `undefined` en un hueco de pieza = no lo toques (deja lo que hubiera).
-// `null` = vacíalo. `archetypeId` es siempre obligatorio: equipar es "esta es
-// la configuración completa que quiero", no un parche sobre el arquetipo.
+// `undefined` en un hueco de pieza o skin = no lo toques (deja lo que
+// hubiera). `null` = vacíalo. `archetypeId` es siempre obligatorio: equipar
+// es "esta es la configuración completa que quiero", no un parche sobre el
+// arquetipo.
 export interface SetPlayerCarLoadoutInput {
   archetypeId: string;
   tiresPartId?: string | null;
   wingPartId?: string | null;
   chassisPartId?: string | null;
+  skinId?: string | null;
 }
 
 @Injectable()
@@ -35,6 +47,9 @@ export class SetPlayerCarLoadoutUseCase {
     @Inject(CAR_ARCHETYPE_REPOSITORY)
     private readonly archetypes: CarArchetypeRepositoryPort,
     @Inject(CAR_PART_REPOSITORY) private readonly parts: CarPartRepositoryPort,
+    @Inject(CAR_SKIN_REPOSITORY) private readonly skins: CarSkinRepositoryPort,
+    @Inject(PLAYER_CAR_SKIN_REPOSITORY)
+    private readonly skinOwnerships: PlayerCarSkinRepositoryPort,
   ) {}
 
   async execute(
@@ -52,15 +67,18 @@ export class SetPlayerCarLoadoutUseCase {
       input.chassisPartId,
       existing?.chassisPartId,
     );
+    const skinId = this.resolveSlot(input.skinId, existing?.skinId);
 
-    const [archetype, tiresPart, wingPart, chassisPart] = await Promise.all([
-      this.archetypes.findById(input.archetypeId),
-      tiresPartId ? this.parts.findById(tiresPartId) : Promise.resolve(null),
-      wingPartId ? this.parts.findById(wingPartId) : Promise.resolve(null),
-      chassisPartId
-        ? this.parts.findById(chassisPartId)
-        : Promise.resolve(null),
-    ]);
+    const [archetype, tiresPart, wingPart, chassisPart, skin] =
+      await Promise.all([
+        this.archetypes.findById(input.archetypeId),
+        tiresPartId ? this.parts.findById(tiresPartId) : Promise.resolve(null),
+        wingPartId ? this.parts.findById(wingPartId) : Promise.resolve(null),
+        chassisPartId
+          ? this.parts.findById(chassisPartId)
+          : Promise.resolve(null),
+        skinId ? this.skins.findById(skinId) : Promise.resolve(null),
+      ]);
 
     // "No encontrado" y "hueco vacío" son cosas distintas aunque las dos
     // resuelvan a `null` — se separan aquí, antes de que lleguen al
@@ -73,12 +91,21 @@ export class SetPlayerCarLoadoutUseCase {
     if (chassisPartId && !chassisPart) {
       throw new CarPartNotFoundError(chassisPartId);
     }
+    if (skinId && !skin) throw new CarSkinNotFoundError(skinId);
+
+    // Propiedad: necesita I/O sobre el jugador, así que se comprueba aquí,
+    // antes del validador de dominio (que solo mira reglas puras).
+    if (skin && !skin.isUnlockedByDefault) {
+      const owns = await this.skinOwnerships.ownsSkin(userId, skin.id);
+      if (!owns) throw new CarSkinNotOwnedError(skin.id);
+    }
 
     const validation = validateCarLoadoutSelection({
       archetype,
       tiresPart,
       wingPart,
       chassisPart,
+      skin,
     });
     if (!validation.ok) {
       throw new InvalidCarLoadoutError(validation.reason, validation.details);
@@ -89,6 +116,7 @@ export class SetPlayerCarLoadoutUseCase {
       tiresPartId,
       wingPartId,
       chassisPartId,
+      skinId,
     });
   }
 

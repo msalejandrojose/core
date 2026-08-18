@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { PlayerCarLoadoutResult } from '../../../application/use-cases/get-player-car-loadout.use-case';
 import { CarArchetypeResponseDto } from './car-archetype.response.dto';
 import { CarPartResponseDto } from './car-part.response.dto';
+import { CarSkinResponseDto } from './car-skin.response.dto';
 
 export class CarStatsDto {
   @ApiProperty() speedScale!: number;
@@ -17,6 +18,12 @@ export class PlayerCarLoadoutResponseDto {
   wingPart!: CarPartResponseDto | null;
   @ApiProperty({ type: CarPartResponseDto, nullable: true })
   chassisPart!: CarPartResponseDto | null;
+  @ApiProperty({
+    type: CarSkinResponseDto,
+    nullable: true,
+    description: 'Null = usa el modelo por defecto del arquetipo.',
+  })
+  skin!: CarSkinResponseDto | null;
   @ApiProperty({
     type: CarStatsDto,
     description: 'Arquetipo + piezas ya combinados (ver computeCarStats).',
@@ -37,6 +44,7 @@ export class PlayerCarLoadoutResponseDto {
     dto.chassisPart = result.chassisPart
       ? CarPartResponseDto.fromDomain(result.chassisPart)
       : null;
+    dto.skin = result.skin ? CarSkinResponseDto.fromDomain(result.skin) : null;
     dto.stats = result.stats;
     return dto;
   }

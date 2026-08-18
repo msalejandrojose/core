@@ -51,6 +51,24 @@ interface PartSeed {
   grip: number;
 }
 
+interface SkinSeed {
+  code: string;
+  name: string;
+  modelPath: string;
+}
+
+// Puramente cosmético (TASK-229): sin speedScale/grip. `purple` reutiliza el
+// único color de camión del starter kit de Kenney que no está ya asignado a
+// un arquetipo (normal=yellow, f1=red, 4x4=green) — ver
+// apps/game/scripts/race/race_director.gd.
+const SKINS: readonly SkinSeed[] = [
+  {
+    code: 'purple',
+    name: 'Púrpura',
+    modelPath: 'res://models/vehicle-truck-purple.glb',
+  },
+];
+
 // Ninguna pieza es estrictamente mejor que otra en los dos ejes a la vez
 // (regla no negociable de TASK-263): todas suben uno bajando el otro.
 const PARTS: readonly PartSeed[] = [
@@ -140,8 +158,23 @@ async function main(): Promise<void> {
     );
   }
 
+  for (const skin of SKINS) {
+    const data = {
+      name: skin.name,
+      modelPath: skin.modelPath,
+      isUnlockedByDefault: true,
+      isActive: true,
+    };
+    await prisma.carSkin.upsert({
+      where: { code: skin.code },
+      create: { code: skin.code, ...data },
+      update: data,
+    });
+    console.log(`✓ skin      ${skin.code.padEnd(20)} ${skin.modelPath}`);
+  }
+
   console.log(
-    `\n${ARCHETYPES.length} arquetipos y ${PARTS.length} piezas sembrados.`,
+    `\n${ARCHETYPES.length} arquetipos, ${PARTS.length} piezas y ${SKINS.length} skins sembrados.`,
   );
   await app.close();
 }
