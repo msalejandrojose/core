@@ -26,6 +26,7 @@ config/icon="res://icon.png"
 
 VehicleInput="*res://scripts/input/vehicle_input.gd"
 RaceRecords="*res://scripts/state/race_records.gd"
+Achievements="*res://scripts/state/achievements.gd"
 GameSettings="*res://scripts/state/game_settings.gd"
 Api="*res://scripts/net/api_client.gd"
 Session="*res://scripts/state/session.gd"

@@ -40,6 +40,14 @@ func best_ghost(track_id: String) -> Array:
 	return _cfg.get_value(track_id, "best_ghost", [])
 
 
+## Cuántas marcas propias hay guardadas en total — una por cada combinación
+## de circuito/sentido/cilindrada/arquetipo con récord (TASK-276: es el
+## contador más barato de "el jugador progresa" que ya existe, sin distinguir
+## qué circuito es cada una).
+func recorded_count() -> int:
+	return _cfg.get_sections().size()
+
+
 ## Registra una vuelta. Devuelve true si ha batido el récord.
 func submit(track_id: String, duration_ms: int, splits_ms: Array, ghost_snapshots: Array = []) -> bool:
 	if duration_ms <= 0:
