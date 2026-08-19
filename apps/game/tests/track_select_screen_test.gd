@@ -59,6 +59,9 @@ func _ready() -> void:
 	await _test_la_tarjeta_del_servidor_carga_miniatura()
 	await _test_confirmar_aplica_la_seleccion_pendiente()
 	await _test_atras_no_aplica_nada()
+	await _test_cabecera_de_accesos_sueltos()
+	await _test_circuito_local_muestra_longitud_real()
+	await _test_circuito_del_servidor_no_inventa_longitud()
 
 	_server.stop()
 	Session.logout()
@@ -218,6 +221,43 @@ func _test_atras_no_aplica_nada() -> void:
 		"volver atrás no aplica la tarjeta que se había tocado")
 
 
+func _test_cabecera_de_accesos_sueltos() -> void:
+	var screen := await _open_screen()
+
+	for text in ["Ajustes", "Clasificaciones"]:
+		_check(_find_button(screen, text) != null, true, "hay acceso a \"%s\" en la cabecera" % text)
+	_check(is_instance_valid(screen._account_button), true, "y un botón de cuenta")
+
+	screen.close_screen()
+
+
+## La longitud del circuito local es un dato real (nº de celdas del
+## trazado × el tamaño de celda del `GridMap`), no un número inventado
+## para parecerse a la referencia.
+func _test_circuito_local_muestra_longitud_real() -> void:
+	var screen := await _open_screen()
+
+	var layout := TrackCatalog.by_id(TrackCatalog.DEFAULT_ID)
+	var expected_m := roundi(layout.path.size() * screen._CELL_SIZE_M)
+
+	var label := _find_label_containing(screen, "Longitud: %d m" % expected_m)
+	_check(label != null, true, "el circuito local muestra su longitud real, calculada del trazado")
+
+	screen.close_screen()
+
+
+func _test_circuito_del_servidor_no_inventa_longitud() -> void:
+	var screen := await _open_screen()
+
+	var name_label := _find_label(screen, "Circuito del Puerto")
+	_check(name_label != null, true, "encuentra la tarjeta del servidor")
+	if name_label != null:
+		var has_length := _find_label_containing(name_label.get_parent(), "Longitud") != null
+		_check(has_length, false, "sin trazado en el listado del servidor, no se inventa una longitud")
+
+	screen.close_screen()
+
+
 # --- Utilidades ---------------------------------------------------------------
 
 func _open_screen() -> Node:
@@ -254,6 +294,16 @@ func _find_label(root: Node, text: String) -> Label:
 		return root
 	for child in root.get_children():
 		var found := _find_label(child, text)
+		if found != null:
+			return found
+	return null
+
+
+func _find_label_containing(root: Node, text: String) -> Label:
+	if root is Label and root.text.find(text) != -1:
+		return root
+	for child in root.get_children():
+		var found := _find_label_containing(child, text)
 		if found != null:
 			return found
 	return null

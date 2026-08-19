@@ -221,7 +221,7 @@ func _build_modes_panel() -> Control:
 ## mismo: es donde más sentido tiene ("tu coche, en el taller"), y ya no
 ## hay pestaña que lo lleve.
 func _build_preview_panel() -> Control:
-	var card := UiTheme.card_panel(Color("caa06a"))
+	var card := UiTheme.card_panel()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
@@ -234,6 +234,10 @@ func _build_preview_panel() -> Control:
 	column.add_child(viewport_holder)
 
 	_preview = VehiclePreview.new()
+	# Suelo/pared/banco con mallas de Godot, no una tarjeta de color plano:
+	# el taller tiene que verse dentro del propio visor 3D, girando e
+	# iluminándose con el coche.
+	_preview.add_workshop_backdrop()
 	viewport_holder.add_child(_preview)
 
 	var workshop_button := UiTheme.pill_button(

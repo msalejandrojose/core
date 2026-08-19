@@ -26,6 +26,13 @@ const _OPTION_BG := Color("e9e4d9")
 ## así se distinguen de la tarjeta grande que las contiene a todas.
 const _TILE_BG := Color("f4f1ea")
 
+## Metros por celda del `GridMap` de `main.tscn` (`cell_size`) — de ahí se
+## deriva la longitud real de un circuito local: nº de celdas del trazado
+## por este valor. Los circuitos del backoffice no traen el trazado en el
+## listado, así que para esos no hay longitud que mostrar (mejor omitirla
+## que inventar un número).
+const _CELL_SIZE_M := 9.99
+
 signal closed()
 ## Solo se emite si se confirma un circuito distinto al que había — quien
 ## abre esta pantalla lo usa para refrescar su resumen sin tener que sondear
@@ -39,6 +46,7 @@ var _card_buttons: Array[Button] = []
 var _card_panels: Array[PanelContainer] = []
 var _card_ids: Array[String] = []
 var _card_is_server: Array[bool] = []
+var _account_button: Button
 
 var _pending_id: String
 var _pending_is_server: bool
@@ -69,7 +77,7 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", 16)
 	margin.add_child(column)
 
-	column.add_child(_title("Selección de circuito"))
+	column.add_child(_build_header())
 
 	var grid_card := UiTheme.card_panel()
 	grid_card.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -87,7 +95,7 @@ func _build() -> void:
 
 	for id in TrackCatalog.ids():
 		var layout := TrackCatalog.by_id(id)
-		_add_card(layout.name, id, false, layout.checkpoints + 1)
+		_add_card(layout.name, id, false, layout.checkpoints + 1, "", layout.path.size() * _CELL_SIZE_M)
 	_sync_selection()
 
 	# Los del servidor (creados en el backoffice) se cargan aparte y se van
@@ -147,7 +155,7 @@ func _load_server_tracks() -> void:
 		# defecto también), no como cadena vacía — hay que cubrir los dos.
 		var image_url_value: Variant = item.get("imageUrl")
 		var image_url: String = image_url_value if image_url_value is String else ""
-		_add_card(str(item.get("name", slug)), slug, true, int(item.get("sectorCount", 1)), image_url)
+		_add_card(str(item.get("name", slug)), slug, true, int(item.get("sectorCount", 1)), image_url, -1.0)
 
 	_sync_selection()
 
@@ -156,7 +164,14 @@ func _load_server_tracks() -> void:
 ## `Api.base_url` (ver `RacingApi.fetch_image_texture`). Vacío = sin
 ## miniatura, que es siempre el caso de los 4 circuitos del catálogo local
 ## (esa tabla no tiene imagen, solo los circuitos nacidos en el backoffice).
-func _add_card(label: String, id: String, is_server: bool, sector_count: int, image_url: String = "") -> void:
+func _add_card(
+	label: String,
+	id: String,
+	is_server: bool,
+	sector_count: int,
+	image_url: String = "",
+	length_m: float = -1.0,
+) -> void:
 	if _card_ids.has(id):
 		return
 
@@ -183,6 +198,16 @@ func _add_card(label: String, id: String, is_server: bool, sector_count: int, im
 	name_label.add_theme_font_size_override("font_size", UiTheme.FONT_MD)
 	name_label.add_theme_color_override("font_color", UiTheme.CARD_INK)
 	card.add_child(name_label)
+
+	# `length_m < 0` = sin dato (circuitos del backoffice, que no traen el
+	# trazado en el listado) — mejor omitirlo que enseñar un número
+	# inventado.
+	if length_m >= 0.0:
+		var length_label := Label.new()
+		length_label.text = "Longitud: %d m" % roundi(length_m)
+		length_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+		length_label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
+		card.add_child(length_label)
 
 	var sectors_label := Label.new()
 	sectors_label.text = "%d sectores" % sector_count
@@ -252,3 +277,57 @@ func _title(text: String) -> Label:
 	label.add_theme_font_size_override("font_size", UiTheme.FONT_XL)
 	label.add_theme_color_override("font_color", UiTheme.BONE)
 	return label
+
+
+## Título a la izquierda, accesos sueltos a la derecha — mismo lenguaje
+## que la cabecera del menú principal, sin "Amigos": esta es una pantalla
+## de segundo nivel, no el hub.
+func _build_header() -> Control:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 16)
+
+	header.add_child(_title("Selección de circuito"))
+
+	var push := Control.new()
+	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(push)
+
+	var bar := HBoxContainer.new()
+	bar.add_theme_constant_override("separation", 4)
+	header.add_child(bar)
+
+	bar.add_child(_icon_button("Ajustes", func() -> void:
+		add_child(load("res://scenes/ui/settings-screen.tscn").instantiate())))
+	bar.add_child(_icon_button("Clasificaciones", func() -> void:
+		add_child(load("res://scenes/ui/leaderboard-screen.tscn").instantiate())))
+
+	_account_button = _icon_button("Salir", _open_account)
+	bar.add_child(_account_button)
+	_refresh_account()
+
+	return header
+
+
+## Entrar no es obligatorio para jugar — mismo criterio y mismo código que
+## en `main_menu.gd`, duplicado a propósito: cada pantalla suelta ya
+## repite sus propias `_label`/`_heading`, este botón no es distinto.
+func _open_account() -> void:
+	if Session.is_logged_in():
+		Session.logout()
+		_refresh_account()
+		return
+
+	var screen: CanvasLayer = load("res://scenes/ui/login-screen.tscn").instantiate()
+	screen.closed.connect(_refresh_account)
+	add_child(screen)
+
+
+func _refresh_account() -> void:
+	if is_instance_valid(_account_button):
+		_account_button.text = "Salir" if Session.is_logged_in() else "Entrar"
+
+
+func _icon_button(text: String, on_pressed: Callable) -> Button:
+	var button := UiTheme.pill_button(text, UiTheme.STEEL, Color.WHITE, Vector2(160, 72), UiTheme.FONT_XS)
+	button.pressed.connect(on_pressed)
+	return button

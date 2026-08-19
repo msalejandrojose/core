@@ -72,3 +72,54 @@ func show_archetype(archetype_code: String) -> void:
 
 func has_model() -> bool:
 	return _model != null
+
+
+## Suelo + pared + banco de taller alrededor del coche, con mallas
+## primitivas (`BoxMesh`) y `StandardMaterial3D` — nada de imágenes ni
+## modelos nuevos, gráficos de Godot tal cual pide la referencia. Opt-in:
+## el taller de verdad (`workshop_screen.gd`) sigue con el fondo
+## transparente de siempre, solo el menú principal lo pide (TASK "fondo de
+## taller en el menú principal").
+func add_workshop_backdrop() -> void:
+	_viewport.transparent_bg = false
+
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("cbb896")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("d8cdb8")
+	env.ambient_light_energy = 0.7
+
+	var world_env := WorldEnvironment.new()
+	world_env.environment = env
+	_viewport.add_child(world_env)
+
+	var floor_instance := MeshInstance3D.new()
+	var floor_mesh := BoxMesh.new()
+	floor_mesh.size = Vector3(12, 0.2, 12)
+	floor_instance.mesh = floor_mesh
+	floor_instance.position = Vector3(0, -0.1, 0)
+	floor_instance.material_override = _flat_material(Color("8a8378"))
+	_viewport.add_child(floor_instance)
+
+	var wall := MeshInstance3D.new()
+	var wall_mesh := BoxMesh.new()
+	wall_mesh.size = Vector3(12, 6, 0.3)
+	wall.mesh = wall_mesh
+	wall.position = Vector3(0, 2.9, -3.5)
+	wall.material_override = _flat_material(Color("c9a876"))
+	_viewport.add_child(wall)
+
+	var bench := MeshInstance3D.new()
+	var bench_mesh := BoxMesh.new()
+	bench_mesh.size = Vector3(1.6, 0.9, 0.6)
+	bench.mesh = bench_mesh
+	bench.position = Vector3(-2.6, 0.45, -1.6)
+	bench.material_override = _flat_material(Color("5b4636"))
+	_viewport.add_child(bench)
+
+
+func _flat_material(color: Color) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	return material
