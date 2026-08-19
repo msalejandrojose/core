@@ -27,9 +27,9 @@ var _best_label: Label
 var _delta_label: Label
 ## Solo visible durante un contrarreloj de 3 vueltas (TASK-312): "Vuelta 2/3".
 var _lap_counter_label: Label
-var _restart_button: Button
-var _settings_button: Button
-var _menu_button: Button
+## Único botón que queda de los tres sueltos de antes (TASK-259): abre
+## `PauseMenu`, que es quien de verdad reinicia/abre ajustes/vuelve al menú.
+var _pause_button: Button
 var _delta_left: float = 0.0
 
 var _lights_on: int = 0
@@ -111,43 +111,25 @@ func _build() -> void:
 	_delta_label.position = safe + Vector2(48, 176)
 	add_child(_delta_label)
 
-	# 112 px de alto: el tamaño táctil de UiTheme, arriba a la derecha, lejos
-	# de acelerador y volante.
-	_restart_button = UiTheme.make_button("Reiniciar", Vector2(240, 112), UiTheme.FONT_MD)
-	_restart_button.anchor_left = 1.0
-	_restart_button.anchor_right = 1.0
-	_restart_button.offset_left = -288
-	_restart_button.offset_top = 40
-	_restart_button.offset_right = -48
-	_restart_button.offset_bottom = 152
-	_restart_button.pressed.connect(_director.restart)
-	add_child(_restart_button)
-
-	# Las licencias viven dentro de Ajustes, que es su sitio según el SPEC.
-	_settings_button = UiTheme.make_button("Ajustes", Vector2(200, 88), UiTheme.FONT_SM)
-	_settings_button.anchor_left = 1.0
-	_settings_button.anchor_right = 1.0
-	_settings_button.offset_left = -248
-	_settings_button.offset_top = 168
-	_settings_button.offset_right = -48
-	_settings_button.offset_bottom = 256
-	_settings_button.pressed.connect(open_settings)
-	add_child(_settings_button)
-
-	# Volver a elegir circuito sin salir de la app.
-	_menu_button = UiTheme.make_button("Menú", Vector2(200, 88), UiTheme.FONT_SM)
-	_menu_button.anchor_left = 1.0
-	_menu_button.anchor_right = 1.0
-	_menu_button.offset_left = -248
-	_menu_button.offset_top = 272
-	_menu_button.offset_right = -48
-	_menu_button.offset_bottom = 360
-	_menu_button.pressed.connect(_director.open_menu)
-	add_child(_menu_button)
+	# 112 px: el tamaño táctil de UiTheme, arriba a la derecha, lejos de
+	# acelerador y volante. Antes había tres botones sueltos aquí mismo
+	# (Reiniciar/Ajustes/Menú) — TASK-259 los formaliza en un menú de pausa
+	# de verdad, con el coche y el crono congelados mientras está abierto.
+	_pause_button = UiTheme.make_button("⏸", Vector2(112, 112), UiTheme.FONT_LG)
+	_pause_button.anchor_left = 1.0
+	_pause_button.anchor_right = 1.0
+	_pause_button.offset_left = -160
+	_pause_button.offset_top = 40
+	_pause_button.offset_right = -48
+	_pause_button.offset_bottom = 152
+	_pause_button.pressed.connect(_open_pause_menu)
+	add_child(_pause_button)
 
 
-func open_settings() -> void:
-	add_child(load("res://scenes/ui/settings-screen.tscn").instantiate())
+func _open_pause_menu() -> void:
+	var menu: PauseMenu = load("res://scenes/ui/pause-menu.tscn").instantiate()
+	add_child(menu)
+	menu.open(_director, _timer)
 
 
 ## Resumen al completar una vuelta en solitario (TASK-260). Vive aquí y no en
