@@ -26,9 +26,16 @@ var _pending: Array = []  # cada uno: {"peer": StreamPeerTCP, "buffer": String}
 ## puerto` es un circuito de verdad nacido en el backoffice — tiene que
 ## aparecer. La clave del array es "data", la misma forma que
 ## `CursorPaginatedResponseDto` (`apps/api/.../cursor-paginated-response.dto.ts`).
+## `kenney-01-100cc-normal` es la variante de "portada" de Kenney
+## (`_cover_slug`) — con `imageUrl`, para probar que esa imagen acaba en el
+## `TextureRect` de la tarjeta LOCAL ya montada, no en una tarjeta nueva.
 var _tracks_payload := {
 	"data": [
 		{"slug": "kenney-01-50cc-normal", "name": "Kenney 50cc", "sectorCount": 4},
+		{
+			"slug": "kenney-01-100cc-normal", "name": "Kenney 100cc", "sectorCount": 4,
+			"imageUrl": "/files/view?token=test-token",
+		},
 		{
 			"slug": "circuito-del-puerto", "name": "Circuito del Puerto", "sectorCount": 3,
 			"imageUrl": "/files/view?token=test-token",
@@ -59,6 +66,8 @@ func _ready() -> void:
 	await _test_la_tarjeta_del_servidor_carga_miniatura()
 	await _test_confirmar_aplica_la_seleccion_pendiente()
 	await _test_atras_no_aplica_nada()
+	await _test_circuito_local_recibe_su_imagen_de_portada()
+	await _test_otro_circuito_local_sin_portada_subida_se_queda_con_el_color()
 	await _test_cabecera_de_accesos_sueltos()
 	await _test_circuito_local_muestra_longitud_real()
 	await _test_circuito_del_servidor_no_inventa_longitud()
@@ -146,6 +155,8 @@ func _test_lista_circuitos_del_servidor_sin_duplicar_los_locales() -> void:
 		"el circuito del servidor aparece en la rejilla")
 	_check(_find_label(screen, "Kenney 50cc") == null, true,
 		"la variante que ya representa a un circuito local no se duplica")
+	_check(_find_label(screen, "Kenney 100cc") == null, true,
+		"tampoco la variante de portada (100cc/normal): su imagen se aplica a la tarjeta local, no crea una nueva")
 
 	screen.close_screen()
 	await get_tree().process_frame
@@ -221,10 +232,39 @@ func _test_atras_no_aplica_nada() -> void:
 		"volver atrás no aplica la tarjeta que se había tocado")
 
 
+## La imagen subida en el backoffice a la variante de "portada" de Kenney
+## (100cc/normal) tiene que acabar en el `TextureRect` de SU tarjeta local
+## — no crear una tarjeta aparte, y no confundirse con la de otro circuito.
+func _test_circuito_local_recibe_su_imagen_de_portada() -> void:
+	var screen := await _open_screen()
+	await _settle()  # la descarga de la imagen es su propia petición HTTP
+
+	var kenney_id := TrackCatalog.DEFAULT_ID
+	var kenney_thumbnail: TextureRect = screen._cover_thumbnails.get(kenney_id)
+	_check(kenney_thumbnail != null, true, "la tarjeta de Kenney tiene un TextureRect de portada")
+	_check(kenney_thumbnail != null and kenney_thumbnail.texture != null, true,
+		"y le llega la imagen subida en el backoffice a su variante de portada")
+
+	screen.close_screen()
+
+
+func _test_otro_circuito_local_sin_portada_subida_se_queda_con_el_color() -> void:
+	var screen := await _open_screen()
+	await _settle()
+
+	var other_id: String = TrackCatalog.ids()[1]
+	var other_thumbnail: TextureRect = screen._cover_thumbnails.get(other_id)
+	_check(other_thumbnail != null, true, "también tiene su TextureRect (con el color liso detrás)")
+	_check(other_thumbnail != null and other_thumbnail.texture == null, true,
+		"pero sin nadie que haya subido nada a su variante de portada, se queda sin textura")
+
+	screen.close_screen()
+
+
 func _test_cabecera_de_accesos_sueltos() -> void:
 	var screen := await _open_screen()
 
-	for text in ["Ajustes", "Clasificaciones"]:
+	for text in ["⚙ Ajustes", "🏆 Clasificaciones"]:
 		_check(_find_button(screen, text) != null, true, "hay acceso a \"%s\" en la cabecera" % text)
 	_check(is_instance_valid(screen._account_button), true, "y un botón de cuenta")
 

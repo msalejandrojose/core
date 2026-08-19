@@ -97,18 +97,18 @@ func _test_sin_control_de_sentido() -> void:
 
 
 func _test_cabecera_siempre_visible() -> void:
-	for text in ["Ajustes", "Amigos", "Clasificaciones"]:
+	for text in ["⚙ Ajustes", "👥 Amigos", "🏆 Clasificaciones"]:
 		_check(_find_button(_menu, text) != null, true, "la cabecera tiene un acceso a \"%s\"" % text)
 
 	# El botón de cuenta alterna Entrar/Salir según la sesión — sin cuenta
 	# (el estado por defecto de `TestEnv.reset()`) el texto es "Entrar".
 	_check(is_instance_valid(_menu._account_button), true, "y un botón de cuenta")
-	_check(_menu._account_button.text, "Entrar", "que sin sesión dice \"Entrar\"")
+	_check(_menu._account_button.text, "🚪 Entrar", "que sin sesión dice \"Entrar\"")
 
 
 func _test_boton_taller_abre_el_taller() -> void:
 	var before := _menu.get_child_count()
-	var button := _find_button(_menu, "Ir al taller")
+	var button := _find_button(_menu, "🔧 Ir al taller")
 	_check(button != null, true, "hay botón para ir al taller junto al coche")
 
 	button.pressed.emit()

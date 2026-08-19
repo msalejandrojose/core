@@ -71,6 +71,10 @@ var _preview: VehiclePreview
 var _track_summary_label: Label
 var _track_cards: Array[PanelContainer] = []
 var _track_card_ids: Array[String] = []
+## Id de circuito local → `TextureRect` de su tarjeta rápida — mismo
+## mecanismo que `track_select_screen.gd` para la imagen de portada subida
+## en el backoffice.
+var _cover_thumbnails: Dictionary = {}
 var _engine_buttons: Array[Button] = []
 var _best_label: Label
 var _start_button: Button
@@ -140,6 +144,7 @@ func _build() -> void:
 	_refresh_preview()
 
 	_sync()
+	_load_track_covers()
 
 
 ## Título a la izquierda, barra de accesos sueltos a la derecha (Ajustes /
@@ -171,14 +176,14 @@ func _build_header() -> Control:
 	bar.add_theme_constant_override("separation", 4)
 	header.add_child(bar)
 
-	bar.add_child(_icon_button("Ajustes", func() -> void:
+	bar.add_child(_icon_button("⚙ Ajustes", func() -> void:
 		add_child(load("res://scenes/ui/settings-screen.tscn").instantiate())))
-	bar.add_child(_icon_button("Amigos", func() -> void:
+	bar.add_child(_icon_button("👥 Amigos", func() -> void:
 		add_child(load("res://scenes/ui/friends-screen.tscn").instantiate())))
-	bar.add_child(_icon_button("Clasificaciones", func() -> void:
+	bar.add_child(_icon_button("🏆 Clasificaciones", func() -> void:
 		add_child(load("res://scenes/ui/leaderboard-screen.tscn").instantiate())))
 
-	_account_button = _icon_button("Salir", _open_account)
+	_account_button = _icon_button("🚪 Salir", _open_account)
 	bar.add_child(_account_button)
 
 	return header
@@ -241,7 +246,7 @@ func _build_preview_panel() -> Control:
 	viewport_holder.add_child(_preview)
 
 	var workshop_button := UiTheme.pill_button(
-		"Ir al taller", UiTheme.STEEL, Color.WHITE, Vector2(0, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
+		"🔧 Ir al taller", UiTheme.STEEL, Color.WHITE, Vector2(0, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
 	workshop_button.pressed.connect(func() -> void:
 		add_child(load("res://scenes/ui/workshop-screen.tscn").instantiate()))
 	column.add_child(workshop_button)
@@ -355,10 +360,26 @@ func _track_quick_card(id: String, label: String, color: Color) -> Control:
 	inner.add_theme_constant_override("separation", 6)
 	panel.add_child(inner)
 
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(0, 64)
+	inner.add_child(holder)
+
 	var swatch := ColorRect.new()
 	swatch.color = color
-	swatch.custom_minimum_size = Vector2(0, 64)
-	inner.add_child(swatch)
+	swatch.set_anchors_preset(Control.PRESET_FULL_RECT)
+	holder.add_child(swatch)
+
+	# Encima del color liso: en cuanto `_load_track_covers()` encuentre la
+	# variante de "portada" de este circuito con imagen subida en el
+	# backoffice, la textura tapa el color (ver comentario en
+	# `track_select_screen.gd`, mismo mecanismo).
+	var thumbnail := TextureRect.new()
+	thumbnail.set_anchors_preset(Control.PRESET_FULL_RECT)
+	thumbnail.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	thumbnail.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	thumbnail.clip_contents = true
+	holder.add_child(thumbnail)
+	_cover_thumbnails[id] = thumbnail
 
 	var name_label := Label.new()
 	name_label.text = label
@@ -379,6 +400,37 @@ func _track_quick_card(id: String, label: String, color: Color) -> Control:
 func _pick_track(id: String) -> void:
 	GameSettings.set_track_id(id, false)
 	_sync()
+
+
+## Cada circuito local no tiene una fila propia en la base de datos — son
+## 18 por circuito (cilindrada × sentido × arquetipo, ver `seed-racing.ts`),
+## así que la imagen subida en el backoffice se busca en la variante de
+## "portada" (100cc/normal/sin invertir) de cada uno. Sin red, o sin nadie
+## que haya subido nada todavía, las tarjetas se quedan con su color liso —
+## no es un error, es el estado normal hasta que un admin suba las fotos.
+func _load_track_covers() -> void:
+	var response = await RacingApi.tracks(100)
+	if not response.ok or not (response.data is Dictionary):
+		return
+
+	for item in response.data.get("data", []):
+		var slug: String = str(item.get("slug", ""))
+		var image_url_value: Variant = item.get("imageUrl")
+		var image_url: String = image_url_value if image_url_value is String else ""
+		if image_url == "":
+			continue
+
+		for id in _track_card_ids:
+			if slug == _cover_slug(id) and _cover_thumbnails.has(id):
+				var texture := await RacingApi.fetch_image_texture(image_url)
+				if is_instance_valid(_cover_thumbnails[id]) and texture != null:
+					_cover_thumbnails[id].texture = texture
+				break
+
+
+## Mismo criterio que `track_select_screen.gd` — ver el comentario ahí.
+func _cover_slug(local_id: String) -> String:
+	return "%s-100cc-normal" % local_id
 
 
 func _open_track_select() -> void:
@@ -489,10 +541,10 @@ func _refresh_account() -> void:
 
 	if Session.is_logged_in():
 		_account_subtitle.text = "Conectado como %s — tus tiempos se suben." % Session.email
-		_account_button.text = "Salir"
+		_account_button.text = "🚪 Salir"
 	else:
 		_account_subtitle.text = "Juegas sin cuenta. Tus tiempos se guardan aquí; con cuenta salen además en la clasificación."
-		_account_button.text = "Entrar"
+		_account_button.text = "🚪 Entrar"
 
 	_sync_start_buttons()
 
