@@ -31,12 +31,24 @@ func submit_lap(track_key: String, duration_ms: int, splits_ms: Array, ghost_sna
 	return await Api.post_json("/racing/tracks/%s/lap-times" % track_key, body)
 
 
-func leaderboard(track_key: String, limit: int = 20):
-	return await Api.get_json("/racing/tracks/%s/leaderboard?limit=%d" % [track_key, limit])
+## `season_id` vacío = la temporada abierta ahora mismo (o sin acotar si no
+## hay ninguna configurada). Con un id concreto, el ranking de esa temporada
+## en particular — pasada o actual (TASK-227/228).
+func leaderboard(track_key: String, limit: int = 20, season_id: String = ""):
+	var query := "?limit=%d" % limit
+	if not season_id.is_empty():
+		query += "&seasonId=%s" % season_id.uri_encode()
+	return await Api.get_json("/racing/tracks/%s/leaderboard%s" % [track_key, query])
 
 
 func personal_best(track_key: String):
 	return await Api.get_json("/racing/me/best/%s" % track_key)
+
+
+## La temporada abierta ahora mismo (TASK-227/228). `data` es `null` — no un
+## error — si todavía no se ha creado ninguna.
+func current_season():
+	return await Api.get_json("/racing/seasons/current")
 
 
 func tracks(limit: int = 20):

@@ -79,6 +79,10 @@ func _ready() -> void:
 	# taller, se nota aquí sin tener que reabrir el menú.
 	CarLoadout.changed.connect(_refresh_preview)
 
+	# Una vez por sesión basta (TASK-228): la temporada rota cada hora en el
+	# servidor como mucho, no varias veces mientras el menú sigue montado.
+	SeasonProgress.check(GameSettings.track_key())
+
 
 ## El director abre el menú desde su propio `_ready`, que corre ANTES que el de
 ## este nodo porque está antes en la escena. Así que la construcción tiene que
