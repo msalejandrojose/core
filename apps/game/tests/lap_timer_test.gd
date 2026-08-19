@@ -22,9 +22,14 @@ func _ready() -> void:
 	_test_vueltas_encadenadas_sin_perder_tiempo()
 	_test_abort_descarta_la_vuelta()
 	_test_sin_arrancar_no_registra_nada()
+	_test_pause_congela_elapsed_ms()
+	_test_resume_no_salta_el_tiempo_pausado()
+	_test_pause_sin_vuelta_en_marcha_no_hace_nada()
+	_test_pause_dos_veces_seguidas_no_desplaza_nada()
+	_test_abort_limpia_la_pausa()
 
 	if _failures == 0:
-		print("\nOK — 7/7")
+		print("\nOK — 12/12")
 		get_tree().quit(0)
 	else:
 		print("\nFALLOS: %d" % _failures)
@@ -125,6 +130,63 @@ func _test_sin_arrancar_no_registra_nada() -> void:
 	var t := _make()
 	_check(t.cross_checkpoint(0), false, "sin arrancar, checkpoint no cuenta")
 	_check(t.cross_finish(), false, "sin arrancar, meta no cuenta")
+	_free(t)
+
+
+func _test_pause_congela_elapsed_ms() -> void:
+	var t := _make()
+	t.start()
+	_now += 5000
+	t._process(0.0)
+	_check_eq(t.elapsed_ms, 5000, "antes de pausar, elapsed_ms avanza")
+
+	t.pause()
+	_now += 3000
+	t._process(0.0)
+	_check_eq(t.elapsed_ms, 5000, "pausado, elapsed_ms no avanza aunque pase tiempo")
+	_free(t)
+
+
+func _test_resume_no_salta_el_tiempo_pausado() -> void:
+	var t := _make()
+	t.start()
+	_now += 5000
+	t._process(0.0)
+
+	t.pause()
+	_now += 10000  # el jugador tarda 10s en el menú de pausa
+	t.resume()
+	t._process(0.0)
+
+	_check_eq(t.elapsed_ms, 5000, "al reanudar, el tiempo pasado en pausa no cuenta")
+	_free(t)
+
+
+func _test_pause_sin_vuelta_en_marcha_no_hace_nada() -> void:
+	var t := _make()
+	t.pause()
+	_check(t._paused, false, "sin vuelta en marcha, pause() no hace nada")
+	_free(t)
+
+
+func _test_pause_dos_veces_seguidas_no_desplaza_nada() -> void:
+	var t := _make()
+	t.start()
+	_now += 2000
+	t.pause()
+	var first_paused_at: int = t._paused_at_ms
+	_now += 1000
+	t.pause()
+	_check_eq(t._paused_at_ms, first_paused_at, "pausar ya pausado no reinicia el punto de pausa")
+	_free(t)
+
+
+func _test_abort_limpia_la_pausa() -> void:
+	var t := _make()
+	t.start()
+	t.pause()
+	t.abort()
+	_check(t._paused, false, "abort limpia el estado de pausa")
 	_free(t)
 
 

@@ -40,6 +40,11 @@ var _start_ms: int = 0
 var _splits: Array[int] = []
 var _next_checkpoint: int = 0
 
+## Pausa del menú de pausa (TASK-259), no de una vuelta descartada — ver
+## `pause()`.
+var _paused: bool = false
+var _paused_at_ms: int = 0
+
 
 func _ready() -> void:
 	rescan()
@@ -74,6 +79,8 @@ func set_reversed(reversed: bool) -> void:
 
 
 func _process(_delta: float) -> void:
+	if _paused:
+		return
 	if running:
 		elapsed_ms = clock.call() - _start_ms
 	elif auto_start_on_throttle and absf(VehicleInput.throttle) > 0.1:
@@ -86,6 +93,26 @@ func start() -> void:
 	_begin_at(clock.call())
 
 
+## Congela el crono donde está sin descartar la vuelta (TASK-259, menú de
+## pausa) — a diferencia de `abort()`. `clock` es reloj de PARED
+## (`Time.get_ticks_msec` por defecto): sin desplazar `_start_ms` al
+## reanudar, `elapsed_ms` pegaría un salto hacia delante del tiempo exacto
+## que ha durado la pausa. Sin efecto si no hay vuelta en marcha o ya está
+## pausado — abrir/cerrar el menú dos veces seguidas no debe desplazar nada.
+func pause() -> void:
+	if not running or _paused:
+		return
+	_paused = true
+	_paused_at_ms = clock.call()
+
+
+func resume() -> void:
+	if not _paused:
+		return
+	_paused = false
+	_start_ms += clock.call() - _paused_at_ms
+
+
 ## Descarta la vuelta en curso y deja el crono parado. Lo usa el reinicio
 ## rápido, que además recoloca el coche.
 func abort() -> void:
@@ -93,6 +120,7 @@ func abort() -> void:
 	elapsed_ms = 0
 	_splits.clear()
 	_next_checkpoint = 0
+	_paused = false
 
 
 ## Devuelve true si el cruce ha contado.
