@@ -43,6 +43,7 @@ import { AdminUpdateGrandPrixUseCase } from './application/use-cases/admin-updat
 import { AdminUpdateTerrainEffectUseCase } from './application/use-cases/admin-update-terrain-effect.use-case';
 import { AdminUpdateTrackUseCase } from './application/use-cases/admin-update-track.use-case';
 import { GetCurrentSeasonUseCase } from './application/use-cases/get-current-season.use-case';
+import { GetFriendsLeaderboardUseCase } from './application/use-cases/get-friends-leaderboard.use-case';
 import { GetGrandPrixLeaderboardUseCase } from './application/use-cases/get-grand-prix-leaderboard.use-case';
 import { GetGrandPrixUseCase } from './application/use-cases/get-grand-prix.use-case';
 import { GetLeaderboardUseCase } from './application/use-cases/get-leaderboard.use-case';
@@ -173,6 +174,7 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
     GetCurrentSeasonUseCase,
     AutoRotateSeasonUseCase,
     SeasonRotationService,
+    GetFriendsLeaderboardUseCase,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },
     { provide: LAP_TIME_REPOSITORY, useClass: PrismaLapTimeRepository },
     { provide: ONLINE_RACE_REPOSITORY, useClass: PrismaOnlineRaceRepository },

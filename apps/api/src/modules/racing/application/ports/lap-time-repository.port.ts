@@ -115,6 +115,17 @@ export interface LapTimeRepositoryPort {
     seasonId?: string | null,
   ): Promise<number | null>;
 
+  /** Top ENTRE esos usuarios concretos (TASK-290: ranking de amigos) — un
+   *  jugador aparece una sola vez, con su mejor marca, igual que
+   *  `leaderboard`, pero acotado a `userIds` en vez de a todo el mundo. La
+   *  posición de cada fila es su puesto DENTRO de este grupo, no su puesto
+   *  global. Mismo `seasonId` opcional que `leaderboard`. */
+  leaderboardAmongUsers(
+    trackId: string,
+    userIds: string[],
+    seasonId?: string | null,
+  ): Promise<LeaderboardEntry[]>;
+
   /** Los vecinos inmediatos de `durationMs` en el leaderboard del circuito,
    *  EXCLUYENDO a `userId` y limitado a quienes tienen fantasma grabado
    *  (TASK-284). La regla de negocio de qué hacer con cada uno vive en

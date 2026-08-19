@@ -19,6 +19,7 @@ import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
 import { GetCurrentSeasonUseCase } from '../../application/use-cases/get-current-season.use-case';
+import { GetFriendsLeaderboardUseCase } from '../../application/use-cases/get-friends-leaderboard.use-case';
 import { GetGhostUseCase } from '../../application/use-cases/get-ghost.use-case';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
 import { GetOnlineRaceUseCase } from '../../application/use-cases/get-online-race.use-case';
@@ -37,6 +38,7 @@ import {
   LeaderboardEntryDto,
   LeaderboardResponseDto,
 } from './dto/leaderboard.response.dto';
+import { FriendsLeaderboardResponseDto } from './dto/friends-leaderboard.response.dto';
 import { OnlineRaceMatchResponseDto } from './dto/online-race-match.response.dto';
 import { OnlineRaceResponseDto } from './dto/online-race.response.dto';
 import { SeasonResponseDto } from './dto/season.response.dto';
@@ -71,6 +73,7 @@ export class RacingController {
     private readonly getOnlineRace: GetOnlineRaceUseCase,
     private readonly matchOnlineRace: MatchOnlineRaceUseCase,
     private readonly getCurrentSeason: GetCurrentSeasonUseCase,
+    private readonly getFriendsLeaderboard: GetFriendsLeaderboardUseCase,
     private readonly viewTokens: FileViewTokenService,
   ) {}
 
@@ -189,6 +192,32 @@ export class RacingController {
         LeaderboardEntryDto.fromEntry(entry),
       ),
       yourPosition: result.yourPosition,
+      seasonId: result.seasonId,
+    };
+  }
+
+  @Get('tracks/:slug/leaderboard/friends')
+  @ApiOperation({
+    summary: 'Ranking del circuito acotado a ti y tus amigos (TASK-290)',
+    description:
+      'El mundial (`/leaderboard`) y el de circuito ya cubrían el MVP salvo este tercero: aquí la posición de cada fila es el puesto DENTRO del grupo (tú + amigos), no el global. Mismo `seasonId` opcional que el leaderboard general.',
+  })
+  @ApiOkResponse({ type: FriendsLeaderboardResponseDto })
+  async friendsLeaderboard(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('slug') slug: string,
+    @Query('seasonId') seasonId?: string,
+  ): Promise<FriendsLeaderboardResponseDto> {
+    const result = await this.getFriendsLeaderboard.execute(
+      slug,
+      current.sub,
+      seasonId,
+    );
+
+    return {
+      entries: result.entries.map((entry) =>
+        LeaderboardEntryDto.fromEntry(entry),
+      ),
       seasonId: result.seasonId,
     };
   }

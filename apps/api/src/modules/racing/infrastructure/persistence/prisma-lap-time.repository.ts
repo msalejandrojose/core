@@ -184,6 +184,64 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
   }
 
   /**
+   * Igual que `leaderboard()` pero acotado a `userIds` (TASK-290) en vez de
+   * a un `LIMIT`: mismo group-by "mejor tiempo por jugador", filtrado por
+   * `user_id IN (...)`. Vacío sin tocar la BBDD si `userIds` está vacío — un
+   * `IN ()` es sintaxis inválida en MySQL, y de todas formas la respuesta ya
+   * se sabe de antemano.
+   */
+  async leaderboardAmongUsers(
+    trackId: string,
+    userIds: string[],
+    seasonId?: string | null,
+  ): Promise<LeaderboardEntry[]> {
+    if (userIds.length === 0) return [];
+
+    const seasonFilter = seasonId
+      ? Prisma.sql`AND season_id = ${seasonId}`
+      : Prisma.empty;
+    const userIdsSql = Prisma.join(userIds);
+
+    const rows = await this.prisma.$queryRaw<LeaderboardRow[]>`
+      SELECT
+        b.user_id                                     AS userId,
+        u.email                                       AS email,
+        u.first_name                                  AS firstName,
+        u.last_name                                   AS lastName,
+        b.best                                        AS durationMs,
+        (SELECT MIN(x.created_at)
+           FROM racing_lap_time x
+          WHERE x.track_id = b.track_id
+            AND x.user_id  = b.user_id
+            AND x.duration_ms = b.best
+            AND x.invalidated_at IS NULL
+            ${seasonFilter})                          AS achievedAt
+      FROM (
+        SELECT track_id, user_id, MIN(duration_ms) AS best
+          FROM racing_lap_time
+         WHERE track_id = ${trackId}
+           AND invalidated_at IS NULL
+           AND user_id IN (${userIdsSql})
+           ${seasonFilter}
+         GROUP BY track_id, user_id
+      ) b
+      JOIN user u ON u.id = b.user_id
+      ORDER BY b.best ASC, achievedAt ASC
+    `;
+
+    return rows.map(
+      (row, index) =>
+        new LeaderboardEntry(
+          index + 1,
+          row.userId,
+          displayNameOf(row),
+          Number(row.durationMs),
+          row.achievedAt,
+        ),
+    );
+  }
+
+  /**
    * Posición del jugador contando JUGADORES por delante, no filas: si alguien
    * ha corrido cien veces sigue ocupando un solo puesto.
    */
