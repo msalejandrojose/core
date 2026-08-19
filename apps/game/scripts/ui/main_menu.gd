@@ -63,6 +63,9 @@ var _track_summary_label: Label
 var _direction_buttons: Array[Button] = []
 var _engine_buttons: Array[Button] = []
 var _online_button: Button
+## Solo válidos mientras la pestaña "Clasificaciones" está montada (TASK-290).
+var _leaderboard_status: Label
+var _leaderboard_container: VBoxContainer
 
 ## Persistente entre pestañas: vive en la cabecera, no en el contenido.
 var _account_button: Button
@@ -232,6 +235,8 @@ func _select_tab(tab: int) -> void:
 	_direction_buttons.clear()
 	_engine_buttons.clear()
 	_online_button = null
+	_leaderboard_status = null
+	_leaderboard_container = null
 
 	match tab:
 		Tab.JUGAR:
@@ -252,9 +257,7 @@ func _select_tab(tab: int) -> void:
 				"Comparte tu código, añade a alguien con el suyo y compite contra su fantasma.",
 				"res://scenes/ui/friends-screen.tscn")
 		Tab.CLASIFICACIONES:
-			_build_placeholder_tab(
-				"Clasificaciones",
-				"Próximamente: consulta el top de cada circuito desde aquí.")
+			_build_clasificaciones_tab()
 
 
 func _build_jugar_tab() -> void:
@@ -364,9 +367,114 @@ func _build_launcher_tab(title_text: String, description: String, scene_path: St
 	_content.add_child(open_button)
 
 
-func _build_placeholder_tab(title_text: String, message: String) -> void:
-	_content.add_child(_heading(title_text))
-	_content.add_child(_label(message))
+## Clasificaciones del circuito ya elegido en "Jugar" — mundial o acotada a
+## amigos (TASK-290), con un botón "píldora" para alternar, mismo lenguaje
+## visual que los de sentido/cilindrada. Ninguna de las dos requiere elegir
+## circuito aquí: es el mismo de siempre, así que "tu mejor marca" (Jugar) y
+## "tu clasificación" (esta pestaña) hablan siempre del mismo sitio.
+func _build_clasificaciones_tab() -> void:
+	_content.add_child(_heading("Clasificaciones"))
+	_content.add_child(_label(
+		"Del circuito, sentido y cilindrada elegidos en \"Jugar\"."))
+
+	var toggle := HBoxContainer.new()
+	toggle.add_theme_constant_override("separation", 16)
+	_content.add_child(toggle)
+
+	var mode_group := ButtonGroup.new()
+	var global_button := UiTheme.pill_button(
+		"Global", _OPTION_BG, UiTheme.CARD_INK, UiTheme.BUTTON_MIN_SIZE,
+		UiTheme.FONT_SM, UiTheme.GOOD, Color.WHITE)
+	global_button.toggle_mode = true
+	global_button.button_group = mode_group
+	global_button.button_pressed = true
+	global_button.pressed.connect(func() -> void: _load_leaderboard(false))
+	toggle.add_child(global_button)
+
+	# "Solo amigos" y no "Amigos": ya hay una pestaña de navegación con ese
+	# nombre (Tab.AMIGOS) — mismo texto en dos botones visibles a la vez
+	# confunde tanto a quien juega como a cualquier búsqueda por texto.
+	var friends_button := UiTheme.pill_button(
+		"Solo amigos", _OPTION_BG, UiTheme.CARD_INK, UiTheme.BUTTON_MIN_SIZE,
+		UiTheme.FONT_SM, UiTheme.GOOD, Color.WHITE)
+	friends_button.toggle_mode = true
+	friends_button.button_group = mode_group
+	friends_button.pressed.connect(func() -> void: _load_leaderboard(true))
+	toggle.add_child(friends_button)
+
+	_leaderboard_status = _label("Cargando…")
+	_content.add_child(_leaderboard_status)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_content.add_child(scroll)
+
+	_leaderboard_container = VBoxContainer.new()
+	_leaderboard_container.add_theme_constant_override("separation", 8)
+	_leaderboard_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_leaderboard_container)
+
+	_load_leaderboard(false)
+
+
+func _load_leaderboard(friends_only: bool) -> void:
+	if not is_instance_valid(_leaderboard_status):
+		return
+
+	for child in _leaderboard_container.get_children():
+		child.free()
+
+	# Mismo requisito que el resto del leaderboard (`race_result_screen.gd`):
+	# sin sesión no hay con quién identificar ni una posición ni una lista de
+	# amigos.
+	if not Session.is_logged_in():
+		_leaderboard_status.text = "Necesitas una cuenta para ver clasificaciones."
+		return
+
+	_leaderboard_status.text = "Cargando…"
+
+	var key := GameSettings.track_key()
+	var response = (
+		await RacingApi.friends_leaderboard(key) if friends_only
+		else await RacingApi.leaderboard(key, 20))
+
+	# La pestaña pudo cambiar mientras esperábamos la respuesta.
+	if not is_instance_valid(_leaderboard_status):
+		return
+
+	if not response.ok or not (response.data is Dictionary):
+		_leaderboard_status.text = "No se pudo cargar la clasificación."
+		return
+
+	var entries: Array = response.data.get("entries", [])
+	if entries.is_empty():
+		_leaderboard_status.text = (
+			"Ninguno de tus amigos tiene marca en este circuito todavía." if friends_only
+			else "Todavía no hay marcas en este circuito.")
+		return
+
+	_leaderboard_status.text = ""
+	var hud_script := load("res://scripts/ui/race_hud.gd")
+	for entry in entries:
+		_leaderboard_container.add_child(_leaderboard_row(entry, hud_script))
+
+
+func _leaderboard_row(entry: Dictionary, hud_script: Script) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+
+	var position_label := _label("#%d" % int(entry.get("position", 0)))
+	position_label.custom_minimum_size = Vector2(56, 0)
+	row.add_child(position_label)
+
+	var name_label := _label(str(entry.get("displayName", "?")))
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_label)
+
+	row.add_child(_label(hud_script.format_ms(int(entry.get("durationMs", 0)))))
+
+	return row
 
 
 # --- Estado -------------------------------------------------------------------

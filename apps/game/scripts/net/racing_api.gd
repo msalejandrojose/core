@@ -51,6 +51,16 @@ func current_season():
 	return await Api.get_json("/racing/seasons/current")
 
 
+## Ranking del circuito acotado a ti y tus amigos (TASK-290): la posición de
+## cada fila es el puesto DENTRO de ese grupo, no el global. `season_id`,
+## misma semántica que en `leaderboard()`.
+func friends_leaderboard(track_key: String, season_id: String = ""):
+	var query := ""
+	if not season_id.is_empty():
+		query = "?seasonId=%s" % season_id.uri_encode()
+	return await Api.get_json("/racing/tracks/%s/leaderboard/friends%s" % [track_key, query])
+
+
 func tracks(limit: int = 20):
 	return await Api.get_json("/racing/tracks?limit=%d" % limit)
 
