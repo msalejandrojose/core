@@ -10,6 +10,10 @@ extends Control
 const DELTA_HOLD_S := 2.0
 ## Cuánto dura el verde del semáforo tras el GO antes de desaparecer.
 const GO_HOLD_S := 1.0
+## Cuánto dura el anillo que celebra un sector mejorado (TASK-279). Más
+## corto que `DELTA_HOLD_S` a propósito: es un chispazo, no algo que se deba
+## quedar leyendo — el número del delta sigue en pantalla su tiempo normal.
+const SECTOR_CELEBRATE_HOLD_S := 1.0
 
 ## Tamaños propios del HUD, más grandes que la escala de UiTheme a propósito:
 ## son los números que se leen de reojo mientras conduces, no texto de menú.
@@ -31,6 +35,10 @@ var _lap_counter_label: Label
 ## `PauseMenu`, que es quien de verdad reinicia/abre ajustes/vuelve al menú.
 var _pause_button: Button
 var _delta_left: float = 0.0
+## Anillo que celebra mejorar un sector (TASK-279), independiente de
+## `_delta_left`: el número del delta se queda su tiempo normal, el anillo
+## es más corto y se apaga por su cuenta.
+var _sector_celebrate_left: float = 0.0
 
 var _lights_on: int = 0
 var _lights_total: int = 0
@@ -72,6 +80,10 @@ func _process(delta: float) -> void:
 
 	if _go_left > 0.0:
 		_go_left -= delta
+		queue_redraw()
+
+	if _sector_celebrate_left > 0.0:
+		_sector_celebrate_left -= delta
 		queue_redraw()
 
 
@@ -200,9 +212,18 @@ func _on_sector_delta(_checkpoint: int, delta_ms: int, has_reference: bool) -> v
 		_delta_label.text = ""
 		return
 
-	_delta_label.text = format_delta_ms(delta_ms)
-	_delta_label.add_theme_color_override("font_color", UiTheme.GOOD if delta_ms < 0 else UiTheme.BAD)
+	var improved := delta_ms < 0
+	_delta_label.text = ("★ " if improved else "") + format_delta_ms(delta_ms)
+	_delta_label.add_theme_color_override("font_color", UiTheme.GOOD if improved else UiTheme.BAD)
 	_delta_left = DELTA_HOLD_S
+
+	# Mejorar un sector merece más que un número que se pone verde: perder
+	# por poco sin ningún refuerzo positivo es lo que hace que alguien deje
+	# de intentarlo (TASK-279) — aunque la vuelta completa no vaya a batir
+	# el récord.
+	if improved:
+		_sector_celebrate_left = SECTOR_CELEBRATE_HOLD_S
+		queue_redraw()
 
 
 func _on_record_beaten(_duration_ms: int) -> void:
@@ -246,9 +267,14 @@ func _on_countdown_finished() -> void:
 ## y desaparecen: montar y tirar nodos para esto cuesta más de lo que ahorra.
 func _draw() -> void:
 	var counting := _director.counting_down
-	if not counting and _go_left <= 0.0:
-		return
+	if counting or _go_left > 0.0:
+		_draw_countdown_lights(counting)
 
+	if _sector_celebrate_left > 0.0:
+		_draw_sector_celebration()
+
+
+func _draw_countdown_lights(counting: bool) -> void:
 	var radius := size.y * 0.045
 	var gap := radius * 2.6
 	var center := Vector2(size.x * 0.5, size.y * 0.22)
@@ -272,6 +298,18 @@ func _draw() -> void:
 
 		draw_circle(at, radius, color)
 		draw_arc(at, radius, 0.0, TAU, 32, UiTheme.BONE * Color(1, 1, 1, 0.35), 3.0, true)
+
+
+## Anillo que se expande y se apaga alrededor del delta, para cuando se
+## mejora un sector (TASK-279) — sin tweens, mismo estilo a base de
+## `_process`/`queue_redraw()` que ya usaba el semáforo, no una técnica
+## nueva para esta sola pantalla.
+func _draw_sector_celebration() -> void:
+	var t := 1.0 - clampf(_sector_celebrate_left / SECTOR_CELEBRATE_HOLD_S, 0.0, 1.0)
+	var center: Vector2 = _delta_label.position + _delta_label.size * 0.5
+	var radius := lerpf(24.0, 96.0, t)
+	var alpha := 1.0 - t
+	draw_arc(center, radius, 0.0, TAU, 40, UiTheme.GOOD * Color(1, 1, 1, alpha), 8.0, true)
 
 
 
