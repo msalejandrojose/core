@@ -20,6 +20,7 @@ import { AdminCreateCarPartUseCase } from './application/use-cases/admin-create-
 import { AdminCreateCarSkinUseCase } from './application/use-cases/admin-create-car-skin.use-case';
 import { AdminCreateGrandPrixUseCase } from './application/use-cases/admin-create-grand-prix.use-case';
 import { AdminCreateSeasonUseCase } from './application/use-cases/admin-create-season.use-case';
+import { AutoRotateSeasonUseCase } from './application/use-cases/auto-rotate-season.use-case';
 import { AdminCreateTrackUseCase } from './application/use-cases/admin-create-track.use-case';
 import { AdminGetCarArchetypeUseCase } from './application/use-cases/admin-get-car-archetype.use-case';
 import { AdminGetCarPartUseCase } from './application/use-cases/admin-get-car-part.use-case';
@@ -94,6 +95,7 @@ import { PrismaPlayerCarSkinRepository } from './infrastructure/persistence/pris
 import { PrismaRacingTerrainEffectRepository } from './infrastructure/persistence/prisma-racing-terrain-effect.repository';
 import { PrismaSeasonRepository } from './infrastructure/persistence/prisma-season.repository';
 import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track.repository';
+import { SeasonRotationService } from './infrastructure/scheduler/season-rotation.service';
 
 @Module({
   // IamModule exporta JwtAuthGuard/PermissionGuard (usados por
@@ -169,6 +171,8 @@ import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track
     AdminCreateSeasonUseCase,
     AdminListSeasonsUseCase,
     GetCurrentSeasonUseCase,
+    AutoRotateSeasonUseCase,
+    SeasonRotationService,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },
     { provide: LAP_TIME_REPOSITORY, useClass: PrismaLapTimeRepository },
     { provide: ONLINE_RACE_REPOSITORY, useClass: PrismaOnlineRaceRepository },
