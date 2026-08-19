@@ -2,15 +2,16 @@ extends Node
 
 const TestEnv := preload("res://tests/test_env.gd")
 
-## Prueba del menú principal como hub navegable (TASK-256/TASK-257):
+## Prueba del menú principal (segunda captura de referencia, ver comentario
+## en `main_menu.gd`):
 ##
 ##     godot --headless --quit-after 800 res://tests/main_menu_hub_test.tscn
 ##
-## Cubre lo que el refactor puede romper sin que se note a primera vista: que
-## cambiar de pestaña no arrastra botones de la anterior, que elegir
-## circuito/sentido/cilindrada sigue funcionando igual que antes, y que un
-## evento que llega con otra pestaña montada (`CarLoadout.changed`) no revienta
-## por escribir en una label que ya no existe.
+## Ya no hay pestañas con contenido propio — "modo" solo decide qué hace
+## "Empezar Carrera", circuito/cilindrada están siempre visibles. Cubre que
+## elegir circuito/cilindrada/modo sigue tocando `GameSettings`, que
+## "Sentido" ha desaparecido de verdad, y que cada modo dispara lo que
+## tiene que disparar.
 
 var _failures := 0
 var _menu: CanvasLayer
@@ -18,6 +19,7 @@ var _menu: CanvasLayer
 ## (ver el mismo aviso en `race_flow_test.gd`), así que escribir en una local
 ## desde dentro de la lambda no se vería fuera de ella.
 var _play_signal_fired := false
+var _time_trial_signal_fired := false
 
 
 func _ready() -> void:
@@ -31,13 +33,16 @@ func _ready() -> void:
 	director.set_process(false)
 	_menu = main.get_node("MainMenu")
 
-	_test_abre_en_jugar()
-	_test_cambiar_de_pestana_conserva_cabecera()
-	_test_elegir_circuito_sentido_cilindrada()
-	_test_cambiar_de_pestana_limpia_la_anterior()
-	_test_evento_con_otra_pestana_no_revienta()
-	_test_volver_a_jugar_resincroniza()
-	await _test_correr_emite_la_senal()
+	_test_abre_con_carrera_rapida()
+	_test_elegir_circuito_desde_la_rejilla()
+	_test_elegir_cilindrada()
+	_test_sin_control_de_sentido()
+	_test_cabecera_siempre_visible()
+	_test_boton_taller_abre_el_taller()
+	await _test_correr_en_carrera_rapida()
+	_test_cambiar_a_grand_prix_esconde_multijugador()
+	await _test_time_trial_emite_su_senal()
+	_test_grand_prix_abre_su_pantalla()
 
 	if _failures == 0:
 		print("\nOK")
@@ -47,85 +52,119 @@ func _ready() -> void:
 		get_tree().quit(1)
 
 
-func _test_abre_en_jugar() -> void:
-	_check_eq(_menu._active_tab, _menu.Tab.JUGAR, "al abrir, la pestaña activa es Jugar")
+func _test_abre_con_carrera_rapida() -> void:
+	_check_eq(_menu._active_mode, _menu.Mode.CARRERA_RAPIDA, "al abrir, el modo activo es Carrera Rápida")
 	_check(is_instance_valid(_menu._track_summary_label) and _menu._track_summary_label.text != "",
-		true, "Jugar muestra el resumen del circuito elegido")
-	_check(is_instance_valid(_menu._best_label), true, "Jugar monta la label de mejor marca")
+		true, "muestra el resumen del circuito elegido")
+	_check(is_instance_valid(_menu._best_label), true, "monta la label de mejor marca")
 	_check(is_instance_valid(_menu._preview) and _menu._preview.has_model(), true,
 		"la columna central monta el coche equipado en vivo")
 	_check(_menu._account_subtitle.text != "", true, "la cabecera muestra el estado de cuenta")
+	_check(_menu._online_button.visible, true, "en Carrera Rápida, Multijugador Online está visible")
 
 
-func _test_cambiar_de_pestana_conserva_cabecera() -> void:
-	var subtitle_before: String = _menu._account_subtitle.text
-	_menu._select_tab(_menu.Tab.TALLER)
-
-	_check(is_instance_valid(_menu._preview), true, "la vista 3D del coche no se limpia al cambiar de pestaña")
-	_check_eq(_menu._account_subtitle.text, subtitle_before,
-		"y el estado de cuenta de la cabecera tampoco")
-
-	_menu._select_tab(_menu.Tab.JUGAR)
-
-
-func _test_elegir_circuito_sentido_cilindrada() -> void:
-	# El circuito ya no se elige con un botón dentro del menú: vive en su
-	# propia pantalla (`TrackSelectScreen`), que al confirmar toca
-	# `GameSettings` directamente y avisa con la señal `confirmed` — aquí se
-	# simula ese mismo camino sin abrir la pantalla de verdad.
+func _test_elegir_circuito_desde_la_rejilla() -> void:
 	var ids: Array = TrackCatalog.ids()
 	var other_id: String = ids[1]
-	GameSettings.set_track_id(other_id)
-	_menu._sync_jugar()
-	_check_eq(GameSettings.track_id, other_id, "elegir circuito sigue cambiando GameSettings")
+
+	_menu._pick_track(other_id)
+
+	_check_eq(GameSettings.track_id, other_id, "tocar una tarjeta de circuito cambia GameSettings")
 	_check_eq(_menu._track_summary_label.text, TrackCatalog.by_id(other_id).name,
-		"y el resumen de la pestaña Jugar refleja el circuito elegido")
+		"y el resumen refleja el circuito elegido")
 
-	_menu._pick_direction(true)
-	_check_eq(GameSettings.reverse, true, "elegir sentido sigue cambiando GameSettings")
+	var index: int = _menu._track_card_ids.find(other_id)
+	_check(index != -1, true, "la tarjeta elegida está entre las montadas")
 
+
+func _test_elegir_cilindrada() -> void:
 	_menu._pick_engine(GameSettings.EngineClass.CC150)
 	_check_eq(GameSettings.engine_class, GameSettings.EngineClass.CC150, "elegir cilindrada sigue cambiando GameSettings")
 
-
-func _test_cambiar_de_pestana_limpia_la_anterior() -> void:
-	_menu._select_tab(_menu.Tab.TALLER)
-
-	_check(not is_instance_valid(_menu._track_summary_label), true,
-		"salir de Jugar libera el resumen del circuito")
-	_check(not is_instance_valid(_menu._best_label), true, "salir de Jugar libera la label de mejor marca")
-
-
-func _test_evento_con_otra_pestana_no_revienta() -> void:
-	# Si `_refresh_best`/`_refresh_account` no guardan el hueco de `_best_label`
-	# == null, esto revienta el árbol de nodos y el test entero se cae, no solo
-	# esta comprobación — que es la señal de que el guard hace falta de verdad.
-	CarLoadout.changed.emit()
-	_check(true, true, "un evento con otra pestaña montada no revienta el árbol")
+	# `_pick_engine` no toca el botón por sí solo (eso lo hace Godot al
+	# pulsarlo de verdad, vía `ButtonGroup`) — `_sync()` es quien lo
+	# refleja, mismo motivo que `_sync_jugar()` en el diseño anterior.
+	_menu._sync()
+	_check(_menu._engine_buttons[GameSettings.EngineClass.CC150].button_pressed, true,
+		"y el botón correspondiente queda marcado")
 
 
-func _test_volver_a_jugar_resincroniza() -> void:
-	_menu._select_tab(_menu.Tab.JUGAR)
+## TASK: quitar "Sentido" del menú principal — sin sustituto en ningún otro
+## sitio por ahora, a propósito (ver comentario en `main_menu.gd`).
+func _test_sin_control_de_sentido() -> void:
+	_check(_find_button(_menu, "Inverso") == null, true, "no queda ningún control de sentido en el menú")
+	_check(_find_button(_menu, "Normal") == null, true, "tampoco el botón \"Normal\"")
 
-	_check_eq(_menu._track_summary_label.text, TrackCatalog.by_id(GameSettings.track_id).name,
-		"al volver, el resumen sigue mostrando el circuito elegido")
-	_check(_menu._direction_buttons[1].button_pressed, true, "y el de sentido inverso también")
+
+func _test_cabecera_siempre_visible() -> void:
+	for text in ["⚙ Ajustes", "👥 Amigos", "🏆 Clasificaciones"]:
+		_check(_find_button(_menu, text) != null, true, "la cabecera tiene un acceso a \"%s\"" % text)
+
+	# El botón de cuenta alterna Entrar/Salir según la sesión — sin cuenta
+	# (el estado por defecto de `TestEnv.reset()`) el texto es "Entrar".
+	_check(is_instance_valid(_menu._account_button), true, "y un botón de cuenta")
+	_check(_menu._account_button.text, "🚪 Entrar", "que sin sesión dice \"Entrar\"")
 
 
-func _test_correr_emite_la_senal() -> void:
+func _test_boton_taller_abre_el_taller() -> void:
+	var before := _menu.get_child_count()
+	var button := _find_button(_menu, "🔧 Ir al taller")
+	_check(button != null, true, "hay botón para ir al taller junto al coche")
+
+	button.pressed.emit()
+	_check(_menu.get_child_count() > before, true, "y abre la pantalla del taller")
+
+	for child in _menu.get_children():
+		if child is CanvasLayer and child.name == "WorkshopScreen":
+			child.queue_free()
+
+
+func _test_correr_en_carrera_rapida() -> void:
+	_menu._pick_mode(_menu.Mode.CARRERA_RAPIDA)
 	_menu.play_pressed.connect(func(): _play_signal_fired = true)
 
-	var button := _find_button(_menu._content, "Correr")
-	if button != null:
-		button.pressed.emit()
-
+	_menu._start_button.pressed.emit()
 	await get_tree().process_frame
-	_check(_play_signal_fired, true, "el botón Correr sigue emitiendo play_pressed")
+
+	_check(_play_signal_fired, true, "\"Empezar Carrera\" en Carrera Rápida emite play_pressed")
 
 
-## "Correr" y "Carrera Online" (TASK-285) viven dentro de una fila propia, no
-## como hijos directos de `_content` — búsqueda recursiva y no un
-## `get_children()` plano.
+func _test_cambiar_a_grand_prix_esconde_multijugador() -> void:
+	_menu._pick_mode(_menu.Mode.GRAND_PRIX)
+	_check(_menu._online_button.visible, false, "en Grand Prix, Multijugador Online se esconde")
+
+	_menu._pick_mode(_menu.Mode.CARRERA_RAPIDA)
+	_check(_menu._online_button.visible, true, "y vuelve a aparecer al volver a Carrera Rápida")
+
+
+func _test_time_trial_emite_su_senal() -> void:
+	_menu._pick_mode(_menu.Mode.TIME_TRIAL)
+	_menu.time_trial_pressed.connect(func(): _time_trial_signal_fired = true)
+
+	_menu._start_button.pressed.emit()
+	await get_tree().process_frame
+
+	_check(_time_trial_signal_fired, true, "\"Empezar Carrera\" en Time Trial emite time_trial_pressed")
+
+	_menu._pick_mode(_menu.Mode.CARRERA_RAPIDA)
+
+
+func _test_grand_prix_abre_su_pantalla() -> void:
+	_menu._pick_mode(_menu.Mode.GRAND_PRIX)
+	var before := _menu.get_child_count()
+
+	_menu._start_button.pressed.emit()
+
+	_check(_menu.get_child_count() > before, true, "\"Empezar Carrera\" en Grand Prix abre su pantalla")
+
+	for child in _menu.get_children():
+		if child is CanvasLayer and child.name == "GrandPrixScreen":
+			child.queue_free()
+	_menu._pick_mode(_menu.Mode.CARRERA_RAPIDA)
+
+
+# --- Utilidades ---------------------------------------------------------------
+
 func _find_button(root: Node, text: String) -> Button:
 	if root is Button and root.text == text:
 		return root
