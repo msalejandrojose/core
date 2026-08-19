@@ -1,30 +1,43 @@
 extends CanvasLayer
 
-## Menú principal: hub navegable con una sección por pieza del juego (TASK-256
-## /TASK-257) — Jugar, Taller, Grand Prix, Amigos, Clasificaciones — en vez de
-## una sola pantalla con todo mezclado en un mismo VBox. Añadir una sección
-## nueva es añadir una entrada a `TABS` y un `_build_*_tab()`, no reformar
-## esta pantalla otra vez.
+## Menú principal, a partir de una segunda captura de referencia más
+## detallada que la que dio origen al hub de pestañas (TASK-256/257): ya no
+## es una lista de pestañas que cambian el contenido de la derecha — es
+## "Modos de juego" (Carrera Rápida / Grand Prix / Time Trial) eligiendo QUÉ
+## hace "Empezar Carrera", con la configuración de circuito/cilindrada
+## siempre visible a la derecha. Taller/Amigos/Clasificaciones pasan a ser
+## lanzadores sueltos (barra superior o botón bajo el coche), no pestañas
+## con contenido propio — Clasificaciones se lleva su lógica a
+## `leaderboard-screen.tscn`, que antes vivía aquí dentro.
 ##
-## Tres columnas, a partir de una captura de referencia: la lista de modos a
-## la izquierda (antes una fila de pestañas horizontal), el coche equipado en
-## vivo en el centro (`VehiclePreview`, mismo componente que el taller) y el
-## contenido de la pestaña activa a la derecha.
+## Tres columnas seguimos teniendo: modos a la izquierda, el coche equipado
+## en vivo en el centro (`VehiclePreview`, compartido con el taller) sobre
+## un fondo de taller — solo aquí, `VehiclePreview` en sí no cambia — y la
+## configuración de carrera a la derecha.
 ##
-## El circuito y el sentido viven en la pestaña "Jugar" y no en Ajustes: son
-## lo que eliges para jugar, no una preferencia. Ajustes se queda con los
-## controles y las licencias.
+## Circuito ya no se elige en una pantalla aparte por defecto: los 4 del
+## catálogo local salen en una rejilla 2×2 aquí mismo, con miniaturas de
+## marcador de posición (un color liso por circuito) hasta que haya arte de
+## verdad. "Más circuitos" sigue abriendo la pantalla completa
+## (`TrackSelectScreen`) para los nacidos en el backoffice.
 ##
-## Tarjetas claras (`UiTheme.card_panel()`/`pill_button()`) en vez del panel
-## oscuro translúcido de siempre — pase de diseño a partir de la misma
-## captura de referencia. Solo esta pantalla, el taller y la selección de
-## circuito la usan; el resto de la app se queda con la paleta oscura de
-## `UiTheme.make_button()`, a propósito (ver comentario en `ui_theme.gd`).
+## Sentido (Normal/Inverso) se quita de aquí a propósito, sin sustituto en
+## ningún otro sitio de la interfaz por ahora — `GameSettings.reverse` se
+## queda con el último valor que tuviera. Es una pérdida de alcance
+## deliberada, no un descuido.
+##
+## Tarjetas claras (`UiTheme.card_panel()`/`pill_button()`), mismo criterio
+## que el resto de este pase de diseño — ver comentario en `ui_theme.gd`.
 
-## Colores de la lista de "modos" / botones de opción (sentido, cilindrada):
-## gris neutro sin elegir, verde al elegir — el mismo lenguaje que ya usa
-## `pill_button()` en el taller para el arquetipo resaltado.
+## Colores de los botones de opción sin elegir (modo, cilindrada): gris
+## neutro, verde al elegir — mismo lenguaje que el taller.
 const _OPTION_BG := Color("e9e4d9")
+
+## Un color liso por circuito, mientras no haya miniatura de verdad —
+## índice paralelo a `TrackCatalog.all()`.
+const _TRACK_PLACEHOLDER_COLORS := [
+	Color("8fbf6b"), Color("d9a441"), Color("6b98bf"), Color("eef1f5"),
+]
 
 signal play_pressed()
 ## Emparejamiento resuelto (TASK-282/284/285): `target`/`threat` son lo que
@@ -35,40 +48,33 @@ signal play_online_pressed(target: Dictionary, threat: Dictionary)
 ## elegidos arriba, sin selección propia.
 signal time_trial_pressed()
 
-enum Tab { JUGAR, TALLER, GRAND_PRIX, AMIGOS, CLASIFICACIONES }
+## Qué hace "Empezar Carrera" — no una pestaña con contenido propio, una
+## elección de entre las tres que decide qué señal/pantalla dispara el
+## mismo botón de abajo.
+enum Mode { CARRERA_RAPIDA, GRAND_PRIX, TIME_TRIAL }
 
-const TABS := [
-	[Tab.JUGAR, "Jugar"],
-	[Tab.TALLER, "Taller"],
-	[Tab.GRAND_PRIX, "Grand Prix"],
-	[Tab.AMIGOS, "Amigos"],
-	[Tab.CLASIFICACIONES, "Clasificaciones"],
+const MODES := [
+	[Mode.CARRERA_RAPIDA, "Carrera Rápida"],
+	[Mode.GRAND_PRIX, "Grand Prix"],
+	[Mode.TIME_TRIAL, "Time Trial"],
 ]
 
-var _content: VBoxContainer
-var _tab_buttons: Dictionary = {}  # Tab (int) -> Button
-var _active_tab: int = Tab.JUGAR
+var _active_mode: int = Mode.CARRERA_RAPIDA
+var _mode_buttons: Dictionary = {}  # Mode (int) -> Button
 
-## Persistentes: viven en la cabecera/columna central, no en el contenido de
-## una pestaña, así que no se limpian al cambiar de pestaña.
+## Persistentes: viven en la cabecera/columnas fijas, no en contenido que se
+## reconstruye — aquí ya no hay pestañas que limpiar y volver a montar.
 var _account_subtitle: Label
+var _account_button: Button
 var _preview: VehiclePreview
 
-## Solo válidos mientras la pestaña "Jugar" está montada: se limpian al
-## cambiar de pestaña, igual que el resto de su contenido.
-var _best_label: Label
-## Nombre del circuito elegido — se abre y se confirma en su propia pantalla
-## (`TrackSelectScreen`), no aquí; ver `_open_track_select()`.
 var _track_summary_label: Label
-var _direction_buttons: Array[Button] = []
+var _track_cards: Array[PanelContainer] = []
+var _track_card_ids: Array[String] = []
 var _engine_buttons: Array[Button] = []
+var _best_label: Label
+var _start_button: Button
 var _online_button: Button
-## Solo válidos mientras la pestaña "Clasificaciones" está montada (TASK-290).
-var _leaderboard_status: Label
-var _leaderboard_container: VBoxContainer
-
-## Persistente entre pestañas: vive en la cabecera, no en el contenido.
-var _account_button: Button
 
 
 func _ready() -> void:
@@ -76,7 +82,7 @@ func _ready() -> void:
 	_ensure_built()
 	# La mejor marca depende del arquetipo desde TASK-233: si cambia en el
 	# taller (que se abre encima de este menú, sin cerrarlo), el número tiene
-	# que refrescarse solo, sin esperar a que se toque circuito/sentido/cc.
+	# que refrescarse solo, sin esperar a que se toque circuito/cilindrada.
 	CarLoadout.changed.connect(_refresh_best)
 	# El coche de la vista central es el equipado de verdad: si cambia en el
 	# taller, se nota aquí sin tener que reabrir el menú.
@@ -91,17 +97,14 @@ func _ready() -> void:
 ## este nodo porque está antes en la escena. Así que la construcción tiene que
 ## poder dispararse desde cualquiera de los dos, y una sola vez.
 func _ensure_built() -> void:
-	if _content == null:
+	if _account_subtitle == null:
 		_build()
 
 
 func open() -> void:
 	_ensure_built()
 	visible = true
-	# Siempre se vuelve a "Jugar": es la pestaña con la que tiene sentido
-	# encontrarse al arrancar o al volver de una carrera, y evita arrastrar
-	# el estado de otra pestaña que ya no está montada.
-	_select_tab(Tab.JUGAR)
+	_sync()
 
 
 func close() -> void:
@@ -110,8 +113,6 @@ func close() -> void:
 
 func _build() -> void:
 	var backdrop := ColorRect.new()
-	# Más claro que antes (0.88 → 0.45): las tarjetas del boceto flotan sobre
-	# la escena 3D bien visible, no sobre un fondo casi negro.
 	backdrop.color = UiTheme.ink_alpha(0.45)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
@@ -126,21 +127,37 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", 16)
 	margin.add_child(column)
 
+	column.add_child(_build_header())
+
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 24)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(body)
+
+	body.add_child(_build_modes_panel())
+	body.add_child(_build_preview_panel())
+	body.add_child(_build_race_config_panel())
+	_refresh_preview()
+
+	_sync()
+
+
+## Título a la izquierda, barra de accesos sueltos a la derecha (Ajustes /
+## Amigos / Clasificaciones / Entrar-Salir) — ya no hay pestaña que abra
+## cada uno, son lanzadores directos, mismo patrón que ya usaba Ajustes.
+func _build_header() -> Control:
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 16)
-	column.add_child(header)
 
 	var title_column := VBoxContainer.new()
 	header.add_child(title_column)
 
 	var title := Label.new()
-	title.text = "Racing"
+	title.text = "Racing World"
 	title.add_theme_font_size_override("font_size", UiTheme.FONT_DISPLAY)
 	title.add_theme_color_override("font_color", UiTheme.CLAY)
 	title_column.add_child(title)
 
-	# Estado de cuenta, siempre visible en la cabecera sea cual sea la
-	# pestaña activa — antes solo vivía dentro de la pestaña "Jugar".
 	_account_subtitle = Label.new()
 	_account_subtitle.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
 	_account_subtitle.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.6))
@@ -150,33 +167,26 @@ func _build() -> void:
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(push)
 
-	header.add_child(_icon_button("Ajustes", func() -> void:
+	var bar := HBoxContainer.new()
+	bar.add_theme_constant_override("separation", 4)
+	header.add_child(bar)
+
+	bar.add_child(_icon_button("Ajustes", func() -> void:
 		add_child(load("res://scenes/ui/settings-screen.tscn").instantiate())))
+	bar.add_child(_icon_button("Amigos", func() -> void:
+		add_child(load("res://scenes/ui/friends-screen.tscn").instantiate())))
+	bar.add_child(_icon_button("Clasificaciones", func() -> void:
+		add_child(load("res://scenes/ui/leaderboard-screen.tscn").instantiate())))
 
-	_account_button = _icon_button("Cuenta", _open_account)
-	header.add_child(_account_button)
+	_account_button = _icon_button("Salir", _open_account)
+	bar.add_child(_account_button)
 
-	var body := HBoxContainer.new()
-	body.add_theme_constant_override("separation", 24)
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(body)
-
-	body.add_child(_build_modes_panel())
-	body.add_child(_build_preview_panel())
-	_refresh_preview()
-
-	var content_card := UiTheme.card_panel()
-	content_card.custom_minimum_size = Vector2(420, 0)
-	content_card.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(content_card)
-
-	_content = VBoxContainer.new()
-	_content.add_theme_constant_override("separation", 12)
-	content_card.add_child(_content)
+	return header
 
 
-## Columna izquierda ("MODOS DE JUEGO" del boceto): lista vertical de
-## pestañas, en vez de la fila horizontal de antes.
+## Columna izquierda ("MODOS DE JUEGO" del boceto): elegir modo no cambia lo
+## que se ve a la derecha, cambia lo que hace "Empezar Carrera" — ver
+## `_start_race()`.
 func _build_modes_panel() -> Control:
 	var card := UiTheme.card_panel()
 	card.custom_minimum_size = Vector2(280, 0)
@@ -187,33 +197,52 @@ func _build_modes_panel() -> Control:
 
 	inner.add_child(_heading("Modos de juego"))
 
-	var tab_group := ButtonGroup.new()
-	for entry in TABS:
-		var tab: int = entry[0]
+	var mode_group := ButtonGroup.new()
+	for entry in MODES:
+		var mode: int = entry[0]
 		var button := UiTheme.pill_button(
 			entry[1], _OPTION_BG, UiTheme.CARD_INK, Vector2(0, 88), UiTheme.FONT_SM,
 			UiTheme.GOOD, Color.WHITE)
 		button.toggle_mode = true
-		button.button_group = tab_group
+		button.button_group = mode_group
+		button.button_pressed = mode == _active_mode
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.pressed.connect(func() -> void: _select_tab(tab))
+		button.pressed.connect(func() -> void: _pick_mode(mode))
 		inner.add_child(button)
-		_tab_buttons[tab] = button
+		_mode_buttons[mode] = button
 
 	return card
 
 
 ## Columna central: el coche equipado ahora mismo, en vivo (`VehiclePreview`,
-## compartido con el taller).
+## compartido con el taller) sobre un fondo que evoca el taller — sin tocar
+## `VehiclePreview` en sí, que también vive en `workshop_screen.gd` y no
+## tiene por qué heredar este fondo. Con acceso directo al Taller aquí
+## mismo: es donde más sentido tiene ("tu coche, en el taller"), y ya no
+## hay pestaña que lo lleve.
 func _build_preview_panel() -> Control:
-	var panel := VBoxContainer.new()
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var card := UiTheme.card_panel(Color("caa06a"))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12)
+	card.add_child(column)
+
+	var viewport_holder := Control.new()
+	viewport_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(viewport_holder)
 
 	_preview = VehiclePreview.new()
-	panel.add_child(_preview)
+	viewport_holder.add_child(_preview)
 
-	return panel
+	var workshop_button := UiTheme.pill_button(
+		"Ir al taller", UiTheme.STEEL, Color.WHITE, Vector2(0, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
+	workshop_button.pressed.connect(func() -> void:
+		add_child(load("res://scenes/ui/workshop-screen.tscn").instantiate()))
+	column.add_child(workshop_button)
+
+	return card
 
 
 func _refresh_preview() -> void:
@@ -221,83 +250,50 @@ func _refresh_preview() -> void:
 		_preview.show_archetype(CarLoadout.archetype_code)
 
 
-# --- Pestañas -------------------------------------------------------------------
+## Columna derecha ("CONFIGURACIÓN DE CARRERA" del boceto): circuito y
+## cilindrada, siempre visibles sea cual sea el modo elegido a la
+## izquierda — Grand Prix y Time Trial reutilizan el mismo circuito/cc que
+## Carrera Rápida (Grand Prix en realidad no los usa, pero no vale la pena
+## esconder/mostrar la tarjeta entera solo por eso).
+func _build_race_config_panel() -> Control:
+	var card := UiTheme.card_panel()
+	card.custom_minimum_size = Vector2(460, 0)
+	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
-func _select_tab(tab: int) -> void:
-	_active_tab = tab
-	for t in _tab_buttons:
-		_tab_buttons[t].button_pressed = t == tab
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 12)
+	card.add_child(content)
 
-	for child in _content.get_children():
-		child.free()
-	_best_label = null
-	_track_summary_label = null
-	_direction_buttons.clear()
-	_engine_buttons.clear()
-	_online_button = null
-	_leaderboard_status = null
-	_leaderboard_container = null
-
-	match tab:
-		Tab.JUGAR:
-			_build_jugar_tab()
-		Tab.TALLER:
-			_build_launcher_tab(
-				"Taller",
-				"Elige arquetipo y piezas para tu coche.",
-				"res://scenes/ui/workshop-screen.tscn")
-		Tab.GRAND_PRIX:
-			_build_launcher_tab(
-				"Grand Prix",
-				"Corre varios circuitos seguidos y compite por la clasificación agregada.",
-				"res://scenes/ui/grand-prix-screen.tscn")
-		Tab.AMIGOS:
-			_build_launcher_tab(
-				"Amigos",
-				"Comparte tu código, añade a alguien con el suyo y compite contra su fantasma.",
-				"res://scenes/ui/friends-screen.tscn")
-		Tab.CLASIFICACIONES:
-			_build_clasificaciones_tab()
-
-
-func _build_jugar_tab() -> void:
-	_content.add_child(_heading("Circuito"))
+	content.add_child(_heading("Configuración de carrera"))
+	content.add_child(_heading("Circuito"))
 
 	_track_summary_label = Label.new()
 	_track_summary_label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
 	_track_summary_label.add_theme_color_override("font_color", UiTheme.CARD_INK)
-	_content.add_child(_track_summary_label)
+	content.add_child(_track_summary_label)
 
-	# La rejilla de circuitos (locales + los del servidor) ya no cabe cómoda
-	# aquí — vive en su propia pantalla de selección a pantalla completa.
-	var select_track_button := UiTheme.pill_button(
-		"Seleccionar circuito", _OPTION_BG, UiTheme.CARD_INK, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
-	select_track_button.pressed.connect(_open_track_select)
-	_content.add_child(select_track_button)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 12)
+	content.add_child(grid)
 
-	_content.add_child(_heading("Sentido"))
+	var tracks := TrackCatalog.all()
+	for i in tracks.size():
+		var layout: TrackCatalog.Layout = tracks[i]
+		var color: Color = _TRACK_PLACEHOLDER_COLORS[i % _TRACK_PLACEHOLDER_COLORS.size()]
+		grid.add_child(_track_quick_card(layout.id, layout.name, color))
 
-	var directions := HBoxContainer.new()
-	directions.add_theme_constant_override("separation", 16)
-	_content.add_child(directions)
+	var more_tracks := UiTheme.pill_button(
+		"Más circuitos", _OPTION_BG, UiTheme.CARD_INK, Vector2(0, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_XS)
+	more_tracks.pressed.connect(_open_track_select)
+	content.add_child(more_tracks)
 
-	var direction_group := ButtonGroup.new()
-	for i in 2:
-		var button := UiTheme.pill_button(
-			"Normal" if i == 0 else "Inverso", _OPTION_BG, UiTheme.CARD_INK,
-			UiTheme.BUTTON_MIN_SIZE, UiTheme.FONT_SM, UiTheme.GOOD, Color.WHITE)
-		button.toggle_mode = true
-		button.button_group = direction_group
-		var reversed := i == 1
-		button.pressed.connect(func() -> void: _pick_direction(reversed))
-		directions.add_child(button)
-		_direction_buttons.append(button)
-
-	_content.add_child(_heading("Cilindrada"))
+	content.add_child(_heading("Cilindrada"))
 
 	var engines := HBoxContainer.new()
 	engines.add_theme_constant_override("separation", 16)
-	_content.add_child(engines)
+	content.add_child(engines)
 
 	var engine_group := ButtonGroup.new()
 	for value in [GameSettings.EngineClass.CC50, GameSettings.EngineClass.CC100, GameSettings.EngineClass.CC150]:
@@ -314,175 +310,135 @@ func _build_jugar_tab() -> void:
 	_best_label = Label.new()
 	_best_label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
 	_best_label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
-	_content.add_child(_best_label)
+	content.add_child(_best_label)
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_content.add_child(spacer)
+	content.add_child(spacer)
 
-	# `HFlowContainer`, no `HBoxContainer`: con tres botones de este ancho la
-	# fila ya no cabe siempre en una pantalla estrecha — así el tercero baja
-	# de línea en vez de salirse (mismo motivo que las piezas del taller).
 	var buttons_row := HFlowContainer.new()
 	buttons_row.add_theme_constant_override("h_separation", 16)
 	buttons_row.add_theme_constant_override("v_separation", 16)
-	_content.add_child(buttons_row)
+	content.add_child(buttons_row)
 
-	var play := UiTheme.pill_button(
-		"Correr", UiTheme.GOOD, Color.WHITE, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
-	play.pressed.connect(func() -> void: play_pressed.emit())
-	buttons_row.add_child(play)
+	_start_button = UiTheme.pill_button(
+		"Empezar Carrera", UiTheme.GOOD, Color.WHITE, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
+	_start_button.pressed.connect(_start_race)
+	buttons_row.add_child(_start_button)
 
-	# Requiere cuenta: el emparejamiento necesita saber contra quién compite
-	# el jugador, y sin sesión no hay con qué identificarlo (TASK-284).
+	# Solo tiene sentido en Carrera Rápida: el emparejamiento compara contra
+	# el leaderboard del circuito elegido, algo que Grand Prix y Time Trial
+	# no usan (TASK-284).
 	_online_button = UiTheme.pill_button(
-		"Carrera Online", UiTheme.BLUE, Color.WHITE, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
+		"Multijugador Online", UiTheme.BLUE, Color.WHITE, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
 	_online_button.pressed.connect(_on_online_pressed)
 	buttons_row.add_child(_online_button)
 
-	# Contrarreloj de 3 vueltas (TASK-312): mismo circuito/sentido/cilindrada
-	# de arriba, sin selección propia — no requiere cuenta, es puramente local.
-	var time_trial_button := UiTheme.pill_button(
-		"Contrarreloj (3 vueltas)", UiTheme.STEEL, Color.WHITE,
-		Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
-	time_trial_button.pressed.connect(func() -> void: time_trial_pressed.emit())
-	buttons_row.add_child(time_trial_button)
-
-	_sync_jugar()
+	return card
 
 
-## Taller y Grand Prix ya son pantallas propias completas: la pestaña es solo
-## el sitio desde el que se abren, no las reconstruye por dentro.
-func _build_launcher_tab(title_text: String, description: String, scene_path: String) -> void:
-	_content.add_child(_heading(title_text))
-	_content.add_child(_label(description))
+## Tarjeta de selección rápida de circuito: color liso de marcador de
+## posición (sin miniatura de verdad todavía) + nombre. Tocar selecciona al
+## momento — a diferencia de `TrackSelectScreen`, aquí no hay paso de
+## "Confirmar", son solo los 4 del catálogo local sin circuitos del
+## backoffice que cargar.
+func _track_quick_card(id: String, label: String, color: Color) -> Control:
+	var panel := PanelContainer.new()
+	_track_cards.append(panel)
+	_track_card_ids.append(id)
 
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_content.add_child(spacer)
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 6)
+	panel.add_child(inner)
 
-	var open_button := UiTheme.pill_button("Abrir", UiTheme.GOOD, Color.WHITE)
-	open_button.pressed.connect(func() -> void:
-		add_child(load(scene_path).instantiate()))
-	_content.add_child(open_button)
+	var swatch := ColorRect.new()
+	swatch.color = color
+	swatch.custom_minimum_size = Vector2(0, 64)
+	inner.add_child(swatch)
 
+	var name_label := Label.new()
+	name_label.text = label
+	name_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	name_label.add_theme_color_override("font_color", UiTheme.CARD_INK)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inner.add_child(name_label)
 
-## Clasificaciones del circuito ya elegido en "Jugar" — mundial o acotada a
-## amigos (TASK-290), con un botón "píldora" para alternar, mismo lenguaje
-## visual que los de sentido/cilindrada. Ninguna de las dos requiere elegir
-## circuito aquí: es el mismo de siempre, así que "tu mejor marca" (Jugar) y
-## "tu clasificación" (esta pestaña) hablan siempre del mismo sitio.
-func _build_clasificaciones_tab() -> void:
-	_content.add_child(_heading("Clasificaciones"))
-	_content.add_child(_label(
-		"Del circuito, sentido y cilindrada elegidos en \"Jugar\"."))
+	var button := Button.new()
+	button.flat = true
+	button.set_anchors_preset(Control.PRESET_FULL_RECT)
+	button.pressed.connect(func() -> void: _pick_track(id))
+	panel.add_child(button)
 
-	var toggle := HBoxContainer.new()
-	toggle.add_theme_constant_override("separation", 16)
-	_content.add_child(toggle)
-
-	var mode_group := ButtonGroup.new()
-	var global_button := UiTheme.pill_button(
-		"Global", _OPTION_BG, UiTheme.CARD_INK, UiTheme.BUTTON_MIN_SIZE,
-		UiTheme.FONT_SM, UiTheme.GOOD, Color.WHITE)
-	global_button.toggle_mode = true
-	global_button.button_group = mode_group
-	global_button.button_pressed = true
-	global_button.pressed.connect(func() -> void: _load_leaderboard(false))
-	toggle.add_child(global_button)
-
-	# "Solo amigos" y no "Amigos": ya hay una pestaña de navegación con ese
-	# nombre (Tab.AMIGOS) — mismo texto en dos botones visibles a la vez
-	# confunde tanto a quien juega como a cualquier búsqueda por texto.
-	var friends_button := UiTheme.pill_button(
-		"Solo amigos", _OPTION_BG, UiTheme.CARD_INK, UiTheme.BUTTON_MIN_SIZE,
-		UiTheme.FONT_SM, UiTheme.GOOD, Color.WHITE)
-	friends_button.toggle_mode = true
-	friends_button.button_group = mode_group
-	friends_button.pressed.connect(func() -> void: _load_leaderboard(true))
-	toggle.add_child(friends_button)
-
-	_leaderboard_status = _label("Cargando…")
-	_content.add_child(_leaderboard_status)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_content.add_child(scroll)
-
-	_leaderboard_container = VBoxContainer.new()
-	_leaderboard_container.add_theme_constant_override("separation", 8)
-	_leaderboard_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_leaderboard_container)
-
-	_load_leaderboard(false)
+	return panel
 
 
-func _load_leaderboard(friends_only: bool) -> void:
-	if not is_instance_valid(_leaderboard_status):
-		return
+func _pick_track(id: String) -> void:
+	GameSettings.set_track_id(id, false)
+	_sync()
 
-	for child in _leaderboard_container.get_children():
-		child.free()
-
-	# Mismo requisito que el resto del leaderboard (`race_result_screen.gd`):
-	# sin sesión no hay con quién identificar ni una posición ni una lista de
-	# amigos.
-	if not Session.is_logged_in():
-		_leaderboard_status.text = "Necesitas una cuenta para ver clasificaciones."
-		return
-
-	_leaderboard_status.text = "Cargando…"
-
-	var key := GameSettings.track_key()
-	var response = (
-		await RacingApi.friends_leaderboard(key) if friends_only
-		else await RacingApi.leaderboard(key, 20))
-
-	# La pestaña pudo cambiar mientras esperábamos la respuesta.
-	if not is_instance_valid(_leaderboard_status):
-		return
-
-	if not response.ok or not (response.data is Dictionary):
-		_leaderboard_status.text = "No se pudo cargar la clasificación."
-		return
-
-	var entries: Array = response.data.get("entries", [])
-	if entries.is_empty():
-		_leaderboard_status.text = (
-			"Ninguno de tus amigos tiene marca en este circuito todavía." if friends_only
-			else "Todavía no hay marcas en este circuito.")
-		return
-
-	_leaderboard_status.text = ""
-	var hud_script := load("res://scripts/ui/race_hud.gd")
-	for entry in entries:
-		_leaderboard_container.add_child(_leaderboard_row(entry, hud_script))
-
-
-func _leaderboard_row(entry: Dictionary, hud_script: Script) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-
-	var position_label := _label("#%d" % int(entry.get("position", 0)))
-	position_label.custom_minimum_size = Vector2(56, 0)
-	row.add_child(position_label)
-
-	var name_label := _label(str(entry.get("displayName", "?")))
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(name_label)
-
-	row.add_child(_label(hud_script.format_ms(int(entry.get("durationMs", 0)))))
-
-	return row
-
-
-# --- Estado -------------------------------------------------------------------
 
 func _open_track_select() -> void:
 	var screen: CanvasLayer = load("res://scenes/ui/track-select-screen.tscn").instantiate()
-	screen.confirmed.connect(_sync_jugar)
+	screen.confirmed.connect(_sync)
 	add_child(screen)
+
+
+func _pick_mode(mode: int) -> void:
+	_active_mode = mode
+	for m in _mode_buttons:
+		_mode_buttons[m].button_pressed = m == mode
+	_sync_start_buttons()
+
+
+## "Empezar Carrera" hace una cosa distinta según el modo elegido a la
+## izquierda — Grand Prix ya es una pantalla propia completa (selección de
+## manga, intento en curso), así que aquí solo se abre; no se reconstruye
+## dentro de esta pantalla.
+func _start_race() -> void:
+	match _active_mode:
+		Mode.CARRERA_RAPIDA:
+			play_pressed.emit()
+		Mode.GRAND_PRIX:
+			add_child(load("res://scenes/ui/grand-prix-screen.tscn").instantiate())
+		Mode.TIME_TRIAL:
+			time_trial_pressed.emit()
+
+
+func _sync_start_buttons() -> void:
+	if not is_instance_valid(_online_button):
+		return
+	_online_button.visible = _active_mode == Mode.CARRERA_RAPIDA
+	if _active_mode == Mode.CARRERA_RAPIDA:
+		_online_button.disabled = not Session.is_logged_in()
+
+
+func _pick_engine(value: int) -> void:
+	GameSettings.set_engine_class(value)
+	_refresh_best()
+
+
+## Refleja lo que hay guardado — se llama al abrir el menú y cada vez que
+## cambia algo (circuito, cuenta), no solo una vez, porque Ajustes o la
+## pantalla de circuitos pueden haber tocado cosas por su cuenta mientras
+## este menú seguía montado detrás.
+func _sync() -> void:
+	if not is_instance_valid(_track_summary_label):
+		return
+
+	_track_summary_label.text = _track_display_name(GameSettings.track_id)
+
+	for i in _track_cards.size():
+		var matches := _track_card_ids[i] == GameSettings.track_id
+		var style := UiTheme.card_stylebox_selected(UiTheme.CLAY, UiTheme.CARD, 14) if matches \
+			else UiTheme.card_stylebox(UiTheme.CARD, 14)
+		_track_cards[i].add_theme_stylebox_override("panel", style)
+
+	for i in _engine_buttons.size():
+		_engine_buttons[i].button_pressed = i == GameSettings.engine_class
+
+	_sync_start_buttons()
+	_refresh_account()
+	_refresh_best()
 
 
 ## El nombre solo se conoce de verdad para los 4 del catálogo local — uno del
@@ -495,38 +451,10 @@ func _track_display_name(id: String) -> String:
 	return id
 
 
-func _pick_direction(reversed: bool) -> void:
-	GameSettings.set_reverse(reversed)
-	_refresh_best()
-
-
-func _pick_engine(value: int) -> void:
-	GameSettings.set_engine_class(value)
-	_refresh_best()
-
-
-## Refleja lo que hay guardado. Se llama al construir la pestaña y no solo una
-## vez, porque Ajustes puede haber cambiado cosas mientras el menú estaba
-## montado en otra pestaña.
-func _sync_jugar() -> void:
-	if is_instance_valid(_track_summary_label):
-		_track_summary_label.text = _track_display_name(GameSettings.track_id)
-
-	for i in _direction_buttons.size():
-		_direction_buttons[i].button_pressed = (i == 1) == GameSettings.reverse
-
-	for i in _engine_buttons.size():
-		_engine_buttons[i].button_pressed = i == GameSettings.engine_class
-
-	_refresh_account()
-	_refresh_best()
-
-
-## La mejor marca del circuito Y sentido seleccionados: cada combinación guarda
-## la suya, así que el número tiene que cambiar al tocar cualquiera de los dos.
-##
-## Puede llegar (vía `CarLoadout.changed`) con otra pestaña montada, en cuyo
-## caso `_best_label` es null y no hay nada que refrescar.
+## La mejor marca del circuito y cilindrada seleccionados: cada combinación
+## guarda la suya, así que el número tiene que cambiar al tocar cualquiera
+## de los dos. Puede llegar (vía `CarLoadout.changed`) antes de que el menú
+## se haya construido nunca, en cuyo caso `_best_label` es null.
 func _refresh_best() -> void:
 	if not is_instance_valid(_best_label):
 		return
@@ -535,7 +463,7 @@ func _refresh_best() -> void:
 		var script := load("res://scripts/ui/race_hud.gd")
 		_best_label.text = "Tu mejor vuelta aquí:  %s" % script.format_ms(RaceRecords.best_ms(key))
 	else:
-		_best_label.text = "Aún no has corrido esta combinación de circuito, sentido y cilindrada."
+		_best_label.text = "Aún no has corrido esta combinación de circuito y cilindrada."
 
 
 ## Entrar no es obligatorio para jugar: sin cuenta se corre igual y los tiempos
@@ -551,10 +479,10 @@ func _open_account() -> void:
 	add_child(screen)
 
 
-## El botón y la frase de estado de cuenta son de cabecera: persistentes,
-## visibles con cualquier pestaña activa (antes la frase solo vivía dentro de
-## "Jugar").
 func _refresh_account() -> void:
+	if not is_instance_valid(_account_subtitle):
+		return
+
 	if Session.is_logged_in():
 		_account_subtitle.text = "Conectado como %s — tus tiempos se suben." % Session.email
 		_account_button.text = "Salir"
@@ -562,10 +490,7 @@ func _refresh_account() -> void:
 		_account_subtitle.text = "Juegas sin cuenta. Tus tiempos se guardan aquí; con cuenta salen además en la clasificación."
 		_account_button.text = "Entrar"
 
-	# El emparejamiento necesita saber contra quién compite el jugador
-	# (TASK-284): sin cuenta no hay identidad que emparejar.
-	if is_instance_valid(_online_button):
-		_online_button.disabled = not Session.is_logged_in()
+	_sync_start_buttons()
 
 
 ## Pide el emparejamiento (TASK-284) y, si hay respuesta, deja que
@@ -576,13 +501,13 @@ func _on_online_pressed() -> void:
 
 	var response = await RacingApi.match_online_race(GameSettings.track_key())
 
-	# La pestaña pudo cambiar (o el menú cerrarse) mientras esperábamos la
+	# El menú pudo cerrarse (o el modo cambiar) mientras esperábamos la
 	# respuesta: sin esto, tocar un botón ya libre revienta el árbol.
 	if not is_instance_valid(_online_button):
 		return
 
 	_online_button.disabled = not Session.is_logged_in()
-	_online_button.text = "Carrera Online"
+	_online_button.text = "Multijugador Online"
 
 	if not response.ok:
 		push_warning("No se pudo emparejar: %s" % response.message)
@@ -614,8 +539,9 @@ func _label(text: String) -> Label:
 	return label
 
 
-## Botón de cabecera (Ajustes/Cuenta): píldora metálica oscura sobre el fondo
-## atenuado, el mismo lenguaje que la barra superior del boceto.
+## Botón de cabecera (Ajustes/Amigos/Clasificaciones/Cuenta): píldora
+## metálica oscura sobre el fondo atenuado, el mismo lenguaje que la barra
+## superior del boceto.
 func _icon_button(text: String, on_pressed: Callable) -> Button:
 	var button := UiTheme.pill_button(text, UiTheme.STEEL, Color.WHITE, Vector2(160, 72), UiTheme.FONT_XS)
 	button.pressed.connect(on_pressed)

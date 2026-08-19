@@ -2,9 +2,11 @@ extends Node
 
 const TestEnv := preload("res://tests/test_env.gd")
 
-## Prueba de la pestaña "Clasificaciones" del menú (TASK-290):
+## Prueba de la pantalla de Clasificaciones (TASK-290, ya no una pestaña del
+## menú — ver comentario en `main_menu.gd` sobre el rediseño de la pantalla
+## principal):
 ##
-##     godot --headless --quit-after 800 res://tests/leaderboard_tab_test.tscn
+##     godot --headless --quit-after 800 res://tests/leaderboard_screen_test.tscn
 ##
 ## Mismo servidor falso (TCPServer + HTTP a mano, solo GET) que
 ## `season_progress_test.gd`.
@@ -20,8 +22,6 @@ var _global_body := '{"entries":[],"yourPosition":null,"seasonId":null}'
 var _friends_status := 200
 var _friends_body := '{"entries":[],"seasonId":null}'
 
-var _menu: CanvasLayer
-
 
 func _ready() -> void:
 	TestEnv.reset()
@@ -32,19 +32,12 @@ func _ready() -> void:
 
 	Api.base_url = "http://127.0.0.1:%d/v1" % _port
 
-	var main: Node = load("res://scenes/main.tscn").instantiate()
-	add_child(main)
-	await get_tree().physics_frame
-
-	var director: RaceDirector = main.get_node("RaceDirector")
-	director.set_process(false)
-	_menu = main.get_node("MainMenu")
-
 	await _test_sin_sesion_pide_cuenta()
 	await _test_global_con_marcas()
 	await _test_alternar_a_amigos()
 	await _test_sin_marcas_de_amigos()
 	await _test_error_de_red()
+	await _test_cerrar_libera_la_pantalla()
 
 	_server.stop()
 	Session.logout()
@@ -95,14 +88,22 @@ func _reply(peer: StreamPeerTCP, text: String) -> void:
 
 # --- Casos --------------------------------------------------------------------
 
+func _open_screen() -> CanvasLayer:
+	var screen: CanvasLayer = load("res://scenes/ui/leaderboard-screen.tscn").instantiate()
+	add_child(screen)
+	await _settle()
+	return screen
+
+
 func _test_sin_sesion_pide_cuenta() -> void:
 	Session.logout()
-	_menu._select_tab(_menu.Tab.CLASIFICACIONES)
-	await _settle()
+	var screen := await _open_screen()
 
-	_check(_menu._leaderboard_status.text.find("Necesitas una cuenta") != -1, true,
+	_check(screen._status.text.find("Necesitas una cuenta") != -1, true,
 		"sin sesión, pide cuenta en vez de listar")
-	_check(_menu._leaderboard_container.get_child_count(), 0, "y no hay filas")
+	_check(screen._container.get_child_count(), 0, "y no hay filas")
+
+	screen.close_screen()
 
 
 func _test_global_con_marcas() -> void:
@@ -117,11 +118,12 @@ func _test_global_con_marcas() -> void:
 		"seasonId": null,
 	})
 
-	_menu._select_tab(_menu.Tab.CLASIFICACIONES)
-	await _settle()
+	var screen := await _open_screen()
 
-	_check(_menu._leaderboard_container.get_child_count(), 2, "carga las dos filas del ranking global")
-	_check(_find_label_containing(_menu._leaderboard_container, "Ana") != null, true, "con el nombre del primero")
+	_check(screen._container.get_child_count(), 2, "carga las dos filas del ranking global")
+	_check(_find_label_containing(screen._container, "Ana") != null, true, "con el nombre del primero")
+
+	screen.close_screen()
 
 
 func _test_alternar_a_amigos() -> void:
@@ -132,37 +134,53 @@ func _test_alternar_a_amigos() -> void:
 		"seasonId": null,
 	})
 
-	var friends_button := _find_button(_menu, "Solo amigos")
+	var screen := await _open_screen()
+	var friends_button := _find_button(screen, "Solo amigos")
 	_check(friends_button != null, true, "hay botón para alternar a solo amigos")
+
 	friends_button.pressed.emit()
 	await _settle()
 
-	_check(_menu._leaderboard_container.get_child_count(), 1, "carga el ranking de amigos, distinto del global")
-	_check(_find_label_containing(_menu._leaderboard_container, "Yo") != null, true, "con el propio jugador dentro")
+	_check(screen._container.get_child_count(), 1, "carga el ranking de amigos, distinto del global")
+	_check(_find_label_containing(screen._container, "Yo") != null, true, "con el propio jugador dentro")
+
+	screen.close_screen()
 
 
 func _test_sin_marcas_de_amigos() -> void:
 	_friends_body = '{"entries":[],"seasonId":null}'
 
-	var friends_button := _find_button(_menu, "Solo amigos")
-	friends_button.pressed.emit()
+	var screen := await _open_screen()
+	_find_button(screen, "Solo amigos").pressed.emit()
 	await _settle()
 
-	_check(_menu._leaderboard_container.get_child_count(), 0, "sin marcas de amigos, no hay filas")
-	_check(_menu._leaderboard_status.text.find("Ninguno de tus amigos") != -1, true, "y lo dice claramente")
+	_check(screen._container.get_child_count(), 0, "sin marcas de amigos, no hay filas")
+	_check(screen._status.text.find("Ninguno de tus amigos") != -1, true, "y lo dice claramente")
+
+	screen.close_screen()
 
 
 func _test_error_de_red() -> void:
 	_global_status = 500
 	_global_body = '{"code":"INTERNAL","message":"error"}'
 
-	var global_button := _find_button(_menu, "Global")
-	global_button.pressed.emit()
+	var screen := await _open_screen()
+
+	_check(screen._status.text.find("No se pudo cargar") != -1, true, "si falla la petición, lo dice")
+
+	screen.close_screen()
+	_global_status = 200
+
+
+func _test_cerrar_libera_la_pantalla() -> void:
+	var screen := await _open_screen()
+	var close_button := _find_button(screen, "Cerrar")
+	_check(close_button != null, true, "hay botón para cerrar")
+
+	close_button.pressed.emit()
 	await _settle()
 
-	_check(_menu._leaderboard_status.text.find("No se pudo cargar") != -1, true, "si falla la petición, lo dice")
-
-	_global_status = 200
+	_check(is_instance_valid(screen), false, "y cerrar libera la pantalla")
 
 
 # --- Utilidades ---------------------------------------------------------------
