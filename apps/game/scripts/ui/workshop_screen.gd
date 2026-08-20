@@ -36,11 +36,16 @@ signal closed()
 var _root: VBoxContainer
 var _status: Label
 var _body: HBoxContainer
+var _wallet_label: Label
 
 var _variants_list: VBoxContainer
 var _change_button: Button
 
-var _preview: VehiclePreview
+## El coche que cambia al elegir variante es el del garaje de fondo
+## (`RaceDirector`, encontrado por grupo — ver comentario en
+## `preview_archetype_body()`), no un visor propio: este taller ya no monta
+## ninguna pantalla en medio, solo tarjetas flotando sobre el garaje.
+var _director: Node
 
 var _speed_bar: ProgressBar
 var _grip_bar: ProgressBar
@@ -59,12 +64,18 @@ var _pending_archetype_id: String = ""
 var _archetype_buttons: Dictionary = {}
 ## category (String) → { part_id_or_"" (String): Button }
 var _part_buttons: Dictionary = {}
+## skin_id_or_"" (String) → Button — coches/skins creados en el backoffice
+## (TASK pedida tras las referencias: "ver todos los coches disponibles").
+var _skin_buttons: Dictionary = {}
 var _all_buttons: Array[Button] = []
 
 
 func _ready() -> void:
 	layer = 9
+	_director = get_tree().get_first_node_in_group("race_director")
 	_build_shell()
+	Wallet.changed.connect(_refresh_wallet)
+	_refresh_wallet()
 
 	if not Session.is_logged_in():
 		_show_locked()
@@ -98,6 +109,7 @@ func _build_shell() -> void:
 	var header_spacer := Control.new()
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(header_spacer)
+	header.add_child(_build_wallet_badge())
 	header.add_child(_button("Cerrar", close_screen))
 
 	_status = _label(
@@ -110,12 +122,35 @@ func _build_shell() -> void:
 	_root.add_child(_status)
 
 
+## Mismo lenguaje visual que la insignia de saldo del menú principal
+## (`main_menu.gd`) — el taller es donde de verdad se gasta, así que tiene
+## que estar tan a la vista como en el menú (criterio explícito de TASK-320).
+func _build_wallet_badge() -> Control:
+	var badge := UiTheme.card_panel(UiTheme.CARD, 14, 16)
+	_wallet_label = Label.new()
+	_wallet_label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
+	_wallet_label.add_theme_color_override("font_color", UiTheme.CARD_INK)
+	badge.add_child(_wallet_label)
+	return badge
+
+
+func _refresh_wallet() -> void:
+	if not is_instance_valid(_wallet_label):
+		return
+	_wallet_label.text = "🪙 %d" % Wallet.balance
+
+
 func _show_locked() -> void:
 	_status.text = "Necesitas una cuenta para usar el taller: entra desde \"Cuenta\" en el menú."
 	_status.add_theme_color_override("font_color", UiTheme.BAD)
 
 
 func close_screen() -> void:
+	# Si se estaba mirando una variante sin confirmar, el coche del garaje
+	# tiene que volver al equipado de verdad — si no, se queda enseñando
+	# algo que en realidad no está puesto.
+	if is_instance_valid(_director):
+		_director.restore_equipped_body()
 	closed.emit()
 	queue_free()
 
@@ -154,8 +189,9 @@ func _save() -> void:
 	var tires_id = _selected_part_id("TIRES")
 	var wing_id = _selected_part_id("WING")
 	var chassis_id = _selected_part_id("CHASSIS")
+	var skin_id = _selected_skin_id()
 
-	var response = await RacingApi.set_car_loadout(archetype_id, tires_id, wing_id, chassis_id)
+	var response = await RacingApi.set_car_loadout(archetype_id, tires_id, wing_id, chassis_id, skin_id)
 
 	_busy = false
 	_set_buttons_disabled(false)
@@ -178,6 +214,11 @@ func _selected_part_id(category: String):
 	return current.get("id") if current is Dictionary else null
 
 
+func _selected_skin_id():
+	var current: Variant = _loadout.get("skin")
+	return current.get("id") if current is Dictionary else null
+
+
 func _part_field(category: String) -> String:
 	match category:
 		"TIRES": return "tiresPart"
@@ -195,13 +236,71 @@ func _build_loaded() -> void:
 	_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_root.add_child(_body)
 
-	_body.add_child(_build_variants_panel())
-	_body.add_child(_build_preview_panel())
-	_body.add_child(_build_upgrades_panel())
+	_populate_body()
 
 	_sync_buttons()
 	_refresh_stats()
 	_show_preview(_pending_archetype_id)
+
+
+func _populate_body() -> void:
+	_body.add_child(_build_variants_panel())
+
+	# Sin panel central: entre las dos tarjetas se ve el garaje de verdad
+	# (`MenuGarage` + el coche equipado, ver `race_director.gd`) — pedido
+	# explícito, nada de una pantalla propia flotando en medio.
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(spacer)
+
+	_body.add_child(_build_upgrades_panel())
+
+
+## Tras comprar algo en la tienda (TASK-320): recarga catálogo y saldo, y
+## reconstruye el cuerpo entero — más simple y fiable que ir tocando a mano
+## el botón que cambió de bloqueado a comprado (y puede que otros que ahora
+## sí se puedan pagar con el saldo nuevo). Comprar no es una acción tan
+## frecuente como para que el coste de reconstruir importe.
+func _reload_after_purchase() -> void:
+	var catalog_response = await RacingApi.car_catalog()
+	if catalog_response.ok and catalog_response.data is Dictionary:
+		_catalog = catalog_response.data
+	await Wallet.refresh()
+
+	for child in _body.get_children():
+		_body.remove_child(child)
+		child.free()
+	_archetype_buttons.clear()
+	_part_buttons.clear()
+	_skin_buttons.clear()
+	_all_buttons.clear()
+
+	_populate_body()
+	_sync_buttons()
+	_refresh_stats()
+	_show_preview(_pending_archetype_id)
+
+
+## Compra un arquetipo, pieza o skin bloqueado (TASK-320). No lo equipa —
+## comprar y equipar son dos toques distintos, igual que en cualquier tienda:
+## así un jugador puede comprar piezas para más adelante sin perder lo que
+## lleva puesto ahora mismo.
+func _purchase(item_type: String, item_id: String) -> void:
+	if _busy:
+		return
+	_busy = true
+	_set_buttons_disabled(true)
+
+	var response = await RacingApi.purchase_car_item(item_type, item_id)
+
+	_busy = false
+
+	if not response.ok:
+		_flash_error(response.message if not response.message.is_empty() else "No se pudo comprar.")
+		_set_buttons_disabled(false)
+		return
+
+	await _reload_after_purchase()
 
 
 ## Columna izquierda ("VARIANTES DISPONIBLES" del boceto): lista vertical de
@@ -227,12 +326,32 @@ func _build_variants_panel() -> Control:
 	scroll.add_child(_variants_list)
 
 	var archetype_group := ButtonGroup.new()
-	for archetype in _catalog.get("archetypes", []):
-		var button := _toggle_button(archetype.get("name", archetype.get("code", "?")), archetype_group)
+	for entry in _catalog.get("archetypes", []):
+		var archetype: Dictionary = entry.get("archetype", {})
+		var id: String = archetype.get("id", "")
+		var owned: bool = entry.get("owned", false)
+		var price = archetype.get("priceCoins")
+		var display_name: String = archetype.get("name", archetype.get("code", "?"))
+
+		var button: Button
+		if owned:
+			button = _toggle_button(display_name, archetype_group)
+			button.pressed.connect(func() -> void: _preview_archetype(id))
+		elif price != null:
+			# Coche del backoffice bloqueado pero a la venta (TASK-320): un
+			# toque compra al momento — mismo criterio "tocar = comprometerse"
+			# que ya usa "Coches disponibles" para equipar uno ya poseído.
+			button = _button(
+				"🔒 %s · %d monedas" % [display_name, int(price)],
+				func() -> void: _purchase("ARCHETYPE", id))
+		else:
+			# Bloqueado y sin precio: existe pero no se puede ni previsualizar
+			# ni comprar todavía (p.ej. un desbloqueable solo por racha).
+			button = _toggle_button("🔒 %s" % display_name, archetype_group)
+			button.disabled = true
+
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		var id: String = archetype.get("id", "")
-		button.pressed.connect(func() -> void: _preview_archetype(id))
 		_variants_list.add_child(button)
 		_archetype_buttons[id] = button
 
@@ -243,19 +362,6 @@ func _build_variants_panel() -> Control:
 	panel.add_child(_change_button)
 
 	return card
-
-
-## Columna central: vista 3D en vivo del arquetipo resaltado en la lista
-## (`VehiclePreview`, compartida con el menú principal).
-func _build_preview_panel() -> Control:
-	var panel := VBoxContainer.new()
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	_preview = VehiclePreview.new()
-	panel.add_child(_preview)
-
-	return panel
 
 
 ## Columna derecha ("ACCESORIOS Y MEJORAS" del boceto), sin la parte de
@@ -307,16 +413,70 @@ func _build_upgrades_panel() -> Control:
 		row.add_child(none_button)
 		buttons[""] = none_button
 
-		for part in _catalog.get("parts", []):
+		for part_entry in _catalog.get("parts", []):
+			var part: Dictionary = part_entry.get("part", {})
 			if part.get("category", "") != category:
 				continue
-			var button := _toggle_button(part.get("name", part.get("code", "?")), group)
 			var id: String = part.get("id", "")
-			button.pressed.connect(func() -> void: _pick_part(category, id))
+			var owned: bool = part_entry.get("owned", false)
+			var price = part.get("priceCoins")
+			var part_name: String = part.get("name", part.get("code", "?"))
+
+			var button: Button
+			if owned:
+				button = _toggle_button(part_name, group)
+				button.pressed.connect(func() -> void: _pick_part(category, id))
+			elif price != null:
+				button = _button(
+					"🔒 %s · %d monedas" % [part_name, int(price)],
+					func() -> void: _purchase("PART", id))
+			else:
+				button = _toggle_button("🔒 %s" % part_name, group)
+				button.disabled = true
+
 			row.add_child(button)
 			buttons[id] = button
 
 		_part_buttons[category] = buttons
+
+	parts_column.add_child(_heading("Coches disponibles"))
+	var skins_row := HFlowContainer.new()
+	skins_row.add_theme_constant_override("h_separation", 12)
+	skins_row.add_theme_constant_override("v_separation", 12)
+	parts_column.add_child(skins_row)
+
+	var skin_group := ButtonGroup.new()
+
+	var no_skin_button := _toggle_button("Ninguno", skin_group)
+	no_skin_button.pressed.connect(func() -> void: _pick_skin(""))
+	skins_row.add_child(no_skin_button)
+	_skin_buttons[""] = no_skin_button
+
+	for skin_entry in _catalog.get("skins", []):
+		var skin: Dictionary = skin_entry.get("skin", {})
+		var id: String = skin.get("id", "")
+		var owned: bool = skin_entry.get("owned", false)
+		var price = skin.get("priceCoins")
+		var skin_name: String = skin.get("name", skin.get("code", "?"))
+
+		# Los creados en el backoffice que el jugador todavía no tiene se ven
+		# igual (para que sepa que existen); si tienen precio se pueden
+		# comprar al toque, si no, se quedan bloqueados sin más — mismo
+		# criterio que arquetipos y piezas (TASK-320).
+		var button: Button
+		if owned:
+			button = _toggle_button(skin_name, skin_group)
+			button.pressed.connect(func() -> void: _pick_skin(id))
+		elif price != null:
+			button = _button(
+				"🔒 %s · %d monedas" % [skin_name, int(price)],
+				func() -> void: _purchase("SKIN", id))
+		else:
+			button = _toggle_button("🔒 %s" % skin_name, skin_group)
+			button.disabled = true
+
+		skins_row.add_child(button)
+		_skin_buttons[id] = button
 
 	return card
 
@@ -358,36 +518,50 @@ func _stat_bar() -> ProgressBar:
 func _preview_archetype(id: String) -> void:
 	_pending_archetype_id = id
 	_sync_buttons()
-	_show_preview(id)
+	_show_preview(id, true)
 
 
 func _confirm_archetype() -> void:
 	var committed_id: String = _loadout.get("archetype", {}).get("id", "")
 	if _pending_archetype_id == committed_id or _pending_archetype_id == "":
 		return
-	_loadout["archetype"] = _find(_catalog.get("archetypes", []), _pending_archetype_id)
+	_loadout["archetype"] = _find_wrapped(_catalog.get("archetypes", []), "archetype", _pending_archetype_id)
 	_save()
 
 
-func _show_preview(archetype_id: String) -> void:
-	if not is_instance_valid(_preview):
+func _show_preview(archetype_id: String, animate: bool = false) -> void:
+	if not is_instance_valid(_director):
 		return
 
-	var archetype: Variant = _find(_catalog.get("archetypes", []), archetype_id)
+	var archetype: Variant = _find_wrapped(_catalog.get("archetypes", []), "archetype", archetype_id)
 	var code: String = archetype.get("code", CarLoadout.DEFAULT_ARCHETYPE_CODE) if archetype is Dictionary \
 		else CarLoadout.DEFAULT_ARCHETYPE_CODE
-	_preview.show_archetype(code)
+	_director.preview_archetype_body(code, animate)
 
 
 func _pick_part(category: String, id: String) -> void:
-	_loadout[_part_field(category)] = _find(_catalog.get("parts", []), id) if id != "" else null
+	_loadout[_part_field(category)] = _find_wrapped(_catalog.get("parts", []), "part", id) if id != "" else null
 	_save()
 
 
-func _find(items: Array, id: String) -> Variant:
-	for item in items:
-		if item.get("id", "") == id:
-			return item
+## Coche del backoffice elegido en "Coches disponibles". Mismo patrón que
+## `_pick_part`: guarda al momento, sin paso de "Cambiar" — a diferencia del
+## arquetipo, un skin no cambia las stats, así que no hay nada que
+## previsualizar antes de comprometerse.
+func _pick_skin(id: String) -> void:
+	_loadout["skin"] = _find_wrapped(_catalog.get("skins", []), "skin", id) if id != "" else null
+	_save()
+
+
+## Los tres catálogos (`archetypes`, `parts`, `skins`) tienen la misma forma
+## desde la API (TASK-319): `[{<key>: {...}, owned: bool}]`, no una lista
+## plana — de ahí este helper en vez de comparar `item.id` directamente.
+## Devuelve el objeto de dentro, con la misma forma que ya trae `_loadout`.
+func _find_wrapped(items: Array, key: String, id: String) -> Variant:
+	for entry in items:
+		var value: Dictionary = entry.get(key, {})
+		if value.get("id", "") == id:
+			return value
 	return null
 
 
@@ -399,12 +573,65 @@ func _sync_buttons() -> void:
 	if is_instance_valid(_change_button):
 		_change_button.disabled = _pending_archetype_id == committed_id or _pending_archetype_id == ""
 
+	var owned_archetype_ids := {}
+	var purchasable_archetype_ids := {}
+	for archetype_entry in _catalog.get("archetypes", []):
+		var archetype: Dictionary = archetype_entry.get("archetype", {})
+		var aid: String = archetype.get("id", "")
+		if archetype_entry.get("owned", false):
+			owned_archetype_ids[aid] = true
+		elif archetype.get("priceCoins") != null:
+			purchasable_archetype_ids[aid] = true
+	for id in _archetype_buttons:
+		# Bloqueado y sin desbloquear ni comprar: se queda deshabilitado pase
+		# lo que pase con `_set_buttons_disabled`. Uno comprable, en cambio,
+		# tiene que seguir tocable — es la única acción posible ahí.
+		if not owned_archetype_ids.get(id, false) and not purchasable_archetype_ids.get(id, false):
+			_archetype_buttons[id].disabled = true
+
 	for entry in CATEGORIES:
 		var category: String = entry[0]
 		var selected = _selected_part_id(category)
 		var buttons: Dictionary = _part_buttons.get(category, {})
 		for id in buttons:
 			buttons[id].button_pressed = id == (selected if selected != null else "")
+
+	var owned_part_ids := {"": true}
+	var purchasable_part_ids := {}
+	for part_entry in _catalog.get("parts", []):
+		var part: Dictionary = part_entry.get("part", {})
+		var pid: String = part.get("id", "")
+		if part_entry.get("owned", false):
+			owned_part_ids[pid] = true
+		elif part.get("priceCoins") != null:
+			purchasable_part_ids[pid] = true
+	for entry in CATEGORIES:
+		var buttons: Dictionary = _part_buttons.get(entry[0], {})
+		for id in buttons:
+			if not owned_part_ids.get(id, false) and not purchasable_part_ids.get(id, false):
+				buttons[id].disabled = true
+
+	var selected_skin = _selected_skin_id()
+	var owned_skin_ids := {"": true}
+	var purchasable_skin_ids := {}
+	for skin_entry in _catalog.get("skins", []):
+		var skin: Dictionary = skin_entry.get("skin", {})
+		var sid: String = skin.get("id", "")
+		if skin_entry.get("owned", false):
+			owned_skin_ids[sid] = true
+		elif skin.get("priceCoins") != null:
+			purchasable_skin_ids[sid] = true
+	for id in _skin_buttons:
+		var button: Button = _skin_buttons[id]
+		# Un botón de compra no es de tipo toggle, así que no tiene
+		# `button_pressed` que sincronizar — solo los ya equipables lo son.
+		if owned_skin_ids.get(id, false):
+			button.button_pressed = id == (selected_skin if selected_skin != null else "")
+		# No desbloqueado ni comprable: se queda deshabilitado pase lo que
+		# pase con `_set_buttons_disabled` — un toque ahí no puede llegar a
+		# `_pick_skin` ni a `_purchase`.
+		if not owned_skin_ids.get(id, false) and not purchasable_skin_ids.get(id, false):
+			button.disabled = true
 
 
 func _refresh_stats() -> void:

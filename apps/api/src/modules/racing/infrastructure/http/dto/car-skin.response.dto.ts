@@ -8,6 +8,8 @@ export class CarSkinResponseDto {
   @ApiProperty({ example: 'res://models/vehicle-truck-purple.glb' })
   modelPath!: string;
   @ApiProperty() isUnlockedByDefault!: boolean;
+  @ApiProperty({ nullable: true, description: 'null = no está a la venta.' })
+  priceCoins!: number | null;
   @ApiProperty() isActive!: boolean;
 
   static fromDomain(skin: CarSkin): CarSkinResponseDto {
@@ -17,6 +19,7 @@ export class CarSkinResponseDto {
     dto.name = skin.name;
     dto.modelPath = skin.modelPath;
     dto.isUnlockedByDefault = skin.isUnlockedByDefault;
+    dto.priceCoins = skin.priceCoins;
     dto.isActive = skin.isActive;
     return dto;
   }

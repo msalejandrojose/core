@@ -3,9 +3,9 @@ import { CarArchetype } from './entities/car-archetype.entity';
 import { CarPart, CarPartCategory } from './entities/car-part.entity';
 
 // Mismos valores de partida decididos en TASK-262/263.
-const NORMAL = new CarArchetype('a1', 'normal', 'Normal', 1.0, 1.0, 1.0, true);
-const F1 = new CarArchetype('a2', 'f1', 'F1', 1.25, 1.0, 0.85, true);
-const AWD = new CarArchetype('a3', '4x4', '4x4', 0.85, 1.0, 1.15, true);
+const NORMAL = new CarArchetype('a1', 'normal', 'Normal', 1.0, 1.0, 1.0, true, null, true);
+const F1 = new CarArchetype('a2', 'f1', 'F1', 1.25, 1.0, 0.85, true, null, true);
+const AWD = new CarArchetype('a3', '4x4', '4x4', 0.85, 1.0, 1.15, true, null, true);
 
 const GRIP_TIRES = new CarPart(
   'p1',
@@ -15,6 +15,8 @@ const GRIP_TIRES = new CarPart(
   -0.05,
   0.1,
   true,
+  null,
+  true,
 );
 const SPEED_TIRES = new CarPart(
   'p2',
@@ -23,6 +25,8 @@ const SPEED_TIRES = new CarPart(
   'Neumáticos de velocidad',
   0.1,
   -0.05,
+  true,
+  null,
   true,
 );
 
@@ -45,6 +49,8 @@ describe('computeCarStats', () => {
       'Alerón grande',
       -0.08,
       0.12,
+      true,
+      null,
       true,
     );
     const stats = computeCarStats(NORMAL, { tires: SPEED_TIRES, wing });

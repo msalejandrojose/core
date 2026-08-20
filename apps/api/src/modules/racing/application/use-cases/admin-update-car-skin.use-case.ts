@@ -11,6 +11,7 @@ export interface UpdateCarSkinInput {
   name?: string;
   modelPath?: string;
   isUnlockedByDefault?: boolean;
+  priceCoins?: number | null;
   isActive?: boolean;
 }
 
@@ -28,6 +29,7 @@ export class AdminUpdateCarSkinUseCase {
       name: input.name,
       modelPath: input.modelPath,
       isUnlockedByDefault: input.isUnlockedByDefault,
+      priceCoins: input.priceCoins,
       isActive: input.isActive,
     });
   }

@@ -53,6 +53,7 @@ func register(p_email: String, password: String, first_name: String):
 		"email": p_email,
 		"password": password,
 		"firstName": first_name,
+		"userType": "APP",
 	}, false)
 	_adopt(response)
 	return response

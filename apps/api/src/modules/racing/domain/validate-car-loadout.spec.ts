@@ -11,6 +11,8 @@ const ACTIVE_ARCHETYPE = new CarArchetype(
   1,
   1,
   true,
+  null,
+  true,
 );
 const INACTIVE_ARCHETYPE = new CarArchetype(
   'a2',
@@ -19,6 +21,8 @@ const INACTIVE_ARCHETYPE = new CarArchetype(
   1.25,
   1,
   0.85,
+  true,
+  null,
   false,
 );
 
@@ -30,6 +34,8 @@ const ACTIVE_TIRES = new CarPart(
   -0.05,
   0.1,
   true,
+  null,
+  true,
 );
 const INACTIVE_TIRES = new CarPart(
   'p2',
@@ -38,6 +44,8 @@ const INACTIVE_TIRES = new CarPart(
   'Neumáticos descatalogados',
   0,
   0,
+  true,
+  null,
   false,
 );
 const WING = new CarPart(
@@ -48,6 +56,8 @@ const WING = new CarPart(
   -0.08,
   0.12,
   true,
+  null,
+  true,
 );
 
 const ACTIVE_SKIN = new CarSkin(
@@ -56,6 +66,7 @@ const ACTIVE_SKIN = new CarSkin(
   'Púrpura',
   'res://models/vehicle-truck-purple.glb',
   true,
+  null,
   true,
 );
 const INACTIVE_SKIN = new CarSkin(
@@ -64,6 +75,7 @@ const INACTIVE_SKIN = new CarSkin(
   'Retirado',
   'res://models/vehicle-truck-purple.glb',
   true,
+  null,
   false,
 );
 

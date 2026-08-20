@@ -55,10 +55,20 @@ func _process(delta: float) -> void:
 		_pivot.rotate_y(delta * SPIN_SPEED)
 
 
+## Cuánto se aparta a un lado el coche nuevo antes de entrar, y cuánto tarda
+## en llegar — pedido tras ver la referencia del taller: cambiar de variante
+## tiene que sentirse como que el coche entra conduciendo, no un cambio de
+## golpe.
+const ENTRY_OFFSET_X := 5.0
+const ENTRY_DURATION_S := 0.55
+
 ## Cambia el modelo mostrado por el del arquetipo pedido — mismo mapa que usa
 ## `RaceDirector` al montar el coche en carrera, así que lo que se ve aquí es
-## siempre el mismo modelo que se monta de verdad.
-func show_archetype(archetype_code: String) -> void:
+## siempre el mismo modelo que se monta de verdad. `animate`: solo tiene
+## sentido al cambiar de variante con el visor ya en pantalla — la primera
+## vez que se construye (taller/menú recién abiertos) el coche aparece ya
+## puesto, sin conducir desde ningún sitio.
+func show_archetype(archetype_code: String, animate: bool = false) -> void:
 	if _model != null:
 		_pivot.remove_child(_model)
 		_model.queue_free()
@@ -68,6 +78,12 @@ func show_archetype(archetype_code: String) -> void:
 		archetype_code, RaceDirector.ARCHETYPE_MODELS[CarLoadout.DEFAULT_ARCHETYPE_CODE])
 	_model = load(path).instantiate()
 	_pivot.add_child(_model)
+
+	if animate:
+		_model.position.x = ENTRY_OFFSET_X
+		var tween := create_tween()
+		tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(_model, "position:x", 0.0, ENTRY_DURATION_S)
 
 
 func has_model() -> bool:

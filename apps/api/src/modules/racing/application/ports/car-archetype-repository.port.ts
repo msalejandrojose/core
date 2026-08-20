@@ -17,6 +17,11 @@ export interface CreateCarArchetypeData {
   speedScale: number;
   grip: number;
   offroadGripModifier: number;
+  /** Default true: hasta que se ponga a false explícitamente (TASK-320,
+   *  tienda) no bloquea nada. */
+  isUnlockedByDefault?: boolean;
+  /** null = no está a la venta. */
+  priceCoins?: number | null;
   isActive: boolean;
 }
 
@@ -25,6 +30,8 @@ export interface UpdateCarArchetypePatch {
   speedScale?: number;
   grip?: number;
   offroadGripModifier?: number;
+  isUnlockedByDefault?: boolean;
+  priceCoins?: number | null;
   isActive?: boolean;
 }
 

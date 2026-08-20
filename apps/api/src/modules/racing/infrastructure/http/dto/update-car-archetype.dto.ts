@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 // Sin `code`: no es editable una vez creado (ver CreateCarArchetypeDto).
 export class UpdateCarArchetypeDto {
@@ -22,6 +29,20 @@ export class UpdateCarArchetypeDto {
   @IsOptional()
   @IsNumber()
   offroadGripModifier?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isUnlockedByDefault?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Precio en la tienda. null = quitarlo de la venta.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  priceCoins?: number | null;
 
   @ApiPropertyOptional()
   @IsOptional()

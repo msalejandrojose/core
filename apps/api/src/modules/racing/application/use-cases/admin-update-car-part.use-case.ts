@@ -15,6 +15,8 @@ export interface UpdateCarPartInput {
   name?: string;
   speedScale?: number;
   grip?: number;
+  isUnlockedByDefault?: boolean;
+  priceCoins?: number | null;
   isActive?: boolean;
 }
 
@@ -33,6 +35,8 @@ export class AdminUpdateCarPartUseCase {
       name: input.name,
       speedScale: input.speedScale,
       grip: input.grip,
+      isUnlockedByDefault: input.isUnlockedByDefault,
+      priceCoins: input.priceCoins,
       isActive: input.isActive,
     });
   }

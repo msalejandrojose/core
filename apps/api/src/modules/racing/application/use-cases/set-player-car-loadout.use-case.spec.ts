@@ -8,14 +8,27 @@ import { PlayerCarLoadout } from '../../domain/entities/player-car-loadout.entit
 import { CarArchetypeRepositoryPort } from '../ports/car-archetype-repository.port';
 import { CarPartRepositoryPort } from '../ports/car-part-repository.port';
 import { CarSkinRepositoryPort } from '../ports/car-skin-repository.port';
+import { PlayerCarArchetypeRepositoryPort } from '../ports/player-car-archetype-repository.port';
 import {
   PlayerCarLoadoutRepositoryPort,
   UpsertPlayerCarLoadoutData,
 } from '../ports/player-car-loadout-repository.port';
+import { PlayerCarPartRepositoryPort } from '../ports/player-car-part-repository.port';
 import { PlayerCarSkinRepositoryPort } from '../ports/player-car-skin-repository.port';
 import { SetPlayerCarLoadoutUseCase } from './set-player-car-loadout.use-case';
 
-const NORMAL = new CarArchetype('a1', 'normal', 'Normal', 1, 1, 1, true);
+const NORMAL = new CarArchetype('a1', 'normal', 'Normal', 1, 1, 1, true, null, true);
+const LOCKED_ARCHETYPE = new CarArchetype(
+  'a2',
+  'f1',
+  'F1',
+  1.25,
+  1,
+  0.85,
+  false,
+  2000,
+  true,
+);
 const TIRES = new CarPart(
   'p1',
   'tires-grip',
@@ -23,6 +36,8 @@ const TIRES = new CarPart(
   'Neumáticos de agarre',
   -0.05,
   0.1,
+  true,
+  null,
   true,
 );
 const WING = new CarPart(
@@ -33,6 +48,19 @@ const WING = new CarPart(
   -0.08,
   0.12,
   true,
+  null,
+  true,
+);
+const LOCKED_TIRES = new CarPart(
+  'p3',
+  'tires-speed',
+  CarPartCategory.TIRES,
+  'Neumáticos de velocidad',
+  0.1,
+  -0.05,
+  false,
+  300,
+  true,
 );
 const FREE_SKIN = new CarSkin(
   's1',
@@ -40,6 +68,7 @@ const FREE_SKIN = new CarSkin(
   'Púrpura',
   'res://models/vehicle-truck-purple.glb',
   true,
+  null,
   true,
 );
 const EXCLUSIVE_SKIN = new CarSkin(
@@ -48,11 +77,17 @@ const EXCLUSIVE_SKIN = new CarSkin(
   'Dorado',
   'res://models/vehicle-truck-gold.glb',
   false,
+  1500,
   true,
 );
 
 class FakeArchetypeRepository implements CarArchetypeRepositoryPort {
-  constructor(private readonly byId = new Map([[NORMAL.id, NORMAL]])) {}
+  constructor(
+    private readonly byId = new Map([
+      [NORMAL.id, NORMAL],
+      [LOCKED_ARCHETYPE.id, LOCKED_ARCHETYPE],
+    ]),
+  ) {}
   findById(id: string): Promise<CarArchetype | null> {
     return Promise.resolve(this.byId.get(id) ?? null);
   }
@@ -78,6 +113,7 @@ class FakePartRepository implements CarPartRepositoryPort {
     private readonly byId = new Map([
       [TIRES.id, TIRES],
       [WING.id, WING],
+      [LOCKED_TIRES.id, LOCKED_TIRES],
     ]),
   ) {}
   findById(id: string): Promise<CarPart | null> {
@@ -141,6 +177,36 @@ class FakePlayerCarSkinRepository implements PlayerCarSkinRepositoryPort {
   }
 }
 
+class FakePlayerCarArchetypeRepository
+  implements PlayerCarArchetypeRepositoryPort
+{
+  constructor(private readonly owned = new Set<string>()) {}
+  listOwnedArchetypeIds(): Promise<string[]> {
+    return Promise.resolve([...this.owned]);
+  }
+  ownsArchetype(_userId: string, archetypeId: string): Promise<boolean> {
+    return Promise.resolve(this.owned.has(archetypeId));
+  }
+  grant(_userId: string, archetypeId: string): Promise<void> {
+    this.owned.add(archetypeId);
+    return Promise.resolve();
+  }
+}
+
+class FakePlayerCarPartRepository implements PlayerCarPartRepositoryPort {
+  constructor(private readonly owned = new Set<string>()) {}
+  listOwnedPartIds(): Promise<string[]> {
+    return Promise.resolve([...this.owned]);
+  }
+  ownsPart(_userId: string, partId: string): Promise<boolean> {
+    return Promise.resolve(this.owned.has(partId));
+  }
+  grant(_userId: string, partId: string): Promise<void> {
+    this.owned.add(partId);
+    return Promise.resolve();
+  }
+}
+
 class FakeLoadoutRepository implements PlayerCarLoadoutRepositoryPort {
   upserted: UpsertPlayerCarLoadoutData | null = null;
   constructor(private existing: PlayerCarLoadout | null) {}
@@ -168,6 +234,8 @@ class FakeLoadoutRepository implements PlayerCarLoadoutRepositoryPort {
 function buildUseCase(
   loadouts: FakeLoadoutRepository,
   ownedSkins: Set<string> = new Set(),
+  ownedArchetypes: Set<string> = new Set(),
+  ownedParts: Set<string> = new Set(),
 ): SetPlayerCarLoadoutUseCase {
   return new SetPlayerCarLoadoutUseCase(
     loadouts,
@@ -175,6 +243,8 @@ function buildUseCase(
     new FakePartRepository(),
     new FakeSkinRepository(),
     new FakePlayerCarSkinRepository(ownedSkins),
+    new FakePlayerCarArchetypeRepository(ownedArchetypes),
+    new FakePlayerCarPartRepository(ownedParts),
   );
 }
 
@@ -322,5 +392,81 @@ describe('SetPlayerCarLoadoutUseCase', () => {
         skinId: 'missing',
       }),
     ).rejects.toMatchObject({ code: 'RACING_CAR_SKIN_NOT_FOUND' });
+  });
+
+  // --- Propiedad de arquetipos y piezas (TASK-319) -----------------------------
+
+  it('equipa un arquetipo gratis (isUnlockedByDefault) sin necesitar propiedad', async () => {
+    const loadouts = new FakeLoadoutRepository(null);
+    const useCase = buildUseCase(loadouts);
+
+    await useCase.execute('user-1', { archetypeId: NORMAL.id });
+
+    expect(loadouts.upserted?.archetypeId).toBe(NORMAL.id);
+  });
+
+  it('rechaza un arquetipo bloqueado que el jugador no tiene desbloqueado', async () => {
+    const loadouts = new FakeLoadoutRepository(null);
+    const useCase = buildUseCase(loadouts);
+
+    await expect(
+      useCase.execute('user-1', { archetypeId: LOCKED_ARCHETYPE.id }),
+    ).rejects.toMatchObject({ code: 'RACING_CAR_ARCHETYPE_NOT_OWNED' });
+    expect(loadouts.upserted).toBeNull();
+  });
+
+  it('acepta un arquetipo bloqueado que el jugador sí tiene desbloqueado', async () => {
+    const loadouts = new FakeLoadoutRepository(null);
+    const useCase = buildUseCase(
+      loadouts,
+      new Set(),
+      new Set([LOCKED_ARCHETYPE.id]),
+    );
+
+    await useCase.execute('user-1', { archetypeId: LOCKED_ARCHETYPE.id });
+
+    expect(loadouts.upserted?.archetypeId).toBe(LOCKED_ARCHETYPE.id);
+  });
+
+  it('equipa una pieza gratis (isUnlockedByDefault) sin necesitar propiedad', async () => {
+    const loadouts = new FakeLoadoutRepository(null);
+    const useCase = buildUseCase(loadouts);
+
+    await useCase.execute('user-1', {
+      archetypeId: NORMAL.id,
+      tiresPartId: TIRES.id,
+    });
+
+    expect(loadouts.upserted?.tiresPartId).toBe(TIRES.id);
+  });
+
+  it('rechaza una pieza bloqueada que el jugador no tiene desbloqueada', async () => {
+    const loadouts = new FakeLoadoutRepository(null);
+    const useCase = buildUseCase(loadouts);
+
+    await expect(
+      useCase.execute('user-1', {
+        archetypeId: NORMAL.id,
+        tiresPartId: LOCKED_TIRES.id,
+      }),
+    ).rejects.toMatchObject({ code: 'RACING_CAR_PART_NOT_OWNED' });
+    expect(loadouts.upserted).toBeNull();
+  });
+
+  it('acepta una pieza bloqueada que el jugador sí tiene desbloqueada', async () => {
+    const loadouts = new FakeLoadoutRepository(null);
+    const useCase = buildUseCase(
+      loadouts,
+      new Set(),
+      new Set(),
+      new Set([LOCKED_TIRES.id]),
+    );
+
+    await useCase.execute('user-1', {
+      archetypeId: NORMAL.id,
+      tiresPartId: LOCKED_TIRES.id,
+    });
+
+    expect(loadouts.upserted?.tiresPartId).toBe(LOCKED_TIRES.id);
   });
 });

@@ -291,10 +291,35 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Ya existe un arquetipo con ese código.',
   },
+  RACING_CAR_ARCHETYPE_NOT_OWNED: {
+    httpStatus: 403,
+    level: 'warn',
+    defaultMessage: 'El jugador no tiene desbloqueado ese arquetipo.',
+  },
   RACING_CAR_PART_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Pieza de coche no encontrada.',
+  },
+  RACING_CAR_PART_NOT_OWNED: {
+    httpStatus: 403,
+    level: 'warn',
+    defaultMessage: 'El jugador no tiene desbloqueada esa pieza.',
+  },
+  RACING_INSUFFICIENT_COINS: {
+    httpStatus: 402,
+    level: 'warn',
+    defaultMessage: 'No tienes suficientes monedas.',
+  },
+  RACING_CAR_ITEM_ALREADY_OWNED: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya tienes esto — no hay nada que comprar.',
+  },
+  RACING_CAR_ITEM_NOT_FOR_SALE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Esto no está a la venta.',
   },
   RACING_CAR_PART_CODE_ALREADY_EXISTS: {
     httpStatus: 409,

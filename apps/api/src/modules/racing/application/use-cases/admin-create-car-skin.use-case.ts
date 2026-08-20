@@ -11,6 +11,7 @@ export interface CreateCarSkinInput {
   name: string;
   modelPath: string;
   isUnlockedByDefault?: boolean;
+  priceCoins?: number | null;
   isActive?: boolean;
 }
 
@@ -29,6 +30,7 @@ export class AdminCreateCarSkinUseCase {
       name: input.name,
       modelPath: input.modelPath,
       isUnlockedByDefault: input.isUnlockedByDefault ?? true,
+      priceCoins: input.priceCoins,
       isActive: input.isActive ?? true,
     });
   }

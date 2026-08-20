@@ -18,6 +18,11 @@ export class CarPart {
     readonly name: string,
     readonly speedScale: number,
     readonly grip: number,
+    // Mismo campo y mismo criterio que `CarSkin.isUnlockedByDefault`: true =
+    // todos la tienen sin necesidad de fila en `PlayerCarPart`.
+    readonly isUnlockedByDefault: boolean,
+    // Precio en la tienda (TASK-320) — null si no está a la venta.
+    readonly priceCoins: number | null,
     readonly isActive: boolean,
   ) {}
 }

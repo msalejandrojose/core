@@ -10,6 +10,8 @@ export class CarSkin {
     readonly name: string,
     readonly modelPath: string,
     readonly isUnlockedByDefault: boolean,
+    // Precio en la tienda (TASK-320) — null si no está a la venta.
+    readonly priceCoins: number | null,
     readonly isActive: boolean,
   ) {}
 }

@@ -85,6 +85,8 @@ const ARCHETYPE_MODELS := {
 @export var main_menu_path: NodePath = ^"../MainMenu"
 @export var race_hud_path: NodePath = ^"../RaceHud"
 @export var touch_controls_path: NodePath = ^"../TouchControls"
+@export var grid_map_path: NodePath = ^"../GridMap"
+@export var menu_garage_path: NodePath = ^"../View/MenuGarage"
 
 var vehicle: Vehicle
 var lap_timer: LapTimer
@@ -93,6 +95,8 @@ var view: Node3D
 var main_menu: CanvasLayer
 var race_hud: CanvasLayer
 var touch_controls: CanvasLayer
+var grid_map: GridMap
+var menu_garage: Node3D
 
 var counting_down: bool = false
 var _countdown_elapsed: float = 0.0
@@ -151,6 +155,8 @@ func _ready() -> void:
 	main_menu = get_node(main_menu_path)
 	race_hud = get_node(race_hud_path)
 	touch_controls = get_node(touch_controls_path)
+	grid_map = get_node(grid_map_path)
+	menu_garage = get_node(menu_garage_path)
 
 	# Sin `@export`: quien abre la pantalla de Grand Prix se instancia fuera
 	# de este árbol y necesita encontrar al director sin conocer su ruta.
@@ -323,6 +329,7 @@ func start_grand_prix_stage(
 	main_menu.close()
 	race_hud.visible = true
 	touch_controls.visible = true
+	_set_garage_visible(false)
 	restart()
 	set_process(true)
 
@@ -362,7 +369,7 @@ func _apply_car_loadout() -> void:
 	vehicle.base_speed_scale = CarLoadout.speed_scale * GameSettings.engine_speed()
 	vehicle.theme_is_offroad = _layout.theme == TrackTheme.Kind.SNOW
 	vehicle.offroad_grip_modifier = CarLoadout.offroad_grip_modifier
-	vehicle.set_body(_body_scene_for(CarLoadout.archetype_code))
+	vehicle.set_body(_equipped_body_scene())
 	# En Grand Prix no hay fantasma: el récord del circuito del menú no
 	# tiene nada que ver con la manga que se está corriendo.
 	_ghost.set_snapshots([] if in_grand_prix() else RaceRecords.best_ghost(record_key()))
@@ -371,6 +378,34 @@ func _apply_car_loadout() -> void:
 func _body_scene_for(archetype_code: String) -> PackedScene:
 	var path: String = ARCHETYPE_MODELS.get(archetype_code, ARCHETYPE_MODELS[CarLoadout.DEFAULT_ARCHETYPE_CODE])
 	return load(path)
+
+
+## El modelo que corresponde al equipamiento de verdad: el skin elegido en
+## el taller (creado en el backoffice) si hay uno puesto, si no el modelo
+## por defecto del arquetipo — mismo criterio que la API ("null = usa el
+## modelo por defecto del arquetipo", ver `PlayerCarLoadoutResponseDto`).
+func _equipped_body_scene() -> PackedScene:
+	if CarLoadout.skin_model_path != "":
+		return load(CarLoadout.skin_model_path)
+	return _body_scene_for(CarLoadout.archetype_code)
+
+
+## Vista previa de arquetipo desde el taller: sin visor 3D propio, el coche
+## que cambia al tocar una variante es el mismo que se ve aparcado en el
+## garaje de fondo (`WorkshopScreen` ya no monta su propio `VehiclePreview`
+## — pedido explícito: "todo el fondo, y como elementos flotantes los
+## botones", no una pantalla aparte en medio). Solo cambia el modelo 3D
+## visible — no toca `CarLoadout` ni las stats, así que se puede mirar sin
+## comprometerse hasta que el taller confirme con `_apply_car_loadout()` (a
+## través de `CarLoadout.changed`) o revierta con `restore_equipped_body()`.
+func preview_archetype_body(archetype_code: String, animate: bool = false) -> void:
+	vehicle.set_body(_body_scene_for(archetype_code), animate)
+
+
+## Vuelve al coche equipado de verdad — al cerrar el taller sin confirmar
+## una variante que solo se había previsualizado.
+func restore_equipped_body() -> void:
+	vehicle.set_body(_equipped_body_scene())
 
 
 ## Reinicio rápido. No recarga la escena ni reconstruye la pista: recoloca el
@@ -421,13 +456,25 @@ func open_menu() -> void:
 	# quedan flotando encima del menú y compitiendo con sus botones.
 	race_hud.visible = false
 	touch_controls.visible = false
+	_set_garage_visible(true)
 	main_menu.open()
+
+
+## Se ve el garaje (menú/taller) o el circuito de carreras (carrera en
+## marcha) — nunca los dos a la vez, pedido explícitamente: el circuito no
+## tiene que asomar de fondo en el menú. El coche equipado se queda visible
+## en los dos casos — aparcado en el garaje cuando no hay carrera, en la
+## salida cuando sí — así que no hace falta tocar `vehicle.visible`.
+func _set_garage_visible(show_garage: bool) -> void:
+	grid_map.visible = not show_garage
+	menu_garage.visible = show_garage
 
 
 func _on_play_pressed() -> void:
 	main_menu.close()
 	race_hud.visible = true
 	touch_controls.visible = true
+	_set_garage_visible(false)
 	restart()
 	set_process(true)
 
@@ -515,8 +562,11 @@ func _on_settings_changed() -> void:
 	if not in_grand_prix():
 		await rebuild_track()
 	restart()
-	# Cambiar de circuito desde el menú no debe soltar el coche: se reconstruye
-	# la pista para verla de fondo, pero la salida sigue congelada.
+	# Cambiar de circuito desde el menú no debe soltar el coche: se
+	# reconstruye para que esté listo en cuanto se pulse "Empezar Carrera",
+	# pero no se enseña — con el garaje de fondo (`_set_garage_visible`) el
+	# circuito se queda oculto todo el rato que el menú esté abierto, y la
+	# salida sigue congelada.
 	#
 	# Y NO se abre el menú aquí: cambiar el esquema de control desde Ajustes en
 	# mitad de una carrera te echaría a la pantalla de inicio.

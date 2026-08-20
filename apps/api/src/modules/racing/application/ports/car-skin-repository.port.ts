@@ -14,6 +14,7 @@ export interface CreateCarSkinData {
   name: string;
   modelPath: string;
   isUnlockedByDefault: boolean;
+  priceCoins?: number | null;
   isActive: boolean;
 }
 
@@ -21,6 +22,7 @@ export interface UpdateCarSkinPatch {
   name?: string;
   modelPath?: string;
   isUnlockedByDefault?: boolean;
+  priceCoins?: number | null;
   isActive?: boolean;
 }
 

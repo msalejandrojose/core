@@ -86,12 +86,13 @@ func car_catalog():
 ## mandan siempre explícitos (null = vacío): el taller conoce el estado
 ## completo en todo momento, así que no hace falta la semántica de "ausente =
 ## no tocar" que soporta la API para clientes que solo cambian un hueco.
-func set_car_loadout(archetype_id: String, tires_part_id, wing_part_id, chassis_part_id):
+func set_car_loadout(archetype_id: String, tires_part_id, wing_part_id, chassis_part_id, skin_id):
 	return await Api.patch_json("/racing/cars/me", {
 		"archetypeId": archetype_id,
 		"tiresPartId": tires_part_id,
 		"wingPartId": wing_part_id,
 		"chassisPartId": chassis_part_id,
+		"skinId": skin_id,
 	})
 
 
@@ -148,6 +149,31 @@ func submit_online_race(track_key: String, duration_ms: int, rivals: Array):
 	return await Api.post_json("/racing/tracks/%s/online-races" % track_key, {
 		"durationMs": duration_ms,
 		"rivals": rivals,
+	})
+
+
+# --- Monedas (TASK-286/318/320) --------------------------------------------------
+
+## Saldo propio. 0 si el jugador todavía no tiene wallet (nunca ha ganado ni
+## gastado nada) — no hace falta darse de alta antes.
+func wallet():
+	return await Api.get_json("/racing/wallet")
+
+
+## +100 por ver un anuncio recompensado hasta el final (TASK-286) — no
+## comprueba nada del lado del SDK de anuncios todavía, eso es alcance de la
+## fase de monetización, no de este cliente.
+func credit_rewarded_ad():
+	return await Api.post_json("/racing/wallet/rewarded-ad", {})
+
+
+## Compra un arquetipo, pieza o skin bloqueado con monedas (TASK-320).
+## `item_type`: "ARCHETYPE" | "PART" | "SKIN". No lo equipa — eso sigue
+## siendo un `set_car_loadout()` aparte, como con lo ya desbloqueado.
+func purchase_car_item(item_type: String, item_id: String):
+	return await Api.post_json("/racing/cars/shop/purchase", {
+		"itemType": item_type,
+		"itemId": item_id,
 	})
 
 

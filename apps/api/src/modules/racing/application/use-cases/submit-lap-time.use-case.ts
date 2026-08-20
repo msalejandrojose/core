@@ -4,10 +4,15 @@ import { LapTime } from '../../domain/entities/lap-time.entity';
 import { ImplausibleLapTimeError } from '../../domain/errors/implausible-lap-time.error';
 import { TrackNotFoundError } from '../../domain/errors/track-not-found.error';
 import { validateLap } from '../../domain/lap-validation';
+import { PERSONAL_BEST_COIN_REWARD } from '../../domain/racing-coin-rewards';
 import {
   LAP_TIME_REPOSITORY,
   type LapTimeRepositoryPort,
 } from '../ports/lap-time-repository.port';
+import {
+  RACING_WALLET_REPOSITORY,
+  type RacingWalletRepositoryPort,
+} from '../ports/racing-wallet-repository.port';
 import {
   SEASON_REPOSITORY,
   type SeasonRepositoryPort,
@@ -43,6 +48,8 @@ export class SubmitLapTimeUseCase {
     @Inject(TRACK_REPOSITORY) private readonly tracks: TrackRepositoryPort,
     @Inject(LAP_TIME_REPOSITORY) private readonly laps: LapTimeRepositoryPort,
     @Inject(SEASON_REPOSITORY) private readonly seasons: SeasonRepositoryPort,
+    @Inject(RACING_WALLET_REPOSITORY)
+    private readonly wallets: RacingWalletRepositoryPort,
   ) {}
 
   async execute(input: SubmitLapTimeInput): Promise<SubmitLapTimeResult> {
@@ -87,6 +94,19 @@ export class SubmitLapTimeUseCase {
       ghostSnapshots: isPersonalBest ? input.ghostSnapshots : undefined,
       seasonId: currentSeason?.id ?? null,
     });
+
+    // Solo cuenta como bono si había algo que batir (TASK-321) — la primera
+    // vez que un jugador sube tiempo en un circuito `previousBest` es null y
+    // `isPersonalBest` sale true igualmente (para guardar el fantasma), pero
+    // ahí no ha batido nada todavía.
+    if (previousBest !== null && isPersonalBest) {
+      await this.wallets.credit({
+        userId: input.userId,
+        amount: PERSONAL_BEST_COIN_REWARD.amount,
+        source: PERSONAL_BEST_COIN_REWARD.source,
+        lapTimeId: lapTime.id,
+      });
+    }
 
     return {
       lapTime,

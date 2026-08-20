@@ -1,11 +1,16 @@
 import { GhostSnapshot } from '../../domain/entities/ghost-snapshot';
 import { LapTime } from '../../domain/entities/lap-time.entity';
+import { RacingCoinSource } from '../../domain/entities/racing-wallet.entity';
 import { Season } from '../../domain/entities/season.entity';
 import { Track } from '../../domain/entities/track.entity';
 import {
   CreateLapTimeData,
   LapTimeRepositoryPort,
 } from '../ports/lap-time-repository.port';
+import {
+  CreditCoinsData,
+  RacingWalletRepositoryPort,
+} from '../ports/racing-wallet-repository.port';
 import { SeasonRepositoryPort } from '../ports/season-repository.port';
 import { TrackRepositoryPort } from '../ports/track-repository.port';
 import { SubmitLapTimeUseCase } from './submit-lap-time.use-case';
@@ -79,15 +84,29 @@ class FakeSeasonRepository implements Partial<SeasonRepositoryPort> {
   }
 }
 
+class FakeRacingWalletRepository implements Partial<RacingWalletRepositoryPort> {
+  credits: CreditCoinsData[] = [];
+
+  credit(data: CreditCoinsData): Promise<number> {
+    this.credits.push(data);
+    return Promise.resolve(
+      this.credits.reduce((sum, entry) => sum + entry.amount, 0),
+    );
+  }
+}
+
 function useCase(previousBest: LapTime | null, currentSeason: Season | null = null) {
   const laps = new FakeLapTimeRepository(previousBest);
+  const wallets = new FakeRacingWalletRepository();
   return {
     useCase: new SubmitLapTimeUseCase(
       new FakeTrackRepository() as unknown as TrackRepositoryPort,
       laps as unknown as LapTimeRepositoryPort,
       new FakeSeasonRepository(currentSeason) as unknown as SeasonRepositoryPort,
+      wallets as unknown as RacingWalletRepositoryPort,
     ),
     laps,
+    wallets,
   };
 }
 
@@ -159,5 +178,56 @@ describe('SubmitLapTimeUseCase — temporada (TASK-227)', () => {
     await uc.execute(input());
 
     expect(laps.created[0].seasonId).toBe('season-1');
+  });
+});
+
+describe('SubmitLapTimeUseCase — bono de récord personal (TASK-321)', () => {
+  it('NO acredita nada en la primera vuelta subida a un circuito', async () => {
+    const { useCase: uc, wallets } = useCase(null);
+
+    await uc.execute(input());
+
+    expect(wallets.credits).toHaveLength(0);
+  });
+
+  it('NO acredita nada si la vuelta no bate la marca anterior', async () => {
+    const previous = new LapTime(
+      'prev',
+      'user-1',
+      'track-1',
+      8000,
+      [2000, 4000, 6000, 8000],
+      '0.1.0',
+      new Date(),
+    );
+    const { useCase: uc, wallets } = useCase(previous);
+
+    await uc.execute(input({ durationMs: 10000 }));
+
+    expect(wallets.credits).toHaveLength(0);
+  });
+
+  it('acredita 50 monedas cuando la vuelta bate una marca anterior de verdad', async () => {
+    const previous = new LapTime(
+      'prev',
+      'user-1',
+      'track-1',
+      12000,
+      [3000, 6000, 9000, 12000],
+      '0.1.0',
+      new Date(),
+    );
+    const { useCase: uc, wallets } = useCase(previous);
+
+    await uc.execute(input({ durationMs: 10000 }));
+
+    expect(wallets.credits).toEqual([
+      {
+        userId: 'user-1',
+        amount: 50,
+        source: RacingCoinSource.PERSONAL_BEST,
+        lapTimeId: 'new-id',
+      },
+    ]);
   });
 });

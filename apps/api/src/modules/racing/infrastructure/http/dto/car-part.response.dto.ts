@@ -19,6 +19,9 @@ export class CarPartResponseDto {
     description: 'Delta sobre el grip del arquetipo.',
   })
   grip!: number;
+  @ApiProperty() isUnlockedByDefault!: boolean;
+  @ApiProperty({ nullable: true, description: 'null = no está a la venta.' })
+  priceCoins!: number | null;
   @ApiProperty() isActive!: boolean;
 
   static fromDomain(part: CarPart): CarPartResponseDto {
@@ -29,6 +32,8 @@ export class CarPartResponseDto {
     dto.name = part.name;
     dto.speedScale = part.speedScale;
     dto.grip = part.grip;
+    dto.isUnlockedByDefault = part.isUnlockedByDefault;
+    dto.priceCoins = part.priceCoins;
     dto.isActive = part.isActive;
     return dto;
   }

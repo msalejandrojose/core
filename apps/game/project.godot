@@ -34,6 +34,7 @@ Session="*res://scripts/state/session.gd"
 RacingApi="*res://scripts/net/racing_api.gd"
 LapQueue="*res://scripts/state/lap_queue.gd"
 CarLoadout="*res://scripts/state/car_loadout.gd"
+Wallet="*res://scripts/state/wallet.gd"
 TerrainCatalog="*res://scripts/state/terrain_catalog.gd"
 TrackCache="*res://scripts/state/track_cache.gd"
 

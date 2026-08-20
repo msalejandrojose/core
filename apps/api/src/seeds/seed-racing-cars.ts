@@ -17,6 +17,10 @@ interface ArchetypeSeed {
   speedScale: number;
   grip: number;
   offroadGripModifier: number;
+  // Precios de partida cerrados en "Diseñar la economía de monedas y
+  // recompensas" (TASK-286/320): ajustables, sin validar con datos reales
+  // todavía. `null` = gratis para todos (Normal, el arquetipo por defecto).
+  priceCoins: number | null;
 }
 
 const ARCHETYPES: readonly ArchetypeSeed[] = [
@@ -26,6 +30,7 @@ const ARCHETYPES: readonly ArchetypeSeed[] = [
     speedScale: 1.0,
     grip: 1.0,
     offroadGripModifier: 1.0,
+    priceCoins: null,
   },
   {
     code: 'f1',
@@ -33,6 +38,7 @@ const ARCHETYPES: readonly ArchetypeSeed[] = [
     speedScale: 1.25,
     grip: 1.0,
     offroadGripModifier: 0.85,
+    priceCoins: 2000,
   },
   {
     code: '4x4',
@@ -40,6 +46,7 @@ const ARCHETYPES: readonly ArchetypeSeed[] = [
     speedScale: 0.85,
     grip: 1.0,
     offroadGripModifier: 1.15,
+    priceCoins: 2000,
   },
 ];
 
@@ -49,6 +56,9 @@ interface PartSeed {
   name: string;
   speedScale: number;
   grip: number;
+  // Mismo criterio que `ArchetypeSeed.priceCoins` — las 6 piezas de hoy
+  // cuestan lo mismo entre sí, sin distinguir por efecto.
+  priceCoins: number;
 }
 
 interface SkinSeed {
@@ -78,6 +88,7 @@ const PARTS: readonly PartSeed[] = [
     name: 'Neumáticos de agarre',
     speedScale: -0.05,
     grip: 0.1,
+    priceCoins: 300,
   },
   {
     code: 'tires-speed',
@@ -85,6 +96,7 @@ const PARTS: readonly PartSeed[] = [
     name: 'Neumáticos de velocidad',
     speedScale: 0.1,
     grip: -0.05,
+    priceCoins: 300,
   },
   {
     code: 'wing-big',
@@ -92,6 +104,7 @@ const PARTS: readonly PartSeed[] = [
     name: 'Alerón grande',
     speedScale: -0.08,
     grip: 0.12,
+    priceCoins: 300,
   },
   {
     code: 'wing-low',
@@ -99,6 +112,7 @@ const PARTS: readonly PartSeed[] = [
     name: 'Alerón bajo',
     speedScale: 0.08,
     grip: -0.06,
+    priceCoins: 300,
   },
   {
     code: 'chassis-light',
@@ -106,6 +120,7 @@ const PARTS: readonly PartSeed[] = [
     name: 'Chasis ligero',
     speedScale: 0.05,
     grip: -0.08,
+    priceCoins: 300,
   },
   {
     code: 'chassis-reinforced',
@@ -113,6 +128,7 @@ const PARTS: readonly PartSeed[] = [
     name: 'Chasis reforzado',
     speedScale: -0.03,
     grip: 0.08,
+    priceCoins: 300,
   },
 ];
 
@@ -128,6 +144,10 @@ async function main(): Promise<void> {
       speedScale: archetype.speedScale,
       grip: archetype.grip,
       offroadGripModifier: archetype.offroadGripModifier,
+      // Gratis (priceCoins null) = desbloqueado para todos. De pago =
+      // bloqueado por defecto, la tienda (TASK-320) es quien lo desbloquea.
+      isUnlockedByDefault: archetype.priceCoins === null,
+      priceCoins: archetype.priceCoins,
       isActive: true,
     };
     await prisma.carArchetype.upsert({
@@ -135,8 +155,9 @@ async function main(): Promise<void> {
       create: { code: archetype.code, ...data },
       update: data,
     });
+    const price = archetype.priceCoins === null ? 'gratis' : `${archetype.priceCoins} monedas`;
     console.log(
-      `✓ arquetipo ${archetype.code.padEnd(10)} speed=${archetype.speedScale} grip=${archetype.grip} offroad×${archetype.offroadGripModifier}`,
+      `✓ arquetipo ${archetype.code.padEnd(10)} speed=${archetype.speedScale} grip=${archetype.grip} offroad×${archetype.offroadGripModifier} (${price})`,
     );
   }
 
@@ -146,6 +167,8 @@ async function main(): Promise<void> {
       name: part.name,
       speedScale: part.speedScale,
       grip: part.grip,
+      isUnlockedByDefault: false,
+      priceCoins: part.priceCoins,
       isActive: true,
     };
     await prisma.carPart.upsert({
@@ -154,7 +177,7 @@ async function main(): Promise<void> {
       update: data,
     });
     console.log(
-      `✓ pieza     ${part.code.padEnd(20)} [${part.category}] speed=${part.speedScale} grip=${part.grip}`,
+      `✓ pieza     ${part.code.padEnd(20)} [${part.category}] speed=${part.speedScale} grip=${part.grip} (${part.priceCoins} monedas)`,
     );
   }
 
@@ -173,10 +196,90 @@ async function main(): Promise<void> {
     console.log(`✓ skin      ${skin.code.padEnd(20)} ${skin.modelPath}`);
   }
 
+  await grandfatherEquippedItems(prisma);
+
   console.log(
     `\n${ARCHETYPES.length} arquetipos, ${PARTS.length} piezas y ${SKINS.length} skins sembrados.`,
   );
   await app.close();
+}
+
+// Migración de jugadores existentes (TASK-320 activa el sumidero que
+// TASK-286/319 dejaron listo, ver la nota "sin regresión hoy" de TASK-319):
+// a nadie se le puede quitar lo que ya llevaba puesto solo porque a partir
+// de ahora cueste monedas — se le regala la propiedad, no se le resetea el
+// equipamiento. Solo mira `PlayerCarLoadout`, la única fuente de "qué tiene
+// puesto cada jugador" que existe hoy. Idempotente (upsert): en sucesivas
+// ejecuciones no hay nada nuevo que regalar salvo que alguien equipe algo
+// recién bloqueado sin tenerlo — caso que ya bloquea `SetPlayerCarLoadoutUseCase`
+// aparte, así que no debería darse.
+async function grandfatherEquippedItems(prisma: PrismaService): Promise<void> {
+  const loadouts = await prisma.playerCarLoadout.findMany({
+    select: {
+      userId: true,
+      archetypeId: true,
+      tiresPartId: true,
+      wingPartId: true,
+      chassisPartId: true,
+    },
+  });
+
+  const lockedArchetypeIds = new Set(
+    (
+      await prisma.carArchetype.findMany({
+        where: { isUnlockedByDefault: false },
+        select: { id: true },
+      })
+    ).map((row) => row.id),
+  );
+  const lockedPartIds = new Set(
+    (
+      await prisma.carPart.findMany({
+        where: { isUnlockedByDefault: false },
+        select: { id: true },
+      })
+    ).map((row) => row.id),
+  );
+
+  let grantedArchetypes = 0;
+  let grantedParts = 0;
+
+  for (const loadout of loadouts) {
+    if (lockedArchetypeIds.has(loadout.archetypeId)) {
+      await prisma.playerCarArchetype.upsert({
+        where: {
+          userId_archetypeId: {
+            userId: loadout.userId,
+            archetypeId: loadout.archetypeId,
+          },
+        },
+        create: { userId: loadout.userId, archetypeId: loadout.archetypeId },
+        update: {},
+      });
+      grantedArchetypes++;
+    }
+
+    for (const partId of [
+      loadout.tiresPartId,
+      loadout.wingPartId,
+      loadout.chassisPartId,
+    ]) {
+      if (partId && lockedPartIds.has(partId)) {
+        await prisma.playerCarPart.upsert({
+          where: { userId_partId: { userId: loadout.userId, partId } },
+          create: { userId: loadout.userId, partId },
+          update: {},
+        });
+        grantedParts++;
+      }
+    }
+  }
+
+  if (grantedArchetypes > 0 || grantedParts > 0) {
+    console.log(
+      `✓ migración: ${grantedArchetypes} arquetipo(s) y ${grantedParts} pieza(s) regalados a quien ya los llevaba puestos.`,
+    );
+  }
 }
 
 void main().catch((error: unknown) => {

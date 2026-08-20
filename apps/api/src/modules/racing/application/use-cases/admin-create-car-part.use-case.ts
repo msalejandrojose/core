@@ -15,6 +15,8 @@ export interface CreateCarPartInput {
   name: string;
   speedScale: number;
   grip: number;
+  isUnlockedByDefault?: boolean;
+  priceCoins?: number | null;
   isActive?: boolean;
 }
 
@@ -34,6 +36,8 @@ export class AdminCreateCarPartUseCase {
       name: input.name,
       speedScale: input.speedScale,
       grip: input.grip,
+      isUnlockedByDefault: input.isUnlockedByDefault,
+      priceCoins: input.priceCoins,
       isActive: input.isActive ?? true,
     });
   }
