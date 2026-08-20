@@ -33,6 +33,7 @@ export class PrismaRacingWalletRepository implements RacingWalletRepositoryPort 
           amount: data.amount,
           source: data.source,
           onlineRaceId: data.onlineRaceId,
+          liveRaceId: data.liveRaceId,
           lapTimeId: data.lapTimeId,
         },
       });

@@ -6,9 +6,11 @@ export interface CreditCoinsData {
   userId: string;
   amount: number;
   source: RacingCoinSource;
-  /** La carrera online que generó el movimiento, si viene de una — ausente
-   *  para fuentes que no vienen de una carrera (p.ej. anuncio). */
+  /** La carrera online (fantasmas) que generó el movimiento, si viene de una
+   *  — ausente para fuentes que no vienen de una carrera. */
   onlineRaceId?: string;
+  /** La carrera EN VIVO (TASK-323) que generó el movimiento, si viene de una. */
+  liveRaceId?: string;
   /** La vuelta que batió el récord personal, si el movimiento viene de eso
    *  (TASK-321) — ausente para el resto de fuentes. */
   lapTimeId?: string;

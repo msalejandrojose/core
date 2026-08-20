@@ -252,6 +252,8 @@ model User {
   grandPrixAttempts         RacingGrandPrixAttempt[]
   onlineRaces               RacingOnlineRace[]
   onlineRaceParticipations  RacingOnlineRaceParticipant[]
+  liveRaceParticipations    RacingLiveRaceParticipant[]
+  playerRating              RacingPlayerRating?
   friendCode                RacingFriendCode?
   friendshipsRequested      RacingFriendship[]            @relation("FriendshipRequester")
   friendshipsReceived       RacingFriendship[]            @relation("FriendshipAddressee")
@@ -1371,6 +1373,7 @@ model Track {
   grandPrixStages       RacingGrandPrixStage[]
   grandPrixStageResults RacingGrandPrixStageResult[]
   onlineRaces           RacingOnlineRace[]
+  liveRaces             RacingLiveRace[]
 
   @@index([isActive])
   @@map("racing_track")
@@ -1870,6 +1873,80 @@ model RacingOnlineRaceParticipant {
   @@map("racing_online_race_participant")
 }
 
+/// Estado de una carrera en vivo (TASK-323, diseño técnico de la fase
+/// online real). A diferencia de `RacingOnlineRace` (fantasmas asíncronos),
+/// aquí no hay filas intermedias: la sala vive en memoria en el gateway
+/// mientras dura (WAITING_PLAYERS → COUNTDOWN → RACING) y solo se persiste
+/// UNA vez, ya resuelta, al terminar — mismo criterio que TASK-283: no
+/// recalcular nada al leer un podio ya jugado.
+enum RacingLiveRaceStatus {
+  FINISHED
+  ABANDONED
+}
+
+/// Una carrera en vivo ya terminada, con hasta `RacingLiveRaceParticipant`
+/// corredores REALES simultáneos — a diferencia de una `RacingOnlineRace`,
+/// aquí no hay fantasmas: cada participante es una cuenta que estuvo
+/// conectada de verdad. `status` = ABANDONED si nadie llegó a cruzar la
+/// meta (todos desconectados antes de terminar) — se guarda igualmente para
+/// no perder el rastro de la sala, pero no reparte recompensas.
+model RacingLiveRace {
+  id      String               @id @default(uuid()) @db.Char(36)
+  trackId String               @map("track_id") @db.Char(36)
+  status  RacingLiveRaceStatus
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  finishedAt DateTime @map("finished_at")
+
+  track             Track                       @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  participants      RacingLiveRaceParticipant[]
+  coinLedgerEntries RacingCoinLedgerEntry[]
+
+  @@index([trackId, createdAt])
+  @@map("racing_live_race")
+}
+
+/// El resultado de UNO de los corredores reales de una `RacingLiveRace`.
+/// `durationMs`/`position`/`deltaMs` son null si el jugador se desconectó
+/// sin cruzar la meta (DNF) — `disconnected` lo distingue de un puesto real
+/// con tiempo peor.
+model RacingLiveRaceParticipant {
+  id     String @id @default(uuid()) @db.Char(36)
+  raceId String @map("race_id") @db.Char(36)
+  userId String @map("user_id") @db.Char(36)
+
+  durationMs    Int?    @map("duration_ms")
+  position      Int?
+  deltaMs       Int?    @map("delta_ms")
+  disconnected  Boolean @default(false)
+
+  race RacingLiveRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Una cuenta no puede aparecer dos veces en la misma sala.
+  @@unique([raceId, userId])
+  @@map("racing_live_race_participant")
+}
+
+/// Rating tipo Elo/MMR (TASK-323, tarea 3 del desglose de la fase online
+/// real): distinto del saldo de monedas (`RacingWallet`) — esto mide nivel
+/// para el matchmaking (tarea 4), no es una moneda que se gasta. Una fila
+/// por jugador, no por circuito: el nivel es de la persona, no del trazado.
+/// `rating` arranca en 1000 (ver `computeRatingChanges`) la primera vez que
+/// se crea la fila — antes de eso, el jugador simplemente no tiene fila
+/// (igual que `RacingWallet`, nunca falla por ausencia).
+model RacingPlayerRating {
+  userId String @id @map("user_id") @db.Char(36)
+  rating Int    @default(1000)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("racing_player_rating")
+}
+
 /// Fuente de un movimiento de monedas — cerrado por diseño (TASK-286).
 enum RacingCoinSource {
   RACE_FIRST_PLACE
@@ -1947,10 +2024,11 @@ model RacingCoinLedgerEntry {
   amount Int
   source RacingCoinSource
 
-  /// A lo sumo uno de los cinco no-null, según `source` — qué generó este
+  /// A lo sumo uno de los seis no-null, según `source` — qué generó este
   /// movimiento en concreto. Igual que con `onlineRaceId`: rastro auditable
   /// real (TASK-318), no solo el número.
   onlineRaceId String? @map("online_race_id") @db.Char(36)
+  liveRaceId   String? @map("live_race_id") @db.Char(36)
   lapTimeId    String? @map("lap_time_id") @db.Char(36)
   archetypeId  String? @map("archetype_id") @db.Char(36)
   partId       String? @map("part_id") @db.Char(36)
@@ -1960,6 +2038,7 @@ model RacingCoinLedgerEntry {
 
   wallet     RacingWallet      @relation(fields: [userId], references: [userId], onDelete: Cascade)
   onlineRace RacingOnlineRace? @relation(fields: [onlineRaceId], references: [id], onDelete: SetNull)
+  liveRace   RacingLiveRace?   @relation(fields: [liveRaceId], references: [id], onDelete: SetNull)
   lapTime    LapTime?          @relation(fields: [lapTimeId], references: [id], onDelete: SetNull)
   archetype  CarArchetype?     @relation(fields: [archetypeId], references: [id], onDelete: SetNull)
   part       CarPart?          @relation(fields: [partId], references: [id], onDelete: SetNull)

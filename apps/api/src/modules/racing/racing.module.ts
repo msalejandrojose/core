@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 import { IamModule } from '../iam/iam.module';
 import { StorageModule } from '../storage/storage.module';
 import { CAR_ARCHETYPE_REPOSITORY } from './application/ports/car-archetype-repository.port';
@@ -10,16 +12,19 @@ import { FRIENDSHIP_REPOSITORY } from './application/ports/friendship-repository
 import { GRAND_PRIX_ATTEMPT_REPOSITORY } from './application/ports/grand-prix-attempt-repository.port';
 import { GRAND_PRIX_REPOSITORY } from './application/ports/grand-prix-repository.port';
 import { LAP_TIME_REPOSITORY } from './application/ports/lap-time-repository.port';
+import { LIVE_RACE_REPOSITORY } from './application/ports/live-race-repository.port';
 import { ONLINE_RACE_REPOSITORY } from './application/ports/online-race-repository.port';
 import { PLAYER_CAR_ARCHETYPE_REPOSITORY } from './application/ports/player-car-archetype-repository.port';
 import { PLAYER_CAR_LOADOUT_REPOSITORY } from './application/ports/player-car-loadout-repository.port';
 import { PLAYER_CAR_PART_REPOSITORY } from './application/ports/player-car-part-repository.port';
 import { PLAYER_CAR_SKIN_REPOSITORY } from './application/ports/player-car-skin-repository.port';
+import { PLAYER_RATING_REPOSITORY } from './application/ports/player-rating-repository.port';
 import { RACING_COIN_REWARD_CONFIG_REPOSITORY } from './application/ports/racing-coin-reward-config-repository.port';
 import { RACING_TERRAIN_EFFECT_REPOSITORY } from './application/ports/racing-terrain-effect-repository.port';
 import { RACING_WALLET_REPOSITORY } from './application/ports/racing-wallet-repository.port';
 import { SEASON_REPOSITORY } from './application/ports/season-repository.port';
 import { TRACK_REPOSITORY } from './application/ports/track-repository.port';
+import { LiveRaceRoomManager } from './application/live-race/live-race-room.manager';
 import { AdminCreateCarArchetypeUseCase } from './application/use-cases/admin-create-car-archetype.use-case';
 import { AdminCreateCarPartUseCase } from './application/use-cases/admin-create-car-part.use-case';
 import { AdminCreateCarSkinUseCase } from './application/use-cases/admin-create-car-skin.use-case';
@@ -93,6 +98,7 @@ import { FriendsController } from './infrastructure/http/friends.controller';
 import { GrandPrixController } from './infrastructure/http/grand-prix.controller';
 import { RacingController } from './infrastructure/http/racing.controller';
 import { TerrainEffectsController } from './infrastructure/http/terrain-effects.controller';
+import { LiveRaceGateway } from './infrastructure/realtime/live-race.gateway';
 import { PrismaCarArchetypeRepository } from './infrastructure/persistence/prisma-car-archetype.repository';
 import { PrismaCarPartRepository } from './infrastructure/persistence/prisma-car-part.repository';
 import { PrismaCarShopRepository } from './infrastructure/persistence/prisma-car-shop.repository';
@@ -102,11 +108,13 @@ import { PrismaFriendshipRepository } from './infrastructure/persistence/prisma-
 import { PrismaGrandPrixAttemptRepository } from './infrastructure/persistence/prisma-grand-prix-attempt.repository';
 import { PrismaGrandPrixRepository } from './infrastructure/persistence/prisma-grand-prix.repository';
 import { PrismaLapTimeRepository } from './infrastructure/persistence/prisma-lap-time.repository';
+import { PrismaLiveRaceRepository } from './infrastructure/persistence/prisma-live-race.repository';
 import { PrismaOnlineRaceRepository } from './infrastructure/persistence/prisma-online-race.repository';
 import { PrismaPlayerCarArchetypeRepository } from './infrastructure/persistence/prisma-player-car-archetype.repository';
 import { PrismaPlayerCarLoadoutRepository } from './infrastructure/persistence/prisma-player-car-loadout.repository';
 import { PrismaPlayerCarPartRepository } from './infrastructure/persistence/prisma-player-car-part.repository';
 import { PrismaPlayerCarSkinRepository } from './infrastructure/persistence/prisma-player-car-skin.repository';
+import { PrismaPlayerRatingRepository } from './infrastructure/persistence/prisma-player-rating.repository';
 import { PrismaRacingCoinRewardConfigRepository } from './infrastructure/persistence/prisma-racing-coin-reward-config.repository';
 import { PrismaRacingTerrainEffectRepository } from './infrastructure/persistence/prisma-racing-terrain-effect.repository';
 import { PrismaRacingWalletRepository } from './infrastructure/persistence/prisma-racing-wallet.repository';
@@ -119,7 +127,18 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
   // @RequiresPermission en los controllers admin) — mismo patrón que BlogModule.
   // StorageModule exporta FileViewTokenService: hace falta para resolver
   // `Track.imageId` a una URL de visualización pública en las respuestas.
-  imports: [IamModule, StorageModule],
+  // JwtModule (mismo JWT_SECRET que la API) autentica las conexiones
+  // WebSocket de `LiveRaceGateway` — mismo patrón que `WhatsappModule`.
+  imports: [
+    IamModule,
+    StorageModule,
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.getOrThrow<string>('JWT_SECRET'),
+      }),
+    }),
+  ],
   controllers: [
     RacingController,
     AdminTracksController,
@@ -197,9 +216,13 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
     PurchaseCarItemUseCase,
     ListCoinRewardConfigsUseCase,
     AdminUpdateCoinRewardConfigUseCase,
+    LiveRaceRoomManager,
+    LiveRaceGateway,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },
     { provide: LAP_TIME_REPOSITORY, useClass: PrismaLapTimeRepository },
     { provide: ONLINE_RACE_REPOSITORY, useClass: PrismaOnlineRaceRepository },
+    { provide: LIVE_RACE_REPOSITORY, useClass: PrismaLiveRaceRepository },
+    { provide: PLAYER_RATING_REPOSITORY, useClass: PrismaPlayerRatingRepository },
     { provide: FRIEND_CODE_REPOSITORY, useClass: PrismaFriendCodeRepository },
     { provide: FRIENDSHIP_REPOSITORY, useClass: PrismaFriendshipRepository },
     {
