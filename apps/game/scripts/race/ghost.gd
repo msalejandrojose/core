@@ -43,6 +43,32 @@ func set_snapshots(snapshots: Array) -> void:
 		_build_model()
 
 
+## Añade una instantánea recién llegada por red, en vez de fijar toda la
+## grabación de golpe (TASK-323, tarea 7): un rival de una carrera EN VIVO
+## no tiene su trayectoria completa por adelantado, se va enterando
+## instantánea a instantánea. Mismo `update_at()` de siempre — si
+## `elapsed_ms` se adelanta a la última recibida (red lenta o con jitter),
+## se queda congelado en ella en vez de teletransportarse cuando llegue la
+## siguiente.
+func append_snapshot(snapshot: Dictionary) -> void:
+	_snapshots.append(snapshot)
+	visible = true
+	if _model == null:
+		_build_model()
+
+
+## Un rival que se desconectó a mitad de una carrera en vivo (TASK-323,
+## tarea 7) se queda congelado en su última posición conocida — no tiene
+## sentido seguir esperando instantáneas que no van a llegar — pero
+## atenuado, para que se note a simple vista que ya no es una carrera de
+## verdad contra él.
+func mark_disconnected() -> void:
+	if _model == null:
+		return
+	_color = Color(_color.r, _color.g, _color.b, _color.a * 0.4)
+	_tint(_model)
+
+
 ## Se llama cada frame con el tiempo transcurrido de la vuelta EN CURSO del
 ## jugador: el fantasma no tiene su propio reloj, revive la grabación al
 ## mismo ritmo que el jugador vive la suya.

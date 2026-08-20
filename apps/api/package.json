@@ -35,6 +35,7 @@
     "seed:racing:terrain": "pnpm build && node dist/seeds/seed-racing-terrain.js",
     "seed:racing:coin-rewards": "pnpm build && node dist/seeds/seed-racing-coin-rewards.js",
     "seed:racing:bots": "pnpm build && node dist/seeds/seed-racing-bots.js",
+    "seed:racing:matchmaking-config": "pnpm build && node dist/seeds/seed-racing-matchmaking-config.js",
     "sync:sections": "pnpm build && node dist/seeds/sync-api-sections.js"
   },
   "dependencies": {

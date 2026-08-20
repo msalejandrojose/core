@@ -146,6 +146,29 @@ var _ghost_threat: Ghost
 const TARGET_COLOR := Color(0.35, 1.0, 0.45, 0.45)
 const THREAT_COLOR := Color(1.0, 0.35, 0.3, 0.45)
 
+## true desde `start_live_race()` hasta que se ve la pantalla de resultado
+## o se abandona al menú — distinta de `_online_target`/`_online_threat`,
+## que son el modo asíncrono de fantasmas (TASK-282/284). Se mantiene TRUE
+## después de que el propio jugador cruce meta: la sala puede seguir
+## esperando a otros corredores/bots, y sus `Ghost` en vivo se siguen
+## actualizando hasta que llegue `race-finished` (TASK-323, tarea 7).
+var _live_race_active: bool = false
+## Evita mandar `LiveRaceSocket.send_finish()` dos veces si `lap_completed`
+## se disparara más de una vez por lo que sea.
+var _live_race_finish_sent: bool = false
+## Rivales de la carrera en vivo EN CURSO, uno por `userId` que ha mandado
+## al menos una instantánea — a diferencia de `_ghost_target`/`_ghost_threat`
+## (fijos, dos como mucho, TASK-284), aquí puede haber hasta
+## `MAX_PLAYERS_PER_ROOM - 1` y se crean sobre la marcha, no se conocen de
+## antemano.
+var _live_rivals: Dictionary = {}
+## Un color por rival, cíclico — solo hace falta que se distingan entre
+## ellos, no identificar a nadie en concreto por el color.
+const _LIVE_RIVAL_COLORS := [
+	Color(0.35, 1.0, 0.45, 0.45), Color(1.0, 0.35, 0.3, 0.45),
+	Color(0.95, 0.85, 0.25, 0.45), Color(0.7, 0.4, 1.0, 0.45),
+]
+
 
 func _ready() -> void:
 	vehicle = get_node(vehicle_path)
@@ -177,6 +200,13 @@ func _ready() -> void:
 	main_menu.play_pressed.connect(_on_normal_play_pressed)
 	main_menu.play_online_pressed.connect(start_online_race)
 	main_menu.time_trial_pressed.connect(start_time_trial)
+
+	# Conectadas una sola vez para toda la partida — cada handler comprueba
+	# `_live_race_active` por dentro, igual que ya hace el resto del director
+	# con sus propios modos (Grand Prix, contrarreloj).
+	LiveRaceSocket.snapshot_received.connect(_on_live_snapshot)
+	LiveRaceSocket.participant_disconnected.connect(_on_live_participant_disconnected)
+	LiveRaceSocket.race_finished.connect(_on_live_race_finished)
 
 	lap_timer.sector_completed.connect(_on_sector_completed)
 	lap_timer.lap_completed.connect(_on_lap_completed)
@@ -214,6 +244,8 @@ func _process(delta: float) -> void:
 	_ghost.update_at(lap_timer.elapsed_ms)
 	_ghost_target.update_at(lap_timer.elapsed_ms)
 	_ghost_threat.update_at(lap_timer.elapsed_ms)
+	for rival in _live_rivals.values():
+		(rival as Ghost).update_at(lap_timer.elapsed_ms)
 	if lap_timer.running and not in_grand_prix() and not in_time_trial():
 		_record_ghost_snapshot()
 
@@ -264,11 +296,16 @@ func _record_ghost_snapshot() -> void:
 	if elapsed - _ghost_last_snapshot_ms < GHOST_SNAPSHOT_INTERVAL_MS:
 		return
 	_ghost_last_snapshot_ms = elapsed
-	_ghost_recording.append({
-		"t": elapsed,
-		"pos": vehicle.get_vehicle_position(),
-		"yaw": vehicle.get_vehicle_yaw(),
-	})
+	var pos := vehicle.get_vehicle_position()
+	var yaw := vehicle.get_vehicle_yaw()
+	_ghost_recording.append({"t": elapsed, "pos": pos, "yaw": yaw})
+
+	# Misma cadencia (~20 Hz) que ya se usa para grabar el propio fantasma —
+	# de la carrera en vivo (TASK-323, tarea 7) es lo que ven los demás
+	# jugadores de la sala en tiempo real, no una grabación para reproducir
+	# después.
+	if _live_race_active and not _live_race_finish_sent:
+		LiveRaceSocket.send_snapshot(elapsed, pos, yaw)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -450,6 +487,16 @@ func open_menu() -> void:
 	# y arrastrar rivales de una combinación distinta no tendría sentido.
 	_clear_online_race()
 
+	# Igual, pero para una carrera en vivo (TASK-323, tareas 6-7): salir de
+	# en medio cuenta como desconexión — el servidor ya sabe tratarla (grace
+	# period + DNF si no vuelve, ver `LiveRaceRoomManager`), aquí solo hace
+	# falta cortar el socket y soltar a los rivales en vivo que hubiera.
+	if _live_race_active:
+		_live_race_active = false
+		_live_race_finish_sent = false
+		LiveRaceSocket.disconnect_socket()
+		_clear_live_rivals()
+
 	set_process(false)
 	VehicleInput.locked = true
 	# También los controles: los pedales se dibujan siempre, y sin esconderlos
@@ -525,6 +572,77 @@ func start_online_race(target: Dictionary, threat: Dictionary) -> void:
 	_ghost_target.set_snapshots(_to_native_snapshots(target.get("snapshots", [])))
 	_ghost_threat.set_snapshots(_to_native_snapshots(threat.get("snapshots", [])))
 	_on_play_pressed()
+
+
+## Arranca una carrera en vivo (TASK-323, tarea 6): `track_slug` es el del
+## circuito ya emparejado por `OnlineLobbyScreen`/`LiveRaceSocket`, un slug
+## de servidor siempre — `_resolve_layout` ya sabe pedirlo a `TrackCache` si
+## no es uno de los 4 locales (nunca lo es: el matchmaking del servidor
+## trabaja con `Track.id`, no con el catálogo del cliente).
+##
+## `LiveRaceSocket` ya está conectado y en la sala cuando esto se llama (lo
+## dejó así `OnlineLobbyScreen` al recibir `race-started`) — aquí solo hace
+## falta arrancar el circuito correcto y, al cruzar meta, avisar al servidor.
+func start_live_race(track_slug: String) -> void:
+	_live_race_active = true
+	_live_race_finish_sent = false
+	_layout = await _resolve_layout(track_slug)
+	track_builder.build(_layout)
+	lap_timer.rescan()
+	_apply_car_loadout()
+	_on_play_pressed()
+
+
+## Instantánea de un rival, según llega por el socket (TASK-323, tarea 7).
+## El propio eco se descarta aquí — el gateway retransmite a TODA la sala,
+## sin excluir al emisor (ver `LiveRaceGateway`) — y sin carrera en vivo
+## activa (p.ej. una que llegó tarde justo al volver al menú) no hay dónde
+## pintarla.
+func _on_live_snapshot(_room_id: String, from_user_id: String, snapshot: Dictionary) -> void:
+	if not _live_race_active or from_user_id == Session.user_id:
+		return
+
+	var ghost: Ghost = _live_rivals.get(from_user_id)
+	if ghost == null:
+		var color: Color = _LIVE_RIVAL_COLORS[_live_rivals.size() % _LIVE_RIVAL_COLORS.size()]
+		ghost = Ghost.new(color)
+		add_child(ghost)
+		_live_rivals[from_user_id] = ghost
+
+	var pos: Dictionary = snapshot.get("pos", {})
+	ghost.append_snapshot({
+		"t": int(snapshot.get("t", 0)),
+		"pos": Vector3(pos.get("x", 0.0), pos.get("y", 0.0), pos.get("z", 0.0)),
+		"yaw": float(snapshot.get("yaw", 0.0)),
+	})
+
+
+func _on_live_participant_disconnected(_room_id: String, user_id: String) -> void:
+	if not _live_race_active:
+		return
+	var ghost: Ghost = _live_rivals.get(user_id)
+	if ghost != null:
+		ghost.mark_disconnected()
+
+
+## Podio de verdad, resuelto por el servidor (`LiveRaceRoomManager.finalize`)
+## — aquí solo se enseña (TASK-323, tarea 7).
+func _on_live_race_finished(_room_id: String, _race_id: String, result: Array, rating_changes: Array) -> void:
+	if not _live_race_active:
+		return
+	_live_race_active = false
+	_live_race_finish_sent = false
+	_clear_live_rivals()
+
+	var screen: CanvasLayer = load("res://scenes/ui/live-race-result-screen.tscn").instantiate()
+	add_child(screen)
+	screen.show_result(result, rating_changes)
+
+
+func _clear_live_rivals() -> void:
+	for ghost in _live_rivals.values():
+		(ghost as Ghost).queue_free()
+	_live_rivals.clear()
 
 
 ## Solo lo que hace falta para anunciar el resultado — la trayectoria ya
@@ -675,6 +793,15 @@ func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 			})
 		RacingApi.submit_online_race(key, duration_ms, rivals)
 		_clear_online_race()
+
+	# Carrera en vivo (TASK-323, tareas 6-7): esto solo avisa de que YO ya
+	# crucé meta — `_live_race_active` se queda TRUE, la sala puede seguir
+	# esperando a otros corredores/bots y sus `Ghost` en vivo se siguen
+	# actualizando hasta que llegue `race-finished` con el podio de verdad
+	# (`_on_live_race_finished`).
+	if _live_race_active and not _live_race_finish_sent:
+		_live_race_finish_sent = true
+		LiveRaceSocket.send_finish(duration_ms)
 
 	if track_id_override.is_empty():
 		lap_finished.emit(duration_ms, previous_best_ms, is_new_record)

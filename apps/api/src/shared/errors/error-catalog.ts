@@ -356,6 +356,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Importe de bono no encontrado.',
   },
+  RACING_MATCHMAKING_CONFIG_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Parámetro de matchmaking no encontrado.',
+  },
   RACING_GRAND_PRIX_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',

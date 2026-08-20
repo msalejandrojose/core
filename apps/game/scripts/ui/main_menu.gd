@@ -80,6 +80,10 @@ var _engine_buttons: Array[Button] = []
 var _best_label: Label
 var _start_button: Button
 var _online_button: Button
+## Distinto de `_online_button` (fantasmas asíncronos, TASK-284): esta es la
+## fase online real (TASK-323) — jugadores conectados a la vez de verdad,
+## con matchmaking por nivel y rivales ficticios si hace falta rellenar.
+var _live_button: Button
 
 
 func _ready() -> void:
@@ -346,6 +350,11 @@ func _build_race_config_panel() -> Control:
 	_online_button.pressed.connect(_on_online_pressed)
 	buttons_row.add_child(_online_button)
 
+	_live_button = UiTheme.pill_button(
+		"🔴 Carrera en Vivo", UiTheme.CLAY, Color.WHITE, Vector2(320, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_LG)
+	_live_button.pressed.connect(_on_live_pressed)
+	buttons_row.add_child(_live_button)
+
 	return card
 
 
@@ -479,6 +488,12 @@ func _sync_start_buttons() -> void:
 	if _active_mode == Mode.CARRERA_RAPIDA:
 		_online_button.disabled = not Session.is_logged_in()
 
+	if not is_instance_valid(_live_button):
+		return
+	_live_button.visible = _active_mode == Mode.CARRERA_RAPIDA
+	if _active_mode == Mode.CARRERA_RAPIDA:
+		_live_button.disabled = not Session.is_logged_in()
+
 
 func _pick_engine(value: int) -> void:
 	GameSettings.set_engine_class(value)
@@ -587,6 +602,14 @@ func _on_online_pressed() -> void:
 	play_online_pressed.emit(
 		target if target is Dictionary else {},
 		threat if threat is Dictionary else {})
+
+
+## Abre el lobby de la carrera en vivo (TASK-323, tarea 6) — a diferencia de
+## `_on_online_pressed()`, aquí no hay una única llamada HTTP que resuelva
+## el rival: la pantalla se queda escuchando al `LiveRaceSocket` ella sola
+## hasta que arranca de verdad o el jugador cancela.
+func _on_live_pressed() -> void:
+	add_child(load("res://scenes/ui/online-lobby-screen.tscn").instantiate())
 
 
 # --- Piezas -------------------------------------------------------------------

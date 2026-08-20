@@ -40,6 +40,8 @@ func _ready() -> void:
 	_test_grabar_una_vuelta_record(timer, director, sphere)
 	_test_vuelta_mas_lenta_no_pisa_el_fantasma(timer, director, sphere)
 	_test_interpolacion()
+	_test_streaming_de_instantaneas()
+	_test_atenuado_al_desconectar()
 
 	RaceRecords.clear(key)
 
@@ -132,6 +134,45 @@ func _test_interpolacion() -> void:
 
 	ghost.set_snapshots([])
 	_check(not ghost.visible, true, "sin instantáneas, el fantasma se oculta")
+
+	ghost.free()
+
+
+## `append_snapshot` es lo que usa un rival de una carrera EN VIVO
+## (TASK-323, tarea 7): a diferencia de `set_snapshots`, no se conoce toda
+## la grabación de antemano, se entera instantánea a instantánea.
+func _test_streaming_de_instantaneas() -> void:
+	var ghost := Ghost.new()
+	add_child(ghost)
+
+	_check(ghost.visible, false, "antes de la primera instantánea, no hay nada que enseñar")
+
+	ghost.append_snapshot({"t": 0, "pos": Vector3(0, 0, 0), "yaw": 0.0})
+	_check(ghost.visible, true, "la primera instantánea ya lo hace visible")
+
+	ghost.append_snapshot({"t": 1000, "pos": Vector3(10, 0, 0), "yaw": 0.0})
+	ghost.update_at(500)
+	_check(ghost.position.distance_to(Vector3(5, 0, 0)) < 0.001,
+		true, "interpola entre las instantáneas que van llegando, igual que con la grabación completa")
+
+	ghost.update_at(5000)
+	_check_eq(ghost.position, Vector3(10, 0, 0),
+		"por delante de la última instantánea recibida, se congela ahí en vez de teletransportarse")
+
+	ghost.free()
+
+
+func _test_atenuado_al_desconectar() -> void:
+	var ghost := Ghost.new(Color(1.0, 0.0, 0.0, 0.5))
+	add_child(ghost)
+	ghost.append_snapshot({"t": 0, "pos": Vector3.ZERO, "yaw": 0.0})
+
+	ghost.mark_disconnected()
+
+	_check(ghost._color.a < 0.5, true,
+		"desconectarse a mitad de carrera atenúa el color del fantasma")
+	_check(ghost.visible, true,
+		"pero se queda en pantalla, congelado en su última posición conocida")
 
 	ghost.free()
 

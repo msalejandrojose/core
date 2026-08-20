@@ -125,6 +125,29 @@ export interface CoinRewardConfigRow {
   amount: number;
 }
 
+export type RacingMatchmakingConfigKey =
+  | 'RATING_K_FACTOR'
+  | 'RATING_WINDOW_BASE_POINTS'
+  | 'BOT_FILL_TIMEOUT_MS';
+
+export const MATCHMAKING_CONFIG_KEY_LABELS: Record<RacingMatchmakingConfigKey, string> = {
+  RATING_K_FACTOR: 'K del rating (cuánto se mueve por carrera)',
+  RATING_WINDOW_BASE_POINTS: 'Ventana inicial de búsqueda (puntos de rating)',
+  BOT_FILL_TIMEOUT_MS: 'Espera antes de rellenar con rivales ficticios (ms)',
+};
+
+export interface MatchmakingConfigRow {
+  key: RacingMatchmakingConfigKey;
+  value: number;
+}
+
+export interface PlayerRatingRow {
+  userId: string;
+  userEmail: string;
+  userDisplayName: string;
+  rating: number;
+}
+
 export interface AdminLapTimeRow {
   id: string;
   userId: string;

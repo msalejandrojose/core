@@ -15,12 +15,16 @@ export interface RatingChange {
 // K alto a propósito: con pocas carreras por jugador al arrancar el modo en
 // vivo, conviene que el rating converja rápido a un nivel realista en vez
 // de tardar cientos de partidas en asentarse (el K=16-24 de ajedrez asume
-// jugadores con miles de partidas detrás).
-const K_FACTOR = 32;
+// jugadores con miles de partidas detrás). Editable desde el backoffice
+// (TASK-323, tarea 8) — este es solo el valor de partida/por defecto si no
+// hay configuración guardada.
+export const DEFAULT_RATING_K_FACTOR = 32;
 
 // Nunca por debajo de esto: evita que una mala racha mande a alguien a
 // rating negativo o a cero, que además rompería la ventana de matchmaking
-// de la tarea 4 (no hay "menos que el mínimo" con quien emparejar).
+// de la tarea 4 (no hay "menos que el mínimo" con quien emparejar). No es
+// editable desde el backoffice — a diferencia de K o la ventana, no hay un
+// valor "razonable" distinto que alguien fuera a querer ajustar.
 const RATING_FLOOR = 100;
 
 // Generalización por pares del Elo de dos jugadores a una carrera de N
@@ -34,7 +38,10 @@ const RATING_FLOOR = 100;
 // como rival de nadie — desconectarse no debe poder hundir el rating de
 // otro, ni el suyo propio (decisión: sin penalización por desconexión,
 // coherente con el grace period de reconexión del `LiveRaceRoomManager`).
-export function computeRatingChanges(results: RatedResult[]): RatingChange[] {
+export function computeRatingChanges(
+  results: RatedResult[],
+  kFactor: number = DEFAULT_RATING_K_FACTOR,
+): RatingChange[] {
   if (results.length < 2) return [];
 
   return results.map((player) => {
@@ -45,7 +52,7 @@ export function computeRatingChanges(results: RatedResult[]): RatingChange[] {
       return sum + (actual - expected);
     }, 0);
 
-    const delta = Math.round((K_FACTOR * scoreSum) / opponents.length);
+    const delta = Math.round((kFactor * scoreSum) / opponents.length);
     const ratingAfter = Math.max(RATING_FLOOR, player.rating + delta);
 
     return {

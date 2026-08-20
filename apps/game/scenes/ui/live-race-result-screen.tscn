@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/live_race_result_screen.gd" id="1_liveraceresult"]
+
+[node name="LiveRaceResultScreen" type="CanvasLayer"]
+script = ExtResource("1_liveraceresult")

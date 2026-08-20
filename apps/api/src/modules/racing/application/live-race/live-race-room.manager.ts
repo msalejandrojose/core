@@ -1,11 +1,12 @@
 import { EventEmitter } from 'node:events';
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { computeRatingChanges, RatingChange } from '../../domain/compute-rating-changes';
+import { computeRatingChanges, DEFAULT_RATING_K_FACTOR, RatingChange } from '../../domain/compute-rating-changes';
+import { RacingMatchmakingConfigKey } from '../../domain/entities/racing-matchmaking-config.entity';
 import { GhostSnapshot } from '../../domain/entities/ghost-snapshot';
 import { LiveRaceParticipant, LiveRaceStatus } from '../../domain/entities/live-race.entity';
 import { generateBotDuration } from '../../domain/generate-bot-duration';
-import { matchmakingRatingWindow } from '../../domain/matchmaking-rating-window';
+import { DEFAULT_RATING_WINDOW_BASE_POINTS, matchmakingRatingWindow } from '../../domain/matchmaking-rating-window';
 import { coinRewardForPosition } from '../../domain/racing-coin-rewards';
 import { resolveLiveRaceResult } from '../../domain/resolve-live-race-result';
 import {
@@ -29,6 +30,10 @@ import {
   type RacingCoinRewardConfigRepositoryPort,
 } from '../ports/racing-coin-reward-config-repository.port';
 import {
+  RACING_MATCHMAKING_CONFIG_REPOSITORY,
+  type RacingMatchmakingConfigRepositoryPort,
+} from '../ports/racing-matchmaking-config-repository.port';
+import {
   RACING_WALLET_REPOSITORY,
   type RacingWalletRepositoryPort,
 } from '../ports/racing-wallet-repository.port';
@@ -38,8 +43,10 @@ import {
 // llegue esa tarea, sin tocar esta pieza más que la fuente del valor.
 export const MIN_PLAYERS_TO_START = 2;
 export const MAX_PLAYERS_PER_ROOM = 4;
-/** Cuánto se espera a que se una más gente una vez hay quórum mínimo, antes
- *  de arrancar igualmente con los que haya. */
+/** Cuánto se espera, desde que se crea la sala, antes de rellenar los
+ *  huecos que falten con bots si nadie más se ha unido — valor de partida/
+ *  por defecto si no hay configuración guardada (TASK-323, tarea 8: editable
+ *  desde el backoffice, `RacingMatchmakingConfigKey.BOT_FILL_TIMEOUT_MS`). */
 export const FILL_TIMEOUT_MS = 15_000;
 export const COUNTDOWN_MS = 3_000;
 /** Cuánto se espera a que alguien reconecte antes de darlo por DNF. */
@@ -153,6 +160,8 @@ export class LiveRaceRoomManager extends EventEmitter {
     private readonly bots: RacingBotRepositoryPort,
     @Inject(LAP_TIME_REPOSITORY)
     private readonly lapTimes: LapTimeRepositoryPort,
+    @Inject(RACING_MATCHMAKING_CONFIG_REPOSITORY)
+    private readonly matchmakingConfig: RacingMatchmakingConfigRepositoryPort,
   ) {
     super();
   }
@@ -165,9 +174,19 @@ export class LiveRaceRoomManager extends EventEmitter {
     const existingRoomId = this.roomIdByUserId.get(userId);
     if (existingRoomId && this.rooms.has(existingRoomId)) return existingRoomId;
 
-    const rating = await this.ratings.getRating(userId);
+    const [rating, config] = await Promise.all([
+      this.ratings.getRating(userId),
+      this.matchmakingConfig.getValues(),
+    ]);
+    const ratingWindowBase =
+      config.get(RacingMatchmakingConfigKey.RATING_WINDOW_BASE_POINTS) ??
+      DEFAULT_RATING_WINDOW_BASE_POINTS;
+    const fillTimeoutMs =
+      config.get(RacingMatchmakingConfigKey.BOT_FILL_TIMEOUT_MS) ?? FILL_TIMEOUT_MS;
+
     const room =
-      this.findCompatibleWaitingRoom(trackId, rating) ?? this.createRoom(trackId, minPlausibleMs);
+      this.findCompatibleWaitingRoom(trackId, rating, ratingWindowBase) ??
+      this.createRoom(trackId, minPlausibleMs, fillTimeoutMs);
     room.participants.set(userId, {
       userId,
       rating,
@@ -281,7 +300,11 @@ export class LiveRaceRoomManager extends EventEmitter {
   // cuyo hueco actual (ventana según cuánto lleva esperando, ver
   // `matchmakingRatingWindow`) admita a este candidato — no la primera que
   // encaje, la MEJOR que encaje.
-  private findCompatibleWaitingRoom(trackId: string, rating: number): Room | undefined {
+  private findCompatibleWaitingRoom(
+    trackId: string,
+    rating: number,
+    ratingWindowBase: number,
+  ): Room | undefined {
     const now = Date.now();
     let best: Room | undefined;
     let bestDiff = Infinity;
@@ -295,7 +318,7 @@ export class LiveRaceRoomManager extends EventEmitter {
       }
       const ratings = [...room.participants.values()].map((p) => p.rating);
       const averageRating = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
-      const window = matchmakingRatingWindow(now - room.createdAt);
+      const window = matchmakingRatingWindow(now - room.createdAt, ratingWindowBase);
       const diff = Math.abs(rating - averageRating);
       if (diff <= window && diff < bestDiff) {
         best = room;
@@ -305,7 +328,7 @@ export class LiveRaceRoomManager extends EventEmitter {
     return best;
   }
 
-  private createRoom(trackId: string, minPlausibleMs: number): Room {
+  private createRoom(trackId: string, minPlausibleMs: number, fillTimeoutMs: number): Room {
     const room: Room = {
       id: randomUUID(),
       trackId,
@@ -324,7 +347,7 @@ export class LiveRaceRoomManager extends EventEmitter {
     room.fillTimer = setTimeout(() => {
       room.fillTimer = null;
       void this.onFillTimeout(room);
-    }, FILL_TIMEOUT_MS);
+    }, fillTimeoutMs);
     return room;
   }
 
@@ -533,7 +556,12 @@ export class LiveRaceRoomManager extends EventEmitter {
     const realFinishers = result.filter(
       (p) => !p.disconnected && p.position !== null && !botUserIds.has(p.userId),
     );
-    const currentRatings = await this.ratings.getRatings(realFinishers.map((p) => p.userId));
+    const [currentRatings, config] = await Promise.all([
+      this.ratings.getRatings(realFinishers.map((p) => p.userId)),
+      this.matchmakingConfig.getValues(),
+    ]);
+    const kFactor =
+      config.get(RacingMatchmakingConfigKey.RATING_K_FACTOR) ?? DEFAULT_RATING_K_FACTOR;
 
     const changes = computeRatingChanges(
       realFinishers.map((p) => ({
@@ -541,6 +569,7 @@ export class LiveRaceRoomManager extends EventEmitter {
         position: p.position as number,
         rating: currentRatings.get(p.userId) as number,
       })),
+      kFactor,
     );
 
     await this.ratings.applyChanges(
