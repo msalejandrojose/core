@@ -1,6 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { RacingWallet } from '../../domain/entities/racing-wallet.entity';
-import { REWARDED_AD_COIN_REWARD } from '../../domain/racing-coin-rewards';
+import { rewardedAdCoinReward } from '../../domain/racing-coin-rewards';
+import {
+  RACING_COIN_REWARD_CONFIG_REPOSITORY,
+  type RacingCoinRewardConfigRepositoryPort,
+} from '../ports/racing-coin-reward-config-repository.port';
 import {
   RACING_WALLET_REPOSITORY,
   type RacingWalletRepositoryPort,
@@ -16,14 +20,20 @@ export class CreditRewardedAdUseCase {
   constructor(
     @Inject(RACING_WALLET_REPOSITORY)
     private readonly wallets: RacingWalletRepositoryPort,
+    @Inject(RACING_COIN_REWARD_CONFIG_REPOSITORY)
+    private readonly rewardConfigs: RacingCoinRewardConfigRepositoryPort,
   ) {}
 
   async execute(userId: string): Promise<RacingWallet> {
-    const balance = await this.wallets.credit({
-      userId,
-      amount: REWARDED_AD_COIN_REWARD.amount,
-      source: REWARDED_AD_COIN_REWARD.source,
-    });
+    const amounts = await this.rewardConfigs.getAmounts();
+    const reward = rewardedAdCoinReward(amounts);
+    const balance = reward
+      ? await this.wallets.credit({
+          userId,
+          amount: reward.amount,
+          source: reward.source,
+        })
+      : await this.wallets.getBalance(userId);
     return new RacingWallet(userId, balance);
   }
 }

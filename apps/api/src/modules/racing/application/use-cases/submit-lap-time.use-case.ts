@@ -4,11 +4,15 @@ import { LapTime } from '../../domain/entities/lap-time.entity';
 import { ImplausibleLapTimeError } from '../../domain/errors/implausible-lap-time.error';
 import { TrackNotFoundError } from '../../domain/errors/track-not-found.error';
 import { validateLap } from '../../domain/lap-validation';
-import { PERSONAL_BEST_COIN_REWARD } from '../../domain/racing-coin-rewards';
+import { personalBestCoinReward } from '../../domain/racing-coin-rewards';
 import {
   LAP_TIME_REPOSITORY,
   type LapTimeRepositoryPort,
 } from '../ports/lap-time-repository.port';
+import {
+  RACING_COIN_REWARD_CONFIG_REPOSITORY,
+  type RacingCoinRewardConfigRepositoryPort,
+} from '../ports/racing-coin-reward-config-repository.port';
 import {
   RACING_WALLET_REPOSITORY,
   type RacingWalletRepositoryPort,
@@ -50,6 +54,8 @@ export class SubmitLapTimeUseCase {
     @Inject(SEASON_REPOSITORY) private readonly seasons: SeasonRepositoryPort,
     @Inject(RACING_WALLET_REPOSITORY)
     private readonly wallets: RacingWalletRepositoryPort,
+    @Inject(RACING_COIN_REWARD_CONFIG_REPOSITORY)
+    private readonly rewardConfigs: RacingCoinRewardConfigRepositoryPort,
   ) {}
 
   async execute(input: SubmitLapTimeInput): Promise<SubmitLapTimeResult> {
@@ -100,12 +106,16 @@ export class SubmitLapTimeUseCase {
     // `isPersonalBest` sale true igualmente (para guardar el fantasma), pero
     // ahí no ha batido nada todavía.
     if (previousBest !== null && isPersonalBest) {
-      await this.wallets.credit({
-        userId: input.userId,
-        amount: PERSONAL_BEST_COIN_REWARD.amount,
-        source: PERSONAL_BEST_COIN_REWARD.source,
-        lapTimeId: lapTime.id,
-      });
+      const amounts = await this.rewardConfigs.getAmounts();
+      const reward = personalBestCoinReward(amounts);
+      if (reward) {
+        await this.wallets.credit({
+          userId: input.userId,
+          amount: reward.amount,
+          source: reward.source,
+          lapTimeId: lapTime.id,
+        });
+      }
     }
 
     return {

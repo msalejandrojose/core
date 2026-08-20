@@ -153,6 +153,11 @@ const TerrainPage = lazy(() =>
     default: m.TerrainPage,
   })),
 );
+const CoinRewardsPage = lazy(() =>
+  import('@/features/racing/coin-rewards/CoinRewardsPage').then((m) => ({
+    default: m.CoinRewardsPage,
+  })),
+);
 const LapTimesPage = lazy(() =>
   import('@/features/racing/lap-times/LapTimesPage').then((m) => ({
     default: m.LapTimesPage,
@@ -321,6 +326,7 @@ export default function App() {
               <Route path="/racing/tracks/:id" element={<TrackEditorPage />} />
               <Route path="/racing/cars" element={<CarsPage />} />
               <Route path="/racing/terrain" element={<TerrainPage />} />
+              <Route path="/racing/coin-rewards" element={<CoinRewardsPage />} />
               <Route path="/racing/lap-times" element={<LapTimesPage />} />
               <Route path="/racing/grand-prix" element={<GrandPrixPage />} />
               <Route

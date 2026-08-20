@@ -351,6 +351,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Efecto de terreno no encontrado.',
   },
+  RACING_COIN_REWARD_CONFIG_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Importe de bono no encontrado.',
+  },
   RACING_GRAND_PRIX_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',

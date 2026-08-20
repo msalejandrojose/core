@@ -97,6 +97,34 @@ export interface GrandPrixLeaderboardEntryRow {
   completedAt: string;
 }
 
+export type RacingCoinRewardKey =
+  | 'RACE_FIRST_PLACE'
+  | 'RACE_SECOND_PLACE'
+  | 'RACE_THIRD_PLACE'
+  | 'REWARDED_AD'
+  | 'PERSONAL_BEST'
+  | 'BEAT_FRIEND'
+  | 'WIN_STREAK_2'
+  | 'WIN_STREAK_3'
+  | 'WIN_STREAK_4_PLUS';
+
+export const COIN_REWARD_KEY_LABELS: Record<RacingCoinRewardKey, string> = {
+  RACE_FIRST_PLACE: '1º puesto en carrera online',
+  RACE_SECOND_PLACE: '2º puesto en carrera online',
+  RACE_THIRD_PLACE: '3º puesto en carrera online',
+  REWARDED_AD: 'Ver un anuncio recompensado',
+  PERSONAL_BEST: 'Batir tu récord personal',
+  BEAT_FRIEND: 'Batir el fantasma de un amigo',
+  WIN_STREAK_2: 'Racha de victorias — 2ª seguida',
+  WIN_STREAK_3: 'Racha de victorias — 3ª seguida',
+  WIN_STREAK_4_PLUS: 'Racha de victorias — 4ª seguida o más',
+};
+
+export interface CoinRewardConfigRow {
+  key: RacingCoinRewardKey;
+  amount: number;
+}
+
 export interface AdminLapTimeRow {
   id: string;
   userId: string;

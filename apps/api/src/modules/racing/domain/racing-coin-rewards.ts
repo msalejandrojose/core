@@ -1,3 +1,4 @@
+import { RacingCoinRewardKey } from './entities/racing-coin-reward-config.entity';
 import { RacingCoinSource } from './entities/racing-wallet.entity';
 
 export interface RacingCoinReward {
@@ -5,19 +6,51 @@ export interface RacingCoinReward {
   source: RacingCoinSource;
 }
 
-// Importes de partida ya cerrados en "Diseñar la economía de monedas y
-// recompensas" (TASK-286) — ajustables sin validar con datos reales
-// todavía, igual que el resto de cifras de ese documento. `position` es la
-// posición EN ESA CARRERA (1 a 3, ver `RacingOnlineRaceParticipant`), no el
-// puesto en el leaderboard general del circuito.
-export function coinRewardForPosition(position: number): RacingCoinReward | null {
+// Importe por clave, tal como vive editable en BD (TASK-322) — antes eran
+// constantes en este mismo archivo. `Map` y no `Record`: el que llama ya
+// tiene un `Map` a mano (viene directo de la fila de BD), y así no hace
+// falta forzar un valor por defecto en cada una de las 9 claves.
+export type RacingCoinRewardAmounts = ReadonlyMap<RacingCoinRewardKey, number>;
+
+// A qué `RacingCoinSource` del ledger corresponde cada clave — varias claves
+// pueden compartir fuente (los tres tramos de racha son todos WIN_STREAK en
+// el ledger, aunque el importe se edite por separado).
+const SOURCE_FOR_KEY: Record<RacingCoinRewardKey, RacingCoinSource> = {
+  [RacingCoinRewardKey.RACE_FIRST_PLACE]: RacingCoinSource.RACE_FIRST_PLACE,
+  [RacingCoinRewardKey.RACE_SECOND_PLACE]: RacingCoinSource.RACE_SECOND_PLACE,
+  [RacingCoinRewardKey.RACE_THIRD_PLACE]: RacingCoinSource.RACE_THIRD_PLACE,
+  [RacingCoinRewardKey.REWARDED_AD]: RacingCoinSource.REWARDED_AD,
+  [RacingCoinRewardKey.PERSONAL_BEST]: RacingCoinSource.PERSONAL_BEST,
+  [RacingCoinRewardKey.BEAT_FRIEND]: RacingCoinSource.BEAT_FRIEND,
+  [RacingCoinRewardKey.WIN_STREAK_2]: RacingCoinSource.WIN_STREAK,
+  [RacingCoinRewardKey.WIN_STREAK_3]: RacingCoinSource.WIN_STREAK,
+  [RacingCoinRewardKey.WIN_STREAK_4_PLUS]: RacingCoinSource.WIN_STREAK,
+};
+
+// <= 0 (el admin lo puso a 0, o algo raro llegó negativo) = bono
+// desactivado, no null-vs-0 ambiguo por toda la llamada.
+function reward(
+  amounts: RacingCoinRewardAmounts,
+  key: RacingCoinRewardKey,
+): RacingCoinReward | null {
+  const amount = amounts.get(key) ?? 0;
+  if (amount <= 0) return null;
+  return { amount, source: SOURCE_FOR_KEY[key] };
+}
+
+// `position` es la posición EN ESA CARRERA (1 a 3, ver
+// `RacingOnlineRaceParticipant`), no el puesto en el leaderboard general.
+export function coinRewardForPosition(
+  position: number,
+  amounts: RacingCoinRewardAmounts,
+): RacingCoinReward | null {
   switch (position) {
     case 1:
-      return { amount: 100, source: RacingCoinSource.RACE_FIRST_PLACE };
+      return reward(amounts, RacingCoinRewardKey.RACE_FIRST_PLACE);
     case 2:
-      return { amount: 60, source: RacingCoinSource.RACE_SECOND_PLACE };
+      return reward(amounts, RacingCoinRewardKey.RACE_SECOND_PLACE);
     case 3:
-      return { amount: 40, source: RacingCoinSource.RACE_THIRD_PLACE };
+      return reward(amounts, RacingCoinRewardKey.RACE_THIRD_PLACE);
     default:
       return null;
   }
@@ -25,36 +58,41 @@ export function coinRewardForPosition(position: number): RacingCoinReward | null
 
 // El anuncio ACELERA la progresión, no es la única vía razonable de
 // conseguir monedas (TASK-286).
-export const REWARDED_AD_COIN_REWARD: RacingCoinReward = {
-  amount: 100,
-  source: RacingCoinSource.REWARDED_AD,
-};
+export function rewardedAdCoinReward(
+  amounts: RacingCoinRewardAmounts,
+): RacingCoinReward | null {
+  return reward(amounts, RacingCoinRewardKey.REWARDED_AD);
+}
 
-// Cifras de TASK-321 — enriquecen las fuentes ya cuantificadas en TASK-286,
-// no las sustituyen: se acreditan ADEMÁS del bono de posición cuando aplican.
+// Solo por MEJORAR tu marca anterior en un circuito, no por la primera
+// vuelta que subes ahí — quien llama ya filtra eso antes de pedir esto.
+export function personalBestCoinReward(
+  amounts: RacingCoinRewardAmounts,
+): RacingCoinReward | null {
+  return reward(amounts, RacingCoinRewardKey.PERSONAL_BEST);
+}
 
-// Solo por MEJORAR tu marca anterior en un circuito, no por la primera vuelta
-// que subes ahí (sin marca previa no hay nada que batir todavía).
-export const PERSONAL_BEST_COIN_REWARD: RacingCoinReward = {
-  amount: 50,
-  source: RacingCoinSource.PERSONAL_BEST,
-};
+// Por ganarle a un amigo en una carrera online — un flat único por carrera,
+// no uno por cada amigo vencido si hubiera más de uno entre los rivales.
+export function beatFriendCoinReward(
+  amounts: RacingCoinRewardAmounts,
+): RacingCoinReward | null {
+  return reward(amounts, RacingCoinRewardKey.BEAT_FRIEND);
+}
 
-// Por ganarle a un amigo en una carrera online (su fantasma como rival,
-// TASK-223) — un flat único por carrera, no uno por cada amigo vencido si
-// hubiera más de uno entre los rivales.
-export const BEAT_FRIEND_COIN_REWARD: RacingCoinReward = {
-  amount: 60,
-  source: RacingCoinSource.BEAT_FRIEND,
-};
-
-// Escalado con tope (TASK-321): la 2ª victoria seguida da menos que la 3ª,
-// que da menos que la 4ª — pero nunca más que el bono de quedar 1º (100),
-// o ganar rachas largas pesaría más que ganar la carrera en sí.
 // `streakLength` cuenta la victoria que se acaba de registrar (2 = la
-// segunda seguida, incluida esta).
-export function coinRewardForWinStreak(streakLength: number): RacingCoinReward | null {
+// segunda seguida, incluida esta). Los tramos y su tope los decide el admin
+// editando cada importe por separado — aquí solo se resuelve qué clave mirar.
+export function coinRewardForWinStreak(
+  streakLength: number,
+  amounts: RacingCoinRewardAmounts,
+): RacingCoinReward | null {
   if (streakLength < 2) return null;
-  const amount = streakLength === 2 ? 20 : streakLength === 3 ? 40 : 60;
-  return { amount, source: RacingCoinSource.WIN_STREAK };
+  const key =
+    streakLength === 2
+      ? RacingCoinRewardKey.WIN_STREAK_2
+      : streakLength === 3
+        ? RacingCoinRewardKey.WIN_STREAK_3
+        : RacingCoinRewardKey.WIN_STREAK_4_PLUS;
+  return reward(amounts, key);
 }

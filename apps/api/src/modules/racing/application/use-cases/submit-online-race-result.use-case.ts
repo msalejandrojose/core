@@ -3,7 +3,7 @@ import { OnlineRace } from '../../domain/entities/online-race.entity';
 import { InvalidOnlineRaceParticipantsError } from '../../domain/errors/invalid-online-race-participants.error';
 import { TrackNotFoundError } from '../../domain/errors/track-not-found.error';
 import {
-  BEAT_FRIEND_COIN_REWARD,
+  beatFriendCoinReward,
   coinRewardForPosition,
   coinRewardForWinStreak,
 } from '../../domain/racing-coin-rewards';
@@ -16,6 +16,10 @@ import {
   FRIENDSHIP_REPOSITORY,
   type FriendshipRepositoryPort,
 } from '../ports/friendship-repository.port';
+import {
+  RACING_COIN_REWARD_CONFIG_REPOSITORY,
+  type RacingCoinRewardConfigRepositoryPort,
+} from '../ports/racing-coin-reward-config-repository.port';
 import {
   ONLINE_RACE_REPOSITORY,
   type OnlineRaceRepositoryPort,
@@ -67,6 +71,8 @@ export class SubmitOnlineRaceResultUseCase {
     private readonly wallets: RacingWalletRepositoryPort,
     @Inject(FRIENDSHIP_REPOSITORY)
     private readonly friendships: FriendshipRepositoryPort,
+    @Inject(RACING_COIN_REWARD_CONFIG_REPOSITORY)
+    private readonly rewardConfigs: RacingCoinRewardConfigRepositoryPort,
   ) {}
 
   async execute(input: SubmitOnlineRaceResultInput): Promise<OnlineRace> {
@@ -105,7 +111,11 @@ export class SubmitOnlineRaceResultUseCase {
     const player = race.participants.find((p) => p.role === 'PLAYER');
     if (!player) return race;
 
-    const reward = coinRewardForPosition(player.position);
+    // Una sola lectura de los importes configurados para toda la carrera —
+    // hasta tres bonos pueden aplicar a la vez (posición + amigo + racha).
+    const amounts = await this.rewardConfigs.getAmounts();
+
+    const reward = coinRewardForPosition(player.position, amounts);
     if (reward) {
       await this.wallets.credit({
         userId: input.userId,
@@ -125,12 +135,15 @@ export class SubmitOnlineRaceResultUseCase {
       const friendIds = new Set(friends.map((f) => f.userId));
       const beatFriend = beatenRivals.some((r) => friendIds.has(r.userId));
       if (beatFriend) {
-        await this.wallets.credit({
-          userId: input.userId,
-          amount: BEAT_FRIEND_COIN_REWARD.amount,
-          source: BEAT_FRIEND_COIN_REWARD.source,
-          onlineRaceId: race.id,
-        });
+        const friendReward = beatFriendCoinReward(amounts);
+        if (friendReward) {
+          await this.wallets.credit({
+            userId: input.userId,
+            amount: friendReward.amount,
+            source: friendReward.source,
+            onlineRaceId: race.id,
+          });
+        }
       }
     }
 
@@ -143,6 +156,7 @@ export class SubmitOnlineRaceResultUseCase {
       );
       const streakReward = coinRewardForWinStreak(
         winStreakLength(recentPositions),
+        amounts,
       );
       if (streakReward) {
         await this.wallets.credit({
