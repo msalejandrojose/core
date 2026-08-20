@@ -1,6 +1,9 @@
 import { RacingCoinRewardKey } from '../../domain/entities/racing-coin-reward-config.entity';
 import { LapTime } from '../../domain/entities/lap-time.entity';
 import { LiveRace } from '../../domain/entities/live-race.entity';
+import { RacingMatchmakingConfigKey } from '../../domain/entities/racing-matchmaking-config.entity';
+import { DEFAULT_RATING_K_FACTOR } from '../../domain/compute-rating-changes';
+import { DEFAULT_RATING_WINDOW_BASE_POINTS } from '../../domain/matchmaking-rating-window';
 import { RacingCoinRewardAmounts } from '../../domain/racing-coin-rewards';
 import { LapTimeRepositoryPort } from '../ports/lap-time-repository.port';
 import {
@@ -13,6 +16,10 @@ import {
 } from '../ports/player-rating-repository.port';
 import { RacingBotRepositoryPort } from '../ports/racing-bot-repository.port';
 import { RacingCoinRewardConfigRepositoryPort } from '../ports/racing-coin-reward-config-repository.port';
+import {
+  RacingMatchmakingConfigRepositoryPort,
+  RacingMatchmakingConfigValues,
+} from '../ports/racing-matchmaking-config-repository.port';
 import {
   CreditCoinsData,
   RacingWalletRepositoryPort,
@@ -113,6 +120,23 @@ class FakeLapTimeRepository implements Partial<LapTimeRepositoryPort> {
   }
 }
 
+// Los mismos valores de partida que sembraría `seed-racing-matchmaking-
+// config.ts` — por defecto, un test no configurado se comporta igual que
+// antes de la tarea 8.
+const DEFAULT_MATCHMAKING_CONFIG: RacingMatchmakingConfigValues = new Map([
+  [RacingMatchmakingConfigKey.RATING_K_FACTOR, DEFAULT_RATING_K_FACTOR],
+  [RacingMatchmakingConfigKey.RATING_WINDOW_BASE_POINTS, DEFAULT_RATING_WINDOW_BASE_POINTS],
+  [RacingMatchmakingConfigKey.BOT_FILL_TIMEOUT_MS, FILL_TIMEOUT_MS],
+]);
+
+class FakeMatchmakingConfigRepository implements Partial<RacingMatchmakingConfigRepositoryPort> {
+  constructor(private readonly values: RacingMatchmakingConfigValues = DEFAULT_MATCHMAKING_CONFIG) {}
+
+  getValues(): Promise<RacingMatchmakingConfigValues> {
+    return Promise.resolve(this.values);
+  }
+}
+
 function waitForEvent<T>(manager: LiveRaceRoomManager, event: string): Promise<T> {
   return new Promise((resolve) => manager.once(event, resolve));
 }
@@ -128,6 +152,7 @@ describe('LiveRaceRoomManager', () => {
   let ratings: FakeRatingRepository;
   let bots: FakeBotRepository;
   let lapTimes: FakeLapTimeRepository;
+  let matchmakingConfig: FakeMatchmakingConfigRepository;
   let manager: LiveRaceRoomManager;
 
   beforeEach(() => {
@@ -138,6 +163,7 @@ describe('LiveRaceRoomManager', () => {
     ratings = new FakeRatingRepository();
     bots = new FakeBotRepository();
     lapTimes = new FakeLapTimeRepository();
+    matchmakingConfig = new FakeMatchmakingConfigRepository();
     manager = new LiveRaceRoomManager(
       races as unknown as LiveRaceRepositoryPort,
       wallets as unknown as RacingWalletRepositoryPort,
@@ -145,6 +171,7 @@ describe('LiveRaceRoomManager', () => {
       ratings as unknown as PlayerRatingRepositoryPort,
       bots as unknown as RacingBotRepositoryPort,
       lapTimes as unknown as LapTimeRepositoryPort,
+      matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
     );
   });
 
@@ -215,6 +242,7 @@ describe('LiveRaceRoomManager', () => {
         ratings as unknown as PlayerRatingRepositoryPort,
         bots as unknown as RacingBotRepositoryPort,
         lapTimes as unknown as LapTimeRepositoryPort,
+        matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
       );
     }
 
@@ -276,6 +304,7 @@ describe('LiveRaceRoomManager', () => {
         ratings as unknown as PlayerRatingRepositoryPort,
         bots as unknown as RacingBotRepositoryPort,
         lapTimes as unknown as LapTimeRepositoryPort,
+        matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
       );
       await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
       await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
@@ -283,6 +312,82 @@ describe('LiveRaceRoomManager', () => {
 
       const countdown = waitForEvent(manager, LIVE_RACE_EVENTS.countdown);
       jest.advanceTimersByTime(FILL_TIMEOUT_MS);
+      await countdown;
+    });
+  });
+
+  describe('configuración de matchmaking editable (TASK-323, tarea 8)', () => {
+    function withMatchmakingConfig(overrides: Partial<Record<RacingMatchmakingConfigKey, number>>): void {
+      matchmakingConfig = new FakeMatchmakingConfigRepository(
+        new Map([...DEFAULT_MATCHMAKING_CONFIG, ...Object.entries(overrides)] as [
+          RacingMatchmakingConfigKey,
+          number,
+        ][]),
+      );
+      manager = new LiveRaceRoomManager(
+        races as unknown as LiveRaceRepositoryPort,
+        wallets as unknown as RacingWalletRepositoryPort,
+        rewardConfigs as unknown as RacingCoinRewardConfigRepositoryPort,
+        ratings as unknown as PlayerRatingRepositoryPort,
+        bots as unknown as RacingBotRepositoryPort,
+        lapTimes as unknown as LapTimeRepositoryPort,
+        matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+      );
+    }
+
+    it('una ventana inicial más ancha admite un rating que con la de partida quedaría fuera', async () => {
+      withMatchmakingConfig({ [RacingMatchmakingConfigKey.RATING_WINDOW_BASE_POINTS]: 600 });
+      ratings = new FakeRatingRepository(new Map([['alice', 1000], ['bob', 1500]]));
+      manager = new LiveRaceRoomManager(
+        races as unknown as LiveRaceRepositoryPort,
+        wallets as unknown as RacingWalletRepositoryPort,
+        rewardConfigs as unknown as RacingCoinRewardConfigRepositoryPort,
+        ratings as unknown as PlayerRatingRepositoryPort,
+        bots as unknown as RacingBotRepositoryPort,
+        lapTimes as unknown as LapTimeRepositoryPort,
+        matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+      );
+
+      const roomA = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      const roomB = await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
+      expect(roomA).toBe(roomB);
+    });
+
+    it('un K-factor menor mueve el rating menos por carrera', async () => {
+      withMatchmakingConfig({ [RacingMatchmakingConfigKey.RATING_K_FACTOR]: 16 });
+      const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
+      jest.advanceTimersByTime(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await started;
+
+      const finished = waitForEvent<RaceFinishedEvent>(manager, LIVE_RACE_EVENTS.raceFinished);
+      manager.recordFinish('alice', 40000);
+      manager.recordFinish('bob', 42000);
+      const event = await finished;
+
+      // Con K=32 (por defecto) el delta sería 16 — con K=16, la mitad.
+      expect(event.ratingChanges.find((c) => c.userId === 'alice')?.delta).toBe(8);
+    });
+
+    it('un timeout de relleno más corto adelanta cuándo entran los bots', async () => {
+      bots = new FakeBotRepository(['bot-1']);
+      withMatchmakingConfig({ [RacingMatchmakingConfigKey.BOT_FILL_TIMEOUT_MS]: 3000 });
+      manager = new LiveRaceRoomManager(
+        races as unknown as LiveRaceRepositoryPort,
+        wallets as unknown as RacingWalletRepositoryPort,
+        rewardConfigs as unknown as RacingCoinRewardConfigRepositoryPort,
+        ratings as unknown as PlayerRatingRepositoryPort,
+        bots as unknown as RacingBotRepositoryPort,
+        lapTimes as unknown as LapTimeRepositoryPort,
+        matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+      );
+
+      const countdown = waitForEvent(manager, LIVE_RACE_EVENTS.countdown);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+
+      // Con el valor de partida (15s) esto no bastaría ni de lejos.
+      jest.advanceTimersByTime(3000);
       await countdown;
     });
   });
@@ -301,6 +406,7 @@ describe('LiveRaceRoomManager', () => {
         ratings as unknown as PlayerRatingRepositoryPort,
         bots as unknown as RacingBotRepositoryPort,
         lapTimes as unknown as LapTimeRepositoryPort,
+        matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
       );
     }
 

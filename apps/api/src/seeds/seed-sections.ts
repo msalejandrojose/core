@@ -240,6 +240,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/racing/coin-rewards',
         order: 6,
       },
+      {
+        code: 'racing.matchmaking_config',
+        name: 'Matchmaking en vivo',
+        icon: 'Radar',
+        route: '/racing/matchmaking-config',
+        order: 7,
+      },
     ],
   },
   {

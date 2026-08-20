@@ -2011,6 +2011,35 @@ model RacingCoinRewardConfig {
   @@map("racing_coin_reward_config")
 }
 
+/// Qué parámetro del matchmaking de la fase online real se está editando
+/// (TASK-323, tarea 8) — antes constantes en código (`compute-rating-
+/// changes.ts`, `matchmaking-rating-window.ts`, `live-race-room.manager.ts`).
+enum RacingMatchmakingConfigKey {
+  /// K de la fórmula de Elo (`computeRatingChanges`) — cuánto se mueve el
+  /// rating por carrera. Alto a propósito por defecto: con pocas carreras
+  /// por jugador al arrancar el modo, conviene que converja rápido.
+  RATING_K_FACTOR
+  /// Ventana de rating admitida al abrir una sala nueva, antes de que
+  /// empiece a ensancharse con el tiempo de espera (`matchmakingRatingWindow`).
+  RATING_WINDOW_BASE_POINTS
+  /// Cuánto se espera, desde que se crea una sala, antes de rellenar los
+  /// huecos que falten con rivales ficticios si nadie más se ha unido.
+  BOT_FILL_TIMEOUT_MS
+}
+
+/// Editable desde el backoffice sin desplegar código (TASK-323, tarea 8).
+/// Conjunto CERRADO de tres filas, mismo criterio que
+/// `RacingCoinRewardConfig` — sin create/delete, solo ajustar el valor.
+model RacingMatchmakingConfig {
+  id    String                     @id @default(uuid()) @db.Char(36)
+  key   RacingMatchmakingConfigKey @unique
+  value Int
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_matchmaking_config")
+}
+
 /// Saldo de monedas de un jugador (TASK-318, economía de TASK-286). Una
 /// fila por jugador, igual que `PlayerCarLoadout` — sin fila = 0 monedas, se
 /// crea perezosamente en el primer movimiento. El saldo vive aquí

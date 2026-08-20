@@ -37,6 +37,7 @@ CarLoadout="*res://scripts/state/car_loadout.gd"
 Wallet="*res://scripts/state/wallet.gd"
 TerrainCatalog="*res://scripts/state/terrain_catalog.gd"
 TrackCache="*res://scripts/state/track_cache.gd"
+LiveRaceSocket="*res://scripts/net/live_race_socket.gd"
 
 [display]
 
