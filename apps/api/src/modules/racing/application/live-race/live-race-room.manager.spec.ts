@@ -1,6 +1,8 @@
 import { RacingCoinRewardKey } from '../../domain/entities/racing-coin-reward-config.entity';
+import { LapTime } from '../../domain/entities/lap-time.entity';
 import { LiveRace } from '../../domain/entities/live-race.entity';
 import { RacingCoinRewardAmounts } from '../../domain/racing-coin-rewards';
+import { LapTimeRepositoryPort } from '../ports/lap-time-repository.port';
 import {
   CreateLiveRaceData,
   LiveRaceRepositoryPort,
@@ -9,6 +11,7 @@ import {
   PlayerRatingRepositoryPort,
   RatingUpdate,
 } from '../ports/player-rating-repository.port';
+import { RacingBotRepositoryPort } from '../ports/racing-bot-repository.port';
 import { RacingCoinRewardConfigRepositoryPort } from '../ports/racing-coin-reward-config-repository.port';
 import {
   CreditCoinsData,
@@ -30,6 +33,8 @@ const DEFAULT_AMOUNTS: RacingCoinRewardAmounts = new Map([
   [RacingCoinRewardKey.RACE_SECOND_PLACE, 60],
   [RacingCoinRewardKey.RACE_THIRD_PLACE, 40],
 ]);
+
+const MIN_PLAUSIBLE_MS = 8000;
 
 class FakeLiveRaceRepository implements Partial<LiveRaceRepositoryPort> {
   created: CreateLiveRaceData[] = [];
@@ -84,6 +89,30 @@ class FakeRatingRepository implements Partial<PlayerRatingRepositoryPort> {
   }
 }
 
+// Pool vacío por defecto: los tests que no van de bots no dependen de que
+// exista ninguno (esa rama solo se toca cuando la sala sigue por debajo del
+// mínimo al disparar el fill timer).
+class FakeBotRepository implements Partial<RacingBotRepositoryPort> {
+  constructor(private readonly poolIds: string[] = []) {}
+
+  pickBots(count: number, excludeUserIds: string[]): Promise<string[]> {
+    const available = this.poolIds.filter((id) => !excludeUserIds.includes(id));
+    return Promise.resolve(available.slice(0, count));
+  }
+}
+
+class FakeLapTimeRepository implements Partial<LapTimeRepositoryPort> {
+  constructor(private readonly bestsByUserId: Map<string, number> = new Map()) {}
+
+  findPersonalBest(userId: string, trackId: string): Promise<LapTime | null> {
+    const durationMs = this.bestsByUserId.get(userId);
+    if (durationMs === undefined) return Promise.resolve(null);
+    return Promise.resolve(
+      new LapTime('lap-1', userId, trackId, durationMs, [durationMs], '1.0.0', new Date()),
+    );
+  }
+}
+
 function waitForEvent<T>(manager: LiveRaceRoomManager, event: string): Promise<T> {
   return new Promise((resolve) => manager.once(event, resolve));
 }
@@ -97,6 +126,8 @@ describe('LiveRaceRoomManager', () => {
   let wallets: FakeWalletRepository;
   let rewardConfigs: FakeRewardConfigRepository;
   let ratings: FakeRatingRepository;
+  let bots: FakeBotRepository;
+  let lapTimes: FakeLapTimeRepository;
   let manager: LiveRaceRoomManager;
 
   beforeEach(() => {
@@ -105,11 +136,15 @@ describe('LiveRaceRoomManager', () => {
     wallets = new FakeWalletRepository();
     rewardConfigs = new FakeRewardConfigRepository();
     ratings = new FakeRatingRepository();
+    bots = new FakeBotRepository();
+    lapTimes = new FakeLapTimeRepository();
     manager = new LiveRaceRoomManager(
       races as unknown as LiveRaceRepositoryPort,
       wallets as unknown as RacingWalletRepositoryPort,
       rewardConfigs as unknown as RacingCoinRewardConfigRepositoryPort,
       ratings as unknown as PlayerRatingRepositoryPort,
+      bots as unknown as RacingBotRepositoryPort,
+      lapTimes as unknown as LapTimeRepositoryPort,
     );
   });
 
@@ -119,27 +154,27 @@ describe('LiveRaceRoomManager', () => {
 
   describe('unirse a sala', () => {
     it('junta a dos jugadores del mismo circuito en la misma sala', async () => {
-      const roomA = await manager.join('track-1', 'alice');
-      const roomB = await manager.join('track-1', 'bob');
+      const roomA = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      const roomB = await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
       expect(roomA).toBe(roomB);
     });
 
     it('no junta jugadores de circuitos distintos', async () => {
-      const roomA = await manager.join('track-1', 'alice');
-      const roomB = await manager.join('track-2', 'bob');
+      const roomA = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      const roomB = await manager.join('track-2', 'bob', MIN_PLAUSIBLE_MS);
       expect(roomA).not.toBe(roomB);
     });
 
     it('es idempotente: unirse dos veces devuelve la misma sala', async () => {
-      const first = await manager.join('track-1', 'alice');
-      const second = await manager.join('track-1', 'alice');
+      const first = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      const second = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
       expect(first).toBe(second);
     });
 
     it('con quórum mínimo espera FILL_TIMEOUT_MS antes de arrancar la cuenta atrás', async () => {
       const countdown = waitForEvent(manager, LIVE_RACE_EVENTS.countdown);
-      await manager.join('track-1', 'alice');
-      await manager.join('track-1', 'bob');
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
 
       jest.advanceTimersByTime(FILL_TIMEOUT_MS - 1);
       // Todavía no debería haber arrancado.
@@ -155,7 +190,7 @@ describe('LiveRaceRoomManager', () => {
     it('al llenar la sala arranca la cuenta atrás sin esperar el fill timeout', async () => {
       const countdown = waitForEvent(manager, LIVE_RACE_EVENTS.countdown);
       for (let i = 0; i < MAX_PLAYERS_PER_ROOM; i++) {
-        await manager.join('track-1', `p${i}`);
+        await manager.join('track-1', `p${i}`, MIN_PLAUSIBLE_MS);
       }
       // Sin avanzar el reloj: si no llegara el evento, el test se queda
       // colgado hasta el timeout global de Jest — es la propia aserción.
@@ -164,7 +199,7 @@ describe('LiveRaceRoomManager', () => {
 
     it('la cuenta atrás termina en el arranque de la carrera', async () => {
       const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
-      for (let i = 0; i < MAX_PLAYERS_PER_ROOM; i++) await manager.join('track-1', `p${i}`);
+      for (let i = 0; i < MAX_PLAYERS_PER_ROOM; i++) await manager.join('track-1', `p${i}`, MIN_PLAUSIBLE_MS);
       jest.advanceTimersByTime(COUNTDOWN_MS);
       await started;
     });
@@ -178,85 +213,210 @@ describe('LiveRaceRoomManager', () => {
         wallets as unknown as RacingWalletRepositoryPort,
         rewardConfigs as unknown as RacingCoinRewardConfigRepositoryPort,
         ratings as unknown as PlayerRatingRepositoryPort,
+        bots as unknown as RacingBotRepositoryPort,
+        lapTimes as unknown as LapTimeRepositoryPort,
       );
     }
 
     it('no junta a rating muy distinto si la sala acaba de abrir', async () => {
       withRatings({ alice: 1000, bob: 1500 });
-      const roomA = await manager.join('track-1', 'alice');
-      const roomB = await manager.join('track-1', 'bob');
+      const roomA = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      const roomB = await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
       expect(roomA).not.toBe(roomB);
     });
 
     it('junta a rating cercano en la misma sala', async () => {
       withRatings({ alice: 1000, bob: 1050 });
-      const roomA = await manager.join('track-1', 'alice');
-      const roomB = await manager.join('track-1', 'bob');
+      const roomA = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      const roomB = await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
       expect(roomA).toBe(roomB);
     });
 
     it('la ventana se amplía con el tiempo: un rating antes incompatible acaba entrando', async () => {
       withRatings({ alice: 1000, carol: 1500 });
-      const roomA = await manager.join('track-1', 'alice');
+      const roomA = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
 
       // A los 10s la ventana de la sala de alice es 100 + 50*10 = 600, ya
       // cubre los 500 de diferencia con carol (a los 0s no habría cabido).
       jest.advanceTimersByTime(10_000);
-      const roomC = await manager.join('track-1', 'carol');
+      const roomC = await manager.join('track-1', 'carol', MIN_PLAUSIBLE_MS);
       expect(roomC).toBe(roomA);
     });
 
     it('elige la sala más cercana en rating, no la primera que encaje', async () => {
       withRatings({ alice: 1000, bob: 1900, carol: 1050 });
-      const roomAlice = await manager.join('track-1', 'alice');
-      const roomBob = await manager.join('track-1', 'bob');
+      const roomAlice = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      const roomBob = await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
       expect(roomAlice).not.toBe(roomBob);
 
-      const roomCarol = await manager.join('track-1', 'carol');
+      const roomCarol = await manager.join('track-1', 'carol', MIN_PLAUSIBLE_MS);
       expect(roomCarol).toBe(roomAlice);
     });
   });
 
   describe('abandonar antes de correr', () => {
     it('sale de la cola limpiamente y no deja la sala colgada', async () => {
-      await manager.join('track-1', 'alice');
-      await manager.join('track-1', 'bob');
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
       manager.leave('alice');
       manager.leave('bob');
 
       // Sala anterior descartada del todo: una nueva unión abre una sala
       // nueva, no reaparece la vieja con gente fantasma dentro.
-      const roomId = await manager.join('track-1', 'carol');
+      const roomId = await manager.join('track-1', 'carol', MIN_PLAUSIBLE_MS);
       expect(roomId).toBeDefined();
     });
 
-    it('cancela el fill timer si el grupo cae por debajo del mínimo', async () => {
-      await manager.join('track-1', 'alice');
-      await manager.join('track-1', 'bob');
+    it('si cae por debajo del mínimo, el fill timer sigue vivo (lo hereda el relleno con bots)', async () => {
+      bots = new FakeBotRepository(['bot-1']);
+      manager = new LiveRaceRoomManager(
+        races as unknown as LiveRaceRepositoryPort,
+        wallets as unknown as RacingWalletRepositoryPort,
+        rewardConfigs as unknown as RacingCoinRewardConfigRepositoryPort,
+        ratings as unknown as PlayerRatingRepositoryPort,
+        bots as unknown as RacingBotRepositoryPort,
+        lapTimes as unknown as LapTimeRepositoryPort,
+      );
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
       manager.leave('bob');
 
       const countdown = waitForEvent(manager, LIVE_RACE_EVENTS.countdown);
-      let fired = false;
-      countdown.then(() => (fired = true));
+      jest.advanceTimersByTime(FILL_TIMEOUT_MS);
+      await countdown;
+    });
+  });
 
-      jest.advanceTimersByTime(FILL_TIMEOUT_MS + 1000);
-      await Promise.resolve();
-      expect(fired).toBe(false);
+  describe('rivales ficticios (bots)', () => {
+    function withBotsAndBests(
+      botPool: string[],
+      personalBests: Record<string, number> = {},
+    ): void {
+      bots = new FakeBotRepository(botPool);
+      lapTimes = new FakeLapTimeRepository(new Map(Object.entries(personalBests)));
+      manager = new LiveRaceRoomManager(
+        races as unknown as LiveRaceRepositoryPort,
+        wallets as unknown as RacingWalletRepositoryPort,
+        rewardConfigs as unknown as RacingCoinRewardConfigRepositoryPort,
+        ratings as unknown as PlayerRatingRepositoryPort,
+        bots as unknown as RacingBotRepositoryPort,
+        lapTimes as unknown as LapTimeRepositoryPort,
+      );
+    }
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('un jugador solo acaba corriendo contra un bot tras el fill timeout', async () => {
+      withBotsAndBests(['bot-1']);
+      const started = waitForEvent<{ roomId: string }>(manager, LIVE_RACE_EVENTS.raceStarted);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await started;
+
+      const snapshot = manager.getRoomSnapshot('alice');
+      expect(snapshot?.playerIds.sort()).toEqual(['alice', 'bot-1']);
+    });
+
+    it('con el pool de bots agotado, la sala arranca igualmente con quien haya', async () => {
+      withBotsAndBests([]); // pool vacío
+      const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await started;
+    });
+
+    it('el bot puede ganar la carrera', async () => {
+      withBotsAndBests(['bot-1'], { alice: 40000 });
+      jest.spyOn(Math, 'random').mockReturnValue(0); // -12%: el bot va claramente más rápido
+
+      const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await started;
+
+      const finished = waitForEvent<RaceFinishedEvent>(manager, LIVE_RACE_EVENTS.raceFinished);
+      manager.recordFinish('alice', 40000);
+      // El bot ya tiene su propio timer interno programado (35200ms) — se
+      // deja correr el reloj hasta que dispare solo, sin llamar a
+      // recordFinish a mano, para probar el mecanismo real de principio a fin.
+      jest.advanceTimersByTime(35200);
+      const event = await finished;
+
+      expect(event.result[0]).toMatchObject({ userId: 'bot-1', position: 1 });
+      expect(event.result[1]).toMatchObject({ userId: 'alice', position: 2 });
+    });
+
+    it('el bot no cobra monedas ni afecta al rating del jugador real', async () => {
+      withBotsAndBests(['bot-1'], { alice: 40000 });
+      jest.spyOn(Math, 'random').mockReturnValue(1); // +12%: el bot va claramente más lento
+
+      const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await started;
+
+      const finished = waitForEvent<RaceFinishedEvent>(manager, LIVE_RACE_EVENTS.raceFinished);
+      manager.recordFinish('alice', 40000);
+      jest.advanceTimersByTime(44800);
+      await finished;
+
+      expect(wallets.credits).toHaveLength(1);
+      expect(wallets.credits[0].userId).toBe('alice');
+      expect(ratings.applied).toEqual([]); // un único finisher real: nadie contra quien compararse
+    });
+
+    it('usa la mejor marca de un jugador real de la sala como referencia', async () => {
+      withBotsAndBests(['bot-1'], { alice: 50000 });
+      jest.spyOn(Math, 'random').mockReturnValue(0.5); // sin variación: exactamente la referencia
+
+      const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await started;
+
+      const finished = waitForEvent<RaceFinishedEvent>(manager, LIVE_RACE_EVENTS.raceFinished);
+      manager.recordFinish('alice', 60000);
+      jest.advanceTimersByTime(50000);
+      const event = await finished;
+
+      expect(event.result.find((p) => p.userId === 'bot-1')?.durationMs).toBe(50000);
+    });
+
+    it('sin marca de nadie en la sala, usa el mínimo plausible del circuito con margen', async () => {
+      withBotsAndBests(['bot-1']); // sin personal bests
+      jest.spyOn(Math, 'random').mockReturnValue(0.5);
+
+      const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await started;
+
+      const expectedBotMs = Math.round(MIN_PLAUSIBLE_MS * 1.35);
+      const finished = waitForEvent<RaceFinishedEvent>(manager, LIVE_RACE_EVENTS.raceFinished);
+      manager.recordFinish('alice', 60000);
+      jest.advanceTimersByTime(expectedBotMs);
+      const event = await finished;
+
+      expect(event.result.find((p) => p.userId === 'bot-1')?.durationMs).toBe(expectedBotMs);
     });
   });
 
   describe('durante la carrera', () => {
     async function startTwoPlayerRace(): Promise<void> {
       const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
-      await manager.join('track-1', 'alice');
-      await manager.join('track-1', 'bob');
-      jest.advanceTimersByTime(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
       await started;
     }
 
     it('no retransmite snapshots antes de que empiece la carrera', async () => {
-      await manager.join('track-1', 'alice');
-      await manager.join('track-1', 'bob');
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
       const spy = jest.fn();
       manager.on(LIVE_RACE_EVENTS.snapshot, spy);
       manager.relaySnapshot('alice', snapshot());
@@ -307,10 +467,10 @@ describe('LiveRaceRoomManager', () => {
 
     it('no aplica cambio de rating a un DNF, y solo compara entre quienes terminaron', async () => {
       const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
-      await manager.join('track-1', 'alice');
-      await manager.join('track-1', 'bob');
-      await manager.join('track-1', 'carol');
-      jest.advanceTimersByTime(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'carol', MIN_PLAUSIBLE_MS);
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
       await started;
 
       manager.handleDisconnect('carol');
@@ -325,9 +485,9 @@ describe('LiveRaceRoomManager', () => {
 
     it('con un único finisher no hay contra quién comparar: sin cambio de rating', async () => {
       const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
-      await manager.join('track-1', 'alice');
-      await manager.join('track-1', 'bob');
-      jest.advanceTimersByTime(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
       await started;
 
       manager.handleDisconnect('bob');
@@ -351,10 +511,10 @@ describe('LiveRaceRoomManager', () => {
 
     it('marca DNF tras el grace period si el resto sigue corriendo', async () => {
       const started = waitForEvent(manager, LIVE_RACE_EVENTS.raceStarted);
-      await manager.join('track-1', 'alice');
-      await manager.join('track-1', 'bob');
-      await manager.join('track-1', 'carol');
-      jest.advanceTimersByTime(FILL_TIMEOUT_MS + COUNTDOWN_MS);
+      await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
+      await manager.join('track-1', 'carol', MIN_PLAUSIBLE_MS);
+      await jest.advanceTimersByTimeAsync(FILL_TIMEOUT_MS + COUNTDOWN_MS);
       await started;
 
       const disconnected = waitForEvent(manager, LIVE_RACE_EVENTS.participantDisconnected);

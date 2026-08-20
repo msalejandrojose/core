@@ -4,9 +4,14 @@ import { randomUUID } from 'node:crypto';
 import { computeRatingChanges, RatingChange } from '../../domain/compute-rating-changes';
 import { GhostSnapshot } from '../../domain/entities/ghost-snapshot';
 import { LiveRaceParticipant, LiveRaceStatus } from '../../domain/entities/live-race.entity';
+import { generateBotDuration } from '../../domain/generate-bot-duration';
 import { matchmakingRatingWindow } from '../../domain/matchmaking-rating-window';
 import { coinRewardForPosition } from '../../domain/racing-coin-rewards';
 import { resolveLiveRaceResult } from '../../domain/resolve-live-race-result';
+import {
+  LAP_TIME_REPOSITORY,
+  type LapTimeRepositoryPort,
+} from '../ports/lap-time-repository.port';
 import {
   LIVE_RACE_REPOSITORY,
   type LiveRaceRepositoryPort,
@@ -15,6 +20,10 @@ import {
   PLAYER_RATING_REPOSITORY,
   type PlayerRatingRepositoryPort,
 } from '../ports/player-rating-repository.port';
+import {
+  RACING_BOT_REPOSITORY,
+  type RacingBotRepositoryPort,
+} from '../ports/racing-bot-repository.port';
 import {
   RACING_COIN_REWARD_CONFIG_REPOSITORY,
   type RacingCoinRewardConfigRepositoryPort,
@@ -38,6 +47,13 @@ export const RECONNECT_GRACE_MS = 10_000;
 /** Red de seguridad: si la carrera nunca se cierra sola (nadie termina ni
  *  se desconecta), se fuerza el cierre para no dejar la sala viva para siempre. */
 export const RACE_TIMEOUT_MS = 10 * 60 * 1000;
+
+// Sin marca previa de ningún jugador real de la sala en ese circuito
+// (TASK-323, tarea 5): el bot no puede ser más rápido que lo humanamente
+// posible, así que se le da un margen de "conductor decente, no perfecto"
+// sobre el mínimo plausible en vez de inventar un número sin relación con
+// el circuito real.
+const NO_PERSONAL_BEST_FACTOR = 1.35;
 
 export type RoomStatus = 'WAITING_PLAYERS' | 'COUNTDOWN' | 'RACING';
 
@@ -87,6 +103,11 @@ interface RoomParticipant {
   connected: boolean;
   durationMs: number | null;
   disconnectTimer: NodeJS.Timeout | null;
+  isBot: boolean;
+  /** Solo para bots: su tiempo ya decidido al rellenar la sala (TASK-323,
+   *  tarea 5) — se usa para programar su "meta" automática al arrancar la
+   *  carrera. Null para jugadores reales. */
+  botDurationMs: number | null;
 }
 
 interface Room {
@@ -94,6 +115,9 @@ interface Room {
   trackId: string;
   status: RoomStatus;
   createdAt: number;
+  /** Del circuito — hace falta para el tiempo de respaldo de un bot si
+   *  nadie en la sala tiene marca todavía. */
+  minPlausibleMs: number;
   participants: Map<string, RoomParticipant>;
   fillTimer: NodeJS.Timeout | null;
   countdownTimer: NodeJS.Timeout | null;
@@ -125,6 +149,10 @@ export class LiveRaceRoomManager extends EventEmitter {
     private readonly rewardConfigs: RacingCoinRewardConfigRepositoryPort,
     @Inject(PLAYER_RATING_REPOSITORY)
     private readonly ratings: PlayerRatingRepositoryPort,
+    @Inject(RACING_BOT_REPOSITORY)
+    private readonly bots: RacingBotRepositoryPort,
+    @Inject(LAP_TIME_REPOSITORY)
+    private readonly lapTimes: LapTimeRepositoryPort,
   ) {
     super();
   }
@@ -133,29 +161,27 @@ export class LiveRaceRoomManager extends EventEmitter {
    *  abre una nueva si ninguna lo es. Idempotente: si el jugador ya está en
    *  una sala, devuelve esa misma sin duplicar la entrada (reconexión
    *  rápida antes de que expire nada, o doble clic en el cliente). */
-  async join(trackId: string, userId: string): Promise<string> {
+  async join(trackId: string, userId: string, minPlausibleMs: number): Promise<string> {
     const existingRoomId = this.roomIdByUserId.get(userId);
     if (existingRoomId && this.rooms.has(existingRoomId)) return existingRoomId;
 
     const rating = await this.ratings.getRating(userId);
-    const room = this.findCompatibleWaitingRoom(trackId, rating) ?? this.createRoom(trackId);
+    const room =
+      this.findCompatibleWaitingRoom(trackId, rating) ?? this.createRoom(trackId, minPlausibleMs);
     room.participants.set(userId, {
       userId,
       rating,
       connected: true,
       durationMs: null,
       disconnectTimer: null,
+      isBot: false,
+      botDurationMs: null,
     });
     this.roomIdByUserId.set(userId, room.id);
     this.emitRoomUpdate(room);
 
     if (room.participants.size >= MAX_PLAYERS_PER_ROOM) {
       this.startCountdown(room);
-    } else if (room.participants.size >= MIN_PLAYERS_TO_START && !room.fillTimer) {
-      room.fillTimer = setTimeout(() => {
-        room.fillTimer = null;
-        this.startCountdown(room);
-      }, FILL_TIMEOUT_MS);
     }
 
     return room.id;
@@ -279,19 +305,83 @@ export class LiveRaceRoomManager extends EventEmitter {
     return best;
   }
 
-  private createRoom(trackId: string): Room {
+  private createRoom(trackId: string, minPlausibleMs: number): Room {
     const room: Room = {
       id: randomUUID(),
       trackId,
       status: 'WAITING_PLAYERS',
       createdAt: Date.now(),
+      minPlausibleMs,
       participants: new Map(),
       fillTimer: null,
       countdownTimer: null,
       raceTimeoutTimer: null,
     };
     this.rooms.set(room.id, room);
+    // Programado al CREAR la sala, no al llegar al mínimo (TASK-323, tarea
+    // 5): así una sala que se queda sola también dispara este timer, que es
+    // justo lo que decide si hace falta rellenar con bots.
+    room.fillTimer = setTimeout(() => {
+      room.fillTimer = null;
+      void this.onFillTimeout(room);
+    }, FILL_TIMEOUT_MS);
     return room;
+  }
+
+  private async onFillTimeout(room: Room): Promise<void> {
+    if (!this.rooms.has(room.id) || room.status !== 'WAITING_PLAYERS') return;
+    if (room.participants.size < MIN_PLAYERS_TO_START) {
+      await this.fillWithBots(room);
+    }
+    if (this.rooms.has(room.id) && room.status === 'WAITING_PLAYERS') {
+      this.startCountdown(room);
+    }
+  }
+
+  // Rellena los huecos que falten hasta el mínimo para poder correr
+  // (TASK-323, tarea 5) — no hasta el máximo: la sala sigue abierta a que
+  // se una gente real hasta que arranque la cuenta atrás, los bots solo
+  // garantizan que SÍ arranca.
+  private async fillWithBots(room: Room): Promise<void> {
+    const needed = MIN_PLAYERS_TO_START - room.participants.size;
+    if (needed <= 0) return;
+
+    const excludeUserIds = [...room.participants.keys()];
+    const botIds = await this.bots.pickBots(needed, excludeUserIds);
+    // Pool agotado: mejor dejar la sala esperando (ya sin más plazo, se
+    // arrancará con quien haya) que fallar la unión de nadie.
+    if (botIds.length === 0) return;
+
+    const referenceMs = await this.pickBotReferenceMs(room);
+    for (const botUserId of botIds) {
+      room.participants.set(botUserId, {
+        userId: botUserId,
+        rating: 0, // no se usa: los bots quedan fuera de `computeRatingChanges`.
+        connected: true,
+        durationMs: null,
+        disconnectTimer: null,
+        isBot: true,
+        botDurationMs: generateBotDuration(referenceMs),
+      });
+      this.roomIdByUserId.set(botUserId, room.id);
+    }
+    this.emitRoomUpdate(room);
+  }
+
+  private async pickBotReferenceMs(room: Room): Promise<number> {
+    const realUserIds = [...room.participants.values()]
+      .filter((p) => !p.isBot)
+      .map((p) => p.userId);
+    const personalBests = await Promise.all(
+      realUserIds.map((userId) => this.lapTimes.findPersonalBest(userId, room.trackId)),
+    );
+    const knownBests = personalBests
+      .filter((lap): lap is NonNullable<typeof lap> => lap !== null)
+      .map((lap) => lap.durationMs);
+    if (knownBests.length === 0) {
+      return Math.round(room.minPlausibleMs * NO_PERSONAL_BEST_FACTOR);
+    }
+    return Math.round(knownBests.reduce((sum, ms) => sum + ms, 0) / knownBests.length);
   }
 
   private roomOf(userId: string): Room | undefined {
@@ -314,10 +404,9 @@ export class LiveRaceRoomManager extends EventEmitter {
       this.rooms.delete(room.id);
       return;
     }
-    if (room.participants.size < MIN_PLAYERS_TO_START && room.fillTimer) {
-      clearTimeout(room.fillTimer);
-      room.fillTimer = null;
-    }
+    // El fill timer NO se cancela por caer por debajo del mínimo (TASK-323,
+    // tarea 5): sigue vivo justo para poder rellenar con bots si nadie más
+    // se une antes de que dispare.
     this.emitRoomUpdate(room);
   }
 
@@ -348,6 +437,15 @@ export class LiveRaceRoomManager extends EventEmitter {
       room.raceTimeoutTimer = null;
       void this.finalize(room);
     }, RACE_TIMEOUT_MS);
+
+    // Cada bot "corre" en segundo plano: su meta ya está decidida desde que
+    // se le rellenó el hueco (TASK-323, tarea 5), solo hace falta que
+    // llegue en el momento justo, igual que un jugador real.
+    for (const participant of room.participants.values()) {
+      if (participant.botDurationMs === null) continue;
+      const { userId, botDurationMs } = participant;
+      setTimeout(() => this.recordFinish(userId, botDurationMs), botDurationMs);
+    }
   }
 
   private finalizeIfEveryoneIsResolved(room: Room): void {
@@ -369,6 +467,9 @@ export class LiveRaceRoomManager extends EventEmitter {
       if (p.disconnectTimer) clearTimeout(p.disconnectTimer);
     }
     this.rooms.delete(room.id);
+    const botUserIds = new Set(
+      [...room.participants.values()].filter((p) => p.isBot).map((p) => p.userId),
+    );
     for (const userId of room.participants.keys()) {
       this.roomIdByUserId.delete(userId);
     }
@@ -392,10 +493,12 @@ export class LiveRaceRoomManager extends EventEmitter {
 
     // Cada corredor real cobra por SU puesto — a diferencia del modo
     // asíncrono, aquí todos son cuentas de verdad, no fantasmas de un rival.
+    // Los bots (TASK-323, tarea 5) no cobran nada: solo dan ambientación.
     if (finishers.length > 0) {
       const amounts = await this.rewardConfigs.getAmounts();
       for (const participant of result) {
         if (participant.disconnected || participant.position === null) continue;
+        if (botUserIds.has(participant.userId)) continue;
         const reward = coinRewardForPosition(participant.position, amounts);
         if (!reward) continue;
         await this.wallets.credit({
@@ -408,11 +511,12 @@ export class LiveRaceRoomManager extends EventEmitter {
     }
 
     // Rating (TASK-323, tarea 3): solo entre quienes SÍ terminaron — un DNF
-    // ni sube ni baja el nivel de nadie (ver `computeRatingChanges`). Con
-    // un único finisher no hay con quién compararse, así que no hace falta
-    // ni pedir su rating actual.
+    // ni sube ni baja el nivel de nadie (ver `computeRatingChanges`). Los
+    // bots (tarea 5) tampoco cuentan: no arriesgan ni dan rating de verdad,
+    // solo completan la sala. Con un único finisher real no hay con quién
+    // compararse, así que no hace falta ni pedir su rating actual.
     const ratingChanges =
-      finishers.length > 1 ? await this.applyRatingChanges(result) : [];
+      finishers.length > 1 ? await this.applyRatingChanges(result, botUserIds) : [];
 
     this.emit(LIVE_RACE_EVENTS.raceFinished, {
       roomId: room.id,
@@ -424,20 +528,19 @@ export class LiveRaceRoomManager extends EventEmitter {
 
   private async applyRatingChanges(
     result: LiveRaceParticipant[],
+    botUserIds: Set<string>,
   ): Promise<RatingChange[]> {
-    const finishedUserIds = result
-      .filter((p) => !p.disconnected)
-      .map((p) => p.userId);
-    const currentRatings = await this.ratings.getRatings(finishedUserIds);
+    const realFinishers = result.filter(
+      (p) => !p.disconnected && p.position !== null && !botUserIds.has(p.userId),
+    );
+    const currentRatings = await this.ratings.getRatings(realFinishers.map((p) => p.userId));
 
     const changes = computeRatingChanges(
-      result
-        .filter((p) => !p.disconnected && p.position !== null)
-        .map((p) => ({
-          userId: p.userId,
-          position: p.position as number,
-          rating: currentRatings.get(p.userId) as number,
-        })),
+      realFinishers.map((p) => ({
+        userId: p.userId,
+        position: p.position as number,
+        rating: currentRatings.get(p.userId) as number,
+      })),
     );
 
     await this.ratings.applyChanges(

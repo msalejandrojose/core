@@ -254,6 +254,7 @@ model User {
   onlineRaceParticipations  RacingOnlineRaceParticipant[]
   liveRaceParticipations    RacingLiveRaceParticipant[]
   playerRating              RacingPlayerRating?
+  botAccount                RacingBotAccount?
   friendCode                RacingFriendCode?
   friendshipsRequested      RacingFriendship[]            @relation("FriendshipRequester")
   friendshipsReceived       RacingFriendship[]            @relation("FriendshipAddressee")
@@ -1945,6 +1946,20 @@ model RacingPlayerRating {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("racing_player_rating")
+}
+
+/// Marca qué filas de `User` son rivales ficticios (TASK-323, tarea 5): se
+/// usan para completar una sala en vivo cuando no hay suficientes jugadores
+/// reales en cola. Son cuentas `User` normales — hace falta que lo sean
+/// porque `RacingLiveRaceParticipant.userId` tiene FK a `User` — esta tabla
+/// solo las etiqueta como bot, sin tocar en nada el modelo de usuario
+/// compartido por el resto de la app.
+model RacingBotAccount {
+  userId String @id @map("user_id") @db.Char(36)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("racing_bot_account")
 }
 
 /// Fuente de un movimiento de monedas — cerrado por diseño (TASK-286).

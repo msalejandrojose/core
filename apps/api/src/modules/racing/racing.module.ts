@@ -19,6 +19,7 @@ import { PLAYER_CAR_LOADOUT_REPOSITORY } from './application/ports/player-car-lo
 import { PLAYER_CAR_PART_REPOSITORY } from './application/ports/player-car-part-repository.port';
 import { PLAYER_CAR_SKIN_REPOSITORY } from './application/ports/player-car-skin-repository.port';
 import { PLAYER_RATING_REPOSITORY } from './application/ports/player-rating-repository.port';
+import { RACING_BOT_REPOSITORY } from './application/ports/racing-bot-repository.port';
 import { RACING_COIN_REWARD_CONFIG_REPOSITORY } from './application/ports/racing-coin-reward-config-repository.port';
 import { RACING_TERRAIN_EFFECT_REPOSITORY } from './application/ports/racing-terrain-effect-repository.port';
 import { RACING_WALLET_REPOSITORY } from './application/ports/racing-wallet-repository.port';
@@ -115,6 +116,7 @@ import { PrismaPlayerCarLoadoutRepository } from './infrastructure/persistence/p
 import { PrismaPlayerCarPartRepository } from './infrastructure/persistence/prisma-player-car-part.repository';
 import { PrismaPlayerCarSkinRepository } from './infrastructure/persistence/prisma-player-car-skin.repository';
 import { PrismaPlayerRatingRepository } from './infrastructure/persistence/prisma-player-rating.repository';
+import { PrismaRacingBotRepository } from './infrastructure/persistence/prisma-racing-bot.repository';
 import { PrismaRacingCoinRewardConfigRepository } from './infrastructure/persistence/prisma-racing-coin-reward-config.repository';
 import { PrismaRacingTerrainEffectRepository } from './infrastructure/persistence/prisma-racing-terrain-effect.repository';
 import { PrismaRacingWalletRepository } from './infrastructure/persistence/prisma-racing-wallet.repository';
@@ -223,6 +225,7 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
     { provide: ONLINE_RACE_REPOSITORY, useClass: PrismaOnlineRaceRepository },
     { provide: LIVE_RACE_REPOSITORY, useClass: PrismaLiveRaceRepository },
     { provide: PLAYER_RATING_REPOSITORY, useClass: PrismaPlayerRatingRepository },
+    { provide: RACING_BOT_REPOSITORY, useClass: PrismaRacingBotRepository },
     { provide: FRIEND_CODE_REPOSITORY, useClass: PrismaFriendCodeRepository },
     { provide: FRIENDSHIP_REPOSITORY, useClass: PrismaFriendshipRepository },
     {

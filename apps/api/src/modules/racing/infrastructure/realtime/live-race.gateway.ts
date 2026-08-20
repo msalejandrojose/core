@@ -125,7 +125,7 @@ export class LiveRaceGateway implements OnGatewayConnection, OnGatewayDisconnect
       return;
     }
     const userId = client.data.userId as string;
-    const roomId = await this.rooms.join(track.id, userId);
+    const roomId = await this.rooms.join(track.id, userId, track.minPlausibleMs);
     await client.join(roomId);
 
     // El broadcast de `room-update` que dispara el propio `rooms.join()`
