@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PlayerCarLoadout } from '../../domain/entities/player-car-loadout.entity';
 import { CarArchetypeNotFoundError } from '../../domain/errors/car-archetype-not-found.error';
+import { CarArchetypeNotOwnedError } from '../../domain/errors/car-archetype-not-owned.error';
 import { CarPartNotFoundError } from '../../domain/errors/car-part-not-found.error';
+import { CarPartNotOwnedError } from '../../domain/errors/car-part-not-owned.error';
 import { CarSkinNotFoundError } from '../../domain/errors/car-skin-not-found.error';
 import { CarSkinNotOwnedError } from '../../domain/errors/car-skin-not-owned.error';
 import { InvalidCarLoadoutError } from '../../domain/errors/invalid-car-loadout.error';
@@ -19,9 +21,17 @@ import {
   type CarSkinRepositoryPort,
 } from '../ports/car-skin-repository.port';
 import {
+  PLAYER_CAR_ARCHETYPE_REPOSITORY,
+  type PlayerCarArchetypeRepositoryPort,
+} from '../ports/player-car-archetype-repository.port';
+import {
   PLAYER_CAR_LOADOUT_REPOSITORY,
   type PlayerCarLoadoutRepositoryPort,
 } from '../ports/player-car-loadout-repository.port';
+import {
+  PLAYER_CAR_PART_REPOSITORY,
+  type PlayerCarPartRepositoryPort,
+} from '../ports/player-car-part-repository.port';
 import {
   PLAYER_CAR_SKIN_REPOSITORY,
   type PlayerCarSkinRepositoryPort,
@@ -50,6 +60,10 @@ export class SetPlayerCarLoadoutUseCase {
     @Inject(CAR_SKIN_REPOSITORY) private readonly skins: CarSkinRepositoryPort,
     @Inject(PLAYER_CAR_SKIN_REPOSITORY)
     private readonly skinOwnerships: PlayerCarSkinRepositoryPort,
+    @Inject(PLAYER_CAR_ARCHETYPE_REPOSITORY)
+    private readonly archetypeOwnerships: PlayerCarArchetypeRepositoryPort,
+    @Inject(PLAYER_CAR_PART_REPOSITORY)
+    private readonly partOwnerships: PlayerCarPartRepositoryPort,
   ) {}
 
   async execute(
@@ -94,7 +108,22 @@ export class SetPlayerCarLoadoutUseCase {
     if (skinId && !skin) throw new CarSkinNotFoundError(skinId);
 
     // Propiedad: necesita I/O sobre el jugador, así que se comprueba aquí,
-    // antes del validador de dominio (que solo mira reglas puras).
+    // antes del validador de dominio (que solo mira reglas puras). Mismo
+    // criterio para los cuatro — arquetipo, las tres piezas y el skin — solo
+    // cambia el repositorio de propiedad que resuelve cada uno (TASK-319).
+    if (!archetype.isUnlockedByDefault) {
+      const owns = await this.archetypeOwnerships.ownsArchetype(
+        userId,
+        archetype.id,
+      );
+      if (!owns) throw new CarArchetypeNotOwnedError(archetype.id);
+    }
+    for (const part of [tiresPart, wingPart, chassisPart]) {
+      if (part && !part.isUnlockedByDefault) {
+        const owns = await this.partOwnerships.ownsPart(userId, part.id);
+        if (!owns) throw new CarPartNotOwnedError(part.id);
+      }
+    }
     if (skin && !skin.isUnlockedByDefault) {
       const owns = await this.skinOwnerships.ownsSkin(userId, skin.id);
       if (!owns) throw new CarSkinNotOwnedError(skin.id);

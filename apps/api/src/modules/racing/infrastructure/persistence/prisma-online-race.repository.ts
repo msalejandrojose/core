@@ -42,4 +42,14 @@ export class PrismaOnlineRaceRepository implements OnlineRaceRepositoryPort {
     });
     return row === null ? null : toOnlineRaceDomain(row);
   }
+
+  async recentPlayerPositions(userId: string, limit: number): Promise<number[]> {
+    const races = await this.prisma.racingOnlineRace.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: { participants: { where: { role: 'PLAYER' } } },
+    });
+    return races.map((race) => race.participants[0]?.position ?? 0);
+  }
 }

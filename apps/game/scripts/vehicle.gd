@@ -169,7 +169,15 @@ func _init_trail_material() -> ParticleProcessMaterial:
 ## (body, wheel-*), así que basta con reinstanciar "Model" y volver a
 ## resolver las referencias — a diferencia de la moto, que sí tiene una forma
 ## distinta de verdad y por eso es una escena (y un script) aparte.
-func set_body(scene: PackedScene) -> void:
+## Desplazamiento lateral y duración de la entrada cuando `animate` pide que
+## el modelo nuevo llegue conduciendo — mismos números que
+## `VehiclePreview.show_archetype()`, que hacía este mismo efecto para el
+## visor en miniatura que el taller ya no usa (ahora el coche que cambia es
+## este, el del garaje de fondo, ver `race_director.preview_archetype_body`).
+const _BODY_ENTRY_OFFSET_X := 5.0
+const _BODY_ENTRY_DURATION_S := 0.55
+
+func set_body(scene: PackedScene, animate: bool = false) -> void:
 	var old_model := vehicle_model.get_node_or_null("Model")
 	if old_model != null:
 		vehicle_model.remove_child(old_model)
@@ -184,6 +192,12 @@ func set_body(scene: PackedScene) -> void:
 	wheel_fr = vehicle_model.get_node_or_null("Model/wheel-front-right")
 	wheel_bl = vehicle_model.get_node_or_null("Model/wheel-back-left")
 	wheel_br = vehicle_model.get_node_or_null("Model/wheel-back-right")
+
+	if animate and new_model is Node3D:
+		new_model.position.x = _BODY_ENTRY_OFFSET_X
+		var tween := create_tween()
+		tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(new_model, "position:x", 0.0, _BODY_ENTRY_DURATION_S)
 
 ## Devuelve el coche a la salida sin recargar la escena. Hay que limpiar la
 ## velocidad de la esfera y el estado derivado: si solo se recoloca, el coche

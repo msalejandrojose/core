@@ -10,10 +10,11 @@ extends CanvasLayer
 ## con contenido propio — Clasificaciones se lleva su lógica a
 ## `leaderboard-screen.tscn`, que antes vivía aquí dentro.
 ##
-## Tres columnas seguimos teniendo: modos a la izquierda, el coche equipado
-## en vivo en el centro (`VehiclePreview`, compartido con el taller) sobre
-## un fondo de taller — solo aquí, `VehiclePreview` en sí no cambia — y la
-## configuración de carrera a la derecha.
+## Dos tarjetas flotando, no tres columnas: modos a la izquierda y
+## configuración de carrera a la derecha, con el garaje de verdad de fondo
+## en medio (`MenuGarage` + el coche equipado, ver `race_director.gd`) — sin
+## panel ni visor 3D propio ahí, sería una pantalla flotando encima del
+## garaje en vez del garaje mismo.
 ##
 ## Circuito ya no se elige en una pantalla aparte por defecto: los 4 del
 ## catálogo local salen en una rejilla 2×2 aquí mismo, con miniaturas de
@@ -66,7 +67,7 @@ var _mode_buttons: Dictionary = {}  # Mode (int) -> Button
 ## reconstruye — aquí ya no hay pestañas que limpiar y volver a montar.
 var _account_subtitle: Label
 var _account_button: Button
-var _preview: VehiclePreview
+var _wallet_label: Label
 
 var _track_summary_label: Label
 var _track_cards: Array[PanelContainer] = []
@@ -88,9 +89,9 @@ func _ready() -> void:
 	# taller (que se abre encima de este menú, sin cerrarlo), el número tiene
 	# que refrescarse solo, sin esperar a que se toque circuito/cilindrada.
 	CarLoadout.changed.connect(_refresh_best)
-	# El coche de la vista central es el equipado de verdad: si cambia en el
-	# taller, se nota aquí sin tener que reabrir el menú.
-	CarLoadout.changed.connect(_refresh_preview)
+	# Saldo de monedas (TASK-320): puede cambiar en el taller (ganar por
+	# carrera, gastar en la tienda) sin que este menú se reabra.
+	Wallet.changed.connect(_refresh_wallet)
 
 	# Una vez por sesión basta (TASK-228): la temporada rota cada hora en el
 	# servidor como mucho, no varias veces mientras el menú sigue montado.
@@ -139,9 +140,15 @@ func _build() -> void:
 	column.add_child(body)
 
 	body.add_child(_build_modes_panel())
-	body.add_child(_build_preview_panel())
+
+	# Sin panel central: entre las dos tarjetas se ve el garaje de verdad
+	# (con el coche equipado dentro) en vez de una pantalla propia — mismo
+	# criterio que `workshop_screen.gd`.
+	var body_spacer := Control.new()
+	body_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(body_spacer)
+
 	body.add_child(_build_race_config_panel())
-	_refresh_preview()
 
 	_sync()
 	_load_track_covers()
@@ -172,6 +179,8 @@ func _build_header() -> Control:
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(push)
 
+	header.add_child(_build_wallet_badge())
+
 	var bar := HBoxContainer.new()
 	bar.add_theme_constant_override("separation", 4)
 	header.add_child(bar)
@@ -187,6 +196,23 @@ func _build_header() -> Control:
 	bar.add_child(_account_button)
 
 	return header
+
+
+## "CREDITOS: N" de la referencia (TASK-320) — sin cuenta se queda a 0, las
+## monedas viven en el servidor por jugador, igual que el resto de `Wallet`.
+func _build_wallet_badge() -> Control:
+	var badge := UiTheme.card_panel(UiTheme.CARD, 14, 16)
+	_wallet_label = Label.new()
+	_wallet_label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
+	_wallet_label.add_theme_color_override("font_color", UiTheme.CARD_INK)
+	badge.add_child(_wallet_label)
+	return badge
+
+
+func _refresh_wallet() -> void:
+	if not is_instance_valid(_wallet_label):
+		return
+	_wallet_label.text = "🪙 %d" % Wallet.balance
 
 
 ## Columna izquierda ("MODOS DE JUEGO" del boceto): elegir modo no cambia lo
@@ -216,47 +242,24 @@ func _build_modes_panel() -> Control:
 		inner.add_child(button)
 		_mode_buttons[mode] = button
 
-	return card
-
-
-## Columna central: el coche equipado ahora mismo, en vivo (`VehiclePreview`,
-## compartido con el taller) sobre un fondo que evoca el taller — sin tocar
-## `VehiclePreview` en sí, que también vive en `workshop_screen.gd` y no
-## tiene por qué heredar este fondo. Con acceso directo al Taller aquí
-## mismo: es donde más sentido tiene ("tu coche, en el taller"), y ya no
-## hay pestaña que lo lleve.
-func _build_preview_panel() -> Control:
-	var card := UiTheme.card_panel()
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 12)
-	card.add_child(column)
-
-	var viewport_holder := Control.new()
-	viewport_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(viewport_holder)
-
-	_preview = VehiclePreview.new()
-	# Suelo/pared/banco con mallas de Godot, no una tarjeta de color plano:
-	# el taller tiene que verse dentro del propio visor 3D, girando e
-	# iluminándose con el coche.
-	_preview.add_workshop_backdrop()
-	viewport_holder.add_child(_preview)
-
+	# Sin columna central propia: el coche equipado ya se ve aparcado en el
+	# garaje de fondo (`MenuGarage` + `RaceDirector`, ver `race_director.gd`)
+	# — pedido explícito, nada de una "pantalla" con su propio visor 3D
+	# flotando en medio del menú. El acceso al Taller se queda aquí, bajo
+	# los modos, que es el único sitio que le quedaba.
 	var workshop_button := UiTheme.pill_button(
 		"🔧 Ir al taller", UiTheme.STEEL, Color.WHITE, Vector2(0, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM)
 	workshop_button.pressed.connect(func() -> void:
-		add_child(load("res://scenes/ui/workshop-screen.tscn").instantiate()))
-	column.add_child(workshop_button)
+		# Mismo motivo que `_open_track_select()`: el fondo del taller es
+		# translúcido a propósito (ver `workshop_screen.gd`), y sin ocultar
+		# este menú su propio texto se quedaba asomando debajo, duplicado.
+		var screen: CanvasLayer = load("res://scenes/ui/workshop-screen.tscn").instantiate()
+		screen.closed.connect(open)
+		close()
+		add_child(screen))
+	inner.add_child(workshop_button)
 
 	return card
-
-
-func _refresh_preview() -> void:
-	if is_instance_valid(_preview):
-		_preview.show_archetype(CarLoadout.archetype_code)
 
 
 ## Columna derecha ("CONFIGURACIÓN DE CARRERA" del boceto): circuito y
@@ -436,6 +439,15 @@ func _cover_slug(local_id: String) -> String:
 func _open_track_select() -> void:
 	var screen: CanvasLayer = load("res://scenes/ui/track-select-screen.tscn").instantiate()
 	screen.confirmed.connect(_sync)
+	# El fondo de `screen` es a propósito translúcido (para que se vea la
+	# escena 3D detrás, ver comentario en `track_select_screen.gd`) — sin
+	# ocultar este menú, su propio texto y botones se quedaban asomando
+	# debajo, duplicados encima de los de `screen`. `close()`/`open()` son
+	# los mismos que usa `race_director.gd`; no esconden a `screen`, que
+	# gestiona su propia capa (`CanvasLayer` anidado, no hijo de verdad a
+	# efectos de render).
+	screen.closed.connect(open)
+	close()
 	add_child(screen)
 
 
@@ -495,6 +507,7 @@ func _sync() -> void:
 	_sync_start_buttons()
 	_refresh_account()
 	_refresh_best()
+	_refresh_wallet()
 
 
 ## El nombre solo se conoce de verdad para los 4 del catálogo local — uno del

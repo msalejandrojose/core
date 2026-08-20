@@ -9,6 +9,8 @@ export function toCarArchetypeDomain(row: PrismaCarArchetype): CarArchetype {
     row.speedScale,
     row.grip,
     row.offroadGripModifier,
+    row.isUnlockedByDefault,
+    row.priceCoins,
     row.isActive,
   );
 }

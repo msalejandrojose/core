@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 // Sin `code`: no es editable una vez creado.
 export class UpdateCarSkinDto {
@@ -18,6 +25,15 @@ export class UpdateCarSkinDto {
   @IsOptional()
   @IsBoolean()
   isUnlockedByDefault?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Precio en la tienda (TASK-320). null = quitarlo de la venta.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  priceCoins?: number | null;
 
   @ApiPropertyOptional()
   @IsOptional()

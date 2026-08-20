@@ -1,10 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsInt,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
+  Min,
 } from 'class-validator';
 
 export class CreateCarSkinDto {
@@ -38,6 +40,15 @@ export class CreateCarSkinDto {
   @IsOptional()
   @IsBoolean()
   isUnlockedByDefault?: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Precio en la tienda (TASK-320). Ausente/null = no está a la venta.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  priceCoins?: number | null;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()

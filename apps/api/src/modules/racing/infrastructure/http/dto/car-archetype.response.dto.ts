@@ -13,6 +13,9 @@ export class CarArchetypeResponseDto {
       'Multiplica el grip efectivo cuando la superficie no es asfalto seco.',
   })
   offroadGripModifier!: number;
+  @ApiProperty() isUnlockedByDefault!: boolean;
+  @ApiProperty({ nullable: true, description: 'null = no está a la venta.' })
+  priceCoins!: number | null;
   @ApiProperty() isActive!: boolean;
 
   static fromDomain(archetype: CarArchetype): CarArchetypeResponseDto {
@@ -23,6 +26,8 @@ export class CarArchetypeResponseDto {
     dto.speedScale = archetype.speedScale;
     dto.grip = archetype.grip;
     dto.offroadGripModifier = archetype.offroadGripModifier;
+    dto.isUnlockedByDefault = archetype.isUnlockedByDefault;
+    dto.priceCoins = archetype.priceCoins;
     dto.isActive = archetype.isActive;
     return dto;
   }

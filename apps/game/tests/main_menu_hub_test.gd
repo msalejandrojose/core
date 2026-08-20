@@ -15,6 +15,7 @@ const TestEnv := preload("res://tests/test_env.gd")
 
 var _failures := 0
 var _menu: CanvasLayer
+var _director: RaceDirector
 ## Miembro y no local: una lambda de GDScript captura las locales por VALOR
 ## (ver el mismo aviso en `race_flow_test.gd`), así que escribir en una local
 ## desde dentro de la lambda no se vería fuera de ella.
@@ -29,8 +30,8 @@ func _ready() -> void:
 	add_child(main)
 	await get_tree().physics_frame
 
-	var director: RaceDirector = main.get_node("RaceDirector")
-	director.set_process(false)
+	_director = main.get_node("RaceDirector")
+	_director.set_process(false)
 	_menu = main.get_node("MainMenu")
 
 	_test_abre_con_carrera_rapida()
@@ -57,8 +58,13 @@ func _test_abre_con_carrera_rapida() -> void:
 	_check(is_instance_valid(_menu._track_summary_label) and _menu._track_summary_label.text != "",
 		true, "muestra el resumen del circuito elegido")
 	_check(is_instance_valid(_menu._best_label), true, "monta la label de mejor marca")
-	_check(is_instance_valid(_menu._preview) and _menu._preview.has_model(), true,
-		"la columna central monta el coche equipado en vivo")
+	# Ya no hay columna central con visor propio (`_preview` no existe): el
+	# coche equipado en vivo es el mismo `Vehicle` del garaje de fondo, así
+	# que lo que hay que comprobar es que ese garaje está a la vista y el
+	# coche tiene modelo montado — ver `race_director._set_garage_visible()`.
+	_check(_director.menu_garage.visible, true, "el garaje está de fondo en el menú")
+	_check(_director.vehicle.vehicle_model.get_node_or_null("Model") != null, true,
+		"el coche equipado en vivo tiene modelo montado")
 	_check(_menu._account_subtitle.text != "", true, "la cabecera muestra el estado de cuenta")
 	_check(_menu._online_button.visible, true, "en Carrera Rápida, Multijugador Online está visible")
 

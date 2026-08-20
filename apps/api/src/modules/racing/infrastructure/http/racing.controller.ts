@@ -18,6 +18,7 @@ import { type AccessTokenPayload } from '../../../iam/application/ports/token-is
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
+import { CreditRewardedAdUseCase } from '../../application/use-cases/credit-rewarded-ad.use-case';
 import { GetCurrentSeasonUseCase } from '../../application/use-cases/get-current-season.use-case';
 import { GetFriendsLeaderboardUseCase } from '../../application/use-cases/get-friends-leaderboard.use-case';
 import { GetGhostUseCase } from '../../application/use-cases/get-ghost.use-case';
@@ -25,6 +26,7 @@ import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboa
 import { GetOnlineRaceUseCase } from '../../application/use-cases/get-online-race.use-case';
 import { GetPersonalBestUseCase } from '../../application/use-cases/get-personal-best.use-case';
 import { GetTrackUseCase } from '../../application/use-cases/get-track.use-case';
+import { GetWalletBalanceUseCase } from '../../application/use-cases/get-wallet-balance.use-case';
 import { ListTracksUseCase } from '../../application/use-cases/list-tracks.use-case';
 import { MatchOnlineRaceUseCase } from '../../application/use-cases/match-online-race.use-case';
 import { SubmitLapTimeUseCase } from '../../application/use-cases/submit-lap-time.use-case';
@@ -46,6 +48,7 @@ import { SubmitLapTimeDto } from './dto/submit-lap-time.dto';
 import { SubmitOnlineRaceResultDto } from './dto/submit-online-race-result.dto';
 import { TrackDetailResponseDto } from './dto/track-detail.response.dto';
 import { TrackResponseDto } from './dto/track.response.dto';
+import { WalletResponseDto } from './dto/wallet.response.dto';
 
 // Cuántas filas devuelve el leaderboard por defecto y como mucho. El tope
 // existe para que nadie se descargue la tabla entera de una: la posición propia
@@ -75,7 +78,37 @@ export class RacingController {
     private readonly getCurrentSeason: GetCurrentSeasonUseCase,
     private readonly getFriendsLeaderboard: GetFriendsLeaderboardUseCase,
     private readonly viewTokens: FileViewTokenService,
+    private readonly getWalletBalance: GetWalletBalanceUseCase,
+    private readonly creditRewardedAd: CreditRewardedAdUseCase,
   ) {}
+
+  @Get('wallet')
+  @ApiOperation({
+    summary: 'Saldo de monedas propio',
+    description:
+      'Wallet único por jugador (TASK-318, economía de TASK-286). 0 si todavía no hay ningún movimiento — no hace falta darse de alta.',
+  })
+  @ApiOkResponse({ type: WalletResponseDto })
+  async wallet(
+    @CurrentUser() current: AccessTokenPayload,
+  ): Promise<WalletResponseDto> {
+    const wallet = await this.getWalletBalance.execute(current.sub);
+    return WalletResponseDto.fromDomain(wallet);
+  }
+
+  @Post('wallet/rewarded-ad')
+  @ApiOperation({
+    summary: 'Acredita las monedas de ver un anuncio recompensado',
+    description:
+      '+100 (TASK-286) — el anuncio ACELERA la progresión, no es la única vía razonable de conseguir monedas. No valida contra ningún SDK de anuncios todavía (fuera de alcance de TASK-318).',
+  })
+  @ApiOkResponse({ type: WalletResponseDto })
+  async creditRewardedAdWatched(
+    @CurrentUser() current: AccessTokenPayload,
+  ): Promise<WalletResponseDto> {
+    const wallet = await this.creditRewardedAd.execute(current.sub);
+    return WalletResponseDto.fromDomain(wallet);
+  }
 
   @Get('seasons/current')
   @ApiOperation({

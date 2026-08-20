@@ -12,6 +12,8 @@ export function toCarPartDomain(row: PrismaCarPart): CarPart {
     row.name,
     row.speedScale,
     row.grip,
+    row.isUnlockedByDefault,
+    row.priceCoins,
     row.isActive,
   );
 }

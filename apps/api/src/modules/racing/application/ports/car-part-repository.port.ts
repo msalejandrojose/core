@@ -19,6 +19,8 @@ export interface CreateCarPartData {
   name: string;
   speedScale: number;
   grip: number;
+  isUnlockedByDefault?: boolean;
+  priceCoins?: number | null;
   isActive: boolean;
 }
 
@@ -27,6 +29,8 @@ export interface UpdateCarPartPatch {
   name?: string;
   speedScale?: number;
   grip?: number;
+  isUnlockedByDefault?: boolean;
+  priceCoins?: number | null;
   isActive?: boolean;
 }
 

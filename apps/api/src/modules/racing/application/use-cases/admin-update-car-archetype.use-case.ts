@@ -13,6 +13,8 @@ export interface UpdateCarArchetypeInput {
   speedScale?: number;
   grip?: number;
   offroadGripModifier?: number;
+  isUnlockedByDefault?: boolean;
+  priceCoins?: number | null;
   isActive?: boolean;
 }
 
@@ -35,6 +37,8 @@ export class AdminUpdateCarArchetypeUseCase {
       speedScale: input.speedScale,
       grip: input.grip,
       offroadGripModifier: input.offroadGripModifier,
+      isUnlockedByDefault: input.isUnlockedByDefault,
+      priceCoins: input.priceCoins,
       isActive: input.isActive,
     });
   }

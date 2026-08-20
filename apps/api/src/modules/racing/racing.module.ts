@@ -3,6 +3,7 @@ import { IamModule } from '../iam/iam.module';
 import { StorageModule } from '../storage/storage.module';
 import { CAR_ARCHETYPE_REPOSITORY } from './application/ports/car-archetype-repository.port';
 import { CAR_PART_REPOSITORY } from './application/ports/car-part-repository.port';
+import { CAR_SHOP_REPOSITORY } from './application/ports/car-shop-repository.port';
 import { CAR_SKIN_REPOSITORY } from './application/ports/car-skin-repository.port';
 import { FRIEND_CODE_REPOSITORY } from './application/ports/friend-code-repository.port';
 import { FRIENDSHIP_REPOSITORY } from './application/ports/friendship-repository.port';
@@ -10,9 +11,12 @@ import { GRAND_PRIX_ATTEMPT_REPOSITORY } from './application/ports/grand-prix-at
 import { GRAND_PRIX_REPOSITORY } from './application/ports/grand-prix-repository.port';
 import { LAP_TIME_REPOSITORY } from './application/ports/lap-time-repository.port';
 import { ONLINE_RACE_REPOSITORY } from './application/ports/online-race-repository.port';
+import { PLAYER_CAR_ARCHETYPE_REPOSITORY } from './application/ports/player-car-archetype-repository.port';
 import { PLAYER_CAR_LOADOUT_REPOSITORY } from './application/ports/player-car-loadout-repository.port';
+import { PLAYER_CAR_PART_REPOSITORY } from './application/ports/player-car-part-repository.port';
 import { PLAYER_CAR_SKIN_REPOSITORY } from './application/ports/player-car-skin-repository.port';
 import { RACING_TERRAIN_EFFECT_REPOSITORY } from './application/ports/racing-terrain-effect-repository.port';
+import { RACING_WALLET_REPOSITORY } from './application/ports/racing-wallet-repository.port';
 import { SEASON_REPOSITORY } from './application/ports/season-repository.port';
 import { TRACK_REPOSITORY } from './application/ports/track-repository.port';
 import { AdminCreateCarArchetypeUseCase } from './application/use-cases/admin-create-car-archetype.use-case';
@@ -22,6 +26,7 @@ import { AdminCreateGrandPrixUseCase } from './application/use-cases/admin-creat
 import { AdminCreateSeasonUseCase } from './application/use-cases/admin-create-season.use-case';
 import { AutoRotateSeasonUseCase } from './application/use-cases/auto-rotate-season.use-case';
 import { AdminCreateTrackUseCase } from './application/use-cases/admin-create-track.use-case';
+import { CreditRewardedAdUseCase } from './application/use-cases/credit-rewarded-ad.use-case';
 import { AdminGetCarArchetypeUseCase } from './application/use-cases/admin-get-car-archetype.use-case';
 import { AdminGetCarPartUseCase } from './application/use-cases/admin-get-car-part.use-case';
 import { AdminGetCarSkinUseCase } from './application/use-cases/admin-get-car-skin.use-case';
@@ -53,6 +58,7 @@ import { GetPersonalBestUseCase } from './application/use-cases/get-personal-bes
 import { GetGhostUseCase } from './application/use-cases/get-ghost.use-case';
 import { GetPlayerCarLoadoutUseCase } from './application/use-cases/get-player-car-loadout.use-case';
 import { GetTrackUseCase } from './application/use-cases/get-track.use-case';
+import { GetWalletBalanceUseCase } from './application/use-cases/get-wallet-balance.use-case';
 import { InvalidateLapTimeUseCase } from './application/use-cases/invalidate-lap-time.use-case';
 import { ListCarCatalogUseCase } from './application/use-cases/list-car-catalog.use-case';
 import { ListFriendsUseCase } from './application/use-cases/list-friends.use-case';
@@ -61,6 +67,7 @@ import { ListPendingFriendRequestsUseCase } from './application/use-cases/list-p
 import { ListTerrainEffectsUseCase } from './application/use-cases/list-terrain-effects.use-case';
 import { ListTracksUseCase } from './application/use-cases/list-tracks.use-case';
 import { MatchOnlineRaceUseCase } from './application/use-cases/match-online-race.use-case';
+import { PurchaseCarItemUseCase } from './application/use-cases/purchase-car-item.use-case';
 import { RequestFriendshipUseCase } from './application/use-cases/request-friendship.use-case';
 import { RespondFriendshipUseCase } from './application/use-cases/respond-friendship.use-case';
 import { SetPlayerCarLoadoutUseCase } from './application/use-cases/set-player-car-loadout.use-case';
@@ -84,6 +91,7 @@ import { RacingController } from './infrastructure/http/racing.controller';
 import { TerrainEffectsController } from './infrastructure/http/terrain-effects.controller';
 import { PrismaCarArchetypeRepository } from './infrastructure/persistence/prisma-car-archetype.repository';
 import { PrismaCarPartRepository } from './infrastructure/persistence/prisma-car-part.repository';
+import { PrismaCarShopRepository } from './infrastructure/persistence/prisma-car-shop.repository';
 import { PrismaCarSkinRepository } from './infrastructure/persistence/prisma-car-skin.repository';
 import { PrismaFriendCodeRepository } from './infrastructure/persistence/prisma-friend-code.repository';
 import { PrismaFriendshipRepository } from './infrastructure/persistence/prisma-friendship.repository';
@@ -91,9 +99,12 @@ import { PrismaGrandPrixAttemptRepository } from './infrastructure/persistence/p
 import { PrismaGrandPrixRepository } from './infrastructure/persistence/prisma-grand-prix.repository';
 import { PrismaLapTimeRepository } from './infrastructure/persistence/prisma-lap-time.repository';
 import { PrismaOnlineRaceRepository } from './infrastructure/persistence/prisma-online-race.repository';
+import { PrismaPlayerCarArchetypeRepository } from './infrastructure/persistence/prisma-player-car-archetype.repository';
 import { PrismaPlayerCarLoadoutRepository } from './infrastructure/persistence/prisma-player-car-loadout.repository';
+import { PrismaPlayerCarPartRepository } from './infrastructure/persistence/prisma-player-car-part.repository';
 import { PrismaPlayerCarSkinRepository } from './infrastructure/persistence/prisma-player-car-skin.repository';
 import { PrismaRacingTerrainEffectRepository } from './infrastructure/persistence/prisma-racing-terrain-effect.repository';
+import { PrismaRacingWalletRepository } from './infrastructure/persistence/prisma-racing-wallet.repository';
 import { PrismaSeasonRepository } from './infrastructure/persistence/prisma-season.repository';
 import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track.repository';
 import { SeasonRotationService } from './infrastructure/scheduler/season-rotation.service';
@@ -175,6 +186,9 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
     AutoRotateSeasonUseCase,
     SeasonRotationService,
     GetFriendsLeaderboardUseCase,
+    GetWalletBalanceUseCase,
+    CreditRewardedAdUseCase,
+    PurchaseCarItemUseCase,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },
     { provide: LAP_TIME_REPOSITORY, useClass: PrismaLapTimeRepository },
     { provide: ONLINE_RACE_REPOSITORY, useClass: PrismaOnlineRaceRepository },
@@ -195,6 +209,14 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
       useClass: PrismaPlayerCarSkinRepository,
     },
     {
+      provide: PLAYER_CAR_ARCHETYPE_REPOSITORY,
+      useClass: PrismaPlayerCarArchetypeRepository,
+    },
+    {
+      provide: PLAYER_CAR_PART_REPOSITORY,
+      useClass: PrismaPlayerCarPartRepository,
+    },
+    {
       provide: RACING_TERRAIN_EFFECT_REPOSITORY,
       useClass: PrismaRacingTerrainEffectRepository,
     },
@@ -204,6 +226,11 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
       useClass: PrismaGrandPrixAttemptRepository,
     },
     { provide: SEASON_REPOSITORY, useClass: PrismaSeasonRepository },
+    {
+      provide: RACING_WALLET_REPOSITORY,
+      useClass: PrismaRacingWalletRepository,
+    },
+    { provide: CAR_SHOP_REPOSITORY, useClass: PrismaCarShopRepository },
   ],
 })
 export class RacingModule {}

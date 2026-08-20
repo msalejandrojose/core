@@ -13,6 +13,11 @@ export class CarArchetype {
     // (tema SNOW, o celda con terreno de sección pintado) — decisión de
     // TASK-264. En asfalto seco no se aplica.
     readonly offroadGripModifier: number,
+    // Mismo campo y mismo criterio que `CarSkin.isUnlockedByDefault`: true =
+    // todos lo tienen sin necesidad de fila en `PlayerCarArchetype`.
+    readonly isUnlockedByDefault: boolean,
+    // Precio en la tienda (TASK-320) — null si no está a la venta.
+    readonly priceCoins: number | null,
     readonly isActive: boolean,
   ) {}
 }

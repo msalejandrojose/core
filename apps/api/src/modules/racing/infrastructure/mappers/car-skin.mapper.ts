@@ -8,6 +8,7 @@ export function toCarSkinDomain(row: PrismaCarSkin): CarSkin {
     row.name,
     row.modelPath,
     row.isUnlockedByDefault,
+    row.priceCoins,
     row.isActive,
   );
 }

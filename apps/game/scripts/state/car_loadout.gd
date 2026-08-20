@@ -21,6 +21,11 @@ var grip: float = 1.0
 ## Multiplica el grip efectivo cuando la superficie no es asfalto seco. Es
 ## puramente del arquetipo: las piezas no lo tocan (ver `car-stats.ts`).
 var offroad_grip_modifier: float = 1.0
+## Ruta del modelo del skin equipado (creado en el backoffice), o "" si no
+## hay ninguno — en ese caso se usa el modelo por defecto del arquetipo
+## (`RaceDirector.ARCHETYPE_MODELS`). Puramente cosmético: no toca las
+## stats de arriba.
+var skin_model_path: String = ""
 
 
 func _ready() -> void:
@@ -51,6 +56,10 @@ func refresh() -> void:
 	offroad_grip_modifier = float(archetype.get("offroadGripModifier", 1.0))
 	speed_scale = float(stats.get("speedScale", 1.0))
 	grip = float(stats.get("grip", 1.0))
+
+	var skin: Variant = response.data.get("skin")
+	skin_model_path = str(skin.get("modelPath", "")) if skin is Dictionary else ""
+
 	changed.emit()
 
 
@@ -59,4 +68,5 @@ func _apply_defaults() -> void:
 	speed_scale = 1.0
 	grip = 1.0
 	offroad_grip_modifier = 1.0
+	skin_model_path = ""
 	changed.emit()
