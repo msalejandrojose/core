@@ -1,12 +1,15 @@
 import { Friend } from '../../domain/entities/friendship.entity';
 import { OnlineRace } from '../../domain/entities/online-race.entity';
+import { RacingCoinRewardKey } from '../../domain/entities/racing-coin-reward-config.entity';
 import { RacingCoinSource } from '../../domain/entities/racing-wallet.entity';
 import { Track } from '../../domain/entities/track.entity';
+import { RacingCoinRewardAmounts } from '../../domain/racing-coin-rewards';
 import { FriendshipRepositoryPort } from '../ports/friendship-repository.port';
 import {
   CreateOnlineRaceData,
   OnlineRaceRepositoryPort,
 } from '../ports/online-race-repository.port';
+import { RacingCoinRewardConfigRepositoryPort } from '../ports/racing-coin-reward-config-repository.port';
 import {
   CreditCoinsData,
   RacingWalletRepositoryPort,
@@ -16,6 +19,16 @@ import { SubmitOnlineRaceResultUseCase } from './submit-online-race-result.use-c
 
 const TRACK = new Track('track-1', 'kenney-01', 'Kenney', 4, 8000, true);
 const PLAYER_ID = 'player-1';
+
+const DEFAULT_AMOUNTS: RacingCoinRewardAmounts = new Map([
+  [RacingCoinRewardKey.RACE_FIRST_PLACE, 100],
+  [RacingCoinRewardKey.RACE_SECOND_PLACE, 60],
+  [RacingCoinRewardKey.RACE_THIRD_PLACE, 40],
+  [RacingCoinRewardKey.BEAT_FRIEND, 60],
+  [RacingCoinRewardKey.WIN_STREAK_2, 20],
+  [RacingCoinRewardKey.WIN_STREAK_3, 40],
+  [RacingCoinRewardKey.WIN_STREAK_4_PLUS, 60],
+]);
 
 class FakeTrackRepository implements Partial<TrackRepositoryPort> {
   constructor(private readonly track: Track | null) {}
@@ -55,6 +68,16 @@ class FakeFriendshipRepository implements Partial<FriendshipRepositoryPort> {
   }
 }
 
+class FakeRacingCoinRewardConfigRepository
+  implements Partial<RacingCoinRewardConfigRepositoryPort>
+{
+  constructor(private readonly amounts: RacingCoinRewardAmounts = DEFAULT_AMOUNTS) {}
+
+  getAmounts(): Promise<RacingCoinRewardAmounts> {
+    return Promise.resolve(this.amounts);
+  }
+}
+
 class FakeRacingWalletRepository
   implements Partial<RacingWalletRepositoryPort>
 {
@@ -73,6 +96,7 @@ function useCase(
   races = new FakeOnlineRaceRepository(),
   wallets = new FakeRacingWalletRepository(),
   friendships = new FakeFriendshipRepository(),
+  rewardConfigs = new FakeRacingCoinRewardConfigRepository(),
 ) {
   return {
     uc: new SubmitOnlineRaceResultUseCase(
@@ -80,6 +104,7 @@ function useCase(
       races as unknown as OnlineRaceRepositoryPort,
       wallets as unknown as RacingWalletRepositoryPort,
       friendships as unknown as FriendshipRepositoryPort,
+      rewardConfigs as unknown as RacingCoinRewardConfigRepositoryPort,
     ),
     races,
     wallets,
@@ -296,6 +321,29 @@ describe('SubmitOnlineRaceResultUseCase — bono por batir a un amigo (TASK-321)
     expect(
       wallets.credits.filter((c) => c.source === RacingCoinSource.BEAT_FRIEND),
     ).toHaveLength(1);
+  });
+
+  it('con el importe de BEAT_FRIEND a 0, no lo acredita aunque gane a un amigo (TASK-322)', async () => {
+    const friends = [new Friend('target-1', 'Ana', new Date())];
+    const amounts = new Map(DEFAULT_AMOUNTS);
+    amounts.set(RacingCoinRewardKey.BEAT_FRIEND, 0);
+    const { uc, wallets } = useCase(
+      TRACK,
+      new FakeOnlineRaceRepository(),
+      new FakeRacingWalletRepository(),
+      new FakeFriendshipRepository(friends),
+      new FakeRacingCoinRewardConfigRepository(amounts),
+    );
+    await uc.execute({
+      userId: PLAYER_ID,
+      trackSlug: 'kenney-01',
+      durationMs: 42000,
+      rivals: [{ role: 'TARGET', userId: 'target-1', durationMs: 43000 }],
+    });
+
+    expect(wallets.credits).not.toContainEqual(
+      expect.objectContaining({ source: RacingCoinSource.BEAT_FRIEND }),
+    );
   });
 });
 

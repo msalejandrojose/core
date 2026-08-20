@@ -1,12 +1,15 @@
+import { RacingCoinRewardKey } from '../../domain/entities/racing-coin-reward-config.entity';
 import { GhostSnapshot } from '../../domain/entities/ghost-snapshot';
 import { LapTime } from '../../domain/entities/lap-time.entity';
 import { RacingCoinSource } from '../../domain/entities/racing-wallet.entity';
 import { Season } from '../../domain/entities/season.entity';
 import { Track } from '../../domain/entities/track.entity';
+import { RacingCoinRewardAmounts } from '../../domain/racing-coin-rewards';
 import {
   CreateLapTimeData,
   LapTimeRepositoryPort,
 } from '../ports/lap-time-repository.port';
+import { RacingCoinRewardConfigRepositoryPort } from '../ports/racing-coin-reward-config-repository.port';
 import {
   CreditCoinsData,
   RacingWalletRepositoryPort,
@@ -14,6 +17,10 @@ import {
 import { SeasonRepositoryPort } from '../ports/season-repository.port';
 import { TrackRepositoryPort } from '../ports/track-repository.port';
 import { SubmitLapTimeUseCase } from './submit-lap-time.use-case';
+
+const DEFAULT_AMOUNTS: RacingCoinRewardAmounts = new Map([
+  [RacingCoinRewardKey.PERSONAL_BEST, 50],
+]);
 
 const TRACK = new Track('track-1', 'kenney-01', 'Kenney', 4, 8000, true);
 
@@ -95,7 +102,21 @@ class FakeRacingWalletRepository implements Partial<RacingWalletRepositoryPort> 
   }
 }
 
-function useCase(previousBest: LapTime | null, currentSeason: Season | null = null) {
+class FakeRacingCoinRewardConfigRepository
+  implements Partial<RacingCoinRewardConfigRepositoryPort>
+{
+  constructor(private readonly amounts: RacingCoinRewardAmounts = DEFAULT_AMOUNTS) {}
+
+  getAmounts(): Promise<RacingCoinRewardAmounts> {
+    return Promise.resolve(this.amounts);
+  }
+}
+
+function useCase(
+  previousBest: LapTime | null,
+  currentSeason: Season | null = null,
+  amounts: RacingCoinRewardAmounts = DEFAULT_AMOUNTS,
+) {
   const laps = new FakeLapTimeRepository(previousBest);
   const wallets = new FakeRacingWalletRepository();
   return {
@@ -104,6 +125,9 @@ function useCase(previousBest: LapTime | null, currentSeason: Season | null = nu
       laps as unknown as LapTimeRepositoryPort,
       new FakeSeasonRepository(currentSeason) as unknown as SeasonRepositoryPort,
       wallets as unknown as RacingWalletRepositoryPort,
+      new FakeRacingCoinRewardConfigRepository(
+        amounts,
+      ) as unknown as RacingCoinRewardConfigRepositoryPort,
     ),
     laps,
     wallets,
@@ -229,5 +253,26 @@ describe('SubmitLapTimeUseCase — bono de récord personal (TASK-321)', () => {
         lapTimeId: 'new-id',
       },
     ]);
+  });
+
+  it('con el importe configurado a 0, no acredita nada aunque bata la marca', async () => {
+    const previous = new LapTime(
+      'prev',
+      'user-1',
+      'track-1',
+      12000,
+      [3000, 6000, 9000, 12000],
+      '0.1.0',
+      new Date(),
+    );
+    const { useCase: uc, wallets } = useCase(
+      previous,
+      null,
+      new Map([[RacingCoinRewardKey.PERSONAL_BEST, 0]]),
+    );
+
+    await uc.execute(input({ durationMs: 10000 }));
+
+    expect(wallets.credits).toHaveLength(0);
   });
 });

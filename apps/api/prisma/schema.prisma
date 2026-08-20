@@ -1887,6 +1887,38 @@ enum RacingCoinSource {
   PURCHASE_SKIN
 }
 
+/// Qué importe concreto se está ajustando (TASK-322) — más fino que
+/// `RacingCoinSource`: la racha de victorias es una única fuente en el
+/// ledger (`WIN_STREAK`) pero tres importes distintos según el tramo, así
+/// que no puede ser la misma clave.
+enum RacingCoinRewardKey {
+  RACE_FIRST_PLACE
+  RACE_SECOND_PLACE
+  RACE_THIRD_PLACE
+  REWARDED_AD
+  PERSONAL_BEST
+  BEAT_FRIEND
+  WIN_STREAK_2
+  WIN_STREAK_3
+  WIN_STREAK_4_PLUS
+}
+
+/// Importe editable desde el backoffice para cada bono de la economía de
+/// monedas (TASK-322) — antes hardcodeado en `racing-coin-rewards.ts`.
+/// Conjunto CERRADO: un valor por cada `RacingCoinRewardKey`, sembrado al
+/// desplegar (ver `seed-racing-coin-rewards.ts`), sin create/delete desde el
+/// backoffice — mismo criterio que `RacingTerrainEffect`. 0 = bono
+/// desactivado, no se acredita nada (en vez de borrar la fila).
+model RacingCoinRewardConfig {
+  id     String              @id @default(uuid()) @db.Char(36)
+  key    RacingCoinRewardKey @unique
+  amount Int
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_coin_reward_config")
+}
+
 /// Saldo de monedas de un jugador (TASK-318, economía de TASK-286). Una
 /// fila por jugador, igual que `PlayerCarLoadout` — sin fila = 0 monedas, se
 /// crea perezosamente en el primer movimiento. El saldo vive aquí

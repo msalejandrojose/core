@@ -233,6 +233,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/racing/seasons',
         order: 5,
       },
+      {
+        code: 'racing.coin_rewards',
+        name: 'Monedas y bonos',
+        icon: 'Coins',
+        route: '/racing/coin-rewards',
+        order: 6,
+      },
     ],
   },
   {
