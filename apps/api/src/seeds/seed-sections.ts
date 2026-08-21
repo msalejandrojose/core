@@ -247,6 +247,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/racing/matchmaking-config',
         order: 7,
       },
+      {
+        code: 'racing.track_popularity',
+        name: 'Popularidad de circuitos',
+        icon: 'BarChart3',
+        route: '/racing/track-popularity',
+        order: 8,
+      },
     ],
   },
   {

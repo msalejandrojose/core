@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Bell,
   Circle,
   ClipboardList,
@@ -48,6 +49,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Flag,
   MapPin,
   Wrench,
+  BarChart3,
   // Añadir según se creen secciones nuevas.
 };
 

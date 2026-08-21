@@ -168,6 +168,11 @@ const LapTimesPage = lazy(() =>
     default: m.LapTimesPage,
   })),
 );
+const TrackPopularityPage = lazy(() =>
+  import('@/features/racing/track-popularity/TrackPopularityPage').then((m) => ({
+    default: m.TrackPopularityPage,
+  })),
+);
 const GrandPrixPage = lazy(() =>
   import('@/features/racing/grand-prix/GrandPrixPage').then((m) => ({
     default: m.GrandPrixPage,
@@ -334,6 +339,7 @@ export default function App() {
               <Route path="/racing/coin-rewards" element={<CoinRewardsPage />} />
               <Route path="/racing/matchmaking-config" element={<MatchmakingConfigPage />} />
               <Route path="/racing/lap-times" element={<LapTimesPage />} />
+              <Route path="/racing/track-popularity" element={<TrackPopularityPage />} />
               <Route path="/racing/grand-prix" element={<GrandPrixPage />} />
               <Route
                 path="/racing/grand-prix/new"
