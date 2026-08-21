@@ -74,6 +74,7 @@ import { ListCarCatalogUseCase } from './application/use-cases/list-car-catalog.
 import { ListCoinRewardConfigsUseCase } from './application/use-cases/list-coin-reward-configs.use-case';
 import { ListMatchmakingConfigsUseCase } from './application/use-cases/list-matchmaking-configs.use-case';
 import { AdminListPlayerRatingsUseCase } from './application/use-cases/admin-list-player-ratings.use-case';
+import { AdminTrackPopularityUseCase } from './application/use-cases/admin-track-popularity.use-case';
 import { ListFriendsUseCase } from './application/use-cases/list-friends.use-case';
 import { ListGrandPrixUseCase } from './application/use-cases/list-grand-prix.use-case';
 import { ListPendingFriendRequestsUseCase } from './application/use-cases/list-pending-friend-requests.use-case';
@@ -99,6 +100,7 @@ import { AdminLapTimesController } from './infrastructure/http/admin-lap-times.c
 import { AdminRacingUsersController } from './infrastructure/http/admin-racing-users.controller';
 import { AdminSeasonsController } from './infrastructure/http/admin-seasons.controller';
 import { AdminTerrainEffectsController } from './infrastructure/http/admin-terrain-effects.controller';
+import { AdminTrackPopularityController } from './infrastructure/http/admin-track-popularity.controller';
 import { AdminTracksController } from './infrastructure/http/admin-tracks.controller';
 import { CarLoadoutController } from './infrastructure/http/car-loadout.controller';
 import { FriendsController } from './infrastructure/http/friends.controller';
@@ -166,6 +168,7 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
     AdminCoinRewardConfigsController,
     AdminMatchmakingConfigController,
     AdminPlayerRatingsController,
+    AdminTrackPopularityController,
   ],
   providers: [
     ListTracksUseCase,
@@ -230,6 +233,7 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
     ListMatchmakingConfigsUseCase,
     AdminListPlayerRatingsUseCase,
     AdminUpdateMatchmakingConfigUseCase,
+    AdminTrackPopularityUseCase,
     LiveRaceRoomManager,
     LiveRaceGateway,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },

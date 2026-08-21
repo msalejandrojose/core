@@ -148,6 +148,18 @@ export interface PlayerRatingRow {
   rating: number;
 }
 
+export interface TrackPopularityRow {
+  trackId: string;
+  trackSlug: string;
+  trackName: string;
+  isActive: boolean;
+  totalLaps: number;
+  distinctPlayers: number;
+  lastPlayedAt: string | null;
+  lapsLast30d: number;
+  lapsPrev30d: number;
+}
+
 export interface AdminLapTimeRow {
   id: string;
   userId: string;

@@ -61,6 +61,23 @@ export interface AdminUserTrackSummary {
   bestDurationMs: number | null;
 }
 
+// Fila de popularidad por circuito para el reporte del backoffice
+// (TASK-240): un circuito sin ningún intento sigue apareciendo, con todo en
+// cero — es justo el caso que interesa detectar ("se juega o se abandonó").
+// `lapsLast30d`/`lapsPrev30d` cuentan TODOS los intentos, válidos o
+// anulados: reflejan actividad de juego, no validez de leaderboard.
+export interface AdminTrackPopularityEntry {
+  trackId: string;
+  trackSlug: string;
+  trackName: string;
+  isActive: boolean;
+  totalLaps: number;
+  distinctPlayers: number;
+  lastPlayedAt: Date | null;
+  lapsLast30d: number;
+  lapsPrev30d: number;
+}
+
 // Un vecino inmediato en el leaderboard QUE TIENE fantasma grabado — solo
 // interesan estos para emparejar una carrera online (TASK-282/284): un
 // rival sin fantasma no se puede reproducir en pista, así que no cuenta
@@ -146,4 +163,9 @@ export interface LapTimeRepositoryPort {
    *  cuántos, y su mejor tiempo válido (TASK-251). La posición en el ranking
    *  de cada circuito se calcula aparte con `positionOf`. */
   summarizeForUserAdmin(userId: string): Promise<AdminUserTrackSummary[]>;
+
+  /** Popularidad por circuito para el backoffice (TASK-240): todos los
+   *  circuitos, activos o no, con su actividad total y reciente — para ver
+   *  qué se juega y qué se abandonó. */
+  trackPopularity(): Promise<AdminTrackPopularityEntry[]>;
 }

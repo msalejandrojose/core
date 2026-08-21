@@ -5,6 +5,7 @@ import { PaginatedResult } from '../../../../shared/types/paginated-result';
 import {
   AdminLapTimeListEntry,
   AdminListLapTimesOptions,
+  AdminTrackPopularityEntry,
   AdminUserTrackSummary,
   CreateLapTimeData,
   LapTimeRepositoryPort,
@@ -34,6 +35,18 @@ interface GhostNeighborRow {
   userId: string;
   durationMs: number | bigint;
   ghostSnapshots: unknown;
+}
+
+interface TrackPopularityRow {
+  trackId: string;
+  trackSlug: string;
+  trackName: string;
+  isActive: number | boolean;
+  totalLaps: bigint;
+  distinctPlayers: bigint;
+  lastPlayedAt: Date | null;
+  lapsLast30d: bigint;
+  lapsPrev30d: bigint;
 }
 
 interface AdminLapTimeRow {
@@ -468,5 +481,50 @@ export class PrismaLapTimeRepository implements LapTimeRepositoryPort {
       })
       .filter((row): row is AdminUserTrackSummary => row !== null)
       .sort((a, b) => a.trackName.localeCompare(b.trackName));
+  }
+
+  /**
+   * Popularidad por circuito para el reporte del backoffice (TASK-240).
+   * `LEFT JOIN` desde `racing_track`, no desde `racing_lap_time`: un
+   * circuito sin ningún intento tiene que aparecer igualmente, con todo en
+   * cero — es justo el caso "se abandonó" (o nunca se jugó) que el reporte
+   * quiere mostrar. Cuenta TODOS los intentos, válidos o anulados: mide
+   * actividad de juego, no validez de leaderboard (eso ya lo hace
+   * `listAllAdmin`/`leaderboard`).
+   */
+  async trackPopularity(): Promise<AdminTrackPopularityEntry[]> {
+    const now = new Date();
+    const last30Start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const prev30Start = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    const rows = await this.prisma.$queryRaw<TrackPopularityRow[]>`
+      SELECT
+        t.id                                                     AS trackId,
+        t.slug                                                   AS trackSlug,
+        t.name                                                   AS trackName,
+        t.is_active                                              AS isActive,
+        COUNT(lt.id)                                             AS totalLaps,
+        COUNT(DISTINCT lt.user_id)                                AS distinctPlayers,
+        MAX(lt.created_at)                                       AS lastPlayedAt,
+        SUM(CASE WHEN lt.created_at >= ${last30Start} THEN 1 ELSE 0 END) AS lapsLast30d,
+        SUM(CASE WHEN lt.created_at >= ${prev30Start}
+                  AND lt.created_at <  ${last30Start} THEN 1 ELSE 0 END) AS lapsPrev30d
+      FROM racing_track t
+      LEFT JOIN racing_lap_time lt ON lt.track_id = t.id
+      GROUP BY t.id, t.slug, t.name, t.is_active
+      ORDER BY totalLaps DESC, t.name ASC
+    `;
+
+    return rows.map((row) => ({
+      trackId: row.trackId,
+      trackSlug: row.trackSlug,
+      trackName: row.trackName,
+      isActive: Boolean(row.isActive),
+      totalLaps: Number(row.totalLaps),
+      distinctPlayers: Number(row.distinctPlayers),
+      lastPlayedAt: row.lastPlayedAt,
+      lapsLast30d: Number(row.lapsLast30d),
+      lapsPrev30d: Number(row.lapsPrev30d),
+    }));
   }
 }

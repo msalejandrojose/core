@@ -61,6 +61,9 @@ class FakeLapTimeRepository implements LapTimeRepositoryPort {
   summarizeForUserAdmin(): Promise<never> {
     throw new Error('not used in this test');
   }
+  trackPopularity(): Promise<never> {
+    throw new Error('not used in this test');
+  }
 }
 
 describe('InvalidateLapTimeUseCase', () => {
