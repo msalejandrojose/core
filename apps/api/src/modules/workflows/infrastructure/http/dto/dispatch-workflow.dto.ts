@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsObject,
   IsOptional,
   IsString,
@@ -36,4 +37,12 @@ export class DispatchWorkflowDto {
   @IsOptional()
   @IsObject()
   payload?: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    description:
+      'Prueba sin enviar de verdad: los pasos que lo respetan (p.ej. notify.push) renderizan y validan pero no despachan.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  dryRun?: boolean;
 }

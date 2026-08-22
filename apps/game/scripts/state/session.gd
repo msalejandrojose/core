@@ -27,6 +27,10 @@ var email: String = ""
 ## autenticado — p.ej. anunciarse como PLAYER en una carrera online
 ## (TASK-284/285).
 var user_id: String = ""
+## Último token de push registrado contra `POST /me/devices`, para poder
+## darlo de baja en `logout()` (`DELETE /me/devices/:token`) sin tener que
+## volver a pedírselo al plugin nativo.
+var _push_token: String = ""
 
 var _cfg := ConfigFile.new()
 
@@ -36,7 +40,14 @@ func _ready() -> void:
 	access_token = _cfg.get_value("session", "access_token", "")
 	email = _cfg.get_value("session", "email", "")
 	user_id = _cfg.get_value("session", "user_id", "")
+	_push_token = _cfg.get_value("session", "push_token", "")
 	Api.access_token = access_token
+
+	# Best-effort y sin esperar: un fallo aquí (sin plugin de FCM, sin
+	# permiso, sin red) nunca debe retrasar ni romper el arranque de la app
+	# (TASK-253, criterio de done).
+	if is_logged_in():
+		_register_push_device()
 
 
 func is_logged_in() -> bool:
@@ -160,15 +171,22 @@ func _await_poll_tick_or_google_deep_link() -> void:
 
 
 func logout() -> void:
+	var token_to_unregister := _push_token
+
 	access_token = ""
 	email = ""
 	user_id = ""
+	_push_token = ""
 	Api.access_token = ""
 	_cfg.set_value("session", "access_token", "")
 	_cfg.set_value("session", "email", "")
 	_cfg.set_value("session", "user_id", "")
+	_cfg.set_value("session", "push_token", "")
 	_cfg.save(PATH)
 	changed.emit()
+
+	if token_to_unregister != "":
+		_unregister_push_device(token_to_unregister)
 
 
 func _adopt(response) -> void:
@@ -195,3 +213,45 @@ func _adopt(response) -> void:
 	# Entrar es el momento natural para soltar lo que quedó pendiente: puede
 	# haber tiempos corridos sin cuenta o con la sesión caducada.
 	LapQueue.flush()
+
+	# Best-effort, sin esperar: mismo criterio que en `_ready()`.
+	_register_push_device()
+
+
+## Pide el token de push al plugin nativo (best-effort, ver `PushDevice`) y
+## lo registra contra `POST /me/devices`. Sin plugin, sin sesión, o si el
+## SDK falla, no hace nada — nunca lanza, nunca bloquea a quien llama (se
+## invoca sin `await` desde `_ready()`/`_adopt()` a propósito).
+func _register_push_device() -> void:
+	var token := await PushDevice.request_push_token()
+	if token == "":
+		return
+
+	var response = await Api.post_json("/me/devices", {
+		"token": token,
+		"platform": _push_platform(),
+	})
+	if not response.ok:
+		return
+
+	_push_token = token
+	_cfg.set_value("session", "push_token", _push_token)
+	_cfg.save(PATH)
+
+
+## Mismo mejor-esfuerzo que `_register_push_device()`: si falla, el token
+## queda huérfano en el servidor pero inofensivo (apunta a una sesión ya
+## cerrada) — se sobrescribe solo la próxima vez que este dispositivo
+## registre un token.
+func _unregister_push_device(token: String) -> void:
+	await Api.delete_json("/me/devices/%s" % token.uri_encode())
+
+
+func _push_platform() -> String:
+	match OS.get_name():
+		"Android":
+			return "android"
+		"iOS":
+			return "ios"
+		_:
+			return "web"

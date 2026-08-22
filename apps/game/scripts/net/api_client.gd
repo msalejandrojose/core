@@ -54,6 +54,10 @@ func patch_json(path: String, body: Dictionary, authorized: bool = true) -> ApiR
 	return await _request(HTTPClient.METHOD_PATCH, path, body, authorized, true)
 
 
+func delete_json(path: String, authorized: bool = true) -> ApiResponse:
+	return await _request(HTTPClient.METHOD_DELETE, path, {}, authorized, false)
+
+
 # --- Interno ------------------------------------------------------------------
 
 func _request(

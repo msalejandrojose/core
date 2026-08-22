@@ -4,6 +4,7 @@ import { PrismaService } from '../infrastructure/database/prisma/prisma.service'
 import { CreateSendingAccountTypeUseCase } from '../modules/notifications/application/use-cases/create-sending-account-type.use-case';
 import { CreateSendingAccountUseCase } from '../modules/notifications/application/use-cases/create-sending-account.use-case';
 import { CreateMessageTypeUseCase } from '../modules/notifications/application/use-cases/create-message-type.use-case';
+import { PublishWorkflowDefinitionUseCase } from '../modules/workflows/application/use-cases/publish-workflow-definition.use-case';
 
 // Seed idempotente del catálogo de push de racing (TASK-255). Crea:
 //   1. El `SendingAccountType` de canal PUSH (compartido por todo el sistema,
@@ -19,6 +20,11 @@ import { CreateMessageTypeUseCase } from '../modules/notifications/application/u
 //   3. Una plantilla `MessageType` de ejemplo: "cierre de temporada"
 //      (TASK-228, ya implementada), para validar el circuito de catálogo →
 //      workflow → dispatcher de punta a punta.
+//   4. Un workflow demo (TASK-254) de disparo manual cuya única acción es
+//      `notify.push` contra esa plantilla — para probar desde el backoffice
+//      (o `POST /workflows/definitions/:key/run?dryRun=true`) que el
+//      circuito completo funciona sin depender de que exista ya un
+//      dispositivo real registrado.
 //
 // El `deepLink` es un string libre para el cliente Godot, que TODAVÍA no
 // sabe interpretarlo (el registro de dispositivo — "Godot: registrar el
@@ -34,6 +40,35 @@ const TYPE_KEY = 'push';
 const ACCOUNT_NAME = 'FCM — dev';
 const PLACEHOLDER_SERVER_KEY = 'REPLACE_WITH_REAL_FCM_SERVER_KEY';
 const MESSAGE_TYPE_KEY = 'racing_season_closed';
+const WORKFLOW_KEY = 'notify_racing_season_closed_demo';
+
+function buildDemoDsl(): unknown {
+  return {
+    key: WORKFLOW_KEY,
+    name: 'Demo: push de cierre de temporada (racing)',
+    version: 1,
+    meta: {
+      description:
+        'Workflow de ejemplo (TASK-254): dispara notify.push contra racing_season_closed. Payload: { userId, firstName, seasonName }.',
+    },
+    triggers: [{ kind: 'manual' }],
+    steps: [
+      {
+        key: 'send_push',
+        action: 'notify.push',
+        input: {
+          userId: '{{ event.payload.userId }}',
+          messageTypeKey: MESSAGE_TYPE_KEY,
+          variables: {
+            firstName: '{{ event.payload.firstName }}',
+            seasonName: '{{ event.payload.seasonName }}',
+          },
+        },
+        next: null,
+      },
+    ],
+  };
+}
 
 async function main(): Promise<void> {
   const app = await NestFactory.createApplicationContext(AppModule, {
@@ -44,6 +79,7 @@ async function main(): Promise<void> {
   const createType = app.get(CreateSendingAccountTypeUseCase);
   const createAccount = app.get(CreateSendingAccountUseCase);
   const createMessageType = app.get(CreateMessageTypeUseCase);
+  const publishWorkflow = app.get(PublishWorkflowDefinitionUseCase);
 
   // 1. Tipo de cuenta PUSH (idempotente por key).
   let typeId: string;
@@ -108,9 +144,23 @@ async function main(): Promise<void> {
     console.log(`Tipo de mensaje creado: ${MESSAGE_TYPE_KEY}`);
   }
 
+  // 4. Workflow demo (idempotente por key).
+  const existingWorkflow = await prisma.workflowDefinition.findFirst({
+    where: { key: WORKFLOW_KEY },
+  });
+  if (existingWorkflow) {
+    console.log(`Workflow ya existía: ${WORKFLOW_KEY}`);
+  } else {
+    await publishWorkflow.execute(buildDemoDsl());
+    console.log(`Workflow publicado y activo: ${WORKFLOW_KEY}`);
+  }
+
   console.log('\n✔ Catálogo de push de racing listo.');
   console.log(`  Tipo de mensaje:  ${MESSAGE_TYPE_KEY}`);
-  console.log('  Acción workflow:  notify.push (userId, messageTypeKey, variables)');
+  console.log(`  Workflow demo:    ${WORKFLOW_KEY}`);
+  console.log(
+    `  Probar sin enviar: POST /workflows/definitions/${WORKFLOW_KEY}/run?dryRun=true`,
+  );
 
   await app.close();
 }

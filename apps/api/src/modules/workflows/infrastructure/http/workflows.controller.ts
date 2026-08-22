@@ -113,6 +113,10 @@ export class WorkflowsController {
   @RequiresPermission('workflows', 'WRITE')
   @ApiOperation({
     summary: 'Disparo manual de la versión activa (sin target).',
+    description:
+      '`?dryRun=true` corre el workflow sin que los pasos que lo respetan ' +
+      '(p.ej. notify.push) despachen de verdad — para probar el circuito ' +
+      'completo sin mandar nada al jugador.',
   })
   @ApiBody({
     schema: { type: 'object' },
@@ -122,8 +126,14 @@ export class WorkflowsController {
   async run(
     @Param('key') key: string,
     @Body() body: unknown,
+    @Query('dryRun') dryRun?: string,
   ): Promise<WorkflowRunResponseDto> {
-    const [run] = await this.manualRun.execute(key, body ?? {});
+    const [run] = await this.manualRun.execute(
+      key,
+      body ?? {},
+      null,
+      dryRun === 'true',
+    );
     return WorkflowRunResponseDto.fromDomain(run);
   }
 
@@ -137,10 +147,12 @@ export class WorkflowsController {
     @Param('key') key: string,
     @Body() body: DispatchWorkflowDto,
   ): Promise<WorkflowRunBatchResponseDto> {
-    const runs = await this.manualRun.execute(key, body.payload ?? {}, {
-      type: body.target.type,
-      filter: body.target.filter,
-    });
+    const runs = await this.manualRun.execute(
+      key,
+      body.payload ?? {},
+      { type: body.target.type, filter: body.target.filter },
+      body.dryRun ?? false,
+    );
     return WorkflowRunBatchResponseDto.fromDomain(runs);
   }
 }

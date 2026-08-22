@@ -40,6 +40,7 @@ TrackCache="*res://scripts/state/track_cache.gd"
 LiveRaceSocket="*res://scripts/net/live_race_socket.gd"
 PlatformAuth="*res://scripts/net/platform_auth.gd"
 DeepLink="*res://scripts/net/deep_link.gd"
+PushDevice="*res://scripts/net/push_device.gd"
 
 [display]
 
