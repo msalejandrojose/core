@@ -106,22 +106,26 @@ func request_game_center_identity_payload() -> Dictionary:
 ## para las señales de estos dos addons (código/Dictionary sueltos).
 func _await_signal_or_timeout(emitter: Object, signal_name: String) -> Variant:
 	var timer := get_tree().create_timer(NATIVE_TIMEOUT_S)
-	var done := false
-	var result: Variant = null
+	# Array, no un bool/Variant sueltos: una lambda de GDScript captura
+	# variables locales POR VALOR, así que reasignar `done`/`result` dentro
+	# de `on_signal` no se vería desde este bucle si fueran locales simples.
+	# Un Array es un tipo por referencia — la propia lambda y este bucle
+	# comparten la misma celda.
+	var state := [false, null] # [done, result]
 
 	var on_signal := func(arg: Variant = true) -> void:
-		if done:
+		if state[0]:
 			return
-		done = true
-		result = arg
+		state[0] = true
+		state[1] = arg
 
 	emitter.connect(signal_name, on_signal, CONNECT_ONE_SHOT)
 
-	while not done:
+	while not state[0]:
 		if timer.time_left <= 0.0:
-			done = true
-			result = null
+			state[0] = true
+			state[1] = null
 			break
 		await get_tree().process_frame
 
-	return result
+	return state[1]

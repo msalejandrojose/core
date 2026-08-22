@@ -65,6 +65,13 @@ func register(p_email: String, password: String, first_name: String):
 ## (con polling) a que el jugador complete el login ahí. Devuelve un
 ## `ApiResponse`-like: `{ok, code, message}` para que la pantalla de login
 ## pueda mostrar el mismo tipo de error que con login/register.
+##
+## La página de callback del backend trae un botón "Volver al juego"
+## (deep link `ajracing://auth/google-callback`) — si el SO lo entrega
+## (Android/iOS con el addon instalado), se comprueba al instante en vez de
+## esperar al siguiente tick de polling. Sin el deep link (desktop, o el
+## addon todavía no instalado) el polling normal sigue detectándolo igual,
+## solo que un poco más tarde — el deep link es un atajo, no un reemplazo.
 func login_with_google() -> Dictionary:
 	var start = await Api.post_json("/auth/google/start", {}, false)
 	if not start.ok or not (start.data is Dictionary):
@@ -81,7 +88,7 @@ func login_with_google() -> Dictionary:
 
 	var elapsed := 0.0
 	while elapsed < GOOGLE_POLL_TIMEOUT_S:
-		await get_tree().create_timer(GOOGLE_POLL_INTERVAL_S).timeout
+		await _await_poll_tick_or_google_deep_link()
 		elapsed += GOOGLE_POLL_INTERVAL_S
 
 		var poll = await Api.get_json("/auth/google/session/%s" % session_id, false)
@@ -126,6 +133,30 @@ func login_with_game_center():
 	var response = await Api.post_json("/auth/game-center", payload, false)
 	_adopt(response)
 	return response
+
+
+## Espera lo que llegue antes: `GOOGLE_POLL_INTERVAL_S` de reloj, o que
+## `DeepLink` avise de que llegó el "Volver al juego" de la página de
+## callback — así un toque en ese enlace no tiene que esperar al siguiente
+## tick de 2s para comprobarse. Sin `DeepLink` (o sin el addon instalado)
+## esto se comporta exactamente como el simple `create_timer` de antes.
+func _await_poll_tick_or_google_deep_link() -> void:
+	# Array, no un bool suelto: una lambda de GDScript captura variables
+	# locales POR VALOR, así que reasignar `woken` dentro de `on_link` no se
+	# vería desde este bucle si fuera un local simple (mismo motivo que en
+	# `platform_auth.gd::_await_signal_or_timeout`).
+	var woken := [false]
+	var on_link := func(path: String, _query: Dictionary) -> void:
+		if path == DeepLink.GOOGLE_CALLBACK_PATH:
+			woken[0] = true
+	DeepLink.link_received.connect(on_link, CONNECT_ONE_SHOT)
+
+	var timer := get_tree().create_timer(GOOGLE_POLL_INTERVAL_S)
+	while not woken[0] and timer.time_left > 0.0:
+		await get_tree().process_frame
+
+	if DeepLink.link_received.is_connected(on_link):
+		DeepLink.link_received.disconnect(on_link)
 
 
 func logout() -> void:
