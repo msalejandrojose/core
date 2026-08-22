@@ -212,7 +212,7 @@ export class AuthController {
     } catch {
       ok = false;
     }
-    res.type('html').send(renderGoogleAuthCallbackPage(ok));
+    res.type('html').send(renderGoogleAuthCallbackPage(ok, dto.state));
   }
 
   @Get('google/session/:id')

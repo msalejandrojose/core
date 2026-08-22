@@ -13,6 +13,10 @@ extends Node
 ##
 ##     godot --quit-after 300 res://tests/platform_auth_login_test.tscn
 
+## Señal de mentira para probar `_await_signal_or_timeout` sin un emisor de
+## verdad — ver `_test_await_signal_or_timeout_se_despierta_con_la_senal`.
+signal _fake_native_signal(value: String)
+
 var _failures := 0
 
 
@@ -23,6 +27,7 @@ func _ready() -> void:
 	await _test_login_with_play_games_falla_sin_red()
 	await _test_login_with_game_center_falla_sin_red()
 	await _test_pantalla_no_ofrece_botones_nativos_en_este_entorno()
+	await _test_await_signal_or_timeout_se_despierta_con_la_senal()
 
 	if _failures == 0:
 		print("\nOK")
@@ -83,6 +88,29 @@ func _test_pantalla_no_ofrece_botones_nativos_en_este_entorno() -> void:
 		"sin iOS real, no se ofrece el botón de Game Center")
 
 	screen.queue_free()
+
+
+## Regresión: una lambda de GDScript captura variables locales POR VALOR, así
+## que `_await_signal_or_timeout` tenía un bug real donde reasignar el
+## `done`/`result` locales dentro de la lambda de la señal no se veía desde
+## el bucle de espera — el resultado era esperar SIEMPRE el timeout completo
+## (20s), incluso cuando la señal llegaba al instante. Con el addon todavía
+## sin instalar, ningún otro test llega a ejercitar esta función (el guard de
+## disponibilidad corta antes) — sin esta prueba el bug habría llegado
+## intacto hasta el primer login real en un dispositivo.
+func _test_await_signal_or_timeout_se_despierta_con_la_senal() -> void:
+	var start_ms := Time.get_ticks_msec()
+
+	var trigger := get_tree().create_timer(0.05)
+	trigger.timeout.connect(func() -> void:
+		_fake_native_signal.emit("hola"))
+
+	var result = await PlatformAuth._await_signal_or_timeout(self, "_fake_native_signal")
+
+	var elapsed_ms := Time.get_ticks_msec() - start_ms
+	_check(elapsed_ms < 500, true,
+		"se despierta con la señal en vez de esperar el timeout completo (20s)")
+	_check(result, "hola", "y devuelve el argumento que llevaba la señal")
 
 
 # --- Utilidades ---------------------------------------------------------------

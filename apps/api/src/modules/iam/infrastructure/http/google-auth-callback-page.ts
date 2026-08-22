@@ -1,12 +1,21 @@
-// Página mínima que ve el jugador en el navegador del sistema tras el
-// consentimiento de Google. No hay app ni deep link al otro lado: el cierre
-// de la pestaña es la única acción que le queda al usuario, así que solo le
-// avisamos de que puede volver al juego.
-export function renderGoogleAuthCallbackPage(ok: boolean): string {
+// Página que ve el jugador en el navegador del sistema tras el consentimiento
+// de Google. El botón "Volver al juego" es un deep link (`ajracing://...`):
+// si el juego lo tiene registrado (Android/iOS con el addon instalado), el
+// SO trae la app al primer plano directamente. Es aditivo, no un reemplazo
+// del polling — si el enlace no hace nada (desktop, SO sin la app, addon
+// todavía no instalado), el polling de `GET /auth/google/session/:id` sigue
+// siendo quien de verdad detecta que la sesión quedó lista.
+//
+// Sin token en el enlace a propósito: el juego ya tiene `sessionId` en
+// memoria desde que abrió el navegador, así que el deep link solo hace falta
+// como señal de "despierta y comprueba ahora" — nada sensible que pueda
+// quedar en el histórico de enlaces del sistema operativo.
+export function renderGoogleAuthCallbackPage(ok: boolean, state: string): string {
   const title = ok ? 'Sesión iniciada' : 'No se pudo iniciar sesión';
   const message = ok
     ? 'Ya puedes volver al juego, la sesión se ha iniciado correctamente.'
     : 'Ha ocurrido un error al iniciar sesión con Google. Vuelve al juego e inténtalo de nuevo.';
+  const deepLink = `ajracing://auth/google-callback?state=${encodeURIComponent(state)}`;
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -19,12 +28,14 @@ export function renderGoogleAuthCallbackPage(ok: boolean): string {
   .card { max-width: 360px; }
   h1 { font-size: 1.25rem; margin-bottom: 8px; }
   p { color: #94a3b8; }
+  a.button { display: inline-block; margin-top: 20px; padding: 12px 28px; border-radius: 8px; background: #f1f5f9; color: #0f172a; text-decoration: none; font-weight: 600; }
 </style>
 </head>
 <body>
   <div class="card">
     <h1>${title}</h1>
     <p>${message}</p>
+    <a class="button" href="${deepLink}">Volver al juego</a>
   </div>
 </body>
 </html>`;
