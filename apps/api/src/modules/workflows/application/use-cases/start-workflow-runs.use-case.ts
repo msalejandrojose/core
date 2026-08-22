@@ -28,6 +28,10 @@ export interface StartWorkflowRunsInput {
   triggerKind: 'event' | 'cron' | 'manual';
   // Descriptor de target (fan-out). Ausente/null ⇒ un único run sin target.
   target?: TargetDescriptor | null;
+  // Prueba sin enviar de verdad: los action handlers que lo respetan
+  // (p.ej. `notify.push`/`notifications.send`) renderizan y validan pero no
+  // despachan. Por defecto `false` — el comportamiento de siempre.
+  isDryRun?: boolean;
 }
 
 // Motor compartido de arranque de runs. Es el único sitio que resuelve targets
@@ -100,6 +104,7 @@ export class StartWorkflowRunsUseCase {
         triggerEventId: event?.id ?? null,
         context,
         currentStepKey: null,
+        isDryRun: input.isDryRun ?? false,
       });
       await this.advance.execute(run.id);
 
