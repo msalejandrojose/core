@@ -40,6 +40,8 @@ export interface UpdateTokensPatch {
 export interface LinkSocialAccountPatch {
   googleId?: string;
   facebookId?: string;
+  playGamesId?: string;
+  gameCenterId?: string;
   avatarUrl?: string | null;
   firstName?: string | null;
   lastName?: string | null;
@@ -53,6 +55,8 @@ export interface UserRepositoryPort {
   findByPasswordResetToken(token: string): Promise<User | null>;
   findByGoogleId(googleId: string): Promise<User | null>;
   findByFacebookId(facebookId: string): Promise<User | null>;
+  findByPlayGamesId(playGamesId: string): Promise<User | null>;
+  findByGameCenterId(gameCenterId: string): Promise<User | null>;
 
   // ── Mutaciones ─────────────────────────────────────────────────────────
   create(user: User): Promise<User>;

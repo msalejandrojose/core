@@ -25,6 +25,8 @@ export class UserMapper {
       row.googleId ?? null,
       row.facebookId ?? null,
       row.avatarUrl ?? null,
+      row.playGamesId ?? null,
+      row.gameCenterId ?? null,
     );
   }
 
@@ -45,6 +47,8 @@ export class UserMapper {
       googleId: user.googleId,
       facebookId: user.facebookId,
       avatarUrl: user.avatarUrl,
+      playGamesId: user.playGamesId,
+      gameCenterId: user.gameCenterId,
       // createdAt / updatedAt los gestiona Prisma (@default / @updatedAt).
     };
   }
