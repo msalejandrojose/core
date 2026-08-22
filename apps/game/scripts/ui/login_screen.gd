@@ -2,9 +2,13 @@ extends CanvasLayer
 
 ## Entrar o crear cuenta contra el IAM de `core`.
 ##
-## Con email y contraseña, o con Google (abre el navegador del sistema y
-## espera a que el jugador complete el consentimiento ahí — Godot no trae
-## WebView ni deep links, así que no hay vuelta directa a la app).
+## Con email y contraseña, con Google (abre el navegador del sistema y espera
+## a que el jugador complete el consentimiento ahí — Godot no trae WebView ni
+## deep links, así que no hay vuelta directa a la app), o con la cuenta
+## nativa de la plataforma (Play Games en Android, Game Center en iOS) —
+## estos dos sí son de un solo toque, sin navegador de por medio, y crean
+## cuenta nueva sin pedir email (ver `Session.login_with_play_games`/
+## `login_with_game_center`).
 
 signal closed()
 
@@ -80,6 +84,12 @@ func _build() -> void:
 	row.add_child(push)
 
 	row.add_child(_button("Entrar con Google", 320, func() -> void: _submit_google()))
+	# Solo uno de los dos aparece, según la plataforma real del dispositivo —
+	# no tiene sentido ofrecer Game Center en Android ni Play Games en iOS.
+	if OS.get_name() == "Android" and PlatformAuth.is_play_games_available():
+		row.add_child(_button("Entrar con Play Games", 320, func() -> void: _submit_play_games()))
+	elif OS.get_name() == "iOS" and PlatformAuth.is_game_center_available():
+		row.add_child(_button("Entrar con Game Center", 320, func() -> void: _submit_game_center()))
 	row.add_child(_button("Crear cuenta", 280, func() -> void: _submit(true)))
 	row.add_child(_button("Entrar", 240, func() -> void: _submit(false)))
 
@@ -149,6 +159,40 @@ func _submit_google() -> void:
 		return
 
 	_say(str(response.get("message", "No se pudo iniciar sesión con Google.")), UiTheme.BAD)
+
+
+func _submit_play_games() -> void:
+	_set_busy(true)
+	_say("Entrando con Play Games…", UiTheme.BONE)
+
+	var response = await Session.login_with_play_games()
+
+	_set_busy(false)
+
+	if response.ok:
+		_say("Listo. Tus tiempos ya se suben.", UiTheme.GOOD)
+		await get_tree().create_timer(0.8).timeout
+		_close()
+		return
+
+	_say(response.message, UiTheme.BAD)
+
+
+func _submit_game_center() -> void:
+	_set_busy(true)
+	_say("Entrando con Game Center…", UiTheme.BONE)
+
+	var response = await Session.login_with_game_center()
+
+	_set_busy(false)
+
+	if response.ok:
+		_say("Listo. Tus tiempos ya se suben.", UiTheme.GOOD)
+		await get_tree().create_timer(0.8).timeout
+		_close()
+		return
+
+	_say(response.message, UiTheme.BAD)
 
 
 func _set_busy(busy: bool) -> void:

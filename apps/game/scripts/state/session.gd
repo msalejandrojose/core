@@ -7,6 +7,8 @@ extends Node
 ## El token se guarda en el dispositivo y se rehidrata al arrancar: nadie va a
 ## escribir su contraseña cada vez que abre un juego de coches.
 
+const ApiResponse := preload("res://scripts/net/api_response.gd")
+
 const PATH := "user://session.cfg"
 
 ## Godot no trae WebView ni deep links: el navegador del sistema es la única
@@ -96,6 +98,34 @@ func login_with_google() -> Dictionary:
 
 	return {"ok": false, "code": "GOOGLE_AUTH_TIMEOUT",
 		"message": "Se agotó el tiempo de espera del login con Google."}
+
+
+## Login nativo con Play Games Services (Android). A diferencia de
+## `login_with_google()` no hace falta navegador ni polling: el SDK nativo da
+## el `serverAuthCode` directamente, así que es tan simple como
+## `login()`/`register()`.
+func login_with_play_games():
+	var code := await PlatformAuth.request_play_games_server_auth_code()
+	if code == "":
+		return ApiResponse.failure(0, "PLATFORM_AUTH_UNAVAILABLE",
+			"No se pudo entrar con Play Games en este dispositivo.")
+
+	var response = await Api.post_json(
+		"/auth/play-games", {"serverAuthCode": code}, false)
+	_adopt(response)
+	return response
+
+
+## Login nativo con Game Center (iOS). Mismo patrón que `login_with_play_games()`.
+func login_with_game_center():
+	var payload := await PlatformAuth.request_game_center_identity_payload()
+	if payload.is_empty():
+		return ApiResponse.failure(0, "PLATFORM_AUTH_UNAVAILABLE",
+			"No se pudo entrar con Game Center en este dispositivo.")
+
+	var response = await Api.post_json("/auth/game-center", payload, false)
+	_adopt(response)
+	return response
 
 
 func logout() -> void:

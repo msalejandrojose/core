@@ -22,6 +22,8 @@ import { GetCurrentUserUseCase } from '../../application/use-cases/get-current-u
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { LoginWithGoogleUseCase } from '../../application/use-cases/login-with-google.use-case';
 import { LoginWithFacebookUseCase } from '../../application/use-cases/login-with-facebook.use-case';
+import { LoginWithPlayGamesUseCase } from '../../application/use-cases/login-with-play-games.use-case';
+import { LoginWithGameCenterUseCase } from '../../application/use-cases/login-with-game-center.use-case';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { VerifyEmailUseCase } from '../../application/use-cases/verify-email.use-case';
 import { RequestPasswordResetUseCase } from '../../application/use-cases/request-password-reset.use-case';
@@ -37,6 +39,8 @@ import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { FacebookLoginDto } from './dto/facebook-login.dto';
+import { PlayGamesLoginDto } from './dto/play-games-login.dto';
+import { GameCenterLoginDto } from './dto/game-center-login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -61,6 +65,8 @@ export class AuthController {
     private readonly login: LoginUseCase,
     private readonly loginWithGoogle: LoginWithGoogleUseCase,
     private readonly loginWithFacebook: LoginWithFacebookUseCase,
+    private readonly loginWithPlayGames: LoginWithPlayGamesUseCase,
+    private readonly loginWithGameCenter: LoginWithGameCenterUseCase,
     private readonly getCurrentUser: GetCurrentUserUseCase,
     private readonly verifyEmail: VerifyEmailUseCase,
     private readonly requestPasswordReset: RequestPasswordResetUseCase,
@@ -129,6 +135,47 @@ export class AuthController {
     const { accessToken, user } = await this.loginWithFacebook.execute(
       dto.accessToken,
     );
+    return { accessToken, user: UserResponseDto.fromUser(user) };
+  }
+
+  @Post('play-games')
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Login/registro con Google Play Games Services. Canjea el serverAuthCode del SDK nativo y devuelve un access token. Sin email real del proveedor: la cuenta nueva nace con un email de relleno.',
+  })
+  @ApiOkResponse({ type: LoginResponseDto })
+  async loginWithPlayGamesAction(
+    @Body() dto: PlayGamesLoginDto,
+  ): Promise<LoginResponseDto> {
+    const { accessToken, user } = await this.loginWithPlayGames.execute(
+      dto.serverAuthCode,
+    );
+    return { accessToken, user: UserResponseDto.fromUser(user) };
+  }
+
+  @Post('game-center')
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Login/registro con Game Center. Verifica la firma de identidad del SDK nativo y devuelve un access token. Sin email real del proveedor: la cuenta nueva nace con un email de relleno.',
+  })
+  @ApiOkResponse({ type: LoginResponseDto })
+  async loginWithGameCenterAction(
+    @Body() dto: GameCenterLoginDto,
+  ): Promise<LoginResponseDto> {
+    const { accessToken, user } = await this.loginWithGameCenter.execute({
+      playerId: dto.playerId,
+      bundleId: dto.bundleId,
+      timestamp: dto.timestamp,
+      signature: dto.signature,
+      salt: dto.salt,
+      publicKeyUrl: dto.publicKeyUrl,
+    });
     return { accessToken, user: UserResponseDto.fromUser(user) };
   }
 

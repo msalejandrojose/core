@@ -7,15 +7,27 @@ import type { SocialProfile } from '../dto/social-profile';
 import { TOKEN_ISSUER, type TokenIssuerPort } from '../ports/token-issuer.port';
 import {
   USER_REPOSITORY,
+  type LinkSocialAccountPatch,
   type UserRepositoryPort,
 } from '../ports/user-repository.port';
 
-export type SocialProvider = 'google' | 'facebook';
+export type SocialProvider = 'google' | 'facebook' | 'play_games' | 'game_center';
 
 export interface ResolveSocialUserResult {
   accessToken: string;
   user: User;
 }
+
+type ProviderIdField = 'googleId' | 'facebookId' | 'playGamesId' | 'gameCenterId';
+
+// Qué campo de `User`/`LinkSocialAccountPatch` guarda el id de cada
+// proveedor — mecánico, mismo valor para los cuatro.
+const PROVIDER_ID_FIELD: Record<SocialProvider, ProviderIdField> = {
+  google: 'googleId',
+  facebook: 'facebookId',
+  play_games: 'playGamesId',
+  game_center: 'gameCenterId',
+};
 
 // Lógica compartida por `LoginWithGoogleUseCase` y `LoginWithFacebookUseCase`
 // una vez el token ya fue verificado por el proveedor correspondiente:
@@ -41,8 +53,7 @@ export class ResolveSocialUserUseCase {
       const byEmail = await this.users.findByEmail(profile.email);
       if (byEmail) {
         user = await this.users.linkSocialAccount(byEmail.id, {
-          [provider === 'google' ? 'googleId' : 'facebookId']:
-            profile.providerId,
+          [PROVIDER_ID_FIELD[provider]]: profile.providerId,
           avatarUrl: profile.avatarUrl ?? byEmail.avatarUrl,
           firstName: byEmail.firstName ?? profile.firstName,
           lastName: byEmail.lastName ?? profile.lastName,
@@ -56,6 +67,9 @@ export class ResolveSocialUserUseCase {
       if (!profile.email) {
         throw new SocialAuthFailedError(provider);
       }
+      const providerFields: Partial<Record<ProviderIdField, string>> = {
+        [PROVIDER_ID_FIELD[provider]]: profile.providerId,
+      };
       user = await this.users.create(
         new User(
           randomUUID(),
@@ -72,9 +86,11 @@ export class ResolveSocialUserUseCase {
           null,
           null,
           null,
-          provider === 'google' ? profile.providerId : null,
-          provider === 'facebook' ? profile.providerId : null,
+          providerFields.googleId ?? null,
+          providerFields.facebookId ?? null,
           profile.avatarUrl,
+          providerFields.playGamesId ?? null,
+          providerFields.gameCenterId ?? null,
         ),
       );
     }
@@ -96,8 +112,15 @@ export class ResolveSocialUserUseCase {
     provider: SocialProvider,
     providerId: string,
   ): Promise<User | null> {
-    return provider === 'google'
-      ? this.users.findByGoogleId(providerId)
-      : this.users.findByFacebookId(providerId);
+    switch (provider) {
+      case 'google':
+        return this.users.findByGoogleId(providerId);
+      case 'facebook':
+        return this.users.findByFacebookId(providerId);
+      case 'play_games':
+        return this.users.findByPlayGamesId(providerId);
+      case 'game_center':
+        return this.users.findByGameCenterId(providerId);
+    }
   }
 }

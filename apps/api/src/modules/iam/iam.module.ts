@@ -8,6 +8,8 @@ import { GetCurrentUserUseCase } from './application/use-cases/get-current-user.
 import { LoginUseCase } from './application/use-cases/login.use-case';
 import { LoginWithGoogleUseCase } from './application/use-cases/login-with-google.use-case';
 import { LoginWithFacebookUseCase } from './application/use-cases/login-with-facebook.use-case';
+import { LoginWithPlayGamesUseCase } from './application/use-cases/login-with-play-games.use-case';
+import { LoginWithGameCenterUseCase } from './application/use-cases/login-with-game-center.use-case';
 import { ResolveSocialUserUseCase } from './application/use-cases/resolve-social-user.use-case';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
 import { SendVerificationEmailUseCase } from './application/use-cases/send-verification-email.use-case';
@@ -59,6 +61,8 @@ import { GOOGLE_TOKEN_VERIFIER } from './application/ports/google-token-verifier
 import { FACEBOOK_TOKEN_VERIFIER } from './application/ports/facebook-token-verifier.port';
 import { GOOGLE_AUTH_CODE_EXCHANGER } from './application/ports/google-auth-code-exchanger.port';
 import { GOOGLE_AUTH_SESSION_REPOSITORY } from './application/ports/google-auth-session-repository.port';
+import { PLAY_GAMES_AUTH_VERIFIER } from './application/ports/play-games-auth-verifier.port';
+import { GAME_CENTER_IDENTITY_VERIFIER } from './application/ports/game-center-identity-verifier.port';
 
 // ===== Adapters =====
 import { Argon2PasswordHasher } from './infrastructure/crypto/argon2-password-hasher';
@@ -70,6 +74,8 @@ import { PrismaUserRepository } from './infrastructure/persistence/prisma-user.r
 import { GoogleTokenVerifier } from './infrastructure/social/google-token-verifier';
 import { FacebookTokenVerifier } from './infrastructure/social/facebook-token-verifier';
 import { GoogleAuthCodeExchanger } from './infrastructure/social/google-auth-code-exchanger';
+import { PlayGamesAuthVerifier } from './infrastructure/social/play-games-auth-verifier';
+import { GameCenterIdentityVerifier } from './infrastructure/social/game-center-identity-verifier';
 import { PrismaGoogleAuthSessionRepository } from './infrastructure/persistence/prisma-google-auth-session.repository';
 
 // ===== HTTP =====
@@ -116,6 +122,8 @@ import { MailerModule } from '../mailer/mailer.module';
     LoginUseCase,
     LoginWithGoogleUseCase,
     LoginWithFacebookUseCase,
+    LoginWithPlayGamesUseCase,
+    LoginWithGameCenterUseCase,
     ResolveSocialUserUseCase,
     GetCurrentUserUseCase,
     SendVerificationEmailUseCase,
@@ -169,6 +177,11 @@ import { MailerModule } from '../mailer/mailer.module';
     { provide: TOKEN_ISSUER, useClass: JwtTokenIssuer },
     { provide: GOOGLE_TOKEN_VERIFIER, useClass: GoogleTokenVerifier },
     { provide: FACEBOOK_TOKEN_VERIFIER, useClass: FacebookTokenVerifier },
+    { provide: PLAY_GAMES_AUTH_VERIFIER, useClass: PlayGamesAuthVerifier },
+    {
+      provide: GAME_CENTER_IDENTITY_VERIFIER,
+      useClass: GameCenterIdentityVerifier,
+    },
     {
       provide: GOOGLE_AUTH_CODE_EXCHANGER,
       useClass: GoogleAuthCodeExchanger,

@@ -232,7 +232,14 @@ model User {
   // ambos vinculados (login con password + social sobre la misma cuenta).
   googleId   String? @unique @map("google_id") @db.VarChar(255)
   facebookId String? @unique @map("facebook_id") @db.VarChar(255)
-  avatarUrl  String? @map("avatar_url") @db.VarChar(1024)
+
+  // Login nativo de plataforma (Play Games Services / Game Center). Mismo
+  // patrón que google/facebook: playerId del proveedor, único y nullable.
+  // Ninguno de los dos da email, así que estas cuentas nacen con un email de
+  // relleno sintetizado por el verificador correspondiente.
+  playGamesId  String? @unique @map("play_games_id") @db.VarChar(255)
+  gameCenterId String? @unique @map("game_center_id") @db.VarChar(255)
+  avatarUrl    String? @map("avatar_url") @db.VarChar(1024)
 
   // Relaciones
   userRoles                 UserUserRole[]             @relation("UserRoles")
