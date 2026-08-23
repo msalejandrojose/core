@@ -23,6 +23,7 @@ import { GetCurrentSeasonUseCase } from '../../application/use-cases/get-current
 import { GetFriendsLeaderboardUseCase } from '../../application/use-cases/get-friends-leaderboard.use-case';
 import { GetGhostUseCase } from '../../application/use-cases/get-ghost.use-case';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
+import { GetMyLeagueStandingUseCase } from '../../application/use-cases/get-my-league-standing.use-case';
 import { GetOnlineRaceUseCase } from '../../application/use-cases/get-online-race.use-case';
 import { GetPersonalBestUseCase } from '../../application/use-cases/get-personal-best.use-case';
 import { GetTrackUseCase } from '../../application/use-cases/get-track.use-case';
@@ -41,6 +42,7 @@ import {
   LeaderboardResponseDto,
 } from './dto/leaderboard.response.dto';
 import { FriendsLeaderboardResponseDto } from './dto/friends-leaderboard.response.dto';
+import { LeagueStandingResponseDto } from './dto/league-standing.response.dto';
 import { OnlineRaceMatchResponseDto } from './dto/online-race-match.response.dto';
 import { OnlineRaceResponseDto } from './dto/online-race.response.dto';
 import { SeasonResponseDto } from './dto/season.response.dto';
@@ -80,6 +82,7 @@ export class RacingController {
     private readonly viewTokens: FileViewTokenService,
     private readonly getWalletBalance: GetWalletBalanceUseCase,
     private readonly creditRewardedAd: CreditRewardedAdUseCase,
+    private readonly getMyLeagueStanding: GetMyLeagueStandingUseCase,
   ) {}
 
   @Get('wallet')
@@ -108,6 +111,22 @@ export class RacingController {
   ): Promise<WalletResponseDto> {
     const wallet = await this.creditRewardedAd.execute(current.sub);
     return WalletResponseDto.fromDomain(wallet);
+  }
+
+  @Get('leagues/me')
+  @ApiOperation({
+    summary: 'Liga y puntos propios en la temporada actual',
+    description:
+      'Bronce/0 si todavía no hay temporada abierta o no se ha puntuado esta vez (TASK-291) — no hace falta darse de alta.',
+  })
+  @ApiOkResponse({ type: LeagueStandingResponseDto })
+  async myLeagueStanding(
+    @CurrentUser() current: AccessTokenPayload,
+  ): Promise<LeagueStandingResponseDto> {
+    const standing = await this.getMyLeagueStanding.execute(current.sub);
+    return standing === null
+      ? LeagueStandingResponseDto.bronzeDefault()
+      : LeagueStandingResponseDto.fromDomain(standing);
   }
 
   @Get('seasons/current')

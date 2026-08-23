@@ -9,6 +9,7 @@ import { generateBotDuration } from '../../domain/generate-bot-duration';
 import { DEFAULT_RATING_WINDOW_BASE_POINTS, matchmakingRatingWindow } from '../../domain/matchmaking-rating-window';
 import { coinRewardForPosition } from '../../domain/racing-coin-rewards';
 import { resolveLiveRaceResult } from '../../domain/resolve-live-race-result';
+import { AwardLeaguePointsUseCase } from '../use-cases/award-league-points.use-case';
 import {
   LAP_TIME_REPOSITORY,
   type LapTimeRepositoryPort,
@@ -162,6 +163,7 @@ export class LiveRaceRoomManager extends EventEmitter {
     private readonly lapTimes: LapTimeRepositoryPort,
     @Inject(RACING_MATCHMAKING_CONFIG_REPOSITORY)
     private readonly matchmakingConfig: RacingMatchmakingConfigRepositoryPort,
+    private readonly awardLeaguePoints: AwardLeaguePointsUseCase,
   ) {
     super();
   }
@@ -523,13 +525,17 @@ export class LiveRaceRoomManager extends EventEmitter {
         if (participant.disconnected || participant.position === null) continue;
         if (botUserIds.has(participant.userId)) continue;
         const reward = coinRewardForPosition(participant.position, amounts);
-        if (!reward) continue;
-        await this.wallets.credit({
-          userId: participant.userId,
-          amount: reward.amount,
-          source: reward.source,
-          liveRaceId: race.id,
-        });
+        if (reward) {
+          await this.wallets.credit({
+            userId: participant.userId,
+            amount: reward.amount,
+            source: reward.source,
+            liveRaceId: race.id,
+          });
+        }
+        // Puntos de liga (TASK-291): igual que en el modo asíncrono, van
+        // aparte de las monedas — el puesto es lo único que importa.
+        await this.awardLeaguePoints.execute(participant.userId, participant.position);
       }
     }
 
