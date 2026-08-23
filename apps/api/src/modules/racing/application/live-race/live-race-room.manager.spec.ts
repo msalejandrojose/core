@@ -24,6 +24,7 @@ import {
   CreditCoinsData,
   RacingWalletRepositoryPort,
 } from '../ports/racing-wallet-repository.port';
+import { AwardLeaguePointsUseCase } from '../use-cases/award-league-points.use-case';
 import {
   COUNTDOWN_MS,
   FILL_TIMEOUT_MS,
@@ -42,6 +43,12 @@ const DEFAULT_AMOUNTS: RacingCoinRewardAmounts = new Map([
 ]);
 
 const MIN_PLAUSIBLE_MS = 8000;
+
+// Las ligas de temporada (TASK-291) no son objeto de esta suite: se
+// comprueban aparte en `award-league-points.use-case.spec.ts`. No-op aquí.
+const fakeAwardLeaguePoints: Partial<AwardLeaguePointsUseCase> = {
+  execute: () => Promise.resolve(),
+};
 
 class FakeLiveRaceRepository implements Partial<LiveRaceRepositoryPort> {
   created: CreateLiveRaceData[] = [];
@@ -172,6 +179,7 @@ describe('LiveRaceRoomManager', () => {
       bots as unknown as RacingBotRepositoryPort,
       lapTimes as unknown as LapTimeRepositoryPort,
       matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+      fakeAwardLeaguePoints as unknown as AwardLeaguePointsUseCase,
     );
   });
 
@@ -243,6 +251,7 @@ describe('LiveRaceRoomManager', () => {
         bots as unknown as RacingBotRepositoryPort,
         lapTimes as unknown as LapTimeRepositoryPort,
         matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+        fakeAwardLeaguePoints as unknown as AwardLeaguePointsUseCase,
       );
     }
 
@@ -305,6 +314,7 @@ describe('LiveRaceRoomManager', () => {
         bots as unknown as RacingBotRepositoryPort,
         lapTimes as unknown as LapTimeRepositoryPort,
         matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+        fakeAwardLeaguePoints as unknown as AwardLeaguePointsUseCase,
       );
       await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
       await manager.join('track-1', 'bob', MIN_PLAUSIBLE_MS);
@@ -332,6 +342,7 @@ describe('LiveRaceRoomManager', () => {
         bots as unknown as RacingBotRepositoryPort,
         lapTimes as unknown as LapTimeRepositoryPort,
         matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+        fakeAwardLeaguePoints as unknown as AwardLeaguePointsUseCase,
       );
     }
 
@@ -346,6 +357,7 @@ describe('LiveRaceRoomManager', () => {
         bots as unknown as RacingBotRepositoryPort,
         lapTimes as unknown as LapTimeRepositoryPort,
         matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+        fakeAwardLeaguePoints as unknown as AwardLeaguePointsUseCase,
       );
 
       const roomA = await manager.join('track-1', 'alice', MIN_PLAUSIBLE_MS);
@@ -381,6 +393,7 @@ describe('LiveRaceRoomManager', () => {
         bots as unknown as RacingBotRepositoryPort,
         lapTimes as unknown as LapTimeRepositoryPort,
         matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+        fakeAwardLeaguePoints as unknown as AwardLeaguePointsUseCase,
       );
 
       const countdown = waitForEvent(manager, LIVE_RACE_EVENTS.countdown);
@@ -407,6 +420,7 @@ describe('LiveRaceRoomManager', () => {
         bots as unknown as RacingBotRepositoryPort,
         lapTimes as unknown as LapTimeRepositoryPort,
         matchmakingConfig as unknown as RacingMatchmakingConfigRepositoryPort,
+        fakeAwardLeaguePoints as unknown as AwardLeaguePointsUseCase,
       );
     }
 

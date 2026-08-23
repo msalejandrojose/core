@@ -266,6 +266,7 @@ model User {
   friendshipsRequested      RacingFriendship[]            @relation("FriendshipRequester")
   friendshipsReceived       RacingFriendship[]            @relation("FriendshipAddressee")
   racingWallet              RacingWallet?
+  racingLeagueStandings     RacingLeagueStanding[]
 
   @@map("user")
 }
@@ -1412,6 +1413,7 @@ model RacingSeason {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   lapTimes LapTime[]
+  leagueStandings RacingLeagueStanding[]
 
   /// Para encontrar la temporada actual y listar por fecha.
   @@index([startsAt])
@@ -2045,6 +2047,65 @@ model RacingMatchmakingConfig {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("racing_matchmaking_config")
+}
+
+/// Las 5 ligas de temporada (TASK-291): ascenso/descenso por umbral
+/// continuo de puntos, no por percentil al cerrar temporada — en cuanto
+/// `RacingLeagueStanding.points` cruza la frontera de `RacingLeagueConfig`,
+/// cambia de liga al instante.
+enum RacingLeagueTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+/// Puntos por posición (solo cuentan carreras con rivales de verdad: en
+/// vivo o asíncronas — vuelta suelta/contrarreloj no puntúan, no hay contra
+/// quién competir) + los 4 umbrales de ascenso, todo en un mismo conjunto
+/// cerrado editable, mismo criterio que `RacingMatchmakingConfig` (mezcla
+/// parámetros de naturaleza distinta en una sola tabla en vez de dos).
+enum RacingLeagueConfigKey {
+  POINTS_FIRST_PLACE
+  POINTS_SECOND_PLACE
+  POINTS_THIRD_PLACE
+  TIER_SILVER_THRESHOLD
+  TIER_GOLD_THRESHOLD
+  TIER_PLATINUM_THRESHOLD
+  TIER_DIAMOND_THRESHOLD
+}
+
+model RacingLeagueConfig {
+  id    String                 @id @default(uuid()) @db.Char(36)
+  key   RacingLeagueConfigKey  @unique
+  value Int
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_league_config")
+}
+
+/// Puntos y liga de UN jugador en UNA temporada. Sin fila = Bronce/0 (se
+/// crea perezosamente en su primera carrera puntuable de la temporada,
+/// mismo criterio que `RacingWallet`) — así el "reinicio por temporada" que
+/// pide TASK-291 sale gratis: cada temporada nueva no tiene ninguna fila
+/// todavía, sin que haga falta tocar el rotador de temporadas (TASK-228).
+model RacingLeagueStanding {
+  userId   String           @map("user_id") @db.Char(36)
+  seasonId String           @map("season_id") @db.Char(36)
+  tier     RacingLeagueTier @default(BRONZE)
+  points   Int              @default(0)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  season RacingSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@id([userId, seasonId])
+  /// Para una futura clasificación por liga dentro de la temporada (fase 2).
+  @@index([seasonId, tier, points])
+  @@map("racing_league_standing")
 }
 
 /// Saldo de monedas de un jugador (TASK-318, economía de TASK-286). Una

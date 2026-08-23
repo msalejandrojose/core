@@ -13,6 +13,7 @@ import {
   validateOnlineRaceParticipants,
 } from '../../domain/validate-online-race-participants';
 import { winStreakLength } from '../../domain/win-streak';
+import { AwardLeaguePointsUseCase } from './award-league-points.use-case';
 import {
   FRIENDSHIP_REPOSITORY,
   type FriendshipRepositoryPort,
@@ -82,6 +83,7 @@ export class SubmitOnlineRaceResultUseCase {
     private readonly friendships: FriendshipRepositoryPort,
     @Inject(RACING_COIN_REWARD_CONFIG_REPOSITORY)
     private readonly rewardConfigs: RacingCoinRewardConfigRepositoryPort,
+    private readonly awardLeaguePoints: AwardLeaguePointsUseCase,
   ) {}
 
   async execute(
@@ -183,6 +185,10 @@ export class SubmitOnlineRaceResultUseCase {
         coinsEarned.push(streakReward);
       }
     }
+
+    // Puntos de liga (TASK-291): independientes de las monedas, se otorgan
+    // por el mero puesto aunque esta posición no traiga bono económico.
+    await this.awardLeaguePoints.execute(input.userId, player.position);
 
     return { race, coinsEarned };
   }

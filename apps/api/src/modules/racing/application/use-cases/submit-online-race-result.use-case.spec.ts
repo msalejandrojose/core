@@ -15,6 +15,7 @@ import {
   RacingWalletRepositoryPort,
 } from '../ports/racing-wallet-repository.port';
 import { TrackRepositoryPort } from '../ports/track-repository.port';
+import { AwardLeaguePointsUseCase } from './award-league-points.use-case';
 import { SubmitOnlineRaceResultUseCase } from './submit-online-race-result.use-case';
 
 const TRACK = new Track('track-1', 'kenney-01', 'Kenney', 4, 8000, true);
@@ -91,6 +92,14 @@ class FakeRacingWalletRepository
   }
 }
 
+// Las ligas de temporada (TASK-291) no son objeto de esta suite: se comprueban
+// aparte en `award-league-points.use-case.spec.ts`. Aquí basta con un no-op.
+class FakeAwardLeaguePointsUseCase implements Partial<AwardLeaguePointsUseCase> {
+  execute(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
 function useCase(
   track: Track | null,
   races = new FakeOnlineRaceRepository(),
@@ -105,6 +114,7 @@ function useCase(
       wallets as unknown as RacingWalletRepositoryPort,
       friendships as unknown as FriendshipRepositoryPort,
       rewardConfigs as unknown as RacingCoinRewardConfigRepositoryPort,
+      new FakeAwardLeaguePointsUseCase() as unknown as AwardLeaguePointsUseCase,
     ),
     races,
     wallets,
