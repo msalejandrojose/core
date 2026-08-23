@@ -26,6 +26,14 @@ signal grand_prix_ended()
 ## partida real con interfaz delante.
 signal lap_finished(duration_ms: int, previous_best_ms: Variant, is_new_record: bool)
 
+## Carrera online asíncrona terminada (TASK-283/287): `response_data` es tal
+## cual lo devuelve `POST .../online-races` (podio con posición/deltaMs de
+## los hasta 3 corredores, y `coinsEarned` con el desglose de bonos). Se
+## emite EN VEZ DE `lap_finished` cuando la vuelta que se acaba de cerrar
+## era una carrera online — la vuelta suelta de siempre sigue emitiendo
+## `lap_finished` igual que antes.
+signal online_race_finished(response_data: Dictionary, previous_best_ms: Variant, is_new_record: bool)
+
 ## Contrarreloj de 3 vueltas (TASK-312): modo nuevo y separado del
 ## contrarreloj de una vuelta — mismo principio que Grand Prix, circuito
 ## propio y resultado propio, sin tocar el leaderboard/fantasma/carrera
@@ -574,6 +582,25 @@ func start_online_race(target: Dictionary, threat: Dictionary) -> void:
 	_on_play_pressed()
 
 
+## Revancha inmediata desde el podio (TASK-287): repite el mismo
+## emparejamiento que "Multijugador Online" del menú
+## (`main_menu.gd::_on_online_pressed`), pero sin pasar por el menú — el
+## podio ya sabe qué circuito toca. Devuelve `false` si no se pudo emparejar
+## (sin red, sesión caducada...), para que quien llama pueda avisar en vez
+## de quedarse con un podio muerto delante.
+func rematch_online_race() -> bool:
+	var response = await RacingApi.match_online_race(record_key())
+	if not response.ok or not (response.data is Dictionary):
+		return false
+
+	var target: Variant = response.data.get("target")
+	var threat: Variant = response.data.get("threat")
+	start_online_race(
+		target if target is Dictionary else {},
+		threat if threat is Dictionary else {})
+	return true
+
+
 ## Arranca una carrera en vivo (TASK-323, tarea 6): `track_slug` es el del
 ## circuito ya emparejado por `OnlineLobbyScreen`/`LiveRaceSocket`, un slug
 ## de servidor siempre — `_resolve_layout` ya sabe pedirlo a `TrackCache` si
@@ -777,7 +804,16 @@ func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 	# tiempo suelto. Sin cola de reintento a propósito: si falla, se pierde
 	# ese resultado histórico, pero el tiempo de vuelta del jugador ya está a
 	# salvo por el camino de siempre.
-	if not _online_target.is_empty() or not _online_threat.is_empty():
+	#
+	# Con `await` (TASK-287): a diferencia del resto de este método, aquí SÍ
+	# hace falta la respuesta — trae el podio y las monedas ganadas, que es
+	# justo lo que necesita el podio de resultado. `was_online_race` se fija
+	# ANTES de `_clear_online_race()` porque esa llamada vacía
+	# `_online_target`/`_online_threat`, la misma condición que se acaba de
+	# comprobar arriba.
+	var was_online_race := not _online_target.is_empty() or not _online_threat.is_empty()
+	var online_race_response: Variant = null
+	if was_online_race:
 		var rivals: Array = []
 		if not _online_target.is_empty():
 			rivals.append({
@@ -791,7 +827,9 @@ func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 				"userId": _online_threat["userId"],
 				"durationMs": _online_threat["durationMs"],
 			})
-		RacingApi.submit_online_race(key, duration_ms, rivals)
+		var response = await RacingApi.submit_online_race(key, duration_ms, rivals)
+		if response.ok and response.data is Dictionary:
+			online_race_response = response.data
 		_clear_online_race()
 
 	# Carrera en vivo (TASK-323, tareas 6-7): esto solo avisa de que YO ya
@@ -804,4 +842,10 @@ func _on_lap_completed(duration_ms: int, splits_ms: Array) -> void:
 		LiveRaceSocket.send_finish(duration_ms)
 
 	if track_id_override.is_empty():
-		lap_finished.emit(duration_ms, previous_best_ms, is_new_record)
+		if online_race_response != null:
+			online_race_finished.emit(online_race_response, previous_best_ms, is_new_record)
+		else:
+			# Sin podio que mostrar (no era carrera online, o la subida
+			# falló): mismo resumen de vuelta suelta de siempre — más vale
+			# eso que dejar al jugador sin ninguna pantalla de resultado.
+			lap_finished.emit(duration_ms, previous_best_ms, is_new_record)

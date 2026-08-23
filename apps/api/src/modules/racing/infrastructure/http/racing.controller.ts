@@ -297,13 +297,13 @@ export class RacingController {
     @Param('slug') slug: string,
     @Body() body: SubmitOnlineRaceResultDto,
   ): Promise<OnlineRaceResponseDto> {
-    const race = await this.submitOnlineRaceResult.execute({
+    const { race, coinsEarned } = await this.submitOnlineRaceResult.execute({
       userId: current.sub,
       trackSlug: slug,
       durationMs: body.durationMs,
       rivals: body.rivals ?? [],
     });
-    return OnlineRaceResponseDto.fromRace(race);
+    return OnlineRaceResponseDto.fromResult(race, coinsEarned);
   }
 
   @Get('online-races/:id')

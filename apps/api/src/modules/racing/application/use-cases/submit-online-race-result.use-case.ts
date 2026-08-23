@@ -6,6 +6,7 @@ import {
   beatFriendCoinReward,
   coinRewardForPosition,
   coinRewardForWinStreak,
+  type RacingCoinReward,
 } from '../../domain/racing-coin-rewards';
 import {
   OnlineRaceParticipantCandidate,
@@ -51,6 +52,14 @@ export interface SubmitOnlineRaceResultInput {
   rivals: OnlineRaceRivalInput[];
 }
 
+export interface SubmitOnlineRaceResultOutput {
+  race: OnlineRace;
+  // Todos los bonos que se acreditaron en ESTA llamada (posición + amigo +
+  // racha, hasta 3 a la vez) — para que el cliente pueda mostrar el
+  // desglose sin tener que releer el wallet (TASK-287).
+  coinsEarned: RacingCoinReward[];
+}
+
 // Registra el resultado de una carrera online ya jugada de principio a fin
 // (TASK-283). NO decide contra quién se corre — eso lo hace el
 // emparejamiento (TASK-284) o el propio cliente al elegir un amigo
@@ -75,7 +84,9 @@ export class SubmitOnlineRaceResultUseCase {
     private readonly rewardConfigs: RacingCoinRewardConfigRepositoryPort,
   ) {}
 
-  async execute(input: SubmitOnlineRaceResultInput): Promise<OnlineRace> {
+  async execute(
+    input: SubmitOnlineRaceResultInput,
+  ): Promise<SubmitOnlineRaceResultOutput> {
     const track = await this.tracks.findBySlug(input.trackSlug);
     if (!track) throw new TrackNotFoundError(input.trackSlug);
 
@@ -109,7 +120,9 @@ export class SubmitOnlineRaceResultUseCase {
     // aquí. Solo el propio jugador cobra: los participantes TARGET/THREAT
     // son fantasmas de otro jugador, no corredores de verdad en esta tanda.
     const player = race.participants.find((p) => p.role === 'PLAYER');
-    if (!player) return race;
+    if (!player) return { race, coinsEarned: [] };
+
+    const coinsEarned: RacingCoinReward[] = [];
 
     // Una sola lectura de los importes configurados para toda la carrera —
     // hasta tres bonos pueden aplicar a la vez (posición + amigo + racha).
@@ -123,6 +136,7 @@ export class SubmitOnlineRaceResultUseCase {
         source: reward.source,
         onlineRaceId: race.id,
       });
+      coinsEarned.push(reward);
     }
 
     // Bono social (TASK-321): un flat único por carrera, aunque el jugador
@@ -143,6 +157,7 @@ export class SubmitOnlineRaceResultUseCase {
             source: friendReward.source,
             onlineRaceId: race.id,
           });
+          coinsEarned.push(friendReward);
         }
       }
     }
@@ -165,9 +180,10 @@ export class SubmitOnlineRaceResultUseCase {
           source: streakReward.source,
           onlineRaceId: race.id,
         });
+        coinsEarned.push(streakReward);
       }
     }
 
-    return race;
+    return { race, coinsEarned };
   }
 }

@@ -58,6 +58,7 @@ func _ready() -> void:
 	_director.countdown_changed.connect(_on_countdown_changed)
 	_director.countdown_finished.connect(_on_countdown_finished)
 	_director.lap_finished.connect(_on_lap_finished)
+	_director.online_race_finished.connect(_on_online_race_finished)
 	_director.time_trial_started.connect(_on_time_trial_started)
 	_director.time_trial_lap_completed.connect(_on_time_trial_lap_completed)
 	_director.time_trial_finished.connect(_on_time_trial_finished)
@@ -151,6 +152,16 @@ func _on_lap_finished(duration_ms: int, previous_best_ms: Variant, is_new_record
 	var screen: CanvasLayer = load("res://scenes/ui/race-result-screen.tscn").instantiate()
 	add_child(screen)
 	screen.show_result(duration_ms, previous_best_ms, is_new_record)
+
+
+## Podio de carrera online asíncrona (TASK-287): mismo hueco que
+## `_on_lap_finished`, pero con el podio de hasta 3 corredores y las
+## monedas ganadas que trae `response_data` (la respuesta de
+## `POST .../online-races`, ver `RaceDirector.online_race_finished`).
+func _on_online_race_finished(response_data: Dictionary, previous_best_ms: Variant, is_new_record: bool) -> void:
+	var screen: CanvasLayer = load("res://scenes/ui/online-race-result-screen.tscn").instantiate()
+	add_child(screen)
+	screen.show_result(response_data, previous_best_ms, is_new_record)
 
 
 ## Contrarreloj de 3 vueltas (TASK-312): el contador de vuelta ocupa el mismo
