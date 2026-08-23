@@ -133,8 +133,8 @@ describe('SubmitOnlineRaceResultUseCase', () => {
       durationMs: 42000,
       rivals: [],
     });
-    expect(result.participants).toHaveLength(1);
-    expect(result.participants[0].role).toBe('PLAYER');
+    expect(result.race.participants).toHaveLength(1);
+    expect(result.race.participants[0].role).toBe('PLAYER');
   });
 
   it('registra la carrera resolviendo el trackId por slug y el podio', async () => {
@@ -147,11 +147,11 @@ describe('SubmitOnlineRaceResultUseCase', () => {
     });
 
     expect(races.lastCreate?.trackId).toBe('track-1');
-    expect(result.participants.map((p) => p.role)).toEqual([
+    expect(result.race.participants.map((p) => p.role)).toEqual([
       'TARGET',
       'PLAYER',
     ]);
-    expect(result.participants.map((p) => p.position)).toEqual([1, 2]);
+    expect(result.race.participants.map((p) => p.position)).toEqual([1, 2]);
   });
 
   it('no hace falta que el cliente declare su propio id: se usa el del token', async () => {
@@ -162,12 +162,12 @@ describe('SubmitOnlineRaceResultUseCase', () => {
       durationMs: 42000,
       rivals: [],
     });
-    expect(result.participants[0].userId).toBe(PLAYER_ID);
+    expect(result.race.participants[0].userId).toBe(PLAYER_ID);
   });
 
   it('acredita 100 monedas al jugador si queda 1º (TASK-318/286)', async () => {
     const { uc, wallets } = useCase(TRACK);
-    await uc.execute({
+    const result = await uc.execute({
       userId: PLAYER_ID,
       trackSlug: 'kenney-01',
       durationMs: 42000,
@@ -181,6 +181,10 @@ describe('SubmitOnlineRaceResultUseCase', () => {
         source: RacingCoinSource.RACE_FIRST_PLACE,
         onlineRaceId: 'race-1',
       },
+    ]);
+    // TASK-287: el cliente necesita el desglose sin releer el wallet.
+    expect(result.coinsEarned).toEqual([
+      { amount: 100, source: RacingCoinSource.RACE_FIRST_PLACE },
     ]);
   });
 
@@ -248,7 +252,7 @@ describe('SubmitOnlineRaceResultUseCase — bono por batir a un amigo (TASK-321)
       new FakeRacingWalletRepository(),
       new FakeFriendshipRepository(friends),
     );
-    await uc.execute({
+    const result = await uc.execute({
       userId: PLAYER_ID,
       trackSlug: 'kenney-01',
       durationMs: 42000,
@@ -261,6 +265,12 @@ describe('SubmitOnlineRaceResultUseCase — bono por batir a un amigo (TASK-321)
       source: RacingCoinSource.BEAT_FRIEND,
       onlineRaceId: 'race-1',
     });
+    // TASK-287: gana (1º) Y le gana a un amigo — dos bonos en la misma
+    // carrera, los dos tienen que verse en el desglose.
+    expect(result.coinsEarned).toEqual([
+      { amount: 100, source: RacingCoinSource.RACE_FIRST_PLACE },
+      { amount: 60, source: RacingCoinSource.BEAT_FRIEND },
+    ]);
   });
 
   it('NO acredita el bono social si el rival vencido no es amigo', async () => {

@@ -55,6 +55,7 @@ func _ready() -> void:
 
 	var timer: LapTimer = main.get_node("LapTimer")
 	var director: RaceDirector = main.get_node("RaceDirector")
+	var race_hud: CanvasLayer = main.get_node("RaceHud")
 	var vehicle: Vehicle = main.get_node("Vehicle")
 	var sphere: RigidBody3D = vehicle.get_node("Sphere")
 
@@ -69,7 +70,7 @@ func _ready() -> void:
 	_test_dos_fantasmas_a_la_vez(director)
 	_test_se_distinguen_objetivo_y_amenaza(director)
 	_test_sin_amenaza_no_aparece_ninguna(director)
-	await _test_al_cruzar_meta_sube_el_resultado(timer, director, sphere)
+	await _test_al_cruzar_meta_sube_el_resultado(timer, director, sphere, race_hud)
 	await _test_sin_red_la_carrera_se_sigue_jugando(timer, director, sphere)
 
 	RaceRecords.clear(key)
@@ -137,8 +138,20 @@ func _reply(peer: StreamPeerTCP, text: String) -> void:
 	if request_line.begins_with("POST") and request_line.find("/online-races ") != -1:
 		_last_request_body = request_body
 
+	# Podio + monedas de ejemplo (TASK-287): jugador 2º, gana al objetivo
+	# (más lento) pero no a la amenaza (más rápida) — así el podio trae los
+	# 3 con posiciones distintas, y coinsEarned trae dos bonos a la vez
+	# (2º puesto + amigo vencido) para probar el desglose.
 	var reply_body := (
-		'{"id":"race-1","trackId":"track-1","createdAt":"2026-01-01T00:00:00.000Z","participants":[]}')
+		'{"id":"race-1","trackId":"track-1","createdAt":"2026-01-01T00:00:00.000Z",' +
+		'"participants":[' +
+		'{"role":"THREAT","userId":"threat-1","durationMs":41000,"position":1,"deltaMs":0},' +
+		'{"role":"PLAYER","userId":"player-1","durationMs":42500,"position":2,"deltaMs":1500},' +
+		'{"role":"TARGET","userId":"target-1","durationMs":43000,"position":3,"deltaMs":2000}' +
+		'],"coinsEarned":[' +
+		'{"amount":60,"source":"RACE_SECOND_PLACE"},' +
+		'{"amount":60,"source":"BEAT_FRIEND"}' +
+		']}')
 	peer.put_data((
 		"HTTP/1.1 201 OK\r\nContent-Type: application/json\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s"
 		% [reply_body.length(), reply_body]).to_utf8_buffer())
@@ -190,7 +203,16 @@ func _test_sin_amenaza_no_aparece_ninguna(director: RaceDirector) -> void:
 	director.start_online_race(_target, _threat)
 
 
-func _test_al_cruzar_meta_sube_el_resultado(timer: LapTimer, director: RaceDirector, sphere: RigidBody3D) -> void:
+func _test_al_cruzar_meta_sube_el_resultado(
+	timer: LapTimer, director: RaceDirector, sphere: RigidBody3D, race_hud: CanvasLayer
+) -> void:
+	var online_events: Array = []
+	var lap_events: Array = []
+	director.online_race_finished.connect(func(data, prev, is_record):
+		online_events.append([data, prev, is_record]))
+	director.lap_finished.connect(func(d, prev, is_record):
+		lap_events.append([d, prev, is_record]))
+
 	timer.start()
 	timer.elapsed_ms = 0
 	sphere.position = Vector3.ZERO
@@ -217,6 +239,21 @@ func _test_al_cruzar_meta_sube_el_resultado(timer: LapTimer, director: RaceDirec
 		"tras subir, la carrera online se da por terminada (amenaza)")
 	_check(not director._ghost_target.visible, true,
 		"y los fantasmas rivales se ocultan")
+
+	# TASK-287: una carrera online emite `online_race_finished` con el podio
+	# y las monedas — NUNCA el `lap_finished` genérico de vuelta suelta.
+	_check(online_events.size(), 1, "emite online_race_finished con la respuesta del servidor")
+	_check(lap_events.size(), 0, "y NO emite lap_finished (ese es solo para vuelta suelta)")
+
+	var response_data: Dictionary = online_events[0][0]
+	var coins: Array = response_data.get("coinsEarned", [])
+	_check(coins.size(), 2, "el desglose de monedas llega completo hasta la señal")
+
+	var screen := _find_online_race_result_screen(race_hud)
+	_check(screen != null, true, "el HUD instancia OnlineRaceResultScreen, no la genérica")
+	if screen != null:
+		screen.queue_free()
+		await get_tree().process_frame
 
 
 func _test_sin_red_la_carrera_se_sigue_jugando(timer: LapTimer, director: RaceDirector, sphere: RigidBody3D) -> void:
@@ -248,6 +285,19 @@ func _test_sin_red_la_carrera_se_sigue_jugando(timer: LapTimer, director: RaceDi
 
 
 # --- Utilidades ---------------------------------------------------------------
+
+## Recursivo y no un simple `get_children()`: igual que en `race_result_test.gd`,
+## el nodo "RaceHud" de `main.tscn` es una instancia de sub-escena.
+func _find_online_race_result_screen(root: Node) -> Node:
+	var script: Script = root.get_script()
+	if script != null and script.resource_path.ends_with("online_race_result_screen.gd"):
+		return root
+	for child in root.get_children():
+		var found := _find_online_race_result_screen(child)
+		if found != null:
+			return found
+	return null
+
 
 func _settle() -> void:
 	for i in 60:
