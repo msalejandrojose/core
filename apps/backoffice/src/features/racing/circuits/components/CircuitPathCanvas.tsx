@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TERRAIN_LABELS, type TrackCellRow, type TrackTheme } from '../../types';
-import { validateTrackPath } from '../validate-track-path';
+import { validateCircuitPath } from '../validate-circuit-path';
 
 type Terrain = NonNullable<TrackCellRow['terrain']>;
 
@@ -62,7 +62,7 @@ const THEME_GRID_LINE: Record<TrackTheme, string> = {
   SNOW: 'stroke-sky-200',
 };
 
-interface TrackPathCanvasProps {
+interface CircuitPathCanvasProps {
   path: TrackCellRow[];
   onChange: (path: TrackCellRow[]) => void;
   theme: TrackTheme;
@@ -72,13 +72,13 @@ interface TrackPathCanvasProps {
 // ortogonales y sin repetir celda se garantizan POR CONSTRUCCIÓN: solo se
 // puede clicar una celda vacía adyacente a la última para AÑADIRLA — nunca
 // una diagonal, un salto o una ya usada. Lo único que puede fallar al cerrar
-// el bucle es que la celda de salida no quede en recta (`validateTrackPath`
+// el bucle es que la celda de salida no quede en recta (`validateCircuitPath`
 // lo detecta igual que el dominio del servidor).
 //
 // Pintar terreno (TASK-272) no es un paso aparte: clicar una celda que YA
 // está en el trazado avanza su terreno al siguiente del ciclo (asfalto →
 // hielo → barro → agua → asfalto), en vez de añadirla de nuevo.
-export function TrackPathCanvas({ path, onChange, theme }: TrackPathCanvasProps) {
+export function CircuitPathCanvas({ path, onChange, theme }: CircuitPathCanvasProps) {
   const used = useMemo(() => new Set(path.map(cellKey)), [path]);
 
   const candidates = useMemo(() => {
@@ -91,7 +91,7 @@ export function TrackPathCanvas({ path, onChange, theme }: TrackPathCanvasProps)
     );
   }, [path, used]);
 
-  const validation = validateTrackPath(path);
+  const validation = validateCircuitPath(path);
   const status = describeDrawingState(path, validation);
 
   function handleCellClick(cell: { x: number; y: number }) {
@@ -269,7 +269,7 @@ export function TrackPathCanvas({ path, onChange, theme }: TrackPathCanvasProps)
 
 function describeDrawingState(
   path: TrackCellRow[],
-  validation: ReturnType<typeof validateTrackPath>,
+  validation: ReturnType<typeof validateCircuitPath>,
 ): string {
   if (path.length === 0) return 'Haz clic en una celda para empezar a dibujar.';
   if (path.length < 4) {

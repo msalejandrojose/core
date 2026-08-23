@@ -1,25 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  ArrayMinSize,
-  IsArray,
-  IsBoolean,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsPositive,
-  IsString,
-  IsUUID,
-  Min,
-  ValidateIf,
-  ValidateNested,
-} from 'class-validator';
-import { TrackTheme } from '../../../domain/entities/track.entity';
-import { TrackCellDto } from './track-cell.dto';
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
-// Sin `slug`: no es editable (ver comentario en AdminUpdateTrackUseCase).
-// `isActive` vive aquí también: activar/desactivar es un PATCH más, no un
-// endpoint aparte (TASK-242, criterio de done).
+// Sin `slug` (no editable) ni geometría (`path`/`theme`/`grip`/`imageId`,
+// TASK-336): eso vive en el circuito, se edita vía `UpdateCircuitDto`.
+// `isActive` sigue aquí: activar/desactivar ESTA variante es un PATCH más,
+// no un endpoint aparte (TASK-242, criterio de done).
 export class UpdateTrackDto {
   @ApiPropertyOptional()
   @IsOptional()
@@ -38,40 +23,10 @@ export class UpdateTrackDto {
   @Min(1)
   minPlausibleMs?: number;
 
-  @ApiPropertyOptional({ type: [TrackCellDto] })
-  @IsOptional()
-  @IsArray()
-  @ArrayMinSize(4)
-  @ValidateNested({ each: true })
-  @Type(() => TrackCellDto)
-  path?: TrackCellDto[];
-
-  @ApiPropertyOptional({ enum: TrackTheme })
-  @IsOptional()
-  @IsEnum(TrackTheme)
-  theme?: TrackTheme;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsPositive()
-  grip?: number;
-
   @ApiPropertyOptional({
-    description: 'Activar/desactivar el circuito sin perder su histórico.',
+    description: 'Activar/desactivar esta variante sin perder su histórico.',
   })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
-
-  @ApiPropertyOptional({
-    type: String,
-    format: 'uuid',
-    nullable: true,
-    description:
-      'Id de un fichero ya subido (módulo storage) para la miniatura del circuito. `null` la quita.',
-  })
-  @IsOptional()
-  @ValidateIf((_o, v) => v !== null)
-  @IsUUID()
-  imageId?: string | null;
 }

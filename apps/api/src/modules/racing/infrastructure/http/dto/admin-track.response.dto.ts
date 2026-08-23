@@ -6,8 +6,11 @@ import { TrackCellDto } from './track-cell.dto';
 // circuito completo: es el que consume el editor del backoffice.
 export class AdminTrackResponseDto {
   @ApiProperty() id!: string;
-  @ApiProperty({ example: 'kenney-01' }) slug!: string;
-  @ApiProperty({ example: 'Kenney' }) name!: string;
+  @ApiProperty({ example: 'kenney-01-150cc-f1' }) slug!: string;
+  @ApiProperty({ example: 'Kenney · 150cc · F1' }) name!: string;
+  @ApiProperty() circuitId!: string;
+  @ApiProperty({ example: 'kenney-01' }) circuitSlug!: string;
+  @ApiProperty({ example: 'Kenney' }) circuitName!: string;
   @ApiProperty() sectorCount!: number;
   @ApiProperty() minPlausibleMs!: number;
   @ApiProperty({ type: [TrackCellDto] }) path!: TrackCellDto[];
@@ -29,6 +32,9 @@ export class AdminTrackResponseDto {
     dto.id = track.id;
     dto.slug = track.slug;
     dto.name = track.name;
+    dto.circuitId = track.circuitId;
+    dto.circuitSlug = track.circuitSlug;
+    dto.circuitName = track.circuitName;
     dto.sectorCount = track.sectorCount;
     dto.minPlausibleMs = track.minPlausibleMs;
     dto.path = track.path;

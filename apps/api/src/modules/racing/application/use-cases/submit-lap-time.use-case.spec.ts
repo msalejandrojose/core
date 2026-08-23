@@ -3,7 +3,7 @@ import { GhostSnapshot } from '../../domain/entities/ghost-snapshot';
 import { LapTime } from '../../domain/entities/lap-time.entity';
 import { RacingCoinSource } from '../../domain/entities/racing-wallet.entity';
 import { Season } from '../../domain/entities/season.entity';
-import { Track } from '../../domain/entities/track.entity';
+import { Track, TrackTheme } from '../../domain/entities/track.entity';
 import { RacingCoinRewardAmounts } from '../../domain/racing-coin-rewards';
 import {
   CreateLapTimeData,
@@ -22,7 +22,21 @@ const DEFAULT_AMOUNTS: RacingCoinRewardAmounts = new Map([
   [RacingCoinRewardKey.PERSONAL_BEST, 50],
 ]);
 
-const TRACK = new Track('track-1', 'kenney-01', 'Kenney', 4, 8000, true);
+const TRACK = new Track(
+  'track-1',
+  'kenney-01',
+  'Kenney',
+  'circuit-1',
+  4,
+  8000,
+  true,
+  [],
+  TrackTheme.MEADOW,
+  1.0,
+  null,
+  'kenney-01',
+  'Kenney',
+);
 
 const SNAPSHOTS: GhostSnapshot[] = [
   { t: 0, pos: { x: 0, y: 0, z: 0 }, yaw: 0 },

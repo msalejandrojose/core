@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Newspaper,
   Play,
+  Route,
   Send,
   Settings,
   Shield,
@@ -48,6 +49,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Webhook,
   Flag,
   MapPin,
+  Route,
   Wrench,
   BarChart3,
   // Añadir según se creen secciones nuevas.

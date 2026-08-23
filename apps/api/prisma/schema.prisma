@@ -242,8 +242,8 @@ model User {
   avatarUrl    String? @map("avatar_url") @db.VarChar(1024)
 
   // Relaciones
-  userRoles                 UserUserRole[]             @relation("UserRoles")
-  assignedRolesByUser       UserUserRole[]             @relation("AssignedBy")
+  userRoles                 UserUserRole[]                @relation("UserRoles")
+  assignedRolesByUser       UserUserRole[]                @relation("AssignedBy")
   userApiSectionPermissions UserApiSectionPermission[]
   storedFiles               StoredFile[]
   posts                     Post[]
@@ -1326,22 +1326,90 @@ enum TrackTheme {
   SNOW
 }
 
-/// Circuito jugable.
-///
-/// Cada SENTIDO es una fila distinta ("kenney-01" y "kenney-01-rev"): una
-/// vuelta al revés no es comparable con una normal, así que son leaderboards
-/// separados. Modelarlo como `Track` hace que la separación sea estructural,
-/// en vez de depender de que cada consulta se acuerde de filtrar por sentido.
-///
-/// La geometría (`path`, `theme`, `grip`) es la misma fila que ancla los
-/// tiempos: antes solo vivía en el catálogo del cliente
-/// (`apps/game/scripts/track/track_catalog.gd`), pero un circuito nacido en
-/// el servidor (backoffice) no tiene catálogo de cliente del que partir.
+/// Circuito base (p.ej. "Nevado"): geometría y ambientación, compartidas por
+/// todas sus variantes jugables (`Track`). Antes esto vivía duplicado en
+/// cada una de las ~18 filas de `Track` de un mismo circuito (2 sentidos × 3
+/// cilindradas × 3 arquetipos) — aquí vive una sola vez.
+model RacingCircuit {
+  id   String @id @default(uuid()) @db.Char(36)
+  slug String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  /// Checkpoints intermedios del trazado, sin contar la meta — de aquí sale
+  /// `Track.sectorCount = checkpoints + 1` para cada variante.
+  checkpoints Int @map("checkpoints")
+
+  /// Celdas del trazado en orden de recorrido HACIA ADELANTE, como
+  /// `TrackCatalog.Layout.path`. El sentido inverso reutiliza esta misma
+  /// lista — es la misma pista recorrida al revés, no otra geometría.
+  path Json
+
+  /// Tema visual del circuito entero. Cuando el terreno de sección avance
+  /// (TASK-271), esto pasa a ser el valor por defecto de las celdas que no
+  /// tengan un terreno propio pintado encima, no se sustituye por ello.
+  theme TrackTheme @default(MEADOW)
+
+  /// Agarre de la superficie: 1.0 asfalto seco. Mismo eje que
+  /// `TrackCatalog.Layout.grip` y `Vehicle.grip` en el cliente.
+  grip Float @default(1.0)
+
+  /// FK suave a StoredFile (módulo storage) — miniatura del circuito. Sin
+  /// `@relation`, mismo patrón que `Post.coverImageId`.
+  imageId String? @map("image_id") @db.Char(36)
+
+  /// Interruptor manual del admin: desactivar un circuito roto, independiente
+  /// de si le toca o no estar en la rotación de hoy.
+  isActive Boolean @default(true) @map("is_active")
+
+  /// Si está entre los circuitos destacados HOY — lo escribe el rotador
+  /// diario (`AutoRotateCircuitsUseCase`), no el admin a mano. Por defecto
+  /// `true` para que un circuito recién creado sea visible desde ya, hasta
+  /// que la primera rotación programada decida lo contrario.
+  isInRotation Boolean @default(true) @map("is_in_rotation")
+
+  /// Última vez que ENTRÓ en la rotación — de aquí sale si "hoy" ya tuvo su
+  /// rotación o toca recalcular (ver `circuitRotationNeedsRotation`).
+  rotatedAt DateTime? @map("rotated_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tracks Track[]
+
+  @@index([isActive, isInRotation])
+  @@map("racing_circuit")
+}
+
+enum RacingCircuitRotationConfigKey {
+  CIRCUITS_PER_DAY
+}
+
+/// Conjunto cerrado de parámetros de la rotación diaria de circuitos —
+/// mismo patrón que `RacingLeagueConfig`/`RacingMatchmakingConfig`: sin
+/// create/delete desde el backoffice, solo ajustar el valor.
+model RacingCircuitRotationConfig {
+  id    String                         @id @default(uuid()) @db.Char(36)
+  key   RacingCircuitRotationConfigKey @unique
+  value Int
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_circuit_rotation_config")
+}
+
+/// Variante jugable de un `RacingCircuit`: un sentido de marcha (normal o
+/// "-rev") × una cilindrada × un arquetipo de vehículo. Cada combinación es
+/// su propio leaderboard y su propio suelo de plausibilidad — un 50cc 4x4 y
+/// un 150cc F1 no son comparables (TASK-233) — así que necesitan filas
+/// separadas aunque compartan el mismo circuito base.
 model Track {
   id   String @id @default(uuid()) @db.Char(36)
   /// Coincide con el id del catálogo del cliente, con sufijo "-rev" en inverso.
   slug String @unique @db.VarChar(64)
   name String @db.VarChar(120)
+
+  circuitId String        @map("circuit_id") @db.Char(36)
+  circuit   RacingCircuit @relation(fields: [circuitId], references: [id], onDelete: Cascade)
 
   /// Nº de SECTORES de la vuelta = checkpoints intermedios + la meta. Es
   /// también la longitud que debe tener `splitsMs`. En el cliente es
@@ -1353,27 +1421,9 @@ model Track {
   /// más barata que existe contra el manipulador casual.
   minPlausibleMs Int @map("min_plausible_ms")
 
-  /// Celdas del trazado en orden de recorrido HACIA ADELANTE, como
-  /// `TrackCatalog.Layout.path`: `[{"x":0,"y":0},{"x":0,"y":1},...]`. El
-  /// sentido inverso reutiliza esta misma lista — es la misma pista recorrida
-  /// al revés, no otra geometría — así que no se duplica aquí.
-  path Json
-
-  /// Tema visual del circuito entero. Cuando el terreno de sección avance
-  /// (TASK-271), esto pasa a ser el valor por defecto de las celdas que no
-  /// tengan un terreno propio pintado encima, no se sustituye por ello.
-  theme TrackTheme @default(MEADOW)
-
-  /// Agarre de la superficie: 1.0 asfalto seco. Por debajo, el coche tarda más
-  /// en girar, en acelerar y sobre todo en frenar. Mismo eje que
-  /// `TrackCatalog.Layout.grip` y `Vehicle.grip` en el cliente.
-  grip Float @default(1.0)
-
-  /// FK suave a StoredFile (módulo storage) — miniatura del circuito, mostrada
-  /// en el backoffice y en la selección de circuito del cliente. Sin
-  /// `@relation`, mismo patrón que `Post.coverImageId`.
-  imageId String? @map("image_id") @db.Char(36)
-
+  /// Interruptor manual de ESTA variante concreta — independiente del
+  /// circuito: permite desactivar solo, p.ej., la combinación 150cc-F1 sin
+  /// tocar el resto.
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1385,6 +1435,7 @@ model Track {
   liveRaces             RacingLiveRace[]
 
   @@index([isActive])
+  @@index([circuitId])
   @@map("racing_track")
 }
 
@@ -1412,7 +1463,7 @@ model RacingSeason {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  lapTimes LapTime[]
+  lapTimes        LapTime[]
   leagueStandings RacingLeagueStanding[]
 
   /// Para encontrar la temporada actual y listar por fecha.
@@ -1470,11 +1521,11 @@ model LapTime {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  track  Track         @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track             Track                   @relation(fields: [trackId], references: [id], onDelete: Cascade)
   /// SetNull y no Cascade: borrar una temporada no puede llevarse por delante
   /// tiempos de vuelta de verdad — la fila se queda, solo pierde la etiqueta.
-  season RacingSeason? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  season            RacingSeason?           @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   coinLedgerEntries RacingCoinLedgerEntry[]
 
   /// El leaderboard consulta por circuito ordenando por tiempo.
@@ -1534,8 +1585,8 @@ model CarArchetype {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  playerOwnerships PlayerCarArchetype[]
-  loadouts         PlayerCarLoadout[]
+  playerOwnerships  PlayerCarArchetype[]
+  loadouts          PlayerCarLoadout[]
   coinLedgerEntries RacingCoinLedgerEntry[]
 
   @@index([isActive])
@@ -1566,10 +1617,10 @@ model CarPart {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  playerOwnerships PlayerCarPart[]
-  loadoutTires     PlayerCarLoadout[] @relation("LoadoutTires")
-  loadoutWing      PlayerCarLoadout[] @relation("LoadoutWing")
-  loadoutChassis   PlayerCarLoadout[] @relation("LoadoutChassis")
+  playerOwnerships  PlayerCarPart[]
+  loadoutTires      PlayerCarLoadout[]      @relation("LoadoutTires")
+  loadoutWing       PlayerCarLoadout[]      @relation("LoadoutWing")
+  loadoutChassis    PlayerCarLoadout[]      @relation("LoadoutChassis")
   coinLedgerEntries RacingCoinLedgerEntry[]
 
   @@index([category, isActive])
@@ -1637,8 +1688,8 @@ model CarSkin {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  playerOwnerships PlayerCarSkin[]
-  loadouts         PlayerCarLoadout[]
+  playerOwnerships  PlayerCarSkin[]
+  loadouts          PlayerCarLoadout[]
   coinLedgerEntries RacingCoinLedgerEntry[]
 
   @@index([isActive])
@@ -1844,9 +1895,9 @@ model RacingOnlineRace {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  user         User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  track        Track                         @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  participants RacingOnlineRaceParticipant[]
+  user              User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track             Track                         @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  participants      RacingOnlineRaceParticipant[]
   coinLedgerEntries RacingCoinLedgerEntry[]
 
   /// El historial de carreras online de un jugador, más recientes primero.
@@ -1866,7 +1917,7 @@ model RacingOnlineRaceParticipant {
   /// De quién es este resultado: el propio jugador en el papel PLAYER, o el
   /// rival cuyo fantasma se usó en TARGET/THREAT (puede coincidir con el
   /// jugador si no había rival mejor y se corrió contra su propio récord).
-  userId String @map("user_id") @db.Char(36)
+  userId String                          @map("user_id") @db.Char(36)
 
   durationMs Int @map("duration_ms")
   /// 1, 2 o 3 — puesto en ESTA carrera, no en el leaderboard general del circuito.
@@ -1925,10 +1976,10 @@ model RacingLiveRaceParticipant {
   raceId String @map("race_id") @db.Char(36)
   userId String @map("user_id") @db.Char(36)
 
-  durationMs    Int?    @map("duration_ms")
-  position      Int?
-  deltaMs       Int?    @map("delta_ms")
-  disconnected  Boolean @default(false)
+  durationMs   Int?    @map("duration_ms")
+  position     Int?
+  deltaMs      Int?    @map("delta_ms")
+  disconnected Boolean @default(false)
 
   race RacingLiveRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
   user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -2077,8 +2128,8 @@ enum RacingLeagueConfigKey {
 }
 
 model RacingLeagueConfig {
-  id    String                 @id @default(uuid()) @db.Char(36)
-  key   RacingLeagueConfigKey  @unique
+  id    String                @id @default(uuid()) @db.Char(36)
+  key   RacingLeagueConfigKey @unique
   value Int
 
   updatedAt DateTime @updatedAt @map("updated_at")

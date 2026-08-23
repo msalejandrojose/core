@@ -1,9 +1,6 @@
-import { Plus } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { DataTable } from '@/components/data-table/DataTable';
 import { PageHeader } from '@/components/PageHeader';
-import { Button } from '@/components/ui/button';
 import type { TrackRow } from '../types';
 import { columns } from './columns';
 import { useTracks } from './hooks/use-tracks';
@@ -25,16 +22,8 @@ export function TracksPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Circuitos"
-        description="Circuitos de racing, activos e inactivos, con su geometría y físicas."
-        actions={
-          <Button asChild>
-            <Link to="/racing/tracks/new">
-              <Plus size={16} />
-              Nuevo circuito
-            </Link>
-          </Button>
-        }
+        title="Variantes"
+        description="Variantes jugables de cada circuito (sentido, cilindrada, arquetipo), activas e inactivas. El trazado, tema, agarre e imagen se editan desde el circuito base en Circuitos."
       />
       <DataTable
         data={rows}
@@ -54,7 +43,7 @@ export function TracksPage() {
           setPage(1);
         }}
         searchPlaceholder="Buscar por slug o nombre…"
-        emptyMessage="No hay circuitos"
+        emptyMessage="No hay variantes"
       />
     </div>
   );

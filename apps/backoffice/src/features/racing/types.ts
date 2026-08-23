@@ -6,19 +6,50 @@ export interface TrackCellRow {
   terrain?: 'ASPHALT' | 'ICE' | 'MUD' | 'WATER';
 }
 
+// Variante jugable (sentido × cilindrada × arquetipo) de un `CircuitRow` —
+// el trazado/tema/agarre/imagen viven en el circuito, no aquí (TASK-336).
 export interface TrackRow {
   id: string;
   slug: string;
   name: string;
+  circuitId: string;
+  circuitSlug: string;
+  circuitName: string;
   sectorCount: number;
   minPlausibleMs: number;
+  isActive: boolean;
+}
+
+// Circuito base (Nevado, Chicane...) — agrupa varias `TrackRow` (TASK-336).
+export interface CircuitRow {
+  id: string;
+  slug: string;
+  name: string;
+  checkpoints: number;
   path: TrackCellRow[];
   theme: TrackTheme;
   grip: number;
   isActive: boolean;
+  /** Si está entre los circuitos destacados HOY (lo decide el rotador diario). */
+  isInRotation: boolean;
+  rotatedAt: string | null;
   imageId: string | null;
-  /** Ruta relativa (`/files/view?token=...`) — ver `resolveTrackImageUrl()`. */
+  /** Ruta relativa (`/files/view?token=...`) — ver `resolveCircuitImageUrl()`. */
   imageUrl: string | null;
+}
+
+export type RacingCircuitRotationConfigKey = 'CIRCUITS_PER_DAY';
+
+export const CIRCUIT_ROTATION_CONFIG_KEY_LABELS: Record<
+  RacingCircuitRotationConfigKey,
+  string
+> = {
+  CIRCUITS_PER_DAY: 'Circuitos destacados por día',
+};
+
+export interface CircuitRotationConfigRow {
+  key: RacingCircuitRotationConfigKey;
+  value: number;
 }
 
 export const TRACK_THEME_LABELS: Record<TrackTheme, string> = {

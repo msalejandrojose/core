@@ -2,18 +2,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/lib/toast';
 import { apiClient } from '@/api/client';
 import { getApiErrorMessage } from '@/lib/api-error';
-import type { TrackCellRow, TrackTheme } from '../../types';
 
+// Sin trazado/tema/agarre/imagen (TASK-336): eso vive en el circuito padre,
+// se edita vía `useUpdateCircuit`.
 export interface UpdateTrackInput {
   name?: string;
   sectorCount?: number;
   minPlausibleMs?: number;
-  path?: TrackCellRow[];
-  theme?: TrackTheme;
-  grip?: number;
   isActive?: boolean;
-  /** `null` limpia la imagen; `undefined` la deja tal cual. */
-  imageId?: string | null;
 }
 
 const KEY = ['racing-tracks'];
@@ -34,12 +30,11 @@ export function useUpdateTrack(
     },
     onSuccess() {
       qc.invalidateQueries({ queryKey: KEY });
-      qc.invalidateQueries({ queryKey: ['racing-track', id] });
-      toast.success('Circuito actualizado');
+      toast.success('Variante actualizada');
       onSuccess?.();
     },
     onError(error) {
-      toast.error(getApiErrorMessage(error, 'Error al actualizar el circuito'));
+      toast.error(getApiErrorMessage(error, 'Error al actualizar la variante'));
     },
   });
 }
