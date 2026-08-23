@@ -1,9 +1,23 @@
-import { Track } from './entities/track.entity';
+import { Track, TrackTheme } from './entities/track.entity';
 import { LapSubmission, validateLap } from './lap-validation';
 
 // Circuito de referencia: 4 sectores y un mínimo físico de 9,2 s, que son los
 // valores reales del primer circuito sembrado.
-const TRACK = new Track('t1', 'kenney-01', 'Kenney', 4, 9220, true);
+const TRACK = new Track(
+  't1',
+  'kenney-01',
+  'Kenney',
+  'circuit-1',
+  4,
+  9220,
+  true,
+  [],
+  TrackTheme.MEADOW,
+  1.0,
+  null,
+  'kenney-01',
+  'Kenney',
+);
 
 const NOW = new Date('2026-08-12T20:00:00.000Z');
 

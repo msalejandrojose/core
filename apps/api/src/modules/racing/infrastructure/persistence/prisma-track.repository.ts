@@ -5,7 +5,6 @@ import { CursorCodec, CursorPage } from '../../../../shared/pagination';
 import { PaginatedResult } from '../../../../shared/types/paginated-result';
 import {
   AdminListTracksOptions,
-  CreateTrackData,
   ListTracksOptions,
   TrackRepositoryPort,
   UpdateTrackPatch,
@@ -13,17 +12,33 @@ import {
 import { Track } from '../../domain/entities/track.entity';
 import { toTrackDomain } from '../mappers/track.mapper';
 
+const WITH_CIRCUIT = { circuit: true } as const;
+
 @Injectable()
 export class PrismaTrackRepository implements TrackRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async findBySlug(slug: string): Promise<Track | null> {
-    const row = await this.prisma.track.findUnique({ where: { slug } });
+    const row = await this.prisma.track.findUnique({
+      where: { slug },
+      include: WITH_CIRCUIT,
+    });
     return row === null ? null : toTrackDomain(row);
   }
 
   async findById(id: string): Promise<Track | null> {
-    const row = await this.prisma.track.findUnique({ where: { id } });
+    const row = await this.prisma.track.findUnique({
+      where: { id },
+      include: WITH_CIRCUIT,
+    });
+    return row === null ? null : toTrackDomain(row);
+  }
+
+  async findActiveBySlug(slug: string): Promise<Track | null> {
+    const row = await this.prisma.track.findFirst({
+      where: { slug, isActive: true, circuit: { isActive: true, isInRotation: true } },
+      include: WITH_CIRCUIT,
+    });
     return row === null ? null : toTrackDomain(row);
   }
 
@@ -47,6 +62,7 @@ export class PrismaTrackRepository implements TrackRepositoryPort {
     const [rows, total] = await Promise.all([
       this.prisma.track.findMany({
         where,
+        include: WITH_CIRCUIT,
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         take: opts.limit,
         skip: (opts.page - 1) * opts.limit,
@@ -57,23 +73,6 @@ export class PrismaTrackRepository implements TrackRepositoryPort {
     return { items: rows.map(toTrackDomain), total };
   }
 
-  async create(data: CreateTrackData): Promise<Track> {
-    const row = await this.prisma.track.create({
-      data: {
-        slug: data.slug,
-        name: data.name,
-        sectorCount: data.sectorCount,
-        minPlausibleMs: data.minPlausibleMs,
-        path: data.path as unknown as Prisma.InputJsonValue,
-        theme: data.theme,
-        grip: data.grip,
-        isActive: data.isActive,
-        imageId: data.imageId ?? null,
-      },
-    });
-    return toTrackDomain(row);
-  }
-
   async update(id: string, patch: UpdateTrackPatch): Promise<Track> {
     const data: Prisma.TrackUncheckedUpdateInput = {};
     if (patch.name !== undefined) data.name = patch.name;
@@ -81,25 +80,28 @@ export class PrismaTrackRepository implements TrackRepositoryPort {
     if (patch.minPlausibleMs !== undefined) {
       data.minPlausibleMs = patch.minPlausibleMs;
     }
-    if (patch.path !== undefined) {
-      data.path = patch.path as unknown as Prisma.InputJsonValue;
-    }
-    if (patch.theme !== undefined) data.theme = patch.theme;
-    if (patch.grip !== undefined) data.grip = patch.grip;
     if (patch.isActive !== undefined) data.isActive = patch.isActive;
-    if (patch.imageId !== undefined) data.imageId = patch.imageId;
 
-    const row = await this.prisma.track.update({ where: { id }, data });
+    const row = await this.prisma.track.update({
+      where: { id },
+      data,
+      include: WITH_CIRCUIT,
+    });
     return toTrackDomain(row);
   }
 
   async listActive(opts: ListTracksOptions): Promise<CursorPage<Track>> {
+    const activeFilter: Prisma.TrackWhereInput = {
+      isActive: true,
+      circuit: { isActive: true, isInRotation: true },
+    };
     const where: Prisma.TrackWhereInput = opts.cursor
-      ? { AND: [{ isActive: true }, this.cursorWhere(opts.cursor)] }
-      : { isActive: true };
+      ? { AND: [activeFilter, this.cursorWhere(opts.cursor)] }
+      : activeFilter;
 
     const rows = await this.prisma.track.findMany({
       where,
+      include: WITH_CIRCUIT,
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       take: opts.limit + 1,
     });

@@ -25,23 +25,16 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/lib/toast';
 import { uploadFormFile } from '@/features/forms/upload';
-import { TrackPathCanvas } from './components/TrackPathCanvas';
-import { useCreateTrack } from './hooks/use-create-track';
-import { useTrack } from './hooks/use-track';
-import { useUpdateTrack } from './hooks/use-update-track';
-import { resolveTrackImageUrl } from './lib/track-image-url';
-import { TRACK_THEME_LABELS, type TrackCellRow, type TrackRow } from '../types';
-import { validateTrackPath } from './validate-track-path';
+import { CircuitPathCanvas } from './components/CircuitPathCanvas';
+import { useCircuit } from './hooks/use-circuit';
+import { useUpdateCircuit } from './hooks/use-update-circuit';
+import { resolveCircuitImageUrl } from './lib/circuit-image-url';
+import { TRACK_THEME_LABELS, type CircuitRow, type TrackCellRow } from '../types';
+import { validateCircuitPath } from './validate-circuit-path';
 
 const schema = z.object({
-  slug: z
-    .string()
-    .min(1, 'Obligatorio')
-    .max(64)
-    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'kebab-case: minúsculas, dígitos y guiones'),
   name: z.string().min(1, 'Obligatorio').max(120),
-  sectorCount: z.number().int().min(1, 'Al menos 1'),
-  minPlausibleMs: z.number().int().min(1, 'Al menos 1'),
+  checkpoints: z.number().int().min(1, 'Al menos 1'),
   theme: z.enum(['MEADOW', 'SNOW']),
   grip: z.number().positive('Tiene que ser mayor que 0'),
   isActive: z.enum(['true', 'false']),
@@ -55,16 +48,6 @@ type FormValues = z.infer<typeof schema>;
 // natural en es-ES) el navegador lo da por inválido y `valueAsNumber` se
 // vuelve NaN. Con texto libre se acepta cualquiera de los dos y se
 // normaliza a mano antes de convertir a número.
-//
-// `field` (de react-hook-form) lleva un `ref` dentro, así que el lint de
-// refs de React no deja leer sus propiedades sueltas durante el render
-// (`field.value`, `field.name`...) — de ahí el spread `{...field}` en vez
-// de desglosarlo, y `initialValue` aparte para sembrar el estado local sin
-// tocar `field.value` fuera de un manejador de evento.
-//
-// El tipo del `field` es el genérico de `FieldWrapper` (unión de TODOS los
-// campos del formulario), no uno estrecho de solo "grip" — `FieldWrapper`
-// no lo afina por `name` aunque en este punto solo pueda ser "grip".
 function DecimalInput({
   field,
   initialValue,
@@ -90,8 +73,6 @@ function DecimalInput({
         }
       }}
       onBlur={() => {
-        // Al perder el foco, refleja el número que de verdad quedó en el
-        // formulario — así "0,70" se ve como "0.7" y no queda ambigüedad.
         field.onBlur();
         setText(String(field.value ?? ''));
       }}
@@ -99,12 +80,11 @@ function DecimalInput({
   );
 }
 
-export function TrackEditorPage() {
+export function CircuitEditorPage() {
   const { id } = useParams();
-  const isEdit = Boolean(id);
-  const { data: track, isLoading } = useTrack(id ?? '');
+  const { data: circuit, isLoading } = useCircuit(id ?? '');
 
-  if (isEdit && (isLoading || !track)) {
+  if (isLoading || !circuit) {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
         <Skeleton className="h-9 w-64" />
@@ -113,26 +93,23 @@ export function TrackEditorPage() {
     );
   }
 
-  return <TrackEditorForm track={(track as TrackRow | undefined) ?? undefined} />;
+  return <CircuitEditorForm circuit={circuit as CircuitRow} />;
 }
 
-function TrackEditorForm({ track }: { track?: TrackRow }) {
+function CircuitEditorForm({ circuit }: { circuit: CircuitRow }) {
   const navigate = useNavigate();
-  const isEdit = Boolean(track);
-  const [path, setPath] = useState<TrackCellRow[]>(track?.path ?? []);
+  const [path, setPath] = useState<TrackCellRow[]>(circuit.path);
   const [pathTouched, setPathTouched] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      slug: track?.slug ?? '',
-      name: track?.name ?? '',
-      sectorCount: track?.sectorCount ?? 3,
-      minPlausibleMs: track?.minPlausibleMs ?? 8000,
-      theme: track?.theme ?? 'MEADOW',
-      grip: track?.grip ?? 1,
-      isActive: track && !track.isActive ? 'false' : 'true',
-      imageId: track?.imageId ?? undefined,
+      name: circuit.name,
+      checkpoints: circuit.checkpoints,
+      theme: circuit.theme,
+      grip: circuit.grip,
+      isActive: circuit.isActive ? 'true' : 'false',
+      imageId: circuit.imageId ?? undefined,
     },
   });
 
@@ -140,10 +117,9 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
 
   // Previsualización local: al elegir un fichero se enseña al momento con
   // `URL.createObjectURL` (sin esperar a guardar ni a pedir una URL de
-  // visualización aparte); si se edita un circuito que ya tenía imagen,
-  // arranca con la que devuelve la API.
+  // visualización aparte); arranca con la que devuelve la API si ya tenía.
   const [imagePreview, setImagePreview] = useState<string | null>(
-    resolveTrackImageUrl(track?.imageUrl ?? null),
+    resolveCircuitImageUrl(circuit.imageUrl),
   );
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -170,49 +146,29 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
     setImagePreview(null);
   };
 
-  const create = useCreateTrack({
-    onSuccess: (newId) => navigate(`/racing/tracks/${newId}`, { replace: true }),
+  const update = useUpdateCircuit(circuit.id, {
+    onSuccess: () => navigate('/racing/circuits'),
   });
-  const update = useUpdateTrack(track?.id ?? '', {
-    onSuccess: () => navigate('/racing/tracks'),
-  });
-  const isSaving = create.isPending || update.isPending;
 
-  const pathValidation = validateTrackPath(path);
+  const pathValidation = validateCircuitPath(path);
   const canSubmit = pathValidation.ok;
 
   const submit = form.handleSubmit((v) => {
     setPathTouched(true);
     if (!pathValidation.ok) return;
 
-    const isActive = v.isActive === 'true';
-    if (isEdit && track) {
-      update.mutate({
-        name: v.name,
-        sectorCount: v.sectorCount,
-        minPlausibleMs: v.minPlausibleMs,
-        path,
-        theme: v.theme,
-        grip: v.grip,
-        isActive,
-        // `undefined` (formulario sin imagen) se manda como `null`: en un
-        // PATCH, a diferencia del alta, "ausente" significaría "no tocar" —
-        // aquí siempre se resincroniza todo el estado del formulario.
-        imageId: v.imageId ?? null,
-      });
-    } else {
-      create.mutate({
-        slug: v.slug,
-        name: v.name,
-        sectorCount: v.sectorCount,
-        minPlausibleMs: v.minPlausibleMs,
-        path,
-        theme: v.theme,
-        grip: v.grip,
-        isActive,
-        imageId: v.imageId,
-      });
-    }
+    update.mutate({
+      name: v.name,
+      checkpoints: v.checkpoints,
+      path,
+      theme: v.theme,
+      grip: v.grip,
+      isActive: v.isActive === 'true',
+      // `undefined` (formulario sin imagen) se manda como `null`: en un
+      // PATCH, a diferencia del alta, "ausente" significaría "no tocar" —
+      // aquí siempre se resincroniza todo el estado del formulario.
+      imageId: v.imageId ?? null,
+    });
   });
 
   return (
@@ -224,21 +180,18 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/racing/tracks')}
+              onClick={() => navigate('/racing/circuits')}
             >
               <ArrowLeft size={16} />
             </Button>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {isEdit ? 'Editar circuito' : 'Nuevo circuito'}
-            </h1>
-            {track && (
-              <Badge variant={track.isActive ? 'default' : 'secondary'}>
-                {track.isActive ? 'Activo' : 'Inactivo'}
-              </Badge>
-            )}
+            <h1 className="text-2xl font-semibold tracking-tight">Editar circuito</h1>
+            <Badge variant={circuit.isActive ? 'default' : 'secondary'}>
+              {circuit.isActive ? 'Activo' : 'Inactivo'}
+            </Badge>
+            {circuit.isInRotation && <Badge variant="outline">En rotación hoy</Badge>}
           </div>
-          <Button type="submit" disabled={isSaving}>
-            {isSaving ? 'Guardando…' : 'Guardar'}
+          <Button type="submit" disabled={update.isPending}>
+            {update.isPending ? 'Guardando…' : 'Guardar'}
           </Button>
         </div>
 
@@ -247,7 +200,7 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
             <CardTitle>Trazado</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <TrackPathCanvas path={path} onChange={setPath} theme={theme} />
+            <CircuitPathCanvas path={path} onChange={setPath} theme={theme} />
             {pathTouched && !pathValidation.ok && (
               <p className="text-destructive text-sm">{pathValidation.reason}</p>
             )}
@@ -264,11 +217,7 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
               <div className="flex items-center gap-4">
                 <div className="bg-muted flex size-24 items-center justify-center overflow-hidden rounded-md">
                   {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt=""
-                      className="size-full object-cover"
-                    />
+                    <img src={imagePreview} alt="" className="size-full object-cover" />
                   ) : (
                     <ImageOff size={24} className="text-muted-foreground" />
                   )}
@@ -296,12 +245,7 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
                         : 'Subir imagen'}
                   </Button>
                   {imagePreview && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={onRemoveImage}
-                    >
+                    <Button type="button" variant="ghost" size="sm" onClick={onRemoveImage}>
                       <X size={14} />
                       Quitar
                     </Button>
@@ -313,36 +257,13 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
               <FieldWrapper control={form.control} name="name" label="Nombre">
                 {(field) => <Input placeholder="Circuito del Puerto" {...field} />}
               </FieldWrapper>
-              <FieldWrapper control={form.control} name="slug" label="Slug">
-                {(field) => (
-                  <Input
-                    placeholder="circuito-del-puerto"
-                    disabled={isEdit}
-                    {...field}
-                  />
-                )}
-              </FieldWrapper>
+              <div className="space-y-2">
+                <span className="text-sm font-medium">Slug</span>
+                <Input value={circuit.slug} disabled />
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <FieldWrapper
-                control={form.control}
-                name="sectorCount"
-                label="Sectores"
-              >
-                {(field) => (
-                  <Input
-                    type="number"
-                    min={1}
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                  />
-                )}
-              </FieldWrapper>
-              <FieldWrapper
-                control={form.control}
-                name="minPlausibleMs"
-                label="Mínimo (ms)"
-              >
+            <div className="grid grid-cols-2 gap-3">
+              <FieldWrapper control={form.control} name="checkpoints" label="Checkpoints">
                 {(field) => (
                   <Input
                     type="number"
@@ -353,18 +274,13 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
                 )}
               </FieldWrapper>
               <FieldWrapper control={form.control} name="grip" label="Agarre">
-                {(field) => (
-                  <DecimalInput field={field} initialValue={track?.grip ?? 1} />
-                )}
+                {(field) => <DecimalInput field={field} initialValue={circuit.grip} />}
               </FieldWrapper>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <FieldWrapper control={form.control} name="theme" label="Tema visual">
                 {(field) => (
-                  <Select
-                    value={field.value as string}
-                    onValueChange={field.onChange}
-                  >
+                  <Select value={field.value as string} onValueChange={field.onChange}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
@@ -380,10 +296,7 @@ function TrackEditorForm({ track }: { track?: TrackRow }) {
               </FieldWrapper>
               <FieldWrapper control={form.control} name="isActive" label="Estado">
                 {(field) => (
-                  <Select
-                    value={field.value as string}
-                    onValueChange={field.onChange}
-                  >
+                  <Select value={field.value as string} onValueChange={field.onChange}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>

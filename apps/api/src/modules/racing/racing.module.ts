@@ -20,6 +20,8 @@ import { PLAYER_CAR_PART_REPOSITORY } from './application/ports/player-car-part-
 import { PLAYER_CAR_SKIN_REPOSITORY } from './application/ports/player-car-skin-repository.port';
 import { PLAYER_RATING_REPOSITORY } from './application/ports/player-rating-repository.port';
 import { RACING_BOT_REPOSITORY } from './application/ports/racing-bot-repository.port';
+import { RACING_CIRCUIT_REPOSITORY } from './application/ports/racing-circuit-repository.port';
+import { RACING_CIRCUIT_ROTATION_CONFIG_REPOSITORY } from './application/ports/racing-circuit-rotation-config-repository.port';
 import { RACING_COIN_REWARD_CONFIG_REPOSITORY } from './application/ports/racing-coin-reward-config-repository.port';
 import { RACING_LEAGUE_CONFIG_REPOSITORY } from './application/ports/racing-league-config-repository.port';
 import { RACING_LEAGUE_REPOSITORY } from './application/ports/racing-league-repository.port';
@@ -35,20 +37,23 @@ import { AdminCreateCarSkinUseCase } from './application/use-cases/admin-create-
 import { AdminCreateGrandPrixUseCase } from './application/use-cases/admin-create-grand-prix.use-case';
 import { AdminCreateSeasonUseCase } from './application/use-cases/admin-create-season.use-case';
 import { AutoRotateSeasonUseCase } from './application/use-cases/auto-rotate-season.use-case';
-import { AdminCreateTrackUseCase } from './application/use-cases/admin-create-track.use-case';
+import { AdminUpdateCircuitRotationConfigUseCase } from './application/use-cases/admin-update-circuit-rotation-config.use-case';
 import { AdminUpdateCoinRewardConfigUseCase } from './application/use-cases/admin-update-coin-reward-config.use-case';
 import { AdminUpdateLeagueConfigUseCase } from './application/use-cases/admin-update-league-config.use-case';
 import { AdminUpdateMatchmakingConfigUseCase } from './application/use-cases/admin-update-matchmaking-config.use-case';
+import { AutoRotateCircuitsUseCase } from './application/use-cases/auto-rotate-circuits.use-case';
 import { AwardLeaguePointsUseCase } from './application/use-cases/award-league-points.use-case';
 import { CreditRewardedAdUseCase } from './application/use-cases/credit-rewarded-ad.use-case';
 import { AdminGetCarArchetypeUseCase } from './application/use-cases/admin-get-car-archetype.use-case';
 import { AdminGetCarPartUseCase } from './application/use-cases/admin-get-car-part.use-case';
 import { AdminGetCarSkinUseCase } from './application/use-cases/admin-get-car-skin.use-case';
+import { AdminGetCircuitUseCase } from './application/use-cases/admin-get-circuit.use-case';
 import { AdminGetGrandPrixUseCase } from './application/use-cases/admin-get-grand-prix.use-case';
 import { AdminGetTrackUseCase } from './application/use-cases/admin-get-track.use-case';
 import { AdminGetUserRacingSummaryUseCase } from './application/use-cases/admin-get-user-racing-summary.use-case';
 import { AdminGrantCarSkinUseCase } from './application/use-cases/admin-grant-car-skin.use-case';
 import { AdminListCarArchetypesUseCase } from './application/use-cases/admin-list-car-archetypes.use-case';
+import { AdminListCircuitsUseCase } from './application/use-cases/admin-list-circuits.use-case';
 import { AdminListGrandPrixUseCase } from './application/use-cases/admin-list-grand-prix.use-case';
 import { AdminListLapTimesUseCase } from './application/use-cases/admin-list-lap-times.use-case';
 import { AdminListCarPartsUseCase } from './application/use-cases/admin-list-car-parts.use-case';
@@ -58,6 +63,7 @@ import { AdminListTracksUseCase } from './application/use-cases/admin-list-track
 import { AdminUpdateCarArchetypeUseCase } from './application/use-cases/admin-update-car-archetype.use-case';
 import { AdminUpdateCarPartUseCase } from './application/use-cases/admin-update-car-part.use-case';
 import { AdminUpdateCarSkinUseCase } from './application/use-cases/admin-update-car-skin.use-case';
+import { AdminUpdateCircuitUseCase } from './application/use-cases/admin-update-circuit.use-case';
 import { AdminUpdateGrandPrixUseCase } from './application/use-cases/admin-update-grand-prix.use-case';
 import { AdminUpdateTerrainEffectUseCase } from './application/use-cases/admin-update-terrain-effect.use-case';
 import { AdminUpdateTrackUseCase } from './application/use-cases/admin-update-track.use-case';
@@ -76,6 +82,7 @@ import { GetTrackUseCase } from './application/use-cases/get-track.use-case';
 import { GetWalletBalanceUseCase } from './application/use-cases/get-wallet-balance.use-case';
 import { InvalidateLapTimeUseCase } from './application/use-cases/invalidate-lap-time.use-case';
 import { ListCarCatalogUseCase } from './application/use-cases/list-car-catalog.use-case';
+import { ListCircuitRotationConfigsUseCase } from './application/use-cases/list-circuit-rotation-configs.use-case';
 import { ListCoinRewardConfigsUseCase } from './application/use-cases/list-coin-reward-configs.use-case';
 import { ListLeagueConfigsUseCase } from './application/use-cases/list-league-configs.use-case';
 import { ListMatchmakingConfigsUseCase } from './application/use-cases/list-matchmaking-configs.use-case';
@@ -98,6 +105,8 @@ import { SubmitOnlineRaceResultUseCase } from './application/use-cases/submit-on
 import { AdminCarArchetypesController } from './infrastructure/http/admin-car-archetypes.controller';
 import { AdminCarPartsController } from './infrastructure/http/admin-car-parts.controller';
 import { AdminCarSkinsController } from './infrastructure/http/admin-car-skins.controller';
+import { AdminCircuitRotationConfigController } from './infrastructure/http/admin-circuit-rotation-config.controller';
+import { AdminCircuitsController } from './infrastructure/http/admin-circuits.controller';
 import { AdminCoinRewardConfigsController } from './infrastructure/http/admin-coin-reward-configs.controller';
 import { AdminLeagueConfigsController } from './infrastructure/http/admin-league-configs.controller';
 import { AdminMatchmakingConfigController } from './infrastructure/http/admin-matchmaking-config.controller';
@@ -132,6 +141,8 @@ import { PrismaPlayerCarPartRepository } from './infrastructure/persistence/pris
 import { PrismaPlayerCarSkinRepository } from './infrastructure/persistence/prisma-player-car-skin.repository';
 import { PrismaPlayerRatingRepository } from './infrastructure/persistence/prisma-player-rating.repository';
 import { PrismaRacingBotRepository } from './infrastructure/persistence/prisma-racing-bot.repository';
+import { PrismaRacingCircuitRepository } from './infrastructure/persistence/prisma-racing-circuit.repository';
+import { PrismaRacingCircuitRotationConfigRepository } from './infrastructure/persistence/prisma-racing-circuit-rotation-config.repository';
 import { PrismaRacingCoinRewardConfigRepository } from './infrastructure/persistence/prisma-racing-coin-reward-config.repository';
 import { PrismaRacingLeagueConfigRepository } from './infrastructure/persistence/prisma-racing-league-config.repository';
 import { PrismaRacingLeagueRepository } from './infrastructure/persistence/prisma-racing-league.repository';
@@ -140,6 +151,7 @@ import { PrismaRacingTerrainEffectRepository } from './infrastructure/persistenc
 import { PrismaRacingWalletRepository } from './infrastructure/persistence/prisma-racing-wallet.repository';
 import { PrismaSeasonRepository } from './infrastructure/persistence/prisma-season.repository';
 import { PrismaTrackRepository } from './infrastructure/persistence/prisma-track.repository';
+import { CircuitRotationService } from './infrastructure/scheduler/circuit-rotation.service';
 import { SeasonRotationService } from './infrastructure/scheduler/season-rotation.service';
 
 @Module({
@@ -179,6 +191,8 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
     AdminPlayerRatingsController,
     AdminTrackPopularityController,
     AdminLeagueConfigsController,
+    AdminCircuitsController,
+    AdminCircuitRotationConfigController,
   ],
   providers: [
     ListTracksUseCase,
@@ -192,7 +206,6 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
     MatchOnlineRaceUseCase,
     AdminListTracksUseCase,
     AdminGetTrackUseCase,
-    AdminCreateTrackUseCase,
     AdminUpdateTrackUseCase,
     InvalidateLapTimeUseCase,
     AdminListLapTimesUseCase,
@@ -248,6 +261,13 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
     AdminUpdateLeagueConfigUseCase,
     AwardLeaguePointsUseCase,
     GetMyLeagueStandingUseCase,
+    AdminListCircuitsUseCase,
+    AdminGetCircuitUseCase,
+    AdminUpdateCircuitUseCase,
+    AutoRotateCircuitsUseCase,
+    CircuitRotationService,
+    ListCircuitRotationConfigsUseCase,
+    AdminUpdateCircuitRotationConfigUseCase,
     LiveRaceRoomManager,
     LiveRaceGateway,
     { provide: TRACK_REPOSITORY, useClass: PrismaTrackRepository },
@@ -308,6 +328,11 @@ import { SeasonRotationService } from './infrastructure/scheduler/season-rotatio
       useClass: PrismaRacingLeagueConfigRepository,
     },
     { provide: RACING_LEAGUE_REPOSITORY, useClass: PrismaRacingLeagueRepository },
+    { provide: RACING_CIRCUIT_REPOSITORY, useClass: PrismaRacingCircuitRepository },
+    {
+      provide: RACING_CIRCUIT_ROTATION_CONFIG_REPOSITORY,
+      useClass: PrismaRacingCircuitRotationConfigRepository,
+    },
   ],
 })
 export class RacingModule {}

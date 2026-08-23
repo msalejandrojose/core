@@ -17,8 +17,8 @@ export class GetTrackUseCase {
   ) {}
 
   async execute(slug: string): Promise<Track> {
-    const track = await this.tracks.findBySlug(slug);
-    if (!track || !track.isActive) {
+    const track = await this.tracks.findActiveBySlug(slug);
+    if (!track) {
       throw new TrackNotFoundError(slug);
     }
     return track;

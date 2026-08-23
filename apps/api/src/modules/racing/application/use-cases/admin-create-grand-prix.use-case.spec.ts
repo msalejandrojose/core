@@ -1,5 +1,5 @@
 import { GrandPrix } from '../../domain/entities/grand-prix.entity';
-import { Track } from '../../domain/entities/track.entity';
+import { Track, TrackTheme } from '../../domain/entities/track.entity';
 import {
   CreateGrandPrixData,
   GrandPrixRepositoryPort,
@@ -8,7 +8,21 @@ import { TrackRepositoryPort } from '../ports/track-repository.port';
 import { AdminCreateGrandPrixUseCase } from './admin-create-grand-prix.use-case';
 
 function track(id: string, isActive = true): Track {
-  return new Track(id, `slug-${id}`, `Track ${id}`, 3, 5000, isActive);
+  return new Track(
+    id,
+    `slug-${id}`,
+    `Track ${id}`,
+    `circuit-${id}`,
+    3,
+    5000,
+    isActive,
+    [],
+    TrackTheme.MEADOW,
+    1.0,
+    null,
+    `slug-${id}`,
+    `Track ${id}`,
+  );
 }
 
 class FakeGrandPrixRepository implements Partial<GrandPrixRepositoryPort> {

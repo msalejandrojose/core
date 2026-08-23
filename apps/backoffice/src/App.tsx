@@ -138,9 +138,14 @@ const TracksPage = lazy(() =>
     default: m.TracksPage,
   })),
 );
-const TrackEditorPage = lazy(() =>
-  import('@/features/racing/tracks/TrackEditorPage').then((m) => ({
-    default: m.TrackEditorPage,
+const CircuitsPage = lazy(() =>
+  import('@/features/racing/circuits/CircuitsPage').then((m) => ({
+    default: m.CircuitsPage,
+  })),
+);
+const CircuitEditorPage = lazy(() =>
+  import('@/features/racing/circuits/CircuitEditorPage').then((m) => ({
+    default: m.CircuitEditorPage,
   })),
 );
 const CarsPage = lazy(() =>
@@ -331,9 +336,9 @@ export default function App() {
                 path="/notifications/message-types/:id/editor"
                 element={<MessageTypeEditorPage />}
               />
+              <Route path="/racing/circuits" element={<CircuitsPage />} />
+              <Route path="/racing/circuits/:id" element={<CircuitEditorPage />} />
               <Route path="/racing/tracks" element={<TracksPage />} />
-              <Route path="/racing/tracks/new" element={<TrackEditorPage />} />
-              <Route path="/racing/tracks/:id" element={<TrackEditorPage />} />
               <Route path="/racing/cars" element={<CarsPage />} />
               <Route path="/racing/terrain" element={<TerrainPage />} />
               <Route path="/racing/coin-rewards" element={<CoinRewardsPage />} />

@@ -244,6 +244,27 @@ async function main(): Promise<void> {
       );
     }
 
+    // El circuito base (TASK-336) es una sola fila por cada uno de los 4 de
+    // arriba — la geometría/tema/agarre viven aquí, no en cada variante.
+    const circuit = await prisma.racingCircuit.upsert({
+      where: { slug: track.slug },
+      create: {
+        slug: track.slug,
+        name: track.name,
+        checkpoints: track.checkpoints,
+        path: track.path as unknown as Prisma.InputJsonValue,
+        theme: track.theme,
+        grip: track.grip,
+      },
+      update: {
+        name: track.name,
+        checkpoints: track.checkpoints,
+        path: track.path as unknown as Prisma.InputJsonValue,
+        theme: track.theme,
+        grip: track.grip,
+      },
+    });
+
     for (const reversed of [false, true]) {
       for (const engine of ENGINE_CLASSES) {
         for (const archetype of ARCHETYPES) {
@@ -252,6 +273,7 @@ async function main(): Promise<void> {
 
           const data = {
             name,
+            circuitId: circuit.id,
             sectorCount: track.checkpoints + 1,
             minPlausibleMs: minPlausibleMs(
               track.path.length,
@@ -259,9 +281,6 @@ async function main(): Promise<void> {
               archetype.speedScale,
             ),
             isActive: true,
-            path: track.path as unknown as Prisma.InputJsonValue,
-            theme: track.theme,
-            grip: track.grip,
           };
 
           await prisma.track.upsert({

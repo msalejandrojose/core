@@ -12,7 +12,7 @@ export type TrackPathValidation =
   | { ok: true }
   | { ok: false; reason: string };
 
-export function validateTrackPath(path: TrackCellRow[]): TrackPathValidation {
+export function validateCircuitPath(path: TrackCellRow[]): TrackPathValidation {
   if (path.length < 4) {
     return {
       ok: false,
