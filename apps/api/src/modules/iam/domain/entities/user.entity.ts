@@ -27,6 +27,9 @@ export class User {
     public readonly googleId: string | null = null,
     public readonly facebookId: string | null = null,
     public readonly avatarUrl: string | null = null,
+    // Login nativo de plataforma (Play Games Services / Game Center)
+    public readonly playGamesId: string | null = null,
+    public readonly gameCenterId: string | null = null,
   ) {}
 
   isDeactivated(): boolean {

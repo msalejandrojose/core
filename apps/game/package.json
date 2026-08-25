@@ -1,0 +1,13 @@
+{
+  "name": "@core/game",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Juego de carreras contrarreloj (Godot 4). El código vive fuera de Node: este package.json solo existe para que el proyecto entre en el workspace y tenga los mismos comandos que el resto de apps.",
+  "scripts": {
+    "dev": "godot --path . --editor",
+    "test": "./tools/test.sh",
+    "ios": "./tools/ios.sh run",
+    "ios:sync": "./tools/ios.sh sync",
+    "ios:open": "./tools/ios.sh open"
+  }
+}

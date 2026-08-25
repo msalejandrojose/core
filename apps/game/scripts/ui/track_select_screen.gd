@@ -1,0 +1,416 @@
+extends CanvasLayer
+
+## Selección de circuito en pantalla completa (rejilla de tarjetas), a partir
+## de una captura de referencia. Antes se elegía con una fila de botones
+## apretada en la columna derecha del menú — con los circuitos del servidor
+## sumándose a la lista (TASK "listar en Jugar todos los circuitos del
+## servidor") esa fila ya no cabía cómoda, de ahí esta pantalla aparte.
+##
+## Selección pendiente, mismo patrón que el arquetipo en el taller: tocar una
+## tarjeta solo la resalta, no aplica nada hasta "Confirmar circuito" — así
+## se puede mirar la mejor marca de cada una sin comprometerse.
+##
+## Sin dificultad ni longitud del boceto de referencia: no existen todavía
+## como datos reales de un circuito, así que no se simulan. En su lugar se
+## muestra lo que sí es real: sectores y tu mejor marca ahí.
+##
+## Tarjetas claras (`UiTheme.card_panel()`), como el menú y el taller — ver
+## comentario sobre el alcance del pase de diseño en `ui_theme.gd`.
+
+const COLUMNS := 4
+
+## Gris neutro del botón "Seleccionar" sin elegir — mismo tono que las
+## píldoras de opción del menú y el taller.
+const _OPTION_BG := Color("e9e4d9")
+## Tono algo más claro que `UiTheme.CARD` para las tarjetas individuales,
+## así se distinguen de la tarjeta grande que las contiene a todas.
+const _TILE_BG := Color("f4f1ea")
+
+## Metros por celda del `GridMap` de `main.tscn` (`cell_size`) — de ahí se
+## deriva la longitud real de un circuito local: nº de celdas del trazado
+## por este valor. Los circuitos del backoffice no traen el trazado en el
+## listado, así que para esos no hay longitud que mostrar (mejor omitirla
+## que inventar un número).
+const _CELL_SIZE_M := 9.99
+
+## Un color liso por circuito local, mientras no tenga miniatura de verdad
+## subida en el backoffice — índice paralelo a `TrackCatalog.ids()`.
+const _TRACK_PLACEHOLDER_COLORS := [
+	Color("8fbf6b"), Color("d9a441"), Color("6b98bf"), Color("eef1f5"),
+]
+
+signal closed()
+## Solo se emite si se confirma un circuito distinto al que había — quien
+## abre esta pantalla lo usa para refrescar su resumen sin tener que sondear
+## `GameSettings` por su cuenta.
+signal confirmed()
+
+var _grid: GridContainer
+var _card_buttons: Array[Button] = []
+## Paralelo a `_card_buttons`: el `PanelContainer` de cada tarjeta, para
+## poder pintarle el borde de "elegida" en `_sync_selection()`.
+var _card_panels: Array[PanelContainer] = []
+var _card_ids: Array[String] = []
+var _card_is_server: Array[bool] = []
+var _account_button: Button
+## `TrackCatalog` id → `TextureRect` de su tarjeta, solo para los locales
+## (los 4 de fábrica): en cuanto `_load_server_tracks()` encuentra la fila
+## que hace de "portada" para ese circuito (ver `_cover_slug`), le mete la
+## imagen aquí — la tarjeta ya existe, montada con el color de marcador de
+## posición, mucho antes de que responda la red.
+var _cover_thumbnails: Dictionary = {}
+
+var _pending_id: String
+var _pending_is_server: bool
+
+
+func _ready() -> void:
+	layer = 9
+	_pending_id = GameSettings.track_id
+	_pending_is_server = GameSettings.track_is_server
+	_build()
+
+
+func _build() -> void:
+	# El garaje se queda de fondo pero DESENFOCADO, no tapado por un color
+	# plano: sigue dando contexto sin competir con la rejilla de circuitos,
+	# que es lo que hay que mirar aquí. Quien abre esta pantalla cierra el
+	# menú (ver `_open_track_select()` en `main_menu.gd`), así que lo que se
+	# difumina es el garaje de verdad, no la interfaz de debajo.
+	add_child(UiTheme.blurred_backdrop())
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 56)
+	add_child(margin)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 16)
+	margin.add_child(column)
+
+	column.add_child(_build_header())
+
+	var grid_card := UiTheme.card_panel()
+	grid_card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(grid_card)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid_card.add_child(scroll)
+
+	_grid = GridContainer.new()
+	_grid.columns = COLUMNS
+	_grid.add_theme_constant_override("h_separation", 16)
+	_grid.add_theme_constant_override("v_separation", 16)
+	scroll.add_child(_grid)
+
+	var local_ids := TrackCatalog.ids()
+	for i in local_ids.size():
+		var layout := TrackCatalog.by_id(local_ids[i])
+		var color: Color = _TRACK_PLACEHOLDER_COLORS[i % _TRACK_PLACEHOLDER_COLORS.size()]
+		_add_card(
+			layout.name, layout.id, false, layout.checkpoints + 1,
+			"", layout.path.size() * _CELL_SIZE_M, color)
+	_sync_selection()
+
+	# Los del servidor (creados en el backoffice) se cargan aparte y se van
+	# añadiendo a la misma rejilla en cuanto llegan — no bloquea el resto de
+	# la pantalla, y sin red simplemente no aparece ninguno más que los 4 de
+	# fábrica.
+	_load_server_tracks()
+
+	var footer := HBoxContainer.new()
+	footer.add_theme_constant_override("separation", 16)
+	column.add_child(footer)
+
+	# Atrás abajo a la izquierda en chapa metálica (navegación, mismo material
+	# que la cabecera); confirmar abajo a la derecha en verde, que es la
+	# acción de la pantalla.
+	var back := UiTheme.metal_button("Atrás".to_upper())
+	UiTheme.emphasize(back)
+	back.pressed.connect(close_screen)
+	footer.add_child(back)
+
+	var footer_spacer := Control.new()
+	footer_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	footer.add_child(footer_spacer)
+
+	var confirm_button := UiTheme.pill_button(
+		"Confirmar circuito".to_upper(), UiTheme.GOOD, Color.WHITE)
+	UiTheme.emphasize(confirm_button)
+	confirm_button.pressed.connect(_confirm)
+	footer.add_child(confirm_button)
+
+
+func close_screen() -> void:
+	closed.emit()
+	queue_free()
+
+
+func _confirm() -> void:
+	var track_changed := _pending_id != GameSettings.track_id or _pending_is_server != GameSettings.track_is_server
+	GameSettings.set_track_id(_pending_id, _pending_is_server)
+	if track_changed:
+		confirmed.emit()
+	close_screen()
+
+
+## Circuitos creados en el backoffice, además de los 4 del catálogo local. Se
+## descartan los que ya representan a uno de los 4 de fábrica (sus slugs
+## siempre empiezan por el id local seguido de "-": cilindrada + sentido +
+## arquetipo, ver `GameSettings.key_for`) para no duplicar la misma entrada
+## — SALVO la variante que hace de "portada" (`_cover_slug`), cuya imagen
+## (si la hay) se aplica a la tarjeta local que ya está montada.
+func _load_server_tracks() -> void:
+	var response = await RacingApi.tracks(100)
+	if not is_instance_valid(_grid) or not response.ok or not (response.data is Dictionary):
+		return
+
+	var local_ids: Array = TrackCatalog.ids()
+	for item in response.data.get("data", []):
+		var slug: String = str(item.get("slug", ""))
+		if slug == "":
+			continue
+
+		# JSON: ausente o `null` llega como `Nil` (`get()` sin valor por
+		# defecto también), no como cadena vacía — hay que cubrir los dos.
+		var image_url_value: Variant = item.get("imageUrl")
+		var image_url: String = image_url_value if image_url_value is String else ""
+
+		var cover_for_id := _local_id_for_cover_slug(slug, local_ids)
+		if cover_for_id != "":
+			if image_url != "" and _cover_thumbnails.has(cover_for_id):
+				_load_card_thumbnail(_cover_thumbnails[cover_for_id], image_url)
+			continue
+
+		if _card_ids.has(slug):
+			continue
+		var is_local_variant := local_ids.any(func(id: String) -> bool: return slug.begins_with(id + "-"))
+		if is_local_variant:
+			continue
+
+		_add_card(str(item.get("name", slug)), slug, true, int(item.get("sectorCount", 1)), image_url, -1.0)
+
+	_sync_selection()
+
+
+func _local_id_for_cover_slug(slug: String, local_ids: Array) -> String:
+	for id in local_ids:
+		if slug == _cover_slug(id):
+			return id
+	return ""
+
+
+## Slug de la variante que hace de "portada" de cada circuito local: la
+## imagen se sube ahí en el backoffice — no hay una fila por circuito
+## físico, solo una por combinación cilindrada/sentido/arquetipo (18 por
+## circuito, ver `seed-racing.ts`), así que se elige la de 100cc/normal/sin
+## invertir como representativa para las 18.
+func _cover_slug(local_id: String) -> String:
+	return "%s-100cc-normal" % local_id
+
+
+## `image_url` es lo que manda la API en `Track.imageUrl` — relativo a
+## `Api.base_url` (ver `RacingApi.fetch_image_texture`). `placeholder_color`
+## es para los locales: color liso a mostrar mientras no llegue (o si nunca
+## llega) la imagen de portada real — ver `_cover_thumbnails`/`_cover_slug`.
+func _add_card(
+	label: String,
+	id: String,
+	is_server: bool,
+	sector_count: int,
+	image_url: String = "",
+	length_m: float = -1.0,
+	placeholder_color: Variant = null,
+) -> void:
+	if _card_ids.has(id):
+		return
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UiTheme.card_stylebox(_TILE_BG, 14))
+	_grid.add_child(panel)
+
+	var card := VBoxContainer.new()
+	card.add_theme_constant_override("separation", 8)
+	card.custom_minimum_size = Vector2(300, 0)
+	panel.add_child(card)
+
+	if image_url != "" or placeholder_color is Color:
+		var holder := Control.new()
+		holder.custom_minimum_size = Vector2(0, 140)
+		card.add_child(holder)
+
+		if placeholder_color is Color:
+			var swatch := ColorRect.new()
+			swatch.color = placeholder_color
+			swatch.set_anchors_preset(Control.PRESET_FULL_RECT)
+			holder.add_child(swatch)
+
+		var thumbnail := TextureRect.new()
+		thumbnail.set_anchors_preset(Control.PRESET_FULL_RECT)
+		thumbnail.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		thumbnail.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		thumbnail.clip_contents = true
+		holder.add_child(thumbnail)
+
+		if image_url != "":
+			_load_card_thumbnail(thumbnail, image_url)
+		elif placeholder_color is Color:
+			_cover_thumbnails[id] = thumbnail
+
+	var name_label := Label.new()
+	name_label.text = label
+	name_label.add_theme_font_size_override("font_size", UiTheme.FONT_MD)
+	name_label.add_theme_color_override("font_color", UiTheme.CARD_INK)
+	card.add_child(name_label)
+
+	# `length_m < 0` = sin dato (circuitos del backoffice, que no traen el
+	# trazado en el listado) — mejor omitirlo que enseñar un número
+	# inventado.
+	if length_m >= 0.0:
+		var length_label := Label.new()
+		length_label.text = "Longitud: %d m" % roundi(length_m)
+		length_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+		length_label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
+		card.add_child(length_label)
+
+	var sectors_label := Label.new()
+	sectors_label.text = "%d sectores" % sector_count
+	sectors_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	sectors_label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
+	card.add_child(sectors_label)
+
+	var best_label := Label.new()
+	var key := id if is_server else GameSettings.key_for(id)
+	best_label.text = _best_text(key)
+	best_label.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	best_label.add_theme_color_override("font_color", UiTheme.CARD_MUTED)
+	card.add_child(best_label)
+
+	var button := UiTheme.pill_button(
+		"Seleccionar", _OPTION_BG, UiTheme.CARD_INK, Vector2(0, UiTheme.BUTTON_MIN_SIZE.y), UiTheme.FONT_SM,
+		UiTheme.GOOD, Color.WHITE)
+	# Sin `ButtonGroup`: la exclusividad la lleva `_sync_selection()` a mano,
+	# porque también tiene que apagar el botón de la tarjeta anterior cuando
+	# la selección llega de fuera (al abrir la pantalla, o tras cargar los
+	# circuitos del servidor).
+	button.toggle_mode = true
+	button.pressed.connect(func() -> void: _pick(id, is_server))
+	card.add_child(button)
+
+	_card_buttons.append(button)
+	_card_panels.append(panel)
+	_card_ids.append(id)
+	_card_is_server.append(is_server)
+
+
+## Descarga la miniatura sin bloquear el resto de la rejilla — cada tarjeta
+## se ve al momento con el hueco vacío y la imagen aparece en cuanto llega
+## (o se queda vacío para siempre si la descarga falla; no es un error).
+func _load_card_thumbnail(thumbnail: TextureRect, image_url: String) -> void:
+	var texture := await RacingApi.fetch_image_texture(image_url)
+	if is_instance_valid(thumbnail) and texture != null:
+		thumbnail.texture = texture
+
+
+func _best_text(key: String) -> String:
+	if RaceRecords.has_best(key):
+		var script := load("res://scripts/ui/race_hud.gd")
+		return "Tu mejor: %s" % script.format_ms(RaceRecords.best_ms(key))
+	return "Sin marca todavía"
+
+
+func _pick(id: String, is_server: bool) -> void:
+	_pending_id = id
+	_pending_is_server = is_server
+	_sync_selection()
+
+
+func _sync_selection() -> void:
+	for i in _card_buttons.size():
+		var matches := _card_ids[i] == _pending_id and _card_is_server[i] == _pending_is_server
+		_card_buttons[i].button_pressed = matches
+		_card_buttons[i].text = "Seleccionado" if matches else "Seleccionar"
+		var style := UiTheme.card_stylebox_selected(UiTheme.CLAY, _TILE_BG, 14) if matches \
+			else UiTheme.card_stylebox(_TILE_BG, 14)
+		_card_panels[i].add_theme_stylebox_override("panel", style)
+
+
+func _title(text: String) -> Label:
+	return UiTheme.title_label(text, UiTheme.FONT_XL)
+
+
+## Título a la izquierda, chapa de accesos a la derecha — la misma pieza
+## metálica de una sola parte que la cabecera del menú principal, sin
+## "Amigos": esta es una pantalla de segundo nivel, no el hub.
+func _build_header() -> Control:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 16)
+
+	header.add_child(_title("Selección de circuito"))
+
+	var push := Control.new()
+	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(push)
+
+	var block := PanelContainer.new()
+	block.add_theme_stylebox_override("panel", UiTheme.metal_block())
+	block.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(block)
+
+	var bar := HBoxContainer.new()
+	# Cero separación y juntas a mano, igual que en el menú: si el contenedor
+	# separa, entre segmento y segmento se cuela el fondo y deja de leerse
+	# como una pieza.
+	bar.add_theme_constant_override("separation", 0)
+	block.add_child(bar)
+
+	bar.add_child(_icon_button("⚙ Ajustes", func() -> void:
+		add_child(load("res://scenes/ui/settings-screen.tscn").instantiate())))
+	bar.add_child(_segment_divider())
+	bar.add_child(_icon_button("🏆 Clasificaciones", func() -> void:
+		add_child(load("res://scenes/ui/leaderboard-screen.tscn").instantiate())))
+	bar.add_child(_segment_divider())
+
+	_account_button = _icon_button("🚪 Salir", _open_account)
+	bar.add_child(_account_button)
+	_refresh_account()
+
+	return header
+
+
+func _segment_divider() -> Control:
+	var line := ColorRect.new()
+	line.color = Color(0, 0, 0, 0.28)
+	line.custom_minimum_size = Vector2(2, 40)
+	line.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return line
+
+
+## Entrar no es obligatorio para jugar — mismo criterio y mismo código que
+## en `main_menu.gd`, duplicado a propósito: cada pantalla suelta ya
+## repite sus propias `_label`/`_heading`, este botón no es distinto.
+func _open_account() -> void:
+	if Session.is_logged_in():
+		Session.logout()
+		_refresh_account()
+		return
+
+	var screen: CanvasLayer = load("res://scenes/ui/login-screen.tscn").instantiate()
+	screen.closed.connect(_refresh_account)
+	add_child(screen)
+
+
+func _refresh_account() -> void:
+	if is_instance_valid(_account_button):
+		# Ya en caja alta: este texto se reasigna en caliente, así que no
+		# puede depender de una transformación hecha al construir el botón.
+		_account_button.text = "🚪 SALIR" if Session.is_logged_in() else "🚪 ENTRAR"
+
+
+func _icon_button(text: String, on_pressed: Callable) -> Button:
+	var button := UiTheme.segment_button(text.to_upper(), Vector2(160, 72), UiTheme.FONT_XS)
+	UiTheme.emphasize(button)
+	button.pressed.connect(on_pressed)
+	return button

@@ -133,6 +133,61 @@ const CountriesPage = lazy(() =>
     default: m.CountriesPage,
   })),
 );
+const TracksPage = lazy(() =>
+  import('@/features/racing/tracks/TracksPage').then((m) => ({
+    default: m.TracksPage,
+  })),
+);
+const CircuitsPage = lazy(() =>
+  import('@/features/racing/circuits/CircuitsPage').then((m) => ({
+    default: m.CircuitsPage,
+  })),
+);
+const CircuitEditorPage = lazy(() =>
+  import('@/features/racing/circuits/CircuitEditorPage').then((m) => ({
+    default: m.CircuitEditorPage,
+  })),
+);
+const CarsPage = lazy(() =>
+  import('@/features/racing/cars/CarsPage').then((m) => ({
+    default: m.CarsPage,
+  })),
+);
+const TerrainPage = lazy(() =>
+  import('@/features/racing/terrain/TerrainPage').then((m) => ({
+    default: m.TerrainPage,
+  })),
+);
+const CoinRewardsPage = lazy(() =>
+  import('@/features/racing/coin-rewards/CoinRewardsPage').then((m) => ({
+    default: m.CoinRewardsPage,
+  })),
+);
+const MatchmakingConfigPage = lazy(() =>
+  import('@/features/racing/matchmaking-config/MatchmakingConfigPage').then((m) => ({
+    default: m.MatchmakingConfigPage,
+  })),
+);
+const LapTimesPage = lazy(() =>
+  import('@/features/racing/lap-times/LapTimesPage').then((m) => ({
+    default: m.LapTimesPage,
+  })),
+);
+const TrackPopularityPage = lazy(() =>
+  import('@/features/racing/track-popularity/TrackPopularityPage').then((m) => ({
+    default: m.TrackPopularityPage,
+  })),
+);
+const GrandPrixPage = lazy(() =>
+  import('@/features/racing/grand-prix/GrandPrixPage').then((m) => ({
+    default: m.GrandPrixPage,
+  })),
+);
+const GrandPrixEditorPage = lazy(() =>
+  import('@/features/racing/grand-prix/GrandPrixEditorPage').then((m) => ({
+    default: m.GrandPrixEditorPage,
+  })),
+);
 const RegionsPage = lazy(() =>
   import('@/features/geo/regions/RegionsPage').then((m) => ({
     default: m.RegionsPage,
@@ -280,6 +335,24 @@ export default function App() {
               <Route
                 path="/notifications/message-types/:id/editor"
                 element={<MessageTypeEditorPage />}
+              />
+              <Route path="/racing/circuits" element={<CircuitsPage />} />
+              <Route path="/racing/circuits/:id" element={<CircuitEditorPage />} />
+              <Route path="/racing/tracks" element={<TracksPage />} />
+              <Route path="/racing/cars" element={<CarsPage />} />
+              <Route path="/racing/terrain" element={<TerrainPage />} />
+              <Route path="/racing/coin-rewards" element={<CoinRewardsPage />} />
+              <Route path="/racing/matchmaking-config" element={<MatchmakingConfigPage />} />
+              <Route path="/racing/lap-times" element={<LapTimesPage />} />
+              <Route path="/racing/track-popularity" element={<TrackPopularityPage />} />
+              <Route path="/racing/grand-prix" element={<GrandPrixPage />} />
+              <Route
+                path="/racing/grand-prix/new"
+                element={<GrandPrixEditorPage />}
+              />
+              <Route
+                path="/racing/grand-prix/:id"
+                element={<GrandPrixEditorPage />}
               />
               <Route path="/geo/countries" element={<CountriesPage />} />
               <Route path="/geo/regions" element={<RegionsPage />} />

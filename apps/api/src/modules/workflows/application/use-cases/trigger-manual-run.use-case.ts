@@ -29,6 +29,7 @@ export class TriggerManualRunUseCase {
     key: string,
     payload: unknown,
     target?: TargetDescriptor | null,
+    isDryRun = false,
   ): Promise<WorkflowRun[]> {
     const definition = await this.definitions.findActiveByKey(key);
     if (!definition) throw new WorkflowDefinitionNotFoundError(key);
@@ -43,6 +44,7 @@ export class TriggerManualRunUseCase {
       event,
       triggerKind: 'manual',
       target: target ?? null,
+      isDryRun,
     });
   }
 }

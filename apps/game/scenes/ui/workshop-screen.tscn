@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/workshop_screen.gd" id="1_workshop"]
+
+[node name="WorkshopScreen" type="CanvasLayer"]
+script = ExtResource("1_workshop")

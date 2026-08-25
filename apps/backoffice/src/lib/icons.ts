@@ -1,16 +1,20 @@
 import {
+  BarChart3,
   Bell,
   Circle,
   ClipboardList,
   Contact,
   Files,
+  Flag,
   Inbox,
   Layers,
   LayoutDashboard,
   LayoutList,
+  MapPin,
   MessageSquare,
   Newspaper,
   Play,
+  Route,
   Send,
   Settings,
   Shield,
@@ -18,6 +22,7 @@ import {
   Users,
   Webhook,
   Workflow,
+  Wrench,
   Zap,
   type LucideIcon,
 } from 'lucide-react';
@@ -42,6 +47,11 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Layers,
   Inbox,
   Webhook,
+  Flag,
+  MapPin,
+  Route,
+  Wrench,
+  BarChart3,
   // Añadir según se creen secciones nuevas.
 };
 

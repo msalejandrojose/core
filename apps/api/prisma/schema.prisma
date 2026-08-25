@@ -232,11 +232,18 @@ model User {
   // ambos vinculados (login con password + social sobre la misma cuenta).
   googleId   String? @unique @map("google_id") @db.VarChar(255)
   facebookId String? @unique @map("facebook_id") @db.VarChar(255)
-  avatarUrl  String? @map("avatar_url") @db.VarChar(1024)
+
+  // Login nativo de plataforma (Play Games Services / Game Center). Mismo
+  // patrón que google/facebook: playerId del proveedor, único y nullable.
+  // Ninguno de los dos da email, así que estas cuentas nacen con un email de
+  // relleno sintetizado por el verificador correspondiente.
+  playGamesId  String? @unique @map("play_games_id") @db.VarChar(255)
+  gameCenterId String? @unique @map("game_center_id") @db.VarChar(255)
+  avatarUrl    String? @map("avatar_url") @db.VarChar(1024)
 
   // Relaciones
-  userRoles                 UserUserRole[]             @relation("UserRoles")
-  assignedRolesByUser       UserUserRole[]             @relation("AssignedBy")
+  userRoles                 UserUserRole[]                @relation("UserRoles")
+  assignedRolesByUser       UserUserRole[]                @relation("AssignedBy")
   userApiSectionPermissions UserApiSectionPermission[]
   storedFiles               StoredFile[]
   posts                     Post[]
@@ -244,6 +251,22 @@ model User {
   dashboards                Dashboard[]
   notifications             UserNotification[]
   devices                   Device[]
+  lapTimes                  LapTime[]
+  carArchetypes             PlayerCarArchetype[]
+  carParts                  PlayerCarPart[]
+  carSkins                  PlayerCarSkin[]
+  carLoadout                PlayerCarLoadout?
+  grandPrixAttempts         RacingGrandPrixAttempt[]
+  onlineRaces               RacingOnlineRace[]
+  onlineRaceParticipations  RacingOnlineRaceParticipant[]
+  liveRaceParticipations    RacingLiveRaceParticipant[]
+  playerRating              RacingPlayerRating?
+  botAccount                RacingBotAccount?
+  friendCode                RacingFriendCode?
+  friendshipsRequested      RacingFriendship[]            @relation("FriendshipRequester")
+  friendshipsReceived       RacingFriendship[]            @relation("FriendshipAddressee")
+  racingWallet              RacingWallet?
+  racingLeagueStandings     RacingLeagueStanding[]
 
   @@map("user")
 }
@@ -395,6 +418,37 @@ model ErrorLog {
   @@index([createdAt])
   @@index([userId])
   @@map("error_log")
+}
+
+/// Estado de una sesión de login social iniciada desde un cliente sin SDK
+/// nativo del proveedor (hoy Godot; el mismo mecanismo sirve para Apple el
+/// día que se necesite — TASK-216).
+enum GoogleAuthSessionStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+/// Sesión de login con Google vía navegador del sistema: la app abre
+/// `authUrl` en el navegador, Google redirige al callback de la API (no a la
+/// app — Godot no expone deep links sin un shim nativo), y la app hace
+/// polling de esta fila hasta que deja de estar `PENDING`.
+///
+/// `state` viaja como parámetro `state` de OAuth y es distinto de `id`: filtrar
+/// el `id` (p.ej. en un log) no basta para completar el canje sin conocer
+/// también el `state`, que solo lo tienen quien inició la sesión y Google.
+model GoogleAuthSession {
+  id            String                  @id @default(uuid()) @db.Char(36)
+  state         String                  @unique @db.VarChar(64)
+  status        GoogleAuthSessionStatus @default(PENDING)
+  accessToken   String?                 @map("access_token") @db.Text
+  userId        String?                 @map("user_id") @db.Char(36)
+  failureReason String?                 @map("failure_reason") @db.VarChar(255)
+  createdAt     DateTime                @default(now()) @map("created_at")
+  expiresAt     DateTime                @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("google_auth_session")
 }
 
 // ---------------------------------------------------------------------------
@@ -1259,4 +1313,952 @@ model Device {
 
   @@index([userId])
   @@map("device")
+}
+
+// ---------------------------------------------------------------------------
+// Racing
+// ---------------------------------------------------------------------------
+
+/// Ambientación de un circuito: de qué textura de paleta sale, replica de
+/// `TrackTheme.Kind` en `apps/game/scripts/track/track_theme.gd`.
+enum TrackTheme {
+  MEADOW
+  SNOW
+}
+
+/// Circuito base (p.ej. "Nevado"): geometría y ambientación, compartidas por
+/// todas sus variantes jugables (`Track`). Antes esto vivía duplicado en
+/// cada una de las ~18 filas de `Track` de un mismo circuito (2 sentidos × 3
+/// cilindradas × 3 arquetipos) — aquí vive una sola vez.
+model RacingCircuit {
+  id   String @id @default(uuid()) @db.Char(36)
+  slug String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  /// Checkpoints intermedios del trazado, sin contar la meta — de aquí sale
+  /// `Track.sectorCount = checkpoints + 1` para cada variante.
+  checkpoints Int @map("checkpoints")
+
+  /// Celdas del trazado en orden de recorrido HACIA ADELANTE, como
+  /// `TrackCatalog.Layout.path`. El sentido inverso reutiliza esta misma
+  /// lista — es la misma pista recorrida al revés, no otra geometría.
+  path Json
+
+  /// Tema visual del circuito entero. Cuando el terreno de sección avance
+  /// (TASK-271), esto pasa a ser el valor por defecto de las celdas que no
+  /// tengan un terreno propio pintado encima, no se sustituye por ello.
+  theme TrackTheme @default(MEADOW)
+
+  /// Agarre de la superficie: 1.0 asfalto seco. Mismo eje que
+  /// `TrackCatalog.Layout.grip` y `Vehicle.grip` en el cliente.
+  grip Float @default(1.0)
+
+  /// FK suave a StoredFile (módulo storage) — miniatura del circuito. Sin
+  /// `@relation`, mismo patrón que `Post.coverImageId`.
+  imageId String? @map("image_id") @db.Char(36)
+
+  /// Interruptor manual del admin: desactivar un circuito roto, independiente
+  /// de si le toca o no estar en la rotación de hoy.
+  isActive Boolean @default(true) @map("is_active")
+
+  /// Si está entre los circuitos destacados HOY — lo escribe el rotador
+  /// diario (`AutoRotateCircuitsUseCase`), no el admin a mano. Por defecto
+  /// `true` para que un circuito recién creado sea visible desde ya, hasta
+  /// que la primera rotación programada decida lo contrario.
+  isInRotation Boolean @default(true) @map("is_in_rotation")
+
+  /// Última vez que ENTRÓ en la rotación — de aquí sale si "hoy" ya tuvo su
+  /// rotación o toca recalcular (ver `circuitRotationNeedsRotation`).
+  rotatedAt DateTime? @map("rotated_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tracks Track[]
+
+  @@index([isActive, isInRotation])
+  @@map("racing_circuit")
+}
+
+enum RacingCircuitRotationConfigKey {
+  CIRCUITS_PER_DAY
+}
+
+/// Conjunto cerrado de parámetros de la rotación diaria de circuitos —
+/// mismo patrón que `RacingLeagueConfig`/`RacingMatchmakingConfig`: sin
+/// create/delete desde el backoffice, solo ajustar el valor.
+model RacingCircuitRotationConfig {
+  id    String                         @id @default(uuid()) @db.Char(36)
+  key   RacingCircuitRotationConfigKey @unique
+  value Int
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_circuit_rotation_config")
+}
+
+/// Variante jugable de un `RacingCircuit`: un sentido de marcha (normal o
+/// "-rev") × una cilindrada × un arquetipo de vehículo. Cada combinación es
+/// su propio leaderboard y su propio suelo de plausibilidad — un 50cc 4x4 y
+/// un 150cc F1 no son comparables (TASK-233) — así que necesitan filas
+/// separadas aunque compartan el mismo circuito base.
+model Track {
+  id   String @id @default(uuid()) @db.Char(36)
+  /// Coincide con el id del catálogo del cliente, con sufijo "-rev" en inverso.
+  slug String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  circuitId String        @map("circuit_id") @db.Char(36)
+  circuit   RacingCircuit @relation(fields: [circuitId], references: [id], onDelete: Cascade)
+
+  /// Nº de SECTORES de la vuelta = checkpoints intermedios + la meta. Es
+  /// también la longitud que debe tener `splitsMs`. En el cliente es
+  /// `LapTimer.sector_count()`.
+  sectorCount Int @map("sector_count")
+
+  /// Suelo de plausibilidad, en ms. Nadie da una vuelta más rápida que esto,
+  /// así que un tiempo por debajo se rechaza sin más análisis. Es la validación
+  /// más barata que existe contra el manipulador casual.
+  minPlausibleMs Int @map("min_plausible_ms")
+
+  /// Interruptor manual de ESTA variante concreta — independiente del
+  /// circuito: permite desactivar solo, p.ej., la combinación 150cc-F1 sin
+  /// tocar el resto.
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lapTimes              LapTime[]
+  grandPrixStages       RacingGrandPrixStage[]
+  grandPrixStageResults RacingGrandPrixStageResult[]
+  onlineRaces           RacingOnlineRace[]
+  liveRaces             RacingLiveRace[]
+
+  @@index([isActive])
+  @@index([circuitId])
+  @@map("racing_track")
+}
+
+/// Una temporada acota qué intentos entran en la clasificación (TASK-227):
+/// sin esto, el leaderboard de un circuito nunca cambia y quien llegó
+/// primero gana para siempre — una temporada es lo que lo convierte en algo
+/// a lo que merece la pena volver.
+///
+/// `endsAt` null = temporada abierta (la actual). Como mucho una fila puede
+/// estar abierta a la vez — lo exige la lógica de aplicación al crear, no una
+/// constraint de BBDD: MySQL no tiene índice único parcial ("WHERE ends_at IS
+/// NULL"), y forzarlo con un valor centinela sería peor que comprobarlo en
+/// el use-case.
+///
+/// El cierre y la rotación automática (crear la siguiente al cerrar esta)
+/// son aparte (TASK-228) — este modelo solo define la temporada y qué
+/// intentos caen dentro; quién decide cuándo cerrarla es otro problema.
+model RacingSeason {
+  id   String @id @default(uuid()) @db.Char(36)
+  name String @db.VarChar(80)
+
+  startsAt DateTime  @map("starts_at")
+  endsAt   DateTime? @map("ends_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lapTimes        LapTime[]
+  leagueStandings RacingLeagueStanding[]
+
+  /// Para encontrar la temporada actual y listar por fecha.
+  @@index([startsAt])
+  @@map("racing_season")
+}
+
+/// Un intento de vuelta subido por un jugador.
+///
+/// Se guardan TODOS los intentos, no solo el mejor: el histórico es la materia
+/// prima de los KPIs y de cualquier detección de trampas posterior. El mejor
+/// tiempo se calcula consultando, no guardando estado aparte que pueda
+/// desincronizarse.
+model LapTime {
+  id      String @id @default(uuid()) @db.Char(36)
+  userId  String @map("user_id") @db.Char(36)
+  trackId String @map("track_id") @db.Char(36)
+
+  /// Temporada en la que se corrió (TASK-227): la que estuviera abierta en
+  /// el momento del intento, fijada al crear la fila y nunca recalculada —
+  /// si se editara `startsAt`/`endsAt` de una temporada ya cerrada, los
+  /// intentos que cayeron dentro no deben moverse de sitio. Null = intento
+  /// de antes de que existieran las temporadas, o subido sin ninguna
+  /// abierta; cuenta igual para la mejor marca personal y el emparejamiento
+  /// de fantasmas (sin cambios ahí), pero queda fuera de cualquier
+  /// clasificación acotada a una temporada concreta.
+  seasonId String? @map("season_id") @db.Char(36)
+
+  /// Tiempo total en milisegundos. Entero: un tiempo se compara y se ordena, y
+  /// con floats dos vueltas idénticas dejan de serlo.
+  durationMs Int @map("duration_ms")
+
+  /// Splits acumulados por sector, en ms. JSON porque el nº varía por circuito.
+  /// Monótono creciente y con el último igual a `durationMs`.
+  splitsMs Json @map("splits_ms")
+
+  /// Versión del build que generó el tiempo. Cualquier cambio en la física
+  /// invalida la comparabilidad con los tiempos anteriores; sin este campo, el
+  /// primer ajuste de manejo obliga a borrar el leaderboard entero o a vivir
+  /// con datos mentirosos.
+  clientVersion String @map("client_version") @db.VarChar(32)
+
+  /// Anulado desde el backoffice (TASK-239/242) sin borrar la fila, para que
+  /// quede constancia. Nulo = válido. Un tiempo anulado no cuenta para el
+  /// leaderboard, la posición ni la mejor marca personal.
+  invalidatedAt DateTime? @map("invalidated_at")
+
+  /// Instantáneas de posición/rotación de la vuelta, para reproducirla como
+  /// fantasma (TASK-219/220/221). Solo se guarda si esta fila es la mejor
+  /// marca del jugador en el circuito — el resto de intentos no lo
+  /// necesitan, y guardarlo en todos multiplicaría el almacenamiento sin
+  /// uso claro. Formato: snapshots a ~20 Hz, decisión de partida de
+  /// TASK-219.
+  ghostSnapshots Json? @map("ghost_snapshots")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track             Track                   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  /// SetNull y no Cascade: borrar una temporada no puede llevarse por delante
+  /// tiempos de vuelta de verdad — la fila se queda, solo pierde la etiqueta.
+  season            RacingSeason?           @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  coinLedgerEntries RacingCoinLedgerEntry[]
+
+  /// El leaderboard consulta por circuito ordenando por tiempo.
+  @@index([trackId, durationMs])
+  /// Y la mejor marca propia, por circuito y usuario.
+  @@index([userId, trackId, durationMs])
+  /// El rate limit del anti-cheat mira el último intento de cada usuario.
+  @@index([userId, createdAt])
+  /// La clasificación acotada a una temporada (TASK-227).
+  @@index([seasonId, trackId, durationMs])
+  @@map("racing_lap_time")
+}
+
+/// Hueco de equipamiento de una `CarPart`. Un jugador lleva como mucho una
+/// pieza por categoría a la vez (TASK-263): no tiene sentido llevar dos
+/// juegos de neumáticos montados.
+enum CarPartCategory {
+  TIRES
+  WING
+  CHASSIS
+}
+
+/// Catálogo de arquetipos de coche (TASK-262): normal/F1/4x4, cada uno con su
+/// propio perfil de partida sobre los mismos ejes que ya usa `Vehicle` en el
+/// cliente — `speedScale` (velocidad punta) y `grip` (agarre en asfalto seco).
+///
+/// `offroadGripModifier` es el eje que decide TASK-264: multiplica el grip
+/// efectivo del circuito/celda cuando la superficie NO es asfalto seco (tema
+/// `SNOW`, o una celda con terreno de sección pintado). En asfalto seco no se
+/// aplica ningún ajuste.
+model CarArchetype {
+  id   String @id @default(uuid()) @db.Char(36)
+  /// Identificador estable, independiente del nombre visible.
+  code String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  speedScale          Float @map("speed_scale")
+  grip                Float
+  offroadGripModifier Float @map("offroad_grip_modifier")
+
+  /// Si es true, todos los jugadores lo tienen desbloqueado sin necesidad de
+  /// una fila en `PlayerCarArchetype` — mismo campo y mismo criterio que
+  /// `CarSkin.isUnlockedByDefault`. Por defecto true en los tres arquetipos
+  /// de hoy: la economía de monedas (TASK-286/318/319) trae el modelo de
+  /// propiedad, pero no bloquea nada todavía — eso le toca a la tienda
+  /// (TASK-320), que es quien de verdad puede poner esto en false a la vez
+  /// que ofrece cómo comprarlo.
+  isUnlockedByDefault Boolean @default(true) @map("is_unlocked_by_default")
+
+  /// Precio en monedas en la tienda (TASK-320) — null si no está a la venta
+  /// (hoy es el caso de todo lo `isUnlockedByDefault`, aunque las dos cosas
+  /// son independientes: podría bloquearse sin ponerse a la venta, p.ej. un
+  /// desbloqueable solo por racha).
+  priceCoins Int? @map("price_coins")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  playerOwnerships  PlayerCarArchetype[]
+  loadouts          PlayerCarLoadout[]
+  coinLedgerEntries RacingCoinLedgerEntry[]
+
+  @@index([isActive])
+  @@map("racing_car_archetype")
+}
+
+/// Catálogo de piezas montables (TASK-263). Independientes del arquetipo:
+/// una misma pieza vale para cualquier arquetipo. Los efectos son DELTAS que
+/// se suman al perfil base del arquetipo equipado, no valores absolutos —
+/// ver `computeCarStats` en el dominio.
+model CarPart {
+  id       String          @id @default(uuid()) @db.Char(36)
+  code     String          @unique @db.VarChar(64)
+  category CarPartCategory
+  name     String          @db.VarChar(120)
+
+  speedScale Float @map("speed_scale")
+  grip       Float
+
+  /// Mismo campo y mismo criterio que `CarArchetype.isUnlockedByDefault` —
+  /// ver ese comentario.
+  isUnlockedByDefault Boolean @default(true) @map("is_unlocked_by_default")
+
+  /// Mismo campo y mismo criterio que `CarArchetype.priceCoins`.
+  priceCoins Int? @map("price_coins")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  playerOwnerships  PlayerCarPart[]
+  loadoutTires      PlayerCarLoadout[]      @relation("LoadoutTires")
+  loadoutWing       PlayerCarLoadout[]      @relation("LoadoutWing")
+  loadoutChassis    PlayerCarLoadout[]      @relation("LoadoutChassis")
+  coinLedgerEntries RacingCoinLedgerEntry[]
+
+  @@index([category, isActive])
+  @@map("racing_car_part")
+}
+
+/// Qué arquetipos tiene desbloqueados cada jugador. Separado del equipamiento
+/// (`PlayerCarLoadout`): tener uno no implica llevarlo puesto. Vive aparte
+/// desde ya aunque hoy todos los arquetipos se concedan por igual, porque la
+/// economía de monedas (TASK-286) todavía no ha cerrado en qué se gastan —
+/// este es el sitio natural para "comprar" un arquetipo el día que se decida.
+model PlayerCarArchetype {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String   @map("user_id") @db.Char(36)
+  archetypeId String   @map("archetype_id") @db.Char(36)
+  unlockedAt  DateTime @default(now()) @map("unlocked_at")
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  archetype CarArchetype @relation(fields: [archetypeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, archetypeId])
+  @@map("racing_player_car_archetype")
+}
+
+/// Qué piezas tiene desbloqueadas cada jugador. Mismo motivo que
+/// `PlayerCarArchetype` para separarlo del equipamiento.
+model PlayerCarPart {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String   @map("user_id") @db.Char(36)
+  partId     String   @map("part_id") @db.Char(36)
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  part CarPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, partId])
+  @@map("racing_player_car_part")
+}
+
+/// Catálogo de aspectos visuales del coche (TASK-229). Puramente cosmético:
+/// a diferencia de `CarArchetype`/`CarPart`, NO tiene `speedScale`/`grip` ni
+/// ningún otro eje de física — en cuanto un skin tocara rendimiento dejaría
+/// de ser cosmético y contaminaría las clasificaciones (eso sería la fase de
+/// mejoras del coche, discusión aparte). `modelPath` es la ruta al recurso
+/// del cliente Godot (reemplaza el modelo por defecto del arquetipo
+/// equipado, ver `apps/game/scripts/race/race_director.gd`).
+model CarSkin {
+  id   String @id @default(uuid()) @db.Char(36)
+  code String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  modelPath String @map("model_path") @db.VarChar(255)
+
+  /// Si es true, todos los jugadores lo tienen disponible sin necesidad de
+  /// una fila en `PlayerCarSkin` — es el caso de todos los skins mientras no
+  /// exista ningún sistema que los conceda (pagos, rachas...). Un skin
+  /// futuro con esto en false solo se puede equipar si el jugador tiene una
+  /// fila de propiedad.
+  isUnlockedByDefault Boolean @default(true) @map("is_unlocked_by_default")
+
+  /// Mismo campo y mismo criterio que `CarArchetype.priceCoins`.
+  priceCoins Int? @map("price_coins")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  playerOwnerships  PlayerCarSkin[]
+  loadouts          PlayerCarLoadout[]
+  coinLedgerEntries RacingCoinLedgerEntry[]
+
+  @@index([isActive])
+  @@map("racing_car_skin")
+}
+
+/// Qué skins tiene desbloqueados cada jugador más allá de los que ya son
+/// gratis para todos (`CarSkin.isUnlockedByDefault`). Es el sitio donde un
+/// futuro sistema de recompensas o de pagos concede la propiedad de un skin
+/// exclusivo — hoy se concede a mano desde el backoffice
+/// (`AdminGrantCarSkinUseCase`), sin que exista todavía ese sistema.
+model PlayerCarSkin {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String   @map("user_id") @db.Char(36)
+  skinId     String   @map("skin_id") @db.Char(36)
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skin CarSkin @relation(fields: [skinId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skinId])
+  @@map("racing_player_car_skin")
+}
+
+/// Configuración de coche que un jugador tiene puesta AHORA MISMO. Una fila
+/// por jugador (no por circuito ni por intento): es una preferencia global,
+/// igual que la cilindrada o el sentido en `GameSettings`.
+///
+/// Sin fila = configuración por defecto (el primer arquetipo del catálogo,
+/// sin piezas, sin skin) — no hace falta backfill al desplegar esto ni al
+/// dar de alta un jugador nuevo, la fila se crea la primera vez que alguien
+/// cambia algo.
+model PlayerCarLoadout {
+  userId        String  @id @map("user_id") @db.Char(36)
+  archetypeId   String  @map("archetype_id") @db.Char(36)
+  tiresPartId   String? @map("tires_part_id") @db.Char(36)
+  wingPartId    String? @map("wing_part_id") @db.Char(36)
+  chassisPartId String? @map("chassis_part_id") @db.Char(36)
+  skinId        String? @map("skin_id") @db.Char(36)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  archetype   CarArchetype @relation(fields: [archetypeId], references: [id])
+  tiresPart   CarPart?     @relation("LoadoutTires", fields: [tiresPartId], references: [id])
+  wingPart    CarPart?     @relation("LoadoutWing", fields: [wingPartId], references: [id])
+  chassisPart CarPart?     @relation("LoadoutChassis", fields: [chassisPartId], references: [id])
+  skin        CarSkin?     @relation(fields: [skinId], references: [id])
+
+  @@map("racing_player_car_loadout")
+}
+
+/// Terreno de sección dentro de UN circuito (TASK-270/271), distinto del tema
+/// visual del circuito entero (`Track.theme`). Conjunto CERRADO: a diferencia
+/// de `CarArchetype`/`CarPart`, estos cuatro tipos están cableados en el
+/// dominio (`validateTrackPath`) y en el cliente (`TrackTerrain.gd`), así que
+/// esta tabla no tiene create/delete — solo ajustar los factores de los
+/// cuatro sin desplegar el juego (TASK-304).
+enum RacingTerrainType {
+  ASPHALT
+  ICE
+  MUD
+  WATER
+}
+
+/// Efecto numérico de cada tipo de terreno de sección. Sembrado con la
+/// decisión de partida de TASK-270; `RacingApi.terrain_effects()` en el
+/// cliente Godot los trae en cada arranque y cae a sus propios valores por
+/// defecto si no hay red.
+model RacingTerrainEffect {
+  id   String            @id @default(uuid()) @db.Char(36)
+  type RacingTerrainType @unique
+
+  /// Multiplicador de agarre. Mismo eje que `Track.grip` y `Vehicle.grip`.
+  grip          Float
+  /// Si además de perder agarre, frena la velocidad punta mientras se pisa.
+  slowsTopSpeed Boolean @map("slows_top_speed")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_terrain_effect")
+}
+
+/// Un Grand Prix agrupa varios circuitos en un orden fijo y agrega una
+/// clasificación propia (TASK-247): decisión de partida — suma de tiempos,
+/// no puntos por posición, porque el resto del juego es puramente
+/// contrarreloj y esto reutiliza ese mismo eje sin inventar un concepto de
+/// "ganar manga" nuevo.
+model RacingGrandPrix {
+  id   String @id @default(uuid()) @db.Char(36)
+  slug String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  stages   RacingGrandPrixStage[]
+  attempts RacingGrandPrixAttempt[]
+
+  @@index([isActive])
+  @@map("racing_grand_prix")
+}
+
+/// Un circuito del Grand Prix y su orden de disputa. Fila propia (no un
+/// array de ids en `RacingGrandPrix`) para poder indexar por circuito y
+/// para que el orden sea una columna consultable, no una posición dentro
+/// de un JSON.
+model RacingGrandPrixStage {
+  id          String @id @default(uuid()) @db.Char(36)
+  grandPrixId String @map("grand_prix_id") @db.Char(36)
+  trackId     String @map("track_id") @db.Char(36)
+  /// Orden de disputa dentro del Grand Prix, empezando en 0.
+  order       Int
+
+  grandPrix RacingGrandPrix @relation(fields: [grandPrixId], references: [id], onDelete: Cascade)
+  track     Track           @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([grandPrixId, order])
+  @@unique([grandPrixId, trackId])
+  @@map("racing_grand_prix_stage")
+}
+
+/// TASK-247: se puede abandonar y reanudar. `IN_PROGRESS` es el intento que
+/// se retoma la próxima vez que el jugador entra al Grand Prix; al terminar
+/// la última manga pasa a `COMPLETED` y `totalDurationMs` queda fijado.
+enum RacingGrandPrixAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// Un intento de un jugador de correr un Grand Prix entero. Puede haber
+/// muchos COMPLETED por (jugador, Grand Prix) — cada uno es una carrera
+/// distinta, igual que `LapTime` guarda todos los intentos — pero como
+/// mucho uno IN_PROGRESS a la vez, que es el que se reanuda.
+model RacingGrandPrixAttempt {
+  id          String @id @default(uuid()) @db.Char(36)
+  userId      String @map("user_id") @db.Char(36)
+  grandPrixId String @map("grand_prix_id") @db.Char(36)
+
+  status          RacingGrandPrixAttemptStatus @default(IN_PROGRESS)
+  /// Suma de `RacingGrandPrixStageResult.durationMs`. Nulo mientras está en
+  /// curso — se fija al completar la última manga, no se recalcula al vuelo.
+  totalDurationMs Int?                         @map("total_duration_ms")
+
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  user      User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grandPrix RacingGrandPrix              @relation(fields: [grandPrixId], references: [id], onDelete: Cascade)
+  results   RacingGrandPrixStageResult[]
+
+  /// Encontrar el intento en curso a reanudar, por jugador y Grand Prix.
+  @@index([userId, grandPrixId, status])
+  /// Clasificación agregada: mejor total completado por Grand Prix.
+  @@index([grandPrixId, status, totalDurationMs])
+  @@map("racing_grand_prix_attempt")
+}
+
+/// Resultado de UNA manga (un circuito) dentro de un intento de Grand Prix.
+/// Independiente de `LapTime`: una manga de Grand Prix no compite en el
+/// leaderboard normal del circuito, son clasificaciones separadas a
+/// propósito, igual que un circuito normal y su sentido inverso.
+model RacingGrandPrixStageResult {
+  id          String   @id @default(uuid()) @db.Char(36)
+  attemptId   String   @map("attempt_id") @db.Char(36)
+  trackId     String   @map("track_id") @db.Char(36)
+  durationMs  Int      @map("duration_ms")
+  completedAt DateTime @default(now()) @map("completed_at")
+
+  attempt RacingGrandPrixAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  track   Track                  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, trackId])
+  @@map("racing_grand_prix_stage_result")
+}
+
+/// Papel de un participante dentro de una carrera online (TASK-282): el
+/// jugador real, más hasta dos fantasmas rivales — uno ligeramente mejor
+/// (objetivo, a alcanzar) y uno ligeramente peor (amenaza, a no dejar pasar).
+/// Ninguno de los dos rivales es obligatorio: sin amenaza si nadie va peor,
+/// y el objetivo puede ser el propio fantasma si el jugador ya va primero.
+enum RacingOnlineRaceParticipantRole {
+  PLAYER
+  TARGET
+  THREAT
+}
+
+/// Una tanda de carrera asíncrona completa: el jugador contra hasta dos
+/// fantasmas rivales, ya jugada de principio a fin (TASK-283). Distinta de
+/// un `LapTime` suelto — esa tabla sigue siendo la fuente de los tiempos y
+/// de los propios fantasmas (TASK-219/220/221); esta es el PAQUETE de una
+/// carrera concreta con su resultado ya resuelto.
+///
+/// El emparejamiento en sí (qué dos rivales tocan) lo decide otra tarea
+/// (`API: emparejar rivales y armar una carrera`, TASK-284) — aquí solo se
+/// registra el resultado de una carrera ya corrida, con los rivales que el
+/// cliente ya conocía de antemano.
+model RacingOnlineRace {
+  id      String @id @default(uuid()) @db.Char(36)
+  userId  String @map("user_id") @db.Char(36)
+  trackId String @map("track_id") @db.Char(36)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user              User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track             Track                         @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  participants      RacingOnlineRaceParticipant[]
+  coinLedgerEntries RacingCoinLedgerEntry[]
+
+  /// El historial de carreras online de un jugador, más recientes primero.
+  @@index([userId, createdAt])
+  @@map("racing_online_race")
+}
+
+/// El resultado de UNO de los hasta 3 corredores de una `RacingOnlineRace`.
+/// `position` y `deltaMs` se calculan UNA VEZ al registrar la carrera y se
+/// guardan tal cual — reconstruir un podio pasado no debe recalcular nada
+/// (criterio de done de TASK-283), igual que `totalDurationMs` en
+/// `RacingGrandPrixAttempt`.
+model RacingOnlineRaceParticipant {
+  id     String                          @id @default(uuid()) @db.Char(36)
+  raceId String                          @map("race_id") @db.Char(36)
+  role   RacingOnlineRaceParticipantRole
+  /// De quién es este resultado: el propio jugador en el papel PLAYER, o el
+  /// rival cuyo fantasma se usó en TARGET/THREAT (puede coincidir con el
+  /// jugador si no había rival mejor y se corrió contra su propio récord).
+  userId String                          @map("user_id") @db.Char(36)
+
+  durationMs Int @map("duration_ms")
+  /// 1, 2 o 3 — puesto en ESTA carrera, no en el leaderboard general del circuito.
+  position   Int
+  /// Diferencia contra el ganador de la carrera, en ms. 0 para quien gana.
+  deltaMs    Int @map("delta_ms")
+
+  race RacingOnlineRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Un mismo rol como mucho una vez por carrera (un solo PLAYER, como mucho
+  /// un TARGET, como mucho un THREAT).
+  @@unique([raceId, role])
+  @@map("racing_online_race_participant")
+}
+
+/// Estado de una carrera en vivo (TASK-323, diseño técnico de la fase
+/// online real). A diferencia de `RacingOnlineRace` (fantasmas asíncronos),
+/// aquí no hay filas intermedias: la sala vive en memoria en el gateway
+/// mientras dura (WAITING_PLAYERS → COUNTDOWN → RACING) y solo se persiste
+/// UNA vez, ya resuelta, al terminar — mismo criterio que TASK-283: no
+/// recalcular nada al leer un podio ya jugado.
+enum RacingLiveRaceStatus {
+  FINISHED
+  ABANDONED
+}
+
+/// Una carrera en vivo ya terminada, con hasta `RacingLiveRaceParticipant`
+/// corredores REALES simultáneos — a diferencia de una `RacingOnlineRace`,
+/// aquí no hay fantasmas: cada participante es una cuenta que estuvo
+/// conectada de verdad. `status` = ABANDONED si nadie llegó a cruzar la
+/// meta (todos desconectados antes de terminar) — se guarda igualmente para
+/// no perder el rastro de la sala, pero no reparte recompensas.
+model RacingLiveRace {
+  id      String               @id @default(uuid()) @db.Char(36)
+  trackId String               @map("track_id") @db.Char(36)
+  status  RacingLiveRaceStatus
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  finishedAt DateTime @map("finished_at")
+
+  track             Track                       @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  participants      RacingLiveRaceParticipant[]
+  coinLedgerEntries RacingCoinLedgerEntry[]
+
+  @@index([trackId, createdAt])
+  @@map("racing_live_race")
+}
+
+/// El resultado de UNO de los corredores reales de una `RacingLiveRace`.
+/// `durationMs`/`position`/`deltaMs` son null si el jugador se desconectó
+/// sin cruzar la meta (DNF) — `disconnected` lo distingue de un puesto real
+/// con tiempo peor.
+model RacingLiveRaceParticipant {
+  id     String @id @default(uuid()) @db.Char(36)
+  raceId String @map("race_id") @db.Char(36)
+  userId String @map("user_id") @db.Char(36)
+
+  durationMs   Int?    @map("duration_ms")
+  position     Int?
+  deltaMs      Int?    @map("delta_ms")
+  disconnected Boolean @default(false)
+
+  race RacingLiveRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Una cuenta no puede aparecer dos veces en la misma sala.
+  @@unique([raceId, userId])
+  @@map("racing_live_race_participant")
+}
+
+/// Rating tipo Elo/MMR (TASK-323, tarea 3 del desglose de la fase online
+/// real): distinto del saldo de monedas (`RacingWallet`) — esto mide nivel
+/// para el matchmaking (tarea 4), no es una moneda que se gasta. Una fila
+/// por jugador, no por circuito: el nivel es de la persona, no del trazado.
+/// `rating` arranca en 1000 (ver `computeRatingChanges`) la primera vez que
+/// se crea la fila — antes de eso, el jugador simplemente no tiene fila
+/// (igual que `RacingWallet`, nunca falla por ausencia).
+model RacingPlayerRating {
+  userId String @id @map("user_id") @db.Char(36)
+  rating Int    @default(1000)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("racing_player_rating")
+}
+
+/// Marca qué filas de `User` son rivales ficticios (TASK-323, tarea 5): se
+/// usan para completar una sala en vivo cuando no hay suficientes jugadores
+/// reales en cola. Son cuentas `User` normales — hace falta que lo sean
+/// porque `RacingLiveRaceParticipant.userId` tiene FK a `User` — esta tabla
+/// solo las etiqueta como bot, sin tocar en nada el modelo de usuario
+/// compartido por el resto de la app.
+model RacingBotAccount {
+  userId String @id @map("user_id") @db.Char(36)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("racing_bot_account")
+}
+
+/// Fuente de un movimiento de monedas — cerrado por diseño (TASK-286).
+enum RacingCoinSource {
+  RACE_FIRST_PLACE
+  RACE_SECOND_PLACE
+  RACE_THIRD_PLACE
+  REWARDED_AD
+  /// Cuantificados en TASK-321.
+  PERSONAL_BEST
+  BEAT_FRIEND
+  WIN_STREAK
+  /// Sumideros (TASK-320): comprar en la tienda es la primera fuente que
+  /// resta en vez de sumar.
+  PURCHASE_ARCHETYPE
+  PURCHASE_PART
+  PURCHASE_SKIN
+}
+
+/// Qué importe concreto se está ajustando (TASK-322) — más fino que
+/// `RacingCoinSource`: la racha de victorias es una única fuente en el
+/// ledger (`WIN_STREAK`) pero tres importes distintos según el tramo, así
+/// que no puede ser la misma clave.
+enum RacingCoinRewardKey {
+  RACE_FIRST_PLACE
+  RACE_SECOND_PLACE
+  RACE_THIRD_PLACE
+  REWARDED_AD
+  PERSONAL_BEST
+  BEAT_FRIEND
+  WIN_STREAK_2
+  WIN_STREAK_3
+  WIN_STREAK_4_PLUS
+}
+
+/// Importe editable desde el backoffice para cada bono de la economía de
+/// monedas (TASK-322) — antes hardcodeado en `racing-coin-rewards.ts`.
+/// Conjunto CERRADO: un valor por cada `RacingCoinRewardKey`, sembrado al
+/// desplegar (ver `seed-racing-coin-rewards.ts`), sin create/delete desde el
+/// backoffice — mismo criterio que `RacingTerrainEffect`. 0 = bono
+/// desactivado, no se acredita nada (en vez de borrar la fila).
+model RacingCoinRewardConfig {
+  id     String              @id @default(uuid()) @db.Char(36)
+  key    RacingCoinRewardKey @unique
+  amount Int
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_coin_reward_config")
+}
+
+/// Qué parámetro del matchmaking de la fase online real se está editando
+/// (TASK-323, tarea 8) — antes constantes en código (`compute-rating-
+/// changes.ts`, `matchmaking-rating-window.ts`, `live-race-room.manager.ts`).
+enum RacingMatchmakingConfigKey {
+  /// K de la fórmula de Elo (`computeRatingChanges`) — cuánto se mueve el
+  /// rating por carrera. Alto a propósito por defecto: con pocas carreras
+  /// por jugador al arrancar el modo, conviene que converja rápido.
+  RATING_K_FACTOR
+  /// Ventana de rating admitida al abrir una sala nueva, antes de que
+  /// empiece a ensancharse con el tiempo de espera (`matchmakingRatingWindow`).
+  RATING_WINDOW_BASE_POINTS
+  /// Cuánto se espera, desde que se crea una sala, antes de rellenar los
+  /// huecos que falten con rivales ficticios si nadie más se ha unido.
+  BOT_FILL_TIMEOUT_MS
+}
+
+/// Editable desde el backoffice sin desplegar código (TASK-323, tarea 8).
+/// Conjunto CERRADO de tres filas, mismo criterio que
+/// `RacingCoinRewardConfig` — sin create/delete, solo ajustar el valor.
+model RacingMatchmakingConfig {
+  id    String                     @id @default(uuid()) @db.Char(36)
+  key   RacingMatchmakingConfigKey @unique
+  value Int
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_matchmaking_config")
+}
+
+/// Las 5 ligas de temporada (TASK-291): ascenso/descenso por umbral
+/// continuo de puntos, no por percentil al cerrar temporada — en cuanto
+/// `RacingLeagueStanding.points` cruza la frontera de `RacingLeagueConfig`,
+/// cambia de liga al instante.
+enum RacingLeagueTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+/// Puntos por posición (solo cuentan carreras con rivales de verdad: en
+/// vivo o asíncronas — vuelta suelta/contrarreloj no puntúan, no hay contra
+/// quién competir) + los 4 umbrales de ascenso, todo en un mismo conjunto
+/// cerrado editable, mismo criterio que `RacingMatchmakingConfig` (mezcla
+/// parámetros de naturaleza distinta en una sola tabla en vez de dos).
+enum RacingLeagueConfigKey {
+  POINTS_FIRST_PLACE
+  POINTS_SECOND_PLACE
+  POINTS_THIRD_PLACE
+  TIER_SILVER_THRESHOLD
+  TIER_GOLD_THRESHOLD
+  TIER_PLATINUM_THRESHOLD
+  TIER_DIAMOND_THRESHOLD
+}
+
+model RacingLeagueConfig {
+  id    String                @id @default(uuid()) @db.Char(36)
+  key   RacingLeagueConfigKey @unique
+  value Int
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("racing_league_config")
+}
+
+/// Puntos y liga de UN jugador en UNA temporada. Sin fila = Bronce/0 (se
+/// crea perezosamente en su primera carrera puntuable de la temporada,
+/// mismo criterio que `RacingWallet`) — así el "reinicio por temporada" que
+/// pide TASK-291 sale gratis: cada temporada nueva no tiene ninguna fila
+/// todavía, sin que haga falta tocar el rotador de temporadas (TASK-228).
+model RacingLeagueStanding {
+  userId   String           @map("user_id") @db.Char(36)
+  seasonId String           @map("season_id") @db.Char(36)
+  tier     RacingLeagueTier @default(BRONZE)
+  points   Int              @default(0)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  season RacingSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@id([userId, seasonId])
+  /// Para una futura clasificación por liga dentro de la temporada (fase 2).
+  @@index([seasonId, tier, points])
+  @@map("racing_league_standing")
+}
+
+/// Saldo de monedas de un jugador (TASK-318, economía de TASK-286). Una
+/// fila por jugador, igual que `PlayerCarLoadout` — sin fila = 0 monedas, se
+/// crea perezosamente en el primer movimiento. El saldo vive aquí
+/// materializado para lectura rápida; `RacingCoinLedgerEntry` es la fuente
+/// de verdad auditable de cómo se llegó a él.
+model RacingWallet {
+  userId    String   @id @map("user_id") @db.Char(36)
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries RacingCoinLedgerEntry[]
+
+  @@map("racing_wallet")
+}
+
+/// Un movimiento de monedas, inmutable — nunca se edita ni se borra, solo se
+/// añaden filas nuevas (igual que `LapTime` con los intentos). Es lo que
+/// permite depurar "no me llegaron las monedas" y alimentar KPIs de producto
+/// sin fiarse solo del saldo materializado de `RacingWallet`.
+model RacingCoinLedgerEntry {
+  id     String           @id @default(uuid()) @db.Char(36)
+  userId String           @map("user_id") @db.Char(36)
+  /// Positivo = ingreso, negativo = gasto (TASK-320: comprar en la tienda es
+  /// el primer sumidero — antes de esto nunca era negativo).
+  amount Int
+  source RacingCoinSource
+
+  /// A lo sumo uno de los seis no-null, según `source` — qué generó este
+  /// movimiento en concreto. Igual que con `onlineRaceId`: rastro auditable
+  /// real (TASK-318), no solo el número.
+  onlineRaceId String? @map("online_race_id") @db.Char(36)
+  liveRaceId   String? @map("live_race_id") @db.Char(36)
+  lapTimeId    String? @map("lap_time_id") @db.Char(36)
+  archetypeId  String? @map("archetype_id") @db.Char(36)
+  partId       String? @map("part_id") @db.Char(36)
+  skinId       String? @map("skin_id") @db.Char(36)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  wallet     RacingWallet      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  onlineRace RacingOnlineRace? @relation(fields: [onlineRaceId], references: [id], onDelete: SetNull)
+  liveRace   RacingLiveRace?   @relation(fields: [liveRaceId], references: [id], onDelete: SetNull)
+  lapTime    LapTime?          @relation(fields: [lapTimeId], references: [id], onDelete: SetNull)
+  archetype  CarArchetype?     @relation(fields: [archetypeId], references: [id], onDelete: SetNull)
+  part       CarPart?          @relation(fields: [partId], references: [id], onDelete: SetNull)
+  skin       CarSkin?          @relation(fields: [skinId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("racing_coin_ledger_entry")
+}
+
+/// El código corto y permanente de un jugador (TASK-222): lo que comparte
+/// por fuera (WhatsApp, en persona) para que otro jugador lo añada como
+/// amigo. Se genera perezoso, la primera vez que se pide — no en el alta del
+/// usuario, para no gastar códigos de jugadores que nunca llegan a usar la
+/// parte social.
+model RacingFriendCode {
+  id     String @id @default(uuid()) @db.Char(36)
+  userId String @unique @map("user_id") @db.Char(36)
+  /// 8 caracteres, alfabeto sin ambigüedades (sin 0/O/1/I/L) — se puede
+  /// compartir de palabra o por texto sin que se confunda una letra con un
+  /// número al transcribirlo.
+  code   String @unique @db.VarChar(8)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("racing_friend_code")
+}
+
+/// Decisión de partida: la amistad es RECÍPROCA, con aceptación — no basta
+/// con introducir el código de alguien, la otra persona tiene que aceptar
+/// antes de contar como amigos. Una fila por solicitud, no por pareja: así
+/// queda historial de si una solicitud se rechazó, en vez de machacarlo.
+enum RacingFriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model RacingFriendship {
+  id          String                 @id @default(uuid()) @db.Char(36)
+  requesterId String                 @map("requester_id") @db.Char(36)
+  addresseeId String                 @map("addressee_id") @db.Char(36)
+  status      RacingFriendshipStatus @default(PENDING)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  respondedAt DateTime? @map("responded_at")
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  /// Sin `@@unique([requesterId, addresseeId])` a propósito: tras un rechazo
+  /// tiene que poder volver a pedirse, y eso es una fila NUEVA, no reescribir
+  /// la vieja — el historial de solicitudes queda intacto. Que no haya ya
+  /// una solicitud activa (PENDING/ACCEPTED) entre dos jugadores, en
+  /// cualquier dirección, lo comprueba el dominio antes de crear la fila.
+  @@index([requesterId, status])
+  @@index([addresseeId, status])
+  @@map("racing_friendship")
 }

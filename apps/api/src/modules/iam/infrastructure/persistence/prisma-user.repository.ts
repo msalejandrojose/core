@@ -57,6 +57,18 @@ export class PrismaUserRepository implements UserRepositoryPort {
     return row ? UserMapper.toDomain(row) : null;
   }
 
+  async findByPlayGamesId(playGamesId: string): Promise<User | null> {
+    const row = await this.prisma.user.findUnique({ where: { playGamesId } });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
+  async findByGameCenterId(gameCenterId: string): Promise<User | null> {
+    const row = await this.prisma.user.findUnique({
+      where: { gameCenterId },
+    });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
   // ── getRows / getRow / getCount / getDistinctValues ────────────────────
 
   async getRows(spec: FindSpec<User> = {}): Promise<PaginatedResult<User>> {
@@ -199,6 +211,8 @@ export class PrismaUserRepository implements UserRepositoryPort {
       data: {
         googleId: patch.googleId,
         facebookId: patch.facebookId,
+        playGamesId: patch.playGamesId,
+        gameCenterId: patch.gameCenterId,
         avatarUrl: patch.avatarUrl,
         firstName: patch.firstName,
         lastName: patch.lastName,

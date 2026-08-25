@@ -1,0 +1,210 @@
+extends CanvasLayer
+
+## Entrar o crear cuenta contra el IAM de `core`.
+##
+## Con email y contraseña, con Google (abre el navegador del sistema y espera
+## a que el jugador complete el consentimiento ahí — Godot no trae WebView ni
+## deep links, así que no hay vuelta directa a la app), o con la cuenta
+## nativa de la plataforma (Play Games en Android, Game Center en iOS) —
+## estos dos sí son de un solo toque, sin navegador de por medio, y crean
+## cuenta nueva sin pedir email (ver `Session.login_with_play_games`/
+## `login_with_game_center`).
+
+signal closed()
+
+var _email: LineEdit
+var _password: LineEdit
+var _status: Label
+var _buttons: Array[Button] = []
+
+
+func _ready() -> void:
+	layer = 9
+	_build()
+
+
+func _build() -> void:
+	var backdrop := ColorRect.new()
+	# Opaco del todo: detrás está el menú, y no hay nada que previsualizar
+	# mientras escribes una contraseña.
+	backdrop.color = UiTheme.INK
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(backdrop)
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 72)
+	add_child(margin)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 18)
+	margin.add_child(column)
+
+	var title := Label.new()
+	title.text = "Tu cuenta"
+	title.add_theme_font_size_override("font_size", UiTheme.FONT_XL)
+	title.add_theme_color_override("font_color", UiTheme.BONE)
+	column.add_child(title)
+
+	var intro := Label.new()
+	intro.text = "La cuenta sirve para subir tus tiempos y salir en la clasificación. Puedes jugar sin ella: los tiempos se guardan en este dispositivo."
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intro.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	intro.add_theme_color_override("font_color", UiTheme.BONE * Color(1, 1, 1, 0.6))
+	column.add_child(intro)
+
+	_email = _field("Email", false)
+	_email.text = Session.email
+	column.add_child(_email)
+
+	_password = _field("Contraseña", true)
+	column.add_child(_password)
+
+	_status = Label.new()
+	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_status.add_theme_font_size_override("font_size", UiTheme.FONT_XS)
+	column.add_child(_status)
+
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(spacer)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	column.add_child(row)
+
+	# Jugar sin cuenta ya funcionaba, pero con el botón llamado "Cerrar" no lo
+	# parecía: cerrar no promete nada, y quien no quiere registrarse necesita
+	# ver una salida clara antes de plantearse abandonar.
+	row.add_child(_button("Jugar sin cuenta", 340, func() -> void: _close()))
+
+	var push := Control.new()
+	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(push)
+
+	row.add_child(_button("Entrar con Google", 320, func() -> void: _submit_google()))
+	# Solo uno de los dos aparece, según la plataforma real del dispositivo —
+	# no tiene sentido ofrecer Game Center en Android ni Play Games en iOS.
+	if OS.get_name() == "Android" and PlatformAuth.is_play_games_available():
+		row.add_child(_button("Entrar con Play Games", 320, func() -> void: _submit_play_games()))
+	elif OS.get_name() == "iOS" and PlatformAuth.is_game_center_available():
+		row.add_child(_button("Entrar con Game Center", 320, func() -> void: _submit_game_center()))
+	row.add_child(_button("Crear cuenta", 280, func() -> void: _submit(true)))
+	row.add_child(_button("Entrar", 240, func() -> void: _submit(false)))
+
+
+func _field(placeholder: String, secret: bool) -> LineEdit:
+	var edit := LineEdit.new()
+	edit.placeholder_text = placeholder
+	edit.secret = secret
+	edit.custom_minimum_size = Vector2(0, 88)
+	edit.add_theme_font_size_override("font_size", UiTheme.FONT_MD)
+	return edit
+
+
+func _button(text: String, width: int, on_pressed: Callable) -> Button:
+	var button := UiTheme.make_button(text, Vector2(width, UiTheme.BUTTON_MIN_SIZE.y))
+	button.pressed.connect(on_pressed)
+	_buttons.append(button)
+	return button
+
+
+# --- Acciones -----------------------------------------------------------------
+
+func _submit(create: bool) -> void:
+	var email := _email.text.strip_edges()
+	if email == "" or _password.text == "":
+		_say("Rellena email y contraseña.", UiTheme.BAD)
+		return
+
+	# Se bloquean los botones mientras va la llamada: dos toques seguidos
+	# lanzarían dos registros y el segundo fallaría con un error confuso.
+	_set_busy(true)
+	_say("Conectando…", UiTheme.BONE)
+
+	var response = (
+		await Session.register(email, _password.text, email.split("@")[0])
+		if create
+		else await Session.login(email, _password.text))
+
+	_set_busy(false)
+
+	if response.ok:
+		_say("Listo. Tus tiempos ya se suben.", UiTheme.GOOD)
+		await get_tree().create_timer(0.8).timeout
+		_close()
+		return
+
+	# El mensaje del servidor es mejor que uno inventado aquí: sabe si es
+	# contraseña incorrecta, email ya registrado o cuenta sin verificar.
+	if response.is_network_error():
+		_say("No hay conexión con el servidor. Puedes seguir corriendo: los tiempos se guardan y se subirán luego.", UiTheme.BAD)
+	else:
+		_say(response.message, UiTheme.BAD)
+
+
+func _submit_google() -> void:
+	_set_busy(true)
+	_say("Abriendo el navegador para entrar con Google…", UiTheme.BONE)
+
+	var response: Dictionary = await Session.login_with_google()
+
+	_set_busy(false)
+
+	if response.get("ok", false):
+		_say("Listo. Tus tiempos ya se suben.", UiTheme.GOOD)
+		await get_tree().create_timer(0.8).timeout
+		_close()
+		return
+
+	_say(str(response.get("message", "No se pudo iniciar sesión con Google.")), UiTheme.BAD)
+
+
+func _submit_play_games() -> void:
+	_set_busy(true)
+	_say("Entrando con Play Games…", UiTheme.BONE)
+
+	var response = await Session.login_with_play_games()
+
+	_set_busy(false)
+
+	if response.ok:
+		_say("Listo. Tus tiempos ya se suben.", UiTheme.GOOD)
+		await get_tree().create_timer(0.8).timeout
+		_close()
+		return
+
+	_say(response.message, UiTheme.BAD)
+
+
+func _submit_game_center() -> void:
+	_set_busy(true)
+	_say("Entrando con Game Center…", UiTheme.BONE)
+
+	var response = await Session.login_with_game_center()
+
+	_set_busy(false)
+
+	if response.ok:
+		_say("Listo. Tus tiempos ya se suben.", UiTheme.GOOD)
+		await get_tree().create_timer(0.8).timeout
+		_close()
+		return
+
+	_say(response.message, UiTheme.BAD)
+
+
+func _set_busy(busy: bool) -> void:
+	for button in _buttons:
+		button.disabled = busy
+
+
+func _say(text: String, color: Color) -> void:
+	_status.text = text
+	_status.add_theme_color_override("font_color", color)
+
+
+func _close() -> void:
+	closed.emit()
+	queue_free()

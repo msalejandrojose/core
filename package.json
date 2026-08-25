@@ -2,19 +2,23 @@
   "name": "core",
   "version": "0.0.0",
   "private": true,
-  "description": "Monorepo: NestJS API + Backoffice (React) + Web (Astro) + Mobile (Ionic)",
+  "description": "Monorepo: NestJS API + Backoffice (React) + Web (Astro) + Mobile (Ionic) + Game (Godot)",
   "scripts": {
     "dev:api": "pnpm --filter @core/api start:dev",
     "build:api": "pnpm --filter @core/api... build",
     "dev:backoffice": "pnpm --filter @core/backoffice dev",
     "build:backoffice": "pnpm --filter @core/backoffice build",
+    "dev:backoffice-host": "pnpm --filter @core/backoffice dev -- --host 0.0.0.0",
     "preview:backoffice": "pnpm --filter @core/backoffice preview",
     "dev:web": "pnpm --filter @core/web dev",
     "build:web": "pnpm --filter @core/web build",
     "preview:web": "pnpm --filter @core/web preview",
     "dev:mobile": "pnpm --filter @core/mobile dev",
     "build:mobile": "pnpm --filter @core/mobile build",
-    "preview:mobile": "pnpm --filter @core/mobile preview"
+    "preview:mobile": "pnpm --filter @core/mobile preview",
+    "dev:game": "pnpm --filter @core/game dev",
+    "test:game": "pnpm --filter @core/game test",
+    "ios:game": "pnpm --filter @core/game ios"
   },
   "engines": {
     "node": ">=20",

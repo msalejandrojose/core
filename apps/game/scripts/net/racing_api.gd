@@ -1,0 +1,249 @@
+extends Node
+
+## Llamadas de carreras contra la API. Autoload registrado como `RacingApi`.
+##
+## Traduce entre el vocabulario del juego y el de la API. Lo importante que hace
+## esa traducción: el juego habla de "circuito + sentido" y la API de un slug
+## por cada combinación, que es exactamente la clave de récord que ya usa
+## `GameSettings.track_key()`. Una sola fuente para las dos cosas.
+
+const ApiResponse := preload("res://scripts/net/api_response.gd")
+
+## Versión del build que acompaña a cada tiempo. La API la guarda para poder
+## invalidar marcas cuando cambie la física del coche.
+const CLIENT_VERSION := "0.1.0"
+
+
+## Sube un intento. Devuelve la respuesta tal cual: quien llama decide si
+## reintentar, encolar o ignorar.
+## `ghost_snapshots`: instantáneas ya en formato de red (pos como {x,y,z}, no
+## Vector3 — ver `RaceDirector._on_lap_completed`). Vacío si la vuelta no bate
+## la marca local: el servidor la descarta igual si no es su mejor marca, pero
+## no tiene sentido gastar payload en fantasmas que nunca se van a guardar.
+func submit_lap(track_key: String, duration_ms: int, splits_ms: Array, ghost_snapshots: Array = []):
+	var body := {
+		"durationMs": duration_ms,
+		"splitsMs": splits_ms,
+		"clientVersion": CLIENT_VERSION,
+	}
+	if not ghost_snapshots.is_empty():
+		body["ghostSnapshots"] = ghost_snapshots
+	return await Api.post_json("/racing/tracks/%s/lap-times" % track_key, body)
+
+
+## `season_id` vacío = la temporada abierta ahora mismo (o sin acotar si no
+## hay ninguna configurada). Con un id concreto, el ranking de esa temporada
+## en particular — pasada o actual (TASK-227/228).
+func leaderboard(track_key: String, limit: int = 20, season_id: String = ""):
+	var query := "?limit=%d" % limit
+	if not season_id.is_empty():
+		query += "&seasonId=%s" % season_id.uri_encode()
+	return await Api.get_json("/racing/tracks/%s/leaderboard%s" % [track_key, query])
+
+
+func personal_best(track_key: String):
+	return await Api.get_json("/racing/me/best/%s" % track_key)
+
+
+## La temporada abierta ahora mismo (TASK-227/228). `data` es `null` — no un
+## error — si todavía no se ha creado ninguna.
+func current_season():
+	return await Api.get_json("/racing/seasons/current")
+
+
+## Ranking del circuito acotado a ti y tus amigos (TASK-290): la posición de
+## cada fila es el puesto DENTRO de ese grupo, no el global. `season_id`,
+## misma semántica que en `leaderboard()`.
+func friends_leaderboard(track_key: String, season_id: String = ""):
+	var query := ""
+	if not season_id.is_empty():
+		query = "?seasonId=%s" % season_id.uri_encode()
+	return await Api.get_json("/racing/tracks/%s/leaderboard/friends%s" % [track_key, query])
+
+
+func tracks(limit: int = 20):
+	return await Api.get_json("/racing/tracks?limit=%d" % limit)
+
+
+## Circuito completo (con geometría), por slug — para construir uno que no
+## esté en el catálogo local. Ver `TrackCache` (TASK-245).
+func track(slug: String):
+	return await Api.get_json("/racing/tracks/%s" % slug)
+
+
+## Arquetipo, piezas equipadas y sus stats ya combinados. Requiere sesión —
+## sin cuenta, `CarLoadout` no llega a llamar a esto y usa el default local.
+func car_loadout():
+	return await Api.get_json("/racing/cars/me")
+
+
+## Arquetipos y piezas disponibles para el taller (`WorkshopScreen`).
+func car_catalog():
+	return await Api.get_json("/racing/cars/catalog")
+
+
+## Cambia el arquetipo y las piezas equipadas. Los tres huecos de pieza se
+## mandan siempre explícitos (null = vacío): el taller conoce el estado
+## completo en todo momento, así que no hace falta la semántica de "ausente =
+## no tocar" que soporta la API para clientes que solo cambian un hueco.
+func set_car_loadout(archetype_id: String, tires_part_id, wing_part_id, chassis_part_id, skin_id):
+	return await Api.patch_json("/racing/cars/me", {
+		"archetypeId": archetype_id,
+		"tiresPartId": tires_part_id,
+		"wingPartId": wing_part_id,
+		"chassisPartId": chassis_part_id,
+		"skinId": skin_id,
+	})
+
+
+## Factores de terreno de sección (grip, si frena la velocidad punta), para
+## poder ajustarlos desde el backoffice sin desplegar el juego (TASK-304).
+## Público: hace falta hasta sin cuenta, todo el mundo pisa el mismo hielo.
+func terrain_effects():
+	return await Api.get_json("/racing/terrain-effects", false)
+
+
+# --- Grand Prix (TASK-250) -----------------------------------------------------
+
+func grand_prix_list():
+	return await Api.get_json("/racing/grand-prix")
+
+
+## Un Grand Prix con sus circuitos en orden (id, slug y nombre de cada uno) —
+## hace falta para resolver a qué manga corresponde `nextTrackId`.
+func grand_prix(id: String):
+	return await Api.get_json("/racing/grand-prix/%s" % id)
+
+
+## Devuelve el intento IN_PROGRESS de este jugador si ya había uno (se
+## reanuda, TASK-247), o crea uno nuevo.
+func grand_prix_start_or_resume(id: String):
+	return await Api.post_json("/racing/grand-prix/%s/attempts" % id, {})
+
+
+func grand_prix_submit_stage(id: String, track_id: String, duration_ms: int):
+	return await Api.post_json(
+		"/racing/grand-prix/%s/stages/%s/result" % [id, track_id],
+		{"durationMs": duration_ms})
+
+
+func grand_prix_leaderboard(id: String, limit: int = 20):
+	return await Api.get_json("/racing/grand-prix/%s/leaderboard?limit=%d" % [id, limit])
+
+
+# --- Carreras online (TASK-282/284/285) ----------------------------------------
+
+## Empareja rivales para una carrera online: `target` (ligeramente mejor, o el
+## propio fantasma si vas primero) y `threat` (ligeramente peor, sin repuesto
+## si no hay nadie), cada uno null o `{userId, durationMs, snapshots}`. Se
+## recalcula en cada llamada — no hay carrera fijada de antemano.
+func match_online_race(track_key: String):
+	return await Api.get_json("/racing/tracks/%s/online-races/match" % track_key)
+
+
+## Registra el resultado de una carrera online ya jugada. `rivals` son solo
+## el objetivo/amenaza (0 a 2, `{role, userId, durationMs}`) — el propio
+## resultado del jugador se manda aparte porque el servidor ya sabe quién
+## eres por el token, no hace falta declarar tu propio id.
+func submit_online_race(track_key: String, duration_ms: int, rivals: Array):
+	return await Api.post_json("/racing/tracks/%s/online-races" % track_key, {
+		"durationMs": duration_ms,
+		"rivals": rivals,
+	})
+
+
+# --- Monedas (TASK-286/318/320) --------------------------------------------------
+
+## Saldo propio. 0 si el jugador todavía no tiene wallet (nunca ha ganado ni
+## gastado nada) — no hace falta darse de alta antes.
+func wallet():
+	return await Api.get_json("/racing/wallet")
+
+
+## +100 por ver un anuncio recompensado hasta el final (TASK-286) — no
+## comprueba nada del lado del SDK de anuncios todavía, eso es alcance de la
+## fase de monetización, no de este cliente.
+func credit_rewarded_ad():
+	return await Api.post_json("/racing/wallet/rewarded-ad", {})
+
+
+## Compra un arquetipo, pieza o skin bloqueado con monedas (TASK-320).
+## `item_type`: "ARCHETYPE" | "PART" | "SKIN". No lo equipa — eso sigue
+## siendo un `set_car_loadout()` aparte, como con lo ya desbloqueado.
+func purchase_car_item(item_type: String, item_id: String):
+	return await Api.post_json("/racing/cars/shop/purchase", {
+		"itemType": item_type,
+		"itemId": item_id,
+	})
+
+
+# --- Amigos (TASK-222/258) ------------------------------------------------------
+
+## El código propio: se genera la primera vez que se pide y luego es siempre
+## el mismo.
+func friend_code():
+	return await Api.get_json("/racing/friends/me/code")
+
+
+## Pide amistad al dueño de ese código. Recíproca: esto solo crea una
+## solicitud PENDING, no hace amigos a nadie hasta que el otro la acepta.
+func add_friend(code: String):
+	return await Api.post_json("/racing/friends", {"code": code})
+
+
+## Solicitudes recibidas y aún sin responder.
+func friend_requests():
+	return await Api.get_json("/racing/friends/requests")
+
+
+func respond_friend_request(id: String, accept: bool):
+	return await Api.post_json(
+		"/racing/friends/%s/%s" % [id, "accept" if accept else "reject"], {})
+
+
+func friends():
+	return await Api.get_json("/racing/friends")
+
+
+## El fantasma de un amigo en un circuito (TASK-223): su mejor marca ahí,
+## lista para reproducir junto al jugador. `data` es `null` (no un error) si
+## ese amigo todavía no tiene marca en este circuito — mismo formato que
+## `match_online_race` (sin `userId`, que ya lo sabe quien llama: es a quien
+## eligió en la lista de amigos).
+func friend_ghost(track_key: String, user_id: String):
+	return await Api.get_json("/racing/tracks/%s/ghosts/%s" % [track_key, user_id])
+
+
+# --- Imágenes de circuito -------------------------------------------------------
+
+## Descarga y decodifica la miniatura de un circuito. `relative_url` es el
+## `imageUrl` tal cual lo manda la API (`/files/view?token=...`, relativo a
+## `Api.base_url` — no lleva el host, así que no sirve pasárselo directo a
+## `HTTPRequest`). null si falla la descarga o el formato no se reconoce:
+## esto nunca debe tumbar la pantalla que la pidió por no tener miniatura.
+func fetch_image_texture(relative_url: String) -> ImageTexture:
+	var http := HTTPRequest.new()
+	add_child(http)
+	var error := http.request(Api.base_url + relative_url)
+	if error != OK:
+		http.queue_free()
+		return null
+
+	var result: Array = await http.request_completed
+	http.queue_free()
+
+	var outcome: int = result[0]
+	var raw: PackedByteArray = result[3]
+	if outcome != HTTPRequest.RESULT_SUCCESS or raw.is_empty():
+		return null
+
+	var image := Image.new()
+	var decoded := (
+		image.load_png_from_buffer(raw) == OK
+		or image.load_jpg_from_buffer(raw) == OK
+		or image.load_webp_from_buffer(raw) == OK
+	)
+	if not decoded:
+		return null
+
+	return ImageTexture.create_from_image(image)

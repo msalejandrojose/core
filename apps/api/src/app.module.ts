@@ -15,6 +15,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { GeoModule } from './modules/geo/geo.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { RacingModule } from './modules/racing/racing.module';
 import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module';
@@ -35,7 +36,10 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     // Necesario para el script `sync:sections`, que recorre los handlers
     // buscando metadatos `@RequiresPermission`. Pesa cero en runtime.
     DiscoveryModule,
-    // Scheduler (cron) del módulo de workflows.
+    // Scheduler (cron) global: lo usan el módulo de workflows y la rotación
+    // automática de temporadas de racing (TASK-228), y cualquier otro que lo
+    // necesite después — registrarlo aquí una vez es lo que habilita el
+    // decorador @Cron() en cualquier provider de cualquier módulo.
     ScheduleModule.forRoot(),
     // Rate limiting global (in-memory). Ventana y tope configurables por env;
     // los endpoints públicos sensibles aprietan el límite con `@Throttle`, y
@@ -65,6 +69,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     NotificationsModule,
     UserNotificationsModule,
     DevicesModule,
+    RacingModule,
     WhatsappModule,
     ErrorLogModule,
     HealthModule,

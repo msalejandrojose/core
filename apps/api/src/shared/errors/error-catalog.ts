@@ -59,6 +59,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'No se pudo verificar el inicio de sesión social.',
   },
+  GOOGLE_AUTH_SESSION_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Sesión de login con Google no encontrada.',
+  },
   USER_ALREADY_EXISTS: {
     httpStatus: 409,
     level: 'warn',
@@ -244,6 +249,177 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage:
       'Este formulario ha alcanzado el número máximo de respuestas.',
+  },
+
+  // Racing
+  RACING_TRACK_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Circuito no encontrado.',
+  },
+  // 422 y no 400: el payload está bien formado, lo que no cuadra es que la
+  // vuelta pueda haber ocurrido. `warn` y no `error` porque un rechazo aislado
+  // es ruido esperado — lo interesante es si se repite mucho con un mismo
+  // motivo, que apuntaría a un agujero del juego o a un límite mal calibrado.
+  RACING_IMPLAUSIBLE_LAP_TIME: {
+    httpStatus: 422,
+    level: 'warn',
+    defaultMessage: 'La vuelta no se ha podido validar.',
+  },
+  RACING_TRACK_SLUG_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un circuito con ese slug.',
+  },
+  RACING_LAP_TIME_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Tiempo de vuelta no encontrado.',
+  },
+  RACING_INVALID_TRACK_PATH: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'El trazado del circuito no es válido.',
+  },
+  RACING_CAR_ARCHETYPE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Arquetipo de coche no encontrado.',
+  },
+  RACING_CAR_ARCHETYPE_CODE_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un arquetipo con ese código.',
+  },
+  RACING_CAR_ARCHETYPE_NOT_OWNED: {
+    httpStatus: 403,
+    level: 'warn',
+    defaultMessage: 'El jugador no tiene desbloqueado ese arquetipo.',
+  },
+  RACING_CAR_PART_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Pieza de coche no encontrada.',
+  },
+  RACING_CAR_PART_NOT_OWNED: {
+    httpStatus: 403,
+    level: 'warn',
+    defaultMessage: 'El jugador no tiene desbloqueada esa pieza.',
+  },
+  RACING_INSUFFICIENT_COINS: {
+    httpStatus: 402,
+    level: 'warn',
+    defaultMessage: 'No tienes suficientes monedas.',
+  },
+  RACING_CAR_ITEM_ALREADY_OWNED: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya tienes esto — no hay nada que comprar.',
+  },
+  RACING_CAR_ITEM_NOT_FOR_SALE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Esto no está a la venta.',
+  },
+  RACING_CAR_PART_CODE_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe una pieza con ese código.',
+  },
+  RACING_INVALID_CAR_LOADOUT: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'La configuración de coche no es válida.',
+  },
+  RACING_CAR_SKIN_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Skin de coche no encontrado.',
+  },
+  RACING_CAR_SKIN_CODE_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un skin con ese código.',
+  },
+  RACING_CAR_SKIN_NOT_OWNED: {
+    httpStatus: 403,
+    level: 'warn',
+    defaultMessage: 'El jugador no tiene desbloqueado ese skin.',
+  },
+  RACING_TERRAIN_EFFECT_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Efecto de terreno no encontrado.',
+  },
+  RACING_COIN_REWARD_CONFIG_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Importe de bono no encontrado.',
+  },
+  RACING_MATCHMAKING_CONFIG_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Parámetro de matchmaking no encontrado.',
+  },
+  RACING_GRAND_PRIX_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Grand Prix no encontrado.',
+  },
+  RACING_GRAND_PRIX_SLUG_ALREADY_EXISTS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ya existe un Grand Prix con ese slug.',
+  },
+  RACING_INVALID_GRAND_PRIX_STAGES: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'Los circuitos del Grand Prix no son válidos.',
+  },
+  RACING_GRAND_PRIX_ATTEMPT_STAGE_MISMATCH: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'Ese circuito no es la siguiente manga pendiente.',
+  },
+  RACING_GRAND_PRIX_ATTEMPT_NOT_IN_PROGRESS: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'No hay un intento en curso de ese Grand Prix.',
+  },
+  RACING_INVALID_ONLINE_RACE_PARTICIPANTS: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'Los corredores de la carrera online no son válidos.',
+  },
+  RACING_FRIEND_CODE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Ningún jugador tiene ese código.',
+  },
+  RACING_INVALID_FRIENDSHIP_REQUEST: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'La solicitud de amistad no es válida.',
+  },
+  RACING_FRIENDSHIP_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Solicitud de amistad no encontrada.',
+  },
+  RACING_FRIENDSHIP_NOT_RESPONDABLE: {
+    httpStatus: 409,
+    level: 'warn',
+    defaultMessage: 'No se puede responder a esa solicitud.',
+  },
+  RACING_ONLINE_RACE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Carrera online no encontrada.',
+  },
+  RACING_SEASON_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Temporada no encontrada.',
   },
 
   // Leads

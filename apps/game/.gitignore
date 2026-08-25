@@ -1,0 +1,34 @@
+# Godot 4+ specific ignores
+.godot/
+.nomedia
+
+# Godot-specific ignores
+.import/
+export.cfg
+export_credentials.cfg
+*.tmp
+
+# Imported translations (automatically generated from CSV files)
+*.translation
+
+# Mono-specific ignores
+.mono/
+data_*/
+mono_crash.*.json
+
+.vscode/
+
+# Artefactos de export (iOS / Android). Nunca se commitean: se generan.
+build/
+# El proyecto Xcode lo regenera `tools/ios.sh sync` desde el proyecto Godot.
+*.xcodeproj/
+*.ipa
+*.aab
+*.apk
+*.xcarchive/
+
+# Firma. El keystore de Android y los perfiles de iOS viven fuera del repo.
+*.keystore
+*.jks
+*.mobileprovision
+*.p12

@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/timing/checkpoint.gd" id="1_cp"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cp"]
+size = Vector3(7.4925, 6, 7.4925)
+
+[node name="Checkpoint" type="Area3D" groups=["checkpoint"]]
+collision_layer = 0
+collision_mask = 8
+monitorable = false
+script = ExtResource("1_cp")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_cp")
