@@ -8,10 +8,9 @@ const TestEnv := preload("res://tests/test_env.gd")
 ##     godot --headless --quit-after 800 res://tests/main_menu_hub_test.tscn
 ##
 ## Ya no hay pestañas con contenido propio — "modo" solo decide qué hace
-## "Empezar Carrera", circuito/cilindrada están siempre visibles. Cubre que
-## elegir circuito/cilindrada/modo sigue tocando `GameSettings`, que
-## "Sentido" ha desaparecido de verdad, y que cada modo dispara lo que
-## tiene que disparar.
+## "Empezar Carrera", circuito/cilindrada/sentido están siempre visibles.
+## Cubre que elegir circuito/cilindrada/sentido/modo sigue tocando
+## `GameSettings`, y que cada modo dispara lo que tiene que disparar.
 
 var _failures := 0
 var _menu: CanvasLayer
@@ -35,7 +34,7 @@ func _ready() -> void:
 	_menu = main.get_node("MainMenu")
 
 	_test_abre_con_carrera_rapida()
-	_test_elegir_circuito_desde_la_rejilla()
+	_test_muestra_el_circuito_actual()
 	_test_elegir_cilindrada()
 	_test_sin_control_de_sentido()
 	_test_cabecera_siempre_visible()
@@ -69,52 +68,58 @@ func _test_abre_con_carrera_rapida() -> void:
 	_check(_menu._online_button.visible, true, "en Carrera Rápida, Multijugador Online está visible")
 
 
-func _test_elegir_circuito_desde_la_rejilla() -> void:
+## Ya no hay rejilla 2x2: el menu ensena UNA tarjeta, la del circuito actual,
+## y para cambiar se pasa por "Mas circuitos". Lo que se comprueba es que esa
+## tarjeta unica sigue al circuito elegido.
+func _test_muestra_el_circuito_actual() -> void:
 	var ids: Array = TrackCatalog.ids()
 	var other_id: String = ids[1]
 
 	_menu._pick_track(other_id)
 
-	_check_eq(GameSettings.track_id, other_id, "tocar una tarjeta de circuito cambia GameSettings")
+	_check_eq(GameSettings.track_id, other_id, "elegir circuito cambia GameSettings")
 	_check_eq(_menu._track_summary_label.text, TrackCatalog.by_id(other_id).name,
 		"y el resumen refleja el circuito elegido")
 
-	var index: int = _menu._track_card_ids.find(other_id)
-	_check(index != -1, true, "la tarjeta elegida está entre las montadas")
+	_check_eq(_menu._current_track_slot.get_child_count(), 1,
+		"hay una sola tarjeta de circuito, no cuatro")
+	_check(_find_label(_menu._current_track_slot, TrackCatalog.by_id(other_id).name) != null,
+		true, "y es la del circuito elegido")
 
 
 func _test_elegir_cilindrada() -> void:
 	_menu._pick_engine(GameSettings.EngineClass.CC150)
 	_check_eq(GameSettings.engine_class, GameSettings.EngineClass.CC150, "elegir cilindrada sigue cambiando GameSettings")
 
-	# `_pick_engine` no toca el botón por sí solo (eso lo hace Godot al
-	# pulsarlo de verdad, vía `ButtonGroup`) — `_sync()` es quien lo
-	# refleja, mismo motivo que `_sync_jugar()` en el diseño anterior.
+	# `_pick_engine` no toca el slider por sí solo (eso lo hace Godot al
+	# arrastrarlo de verdad) — `_sync()` es quien lo refleja, mismo motivo
+	# que `_sync_jugar()` en el diseño anterior.
 	_menu._sync()
-	_check(_menu._engine_buttons[GameSettings.EngineClass.CC150].button_pressed, true,
-		"y el botón correspondiente queda marcado")
+	_check_eq(_menu._cc_slider.value, float(GameSettings.EngineClass.CC150), "y el slider queda en la posición elegida")
 
 
-## TASK: quitar "Sentido" del menú principal — sin sustituto en ningún otro
-## sitio por ahora, a propósito (ver comentario en `main_menu.gd`).
+## Sentido (Normal/Inverso) se quito del menu por peticion expresa. El ajuste
+## SIGUE existiendo en `GameSettings` y las carreras lo respetan — lo que
+## desaparece es el control, no el dato. Se comprueba que ya no hay botones,
+## para que nadie lo de por reintroducido sin querer.
 func _test_sin_control_de_sentido() -> void:
-	_check(_find_button(_menu, "Inverso") == null, true, "no queda ningún control de sentido en el menú")
-	_check(_find_button(_menu, "Normal") == null, true, "tampoco el botón \"Normal\"")
+	_check(_find_button(_menu, "Normal") == null, true, "ya no hay boton \"Normal\"")
+	_check(_find_button(_menu, "Inverso") == null, true, "ni boton \"Inverso\"")
 
 
 func _test_cabecera_siempre_visible() -> void:
-	for text in ["⚙ Ajustes", "👥 Amigos", "🏆 Clasificaciones"]:
+	for text in ["⚙ AJUSTES", "👥 AMIGOS", "🏆 CLASIFICACIONES"]:
 		_check(_find_button(_menu, text) != null, true, "la cabecera tiene un acceso a \"%s\"" % text)
 
 	# El botón de cuenta alterna Entrar/Salir según la sesión — sin cuenta
 	# (el estado por defecto de `TestEnv.reset()`) el texto es "Entrar".
 	_check(is_instance_valid(_menu._account_button), true, "y un botón de cuenta")
-	_check(_menu._account_button.text, "🚪 Entrar", "que sin sesión dice \"Entrar\"")
+	_check(_menu._account_button.text, "🚪 ENTRAR", "que sin sesión dice \"Entrar\"")
 
 
 func _test_boton_taller_abre_el_taller() -> void:
 	var before := _menu.get_child_count()
-	var button := _find_button(_menu, "🔧 Ir al taller")
+	var button := _find_button(_menu, "🔧 IR AL TALLER")
 	_check(button != null, true, "hay botón para ir al taller junto al coche")
 
 	button.pressed.emit()
@@ -170,6 +175,16 @@ func _test_grand_prix_abre_su_pantalla() -> void:
 
 
 # --- Utilidades ---------------------------------------------------------------
+
+func _find_label(root: Node, text: String) -> Label:
+	if root is Label and root.text == text:
+		return root
+	for child in root.get_children():
+		var found := _find_label(child, text)
+		if found != null:
+			return found
+	return null
+
 
 func _find_button(root: Node, text: String) -> Button:
 	if root is Button and root.text == text:

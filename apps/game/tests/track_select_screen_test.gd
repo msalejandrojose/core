@@ -205,7 +205,7 @@ func _test_confirmar_aplica_la_seleccion_pendiente() -> void:
 	_confirmed_fired = false
 	screen.confirmed.connect(func() -> void: _confirmed_fired = true)
 
-	var confirm_button := _find_button(screen, "Confirmar circuito")
+	var confirm_button := _find_button(screen, "CONFIRMAR CIRCUITO")
 	confirm_button.pressed.emit()
 	await get_tree().process_frame
 
@@ -224,7 +224,7 @@ func _test_atras_no_aplica_nada() -> void:
 	var button := _find_card_button(screen, "Circuito del Puerto")
 	button.pressed.emit()
 
-	var back_button := _find_button(screen, "Atrás")
+	var back_button := _find_button(screen, "ATRÁS")
 	back_button.pressed.emit()
 	await get_tree().process_frame
 
@@ -264,7 +264,7 @@ func _test_otro_circuito_local_sin_portada_subida_se_queda_con_el_color() -> voi
 func _test_cabecera_de_accesos_sueltos() -> void:
 	var screen := await _open_screen()
 
-	for text in ["⚙ Ajustes", "🏆 Clasificaciones"]:
+	for text in ["⚙ AJUSTES", "🏆 CLASIFICACIONES"]:
 		_check(_find_button(screen, text) != null, true, "hay acceso a \"%s\" en la cabecera" % text)
 	_check(is_instance_valid(screen._account_button), true, "y un botón de cuenta")
 

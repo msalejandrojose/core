@@ -13,6 +13,24 @@ extends Node3D
 const NITRO_FOV_KICK := 12.0
 const NITRO_PULL_BACK := 2.5
 
+## Distancia de cámara con el garaje de fondo (menú y taller). En carrera el
+## encuadre tiene que dar margen para ver venir el circuito, pero en el menú
+## el sujeto es el coche aparcado y a la distancia de carrera se queda
+## pequeño. La alternativa —agrandar el coche— no vale: el del garaje ES el
+## `Vehicle` que corre, así que escalarlo tocaría las carreras.
+const MENU_DISTANCE := 7.0
+
+## El hueco libre del menú no está centrado en pantalla: las tarjetas comen
+## ~330px por la izquierda y ~565px por la derecha, así que el centro óptico
+## cae bastante a la izquierda del centro real. Y como en isométrica lo que
+## está detrás (el arco de meta) se proyecta hacia arriba y a la DERECHA, sin
+## corregir esto su pie derecho acaba debajo de la tarjeta de configuración.
+## Desplazar la cámara a +X mueve la escena a la izquierda en pantalla.
+const MENU_OFFSET_X := 0.8
+
+## Lo pone `RaceDirector` a la vez que la visibilidad del garaje.
+var menu_framing := false
+
 # Functions
 
 ## Salta a donde esté el coche, sin suavizado. Al reiniciar o al cambiar de
@@ -43,7 +61,18 @@ func _physics_process(delta):
 	var boosting = target.nitro_active
 	if boosting: target_z += NITRO_PULL_BACK
 
-	camera.position.z = lerp(camera.position.z, target_z, delta * (3.0 if boosting else 0.5))
+	# En el menú se va a la distancia fija, y deprisa: el 0.5 de carrera es un
+	# acercamiento de varios segundos, y al abrir el menú la cámara se queda a
+	# medio camino con el coche todavía pequeño.
+	var approach := 3.0 if boosting else 0.5
+	if menu_framing:
+		target_z = MENU_DISTANCE
+		approach = 3.0
+
+	camera.position.z = lerp(camera.position.z, target_z, delta * approach)
+	camera.position.x = lerp(
+		camera.position.x, MENU_OFFSET_X if menu_framing else 0.0, delta * 3.0
+	)
 
 	var target_fov = BASE_FOV + (NITRO_FOV_KICK if boosting else 0.0)
 	camera.fov = lerp(camera.fov, target_fov, delta * (6.0 if boosting else 2.5))

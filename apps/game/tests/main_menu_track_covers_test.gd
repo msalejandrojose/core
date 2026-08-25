@@ -54,15 +54,20 @@ func _ready() -> void:
 	# servidor falso.
 	await _settle()
 
+	# Ya no hay rejilla: el menu monta UNA tarjeta, la del circuito actual, y
+	# la reconstruye al cambiar. Asi que solo existe el TextureRect del
+	# elegido en cada momento — de ahi que haya que cambiar de circuito para
+	# comprobar el segundo caso, en vez de mirar dos tarjetas a la vez.
 	var kenney_id := TrackCatalog.DEFAULT_ID
 	var thumbnail: TextureRect = menu._cover_thumbnails.get(kenney_id)
-	_check(thumbnail != null, true, "la tarjeta rápida de Kenney tiene un TextureRect de portada")
+	_check(thumbnail != null, true, "la tarjeta del circuito actual tiene un TextureRect de portada")
 	_check(thumbnail != null and thumbnail.texture != null, true,
 		"y le llega la imagen subida en el backoffice a su variante de portada")
 
 	var other_id: String = TrackCatalog.ids()[1]
+	menu._pick_track(other_id)
 	var other_thumbnail: TextureRect = menu._cover_thumbnails.get(other_id)
-	_check(other_thumbnail != null, true, "otro circuito local también tiene su TextureRect")
+	_check(other_thumbnail != null, true, "al cambiar de circuito, la tarjeta nueva trae su TextureRect")
 	_check(other_thumbnail != null and other_thumbnail.texture == null, true,
 		"pero sin portada subida, se queda con el color liso (sin textura)")
 

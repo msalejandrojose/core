@@ -60,7 +60,19 @@ var _cfg := ConfigFile.new()
 func _ready() -> void:
 	_cfg.load(PATH)
 	control_scheme = _cfg.get_value("controls", "scheme", ControlScheme.WHEEL)
-	reverse = _cfg.get_value("track", "reverse", false)
+	# `reverse` NO se restaura de disco a propósito: el menú ya no tiene
+	# control de Sentido, así que un `true` guardado por una versión anterior
+	# dejaría al jugador corriendo al revés para siempre, sin forma de
+	# volver, y además mandando sus tiempos a otra clasificación
+	# (`track_key()` mete "-rev"). Arranca siempre en Normal. Si algún día
+	# vuelve el control, esta línea y la de `set_reverse()` se restauran
+	# juntas. Grand Prix no depende de esto: lleva su propio
+	# `_grand_prix_reverse` en `race_director.gd`.
+	# Con guarda: `erase_section_key()` da error si la clave no está, que es
+	# el caso normal en una instalación limpia.
+	if _cfg.has_section_key("track", "reverse"):
+		_cfg.erase_section_key("track", "reverse")
+		_cfg.save(PATH)
 	track_id = _cfg.get_value("track", "id", TrackCatalog.DEFAULT_ID)
 	track_is_server = _cfg.get_value("track", "is_server", false)
 	api_base_url = _cfg.get_value("api", "base_url", "")
@@ -117,12 +129,14 @@ func engine_name() -> String:
 	return ENGINE_NAMES[engine_class]
 
 
+## Solo en memoria, sin persistir — ver el motivo en `_ready()`. Sigue
+## existiendo porque las carreras leen `reverse` (`race_director.gd`) y los
+## tests lo usan para cubrir la vuelta inversa.
 func set_reverse(value: bool) -> void:
 	if value == reverse:
 		return
 	reverse = value
-	_cfg.set_value("track", "reverse", value)
-	_save()
+	changed.emit()
 
 
 ## Clave de récord: circuito y sentido. Correr al revés es, a efectos de

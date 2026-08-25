@@ -523,6 +523,9 @@ func open_menu() -> void:
 func _set_garage_visible(show_garage: bool) -> void:
 	grid_map.visible = not show_garage
 	menu_garage.visible = show_garage
+	# Con el garaje delante la cámara se acerca (ver `View.MENU_DISTANCE`): el
+	# encuadre de carrera deja el coche aparcado demasiado pequeño.
+	view.menu_framing = show_garage
 
 
 func _on_play_pressed() -> void:

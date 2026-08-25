@@ -72,12 +72,12 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	var backdrop := ColorRect.new()
-	# Más claro que antes (0.985 → 0.45): la tarjeta grande de la rejilla
-	# flota sobre la escena 3D bien visible, no sobre un fondo casi negro.
-	backdrop.color = UiTheme.ink_alpha(0.45)
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(backdrop)
+	# El garaje se queda de fondo pero DESENFOCADO, no tapado por un color
+	# plano: sigue dando contexto sin competir con la rejilla de circuitos,
+	# que es lo que hay que mirar aquí. Quien abre esta pantalla cierra el
+	# menú (ver `_open_track_select()` en `main_menu.gd`), así que lo que se
+	# difumina es el garaje de verdad, no la interfaz de debajo.
+	add_child(UiTheme.blurred_backdrop())
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -124,7 +124,11 @@ func _build() -> void:
 	footer.add_theme_constant_override("separation", 16)
 	column.add_child(footer)
 
-	var back := UiTheme.pill_button("Atrás", UiTheme.STEEL, Color.WHITE)
+	# Atrás abajo a la izquierda en chapa metálica (navegación, mismo material
+	# que la cabecera); confirmar abajo a la derecha en verde, que es la
+	# acción de la pantalla.
+	var back := UiTheme.metal_button("Atrás".to_upper())
+	UiTheme.emphasize(back)
 	back.pressed.connect(close_screen)
 	footer.add_child(back)
 
@@ -132,7 +136,9 @@ func _build() -> void:
 	footer_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(footer_spacer)
 
-	var confirm_button := UiTheme.pill_button("Confirmar circuito", UiTheme.GOOD, Color.WHITE)
+	var confirm_button := UiTheme.pill_button(
+		"Confirmar circuito".to_upper(), UiTheme.GOOD, Color.WHITE)
+	UiTheme.emphasize(confirm_button)
 	confirm_button.pressed.connect(_confirm)
 	footer.add_child(confirm_button)
 
@@ -332,16 +338,12 @@ func _sync_selection() -> void:
 
 
 func _title(text: String) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", UiTheme.FONT_XL)
-	label.add_theme_color_override("font_color", UiTheme.BONE)
-	return label
+	return UiTheme.title_label(text, UiTheme.FONT_XL)
 
 
-## Título a la izquierda, accesos sueltos a la derecha — mismo lenguaje
-## que la cabecera del menú principal, sin "Amigos": esta es una pantalla
-## de segundo nivel, no el hub.
+## Título a la izquierda, chapa de accesos a la derecha — la misma pieza
+## metálica de una sola parte que la cabecera del menú principal, sin
+## "Amigos": esta es una pantalla de segundo nivel, no el hub.
 func _build_header() -> Control:
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 16)
@@ -352,20 +354,38 @@ func _build_header() -> Control:
 	push.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(push)
 
+	var block := PanelContainer.new()
+	block.add_theme_stylebox_override("panel", UiTheme.metal_block())
+	block.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(block)
+
 	var bar := HBoxContainer.new()
-	bar.add_theme_constant_override("separation", 4)
-	header.add_child(bar)
+	# Cero separación y juntas a mano, igual que en el menú: si el contenedor
+	# separa, entre segmento y segmento se cuela el fondo y deja de leerse
+	# como una pieza.
+	bar.add_theme_constant_override("separation", 0)
+	block.add_child(bar)
 
 	bar.add_child(_icon_button("⚙ Ajustes", func() -> void:
 		add_child(load("res://scenes/ui/settings-screen.tscn").instantiate())))
+	bar.add_child(_segment_divider())
 	bar.add_child(_icon_button("🏆 Clasificaciones", func() -> void:
 		add_child(load("res://scenes/ui/leaderboard-screen.tscn").instantiate())))
+	bar.add_child(_segment_divider())
 
 	_account_button = _icon_button("🚪 Salir", _open_account)
 	bar.add_child(_account_button)
 	_refresh_account()
 
 	return header
+
+
+func _segment_divider() -> Control:
+	var line := ColorRect.new()
+	line.color = Color(0, 0, 0, 0.28)
+	line.custom_minimum_size = Vector2(2, 40)
+	line.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return line
 
 
 ## Entrar no es obligatorio para jugar — mismo criterio y mismo código que
@@ -384,10 +404,13 @@ func _open_account() -> void:
 
 func _refresh_account() -> void:
 	if is_instance_valid(_account_button):
-		_account_button.text = "🚪 Salir" if Session.is_logged_in() else "🚪 Entrar"
+		# Ya en caja alta: este texto se reasigna en caliente, así que no
+		# puede depender de una transformación hecha al construir el botón.
+		_account_button.text = "🚪 SALIR" if Session.is_logged_in() else "🚪 ENTRAR"
 
 
 func _icon_button(text: String, on_pressed: Callable) -> Button:
-	var button := UiTheme.pill_button(text, UiTheme.STEEL, Color.WHITE, Vector2(160, 72), UiTheme.FONT_XS)
+	var button := UiTheme.segment_button(text.to_upper(), Vector2(160, 72), UiTheme.FONT_XS)
+	UiTheme.emphasize(button)
 	button.pressed.connect(on_pressed)
 	return button
