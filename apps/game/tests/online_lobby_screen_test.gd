@@ -123,6 +123,11 @@ func _test_fallo_de_conexion_vuelve_a_idle() -> void:
 	var screen := await _open_screen()
 
 	_find_button(screen, "BUSCAR PARTIDA").pressed.emit()
+	# `BUSCAR PARTIDA` arranca un intento real de WebSocket que puede fallar
+	# en background y colar su propio `connection_failed` (con texto "No se
+	# pudo abrir la conexión.") por encima del que emite este test — hacer
+	# el corte a mano ANTES del emit deja el estado determinista.
+	LiveRaceSocket.disconnect_socket()
 	LiveRaceSocket.connection_failed.emit("sin red")
 	await get_tree().process_frame
 
