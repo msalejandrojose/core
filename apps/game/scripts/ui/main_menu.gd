@@ -566,16 +566,34 @@ func _pick_mode(mode: int) -> void:
 	_sync_start_buttons()
 
 
+## Abre la pantalla nueva de selección de Grand Prix (con imagen y detalles
+## de cada copa). Cuando el jugador confirma una copa, se cierra sola y
+## delega en la pantalla vieja de flujo (`grand-prix-screen.tscn`), que
+## arranca/reanuda el intento y encadena las mangas.
+func _open_grand_prix_select() -> void:
+	var screen = load("res://scenes/ui/grand-prix-select-screen.tscn").instantiate()
+	add_child(screen)
+	screen.back_requested.connect(func() -> void: pass)
+	screen.start_race.connect(_on_grand_prix_start_race)
+
+
+func _on_grand_prix_start_race(gp_id: String) -> void:
+	# `preselected_gp_id` en la pantalla vieja hace que se salte su propia
+	# lista y arranque directamente el GP elegido en la nueva select.
+	var screen = load("res://scenes/ui/grand-prix-screen.tscn").instantiate()
+	screen.preselected_gp_id = gp_id
+	add_child(screen)
+
+
 ## "Empezar Carrera" hace una cosa distinta según el modo elegido a la
-## izquierda — Grand Prix ya es una pantalla propia completa (selección de
-## manga, intento en curso), así que aquí solo se abre; no se reconstruye
-## dentro de esta pantalla.
+## izquierda — Grand Prix abre la selección de copas (`_open_grand_prix_select`)
+## en vez de instanciar directamente el flujo de mangas.
 func _start_race() -> void:
 	match _active_mode:
 		Mode.CARRERA_RAPIDA:
 			play_pressed.emit()
 		Mode.GRAND_PRIX:
-			add_child(load("res://scenes/ui/grand-prix-screen.tscn").instantiate())
+			_open_grand_prix_select()
 		Mode.TIME_TRIAL:
 			time_trial_pressed.emit()
 

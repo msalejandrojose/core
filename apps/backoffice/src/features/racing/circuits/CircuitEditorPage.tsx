@@ -29,13 +29,20 @@ import { CircuitPathCanvas } from './components/CircuitPathCanvas';
 import { useCircuit } from './hooks/use-circuit';
 import { useUpdateCircuit } from './hooks/use-update-circuit';
 import { resolveCircuitImageUrl } from './lib/circuit-image-url';
-import { TRACK_THEME_LABELS, type CircuitRow, type TrackCellRow } from '../types';
+import {
+  CIRCUIT_WEATHER_LABELS,
+  TRACK_THEME_LABELS,
+  type CircuitRow,
+  type CircuitWeather,
+  type TrackCellRow,
+} from '../types';
 import { validateCircuitPath } from './validate-circuit-path';
 
 const schema = z.object({
   name: z.string().min(1, 'Obligatorio').max(120),
   checkpoints: z.number().int().min(1, 'Al menos 1'),
   theme: z.enum(['MEADOW', 'SNOW']),
+  weather: z.enum(['SUNNY', 'CLOUDY', 'RAINY', 'SNOWY']),
   grip: z.number().positive('Tiene que ser mayor que 0'),
   isActive: z.enum(['true', 'false']),
   imageId: z.string().optional(),
@@ -107,6 +114,7 @@ function CircuitEditorForm({ circuit }: { circuit: CircuitRow }) {
       name: circuit.name,
       checkpoints: circuit.checkpoints,
       theme: circuit.theme,
+      weather: circuit.weather,
       grip: circuit.grip,
       isActive: circuit.isActive ? 'true' : 'false',
       imageId: circuit.imageId ?? undefined,
@@ -162,6 +170,7 @@ function CircuitEditorForm({ circuit }: { circuit: CircuitRow }) {
       checkpoints: v.checkpoints,
       path,
       theme: v.theme,
+      weather: v.weather as CircuitWeather,
       grip: v.grip,
       isActive: v.isActive === 'true',
       // `undefined` (formulario sin imagen) se manda como `null`: en un
@@ -277,7 +286,7 @@ function CircuitEditorForm({ circuit }: { circuit: CircuitRow }) {
                 {(field) => <DecimalInput field={field} initialValue={circuit.grip} />}
               </FieldWrapper>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <FieldWrapper control={form.control} name="theme" label="Tema visual">
                 {(field) => (
                   <Select value={field.value as string} onValueChange={field.onChange}>
@@ -286,6 +295,22 @@ function CircuitEditorForm({ circuit }: { circuit: CircuitRow }) {
                     </SelectTrigger>
                     <SelectContent>
                       {Object.entries(TRACK_THEME_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </FieldWrapper>
+              <FieldWrapper control={form.control} name="weather" label="Clima">
+                {(field) => (
+                  <Select value={field.value as string} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(CIRCUIT_WEATHER_LABELS).map(([value, label]) => (
                         <SelectItem key={value} value={value}>
                           {label}
                         </SelectItem>

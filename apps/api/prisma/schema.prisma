@@ -1326,6 +1326,18 @@ enum TrackTheme {
   SNOW
 }
 
+/// Clima de la carrera — mostrado al jugador en la pantalla intermedia del
+/// Grand Prix. Independiente de `TrackTheme` a propósito: el "tema visual"
+/// es del terreno (pradera o nevado), el clima es una condición de la
+/// sesión ("Nieve", "Lluvia"). Por si en un futuro se pinta un circuito
+/// nevado con condiciones soleadas o al revés.
+enum RacingCircuitWeather {
+  SUNNY
+  CLOUDY
+  RAINY
+  SNOWY
+}
+
 /// Circuito base (p.ej. "Nevado"): geometría y ambientación, compartidas por
 /// todas sus variantes jugables (`Track`). Antes esto vivía duplicado en
 /// cada una de las ~18 filas de `Track` de un mismo circuito (2 sentidos × 3
@@ -1348,6 +1360,10 @@ model RacingCircuit {
   /// (TASK-271), esto pasa a ser el valor por defecto de las celdas que no
   /// tengan un terreno propio pintado encima, no se sustituye por ello.
   theme TrackTheme @default(MEADOW)
+
+  /// Clima anunciado al jugador antes de la carrera. Solo textual/decorativo
+  /// por ahora — no cambia la física del circuito (para eso está `grip`).
+  weather RacingCircuitWeather @default(SUNNY)
 
   /// Agarre de la superficie: 1.0 asfalto seco. Mismo eje que
   /// `TrackCatalog.Layout.grip` y `Vehicle.grip` en el cliente.
@@ -1773,6 +1789,16 @@ model RacingTerrainEffect {
   @@map("racing_terrain_effect")
 }
 
+/// Dificultad anunciada de un Grand Prix. Meramente informativa — la
+/// dificultad "real" la marca la selección de circuitos, no un modificador
+/// de física ni un multiplicador global. La usan la pantalla de selección
+/// (chapas y estrellas) y la de intermedio (barra inferior).
+enum RacingGrandPrixDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 /// Un Grand Prix agrupa varios circuitos en un orden fijo y agrega una
 /// clasificación propia (TASK-247): decisión de partida — suma de tiempos,
 /// no puntos por posición, porque el resto del juego es puramente
@@ -1782,6 +1808,21 @@ model RacingGrandPrix {
   id   String @id @default(uuid()) @db.Char(36)
   slug String @unique @db.VarChar(64)
   name String @db.VarChar(120)
+
+  /// Etiqueta que ve el jugador en la card de selección. La derivación
+  /// visual (una/dos/tres estrellas) la hace el cliente.
+  difficulty RacingGrandPrixDifficulty @default(MEDIUM)
+
+  /// Recompensa anunciada al elegir la copa (créditos, XP). Sin lógica de
+  /// pago automático en esta fase — la pantalla lo enseña, `AwardCoins*`
+  /// sigue haciendo lo suyo por posición, ver ambas al integrar en Godot.
+  creditsReward Int @default(0) @map("credits_reward")
+  xpReward      Int @default(0) @map("xp_reward")
+
+  /// FK suave a StoredFile (módulo storage) — cover del GP. Mismo patrón
+  /// que `Post.coverImageId` y `RacingCircuit.imageId`: sin `@relation`,
+  /// nulos permitidos, el módulo storage entrega la URL.
+  imageId String? @map("image_id") @db.Char(36)
 
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
@@ -1804,6 +1845,10 @@ model RacingGrandPrixStage {
   trackId     String @map("track_id") @db.Char(36)
   /// Orden de disputa dentro del Grand Prix, empezando en 0.
   order       Int
+  /// Número de vueltas de esa manga en particular. Por defecto 1 (el modo
+  /// vuelta suelta del juego), que es lo que ya hacían todos los stages
+  /// existentes antes de esta migración.
+  laps        Int    @default(1)
 
   grandPrix RacingGrandPrix @relation(fields: [grandPrixId], references: [id], onDelete: Cascade)
   track     Track           @relation(fields: [trackId], references: [id], onDelete: Cascade)

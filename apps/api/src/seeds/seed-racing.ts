@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { Prisma } from '../generated/prisma/client';
+import { GrandPrixCircuitWeather } from '../modules/racing/domain/entities/grand-prix.entity';
 import { TrackTheme } from '../modules/racing/domain/entities/track.entity';
 import {
   TrackCell,
@@ -53,6 +54,7 @@ interface TrackSeed {
   checkpoints: number;
   theme: TrackTheme;
   grip: number;
+  weather: GrandPrixCircuitWeather;
 }
 
 // Multiplicador de velocidad punta de cada cilindrada. Tiene que coincidir con
@@ -92,6 +94,7 @@ const TRACKS: readonly TrackSeed[] = [
     checkpoints: 3,
     theme: TrackTheme.MEADOW,
     grip: 1.0,
+    weather: 'SUNNY',
     path: [
       { x: 0, y: 0 },
       { x: 0, y: 1 },
@@ -117,6 +120,7 @@ const TRACKS: readonly TrackSeed[] = [
     checkpoints: 3,
     theme: TrackTheme.MEADOW,
     grip: 1.0,
+    weather: 'CLOUDY',
     path: [
       { x: 0, y: 0 },
       { x: 0, y: 1 },
@@ -144,6 +148,7 @@ const TRACKS: readonly TrackSeed[] = [
     checkpoints: 3,
     theme: TrackTheme.MEADOW,
     grip: 1.0,
+    weather: 'SUNNY',
     path: [
       { x: 0, y: 0 },
       { x: 0, y: 1 },
@@ -167,6 +172,7 @@ const TRACKS: readonly TrackSeed[] = [
     checkpoints: 4,
     theme: TrackTheme.SNOW,
     grip: 0.55,
+    weather: 'SNOWY',
     path: [
       { x: 0, y: 0 },
       { x: 0, y: 1 },
@@ -255,6 +261,7 @@ async function main(): Promise<void> {
         path: track.path as unknown as Prisma.InputJsonValue,
         theme: track.theme,
         grip: track.grip,
+        weather: track.weather,
       },
       update: {
         name: track.name,
@@ -262,6 +269,7 @@ async function main(): Promise<void> {
         path: track.path as unknown as Prisma.InputJsonValue,
         theme: track.theme,
         grip: track.grip,
+        weather: track.weather,
       },
     });
 

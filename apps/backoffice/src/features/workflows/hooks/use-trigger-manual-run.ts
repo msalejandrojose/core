@@ -14,7 +14,7 @@ export function useTriggerManualRun(key: string, { onSuccess }: { onSuccess?: (r
   return useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
       const { data, error } = await apiClient.POST('/workflows/definitions/{key}/run', {
-        params: { path: { key } },
+        params: { path: { key }, query: { dryRun: 'false' } },
         body: payload as unknown as Record<string, never>,
       });
       if (error) throw error;

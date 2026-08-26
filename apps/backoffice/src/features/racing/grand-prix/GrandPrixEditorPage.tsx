@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowDown, ArrowLeft, ArrowUp, X } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowDown, ArrowLeft, ArrowUp, ImageOff, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -18,6 +18,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { uploadFormFile } from '@/features/forms/upload';
+import { toast } from '@/lib/toast';
+import { resolveCircuitImageUrl } from '../circuits/lib/circuit-image-url';
+import { useTracks } from '../tracks/hooks/use-tracks';
+import {
+  GRAND_PRIX_DIFFICULTY_LABELS,
+  type GrandPrixDifficulty,
+  type GrandPrixRow,
+} from '../types';
+import { useCreateGrandPrix } from './hooks/use-create-grand-prix';
+import { useGrandPrix } from './hooks/use-grand-prix';
+import { useGrandPrixLeaderboard } from './hooks/use-grand-prix-leaderboard';
+import { useUpdateGrandPrix } from './hooks/use-update-grand-prix';
 import {
   Table,
   TableBody,
@@ -26,12 +39,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { GrandPrixRow } from '../types';
-import { useTracks } from '../tracks/hooks/use-tracks';
-import { useCreateGrandPrix } from './hooks/use-create-grand-prix';
-import { useGrandPrix } from './hooks/use-grand-prix';
-import { useGrandPrixLeaderboard } from './hooks/use-grand-prix-leaderboard';
-import { useUpdateGrandPrix } from './hooks/use-update-grand-prix';
 
 const schema = z.object({
   slug: z
@@ -41,6 +48,10 @@ const schema = z.object({
     .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'kebab-case: minúsculas, dígitos y guiones'),
   name: z.string().min(1, 'Obligatorio').max(120),
   isActive: z.enum(['true', 'false']),
+  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']),
+  creditsReward: z.number().int().min(0),
+  xpReward: z.number().int().min(0),
+  imageId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -49,6 +60,7 @@ interface StageDraft {
   trackId: string;
   trackSlug: string;
   trackName: string;
+  laps: number;
 }
 
 export function GrandPrixEditorPage() {
@@ -83,6 +95,7 @@ function GrandPrixEditorForm({ grandPrix }: { grandPrix?: GrandPrixRow }) {
         trackId: s.trackId,
         trackSlug: s.trackSlug,
         trackName: s.trackName,
+        laps: s.laps,
       })) ?? [],
   );
   const [stagesTouched, setStagesTouched] = useState(false);
@@ -93,8 +106,41 @@ function GrandPrixEditorForm({ grandPrix }: { grandPrix?: GrandPrixRow }) {
       slug: grandPrix?.slug ?? '',
       name: grandPrix?.name ?? '',
       isActive: grandPrix && !grandPrix.isActive ? 'false' : 'true',
+      difficulty: grandPrix?.difficulty ?? 'MEDIUM',
+      creditsReward: grandPrix?.creditsReward ?? 0,
+      xpReward: grandPrix?.xpReward ?? 0,
+      imageId: grandPrix?.imageId ?? undefined,
     },
   });
+
+  // Uploader de imagen — mismo patrón que `CircuitEditorPage`.
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    resolveCircuitImageUrl(grandPrix?.imageUrl ?? null),
+  );
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const ref = await uploadFormFile(file);
+      form.setValue('imageId', ref.id ?? undefined, { shouldDirty: true });
+      setImagePreview(URL.createObjectURL(file));
+    } catch {
+      toast.error('No se pudo subir la imagen');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const onRemoveImage = () => {
+    form.setValue('imageId', undefined, { shouldDirty: true });
+    setImagePreview(null);
+  };
 
   const create = useCreateGrandPrix({
     onSuccess: (newId) => navigate(`/racing/grand-prix/${newId}`, { replace: true }),
@@ -111,12 +157,32 @@ function GrandPrixEditorForm({ grandPrix }: { grandPrix?: GrandPrixRow }) {
     if (!canSubmit) return;
 
     const isActive = v.isActive === 'true';
-    const trackIds = stages.map((s) => s.trackId);
+    const stagePayload = stages.map((s) => ({ trackId: s.trackId, laps: s.laps }));
+    const difficulty = v.difficulty as GrandPrixDifficulty;
 
     if (isEdit && grandPrix) {
-      update.mutate({ name: v.name, trackIds, isActive });
+      update.mutate({
+        name: v.name,
+        stages: stagePayload,
+        isActive,
+        difficulty,
+        creditsReward: v.creditsReward,
+        xpReward: v.xpReward,
+        // `undefined` (formulario sin imagen) se manda como `null`: en un PATCH
+        // "ausente" significaría "no tocar" — el editor siempre resincroniza.
+        imageId: v.imageId ?? null,
+      });
     } else {
-      create.mutate({ slug: v.slug, name: v.name, trackIds, isActive });
+      create.mutate({
+        slug: v.slug,
+        name: v.name,
+        stages: stagePayload,
+        isActive,
+        difficulty,
+        creditsReward: v.creditsReward,
+        xpReward: v.xpReward,
+        imageId: v.imageId ?? null,
+      });
     }
   });
 
@@ -152,6 +218,47 @@ function GrandPrixEditorForm({ grandPrix }: { grandPrix?: GrandPrixRow }) {
             <CardTitle>Datos generales</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <span className="text-sm font-medium">Imagen</span>
+              <div className="flex items-center gap-4">
+                <div className="bg-muted flex size-24 items-center justify-center overflow-hidden rounded-md">
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="" className="size-full object-cover" />
+                  ) : (
+                    <ImageOff size={24} className="text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onPickImage}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploadingImage}
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    <Upload size={14} />
+                    {isUploadingImage
+                      ? 'Subiendo…'
+                      : imagePreview
+                        ? 'Cambiar imagen'
+                        : 'Subir imagen'}
+                  </Button>
+                  {imagePreview && (
+                    <Button type="button" variant="ghost" size="sm" onClick={onRemoveImage}>
+                      <X size={14} />
+                      Quitar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <FieldWrapper control={form.control} name="name" label="Nombre">
                 {(field) => <Input placeholder="Copa de Verano" {...field} />}
@@ -162,6 +269,44 @@ function GrandPrixEditorForm({ grandPrix }: { grandPrix?: GrandPrixRow }) {
                     placeholder="copa-verano"
                     disabled={isEdit}
                     {...field}
+                  />
+                )}
+              </FieldWrapper>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <FieldWrapper control={form.control} name="difficulty" label="Dificultad">
+                {(field) => (
+                  <Select value={field.value as string} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(GRAND_PRIX_DIFFICULTY_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </FieldWrapper>
+              <FieldWrapper control={form.control} name="creditsReward" label="Créditos">
+                {(field) => (
+                  <Input
+                    type="number"
+                    min={0}
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                  />
+                )}
+              </FieldWrapper>
+              <FieldWrapper control={form.control} name="xpReward" label="XP">
+                {(field) => (
+                  <Input
+                    type="number"
+                    min={0}
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                   />
                 )}
               </FieldWrapper>
@@ -227,6 +372,12 @@ function StagePicker({
     onChange(stages.filter((_, i) => i !== index));
   }
 
+  function setLaps(index: number, laps: number) {
+    const next = stages.slice();
+    next[index] = { ...next[index], laps: Math.max(1, Math.min(20, laps || 1)) };
+    onChange(next);
+  }
+
   return (
     <div className="space-y-3">
       {stages.length === 0 ? (
@@ -246,6 +397,17 @@ function StagePicker({
                 <div className="text-muted-foreground truncate font-mono text-xs">
                   {stage.trackSlug}
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground text-xs">Vueltas</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  className="w-16"
+                  value={stage.laps}
+                  onChange={(e) => setLaps(index, Number(e.target.value))}
+                />
               </div>
               <Button
                 type="button"
@@ -288,7 +450,12 @@ function StagePicker({
           if (!track) return;
           onChange([
             ...stages,
-            { trackId: track.id, trackSlug: track.slug, trackName: track.name },
+            {
+              trackId: track.id,
+              trackSlug: track.slug,
+              trackName: track.name,
+              laps: 1,
+            },
           ]);
         }}
       >

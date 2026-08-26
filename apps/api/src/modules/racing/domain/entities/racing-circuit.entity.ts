@@ -1,4 +1,5 @@
 import { TrackCell } from '../track-path';
+import { GrandPrixCircuitWeather } from './grand-prix.entity';
 import { TrackTheme } from './track.entity';
 
 // Circuito base (TASK-336): geometría y ambientación compartidas por todas
@@ -14,6 +15,11 @@ export class RacingCircuit {
     readonly checkpoints: number,
     readonly path: TrackCell[],
     readonly theme: TrackTheme,
+    // Clima anunciado antes de la carrera (nieve, sol, ...). Independiente
+    // de `theme`: el tema es del terreno (pradera/nieve), el clima es una
+    // condición de la sesión — un circuito de pradera puede tener clima
+    // lluvioso, o al revés.
+    readonly weather: GrandPrixCircuitWeather,
     readonly grip: number,
     readonly imageId: string | null,
     // Interruptor manual del admin — independiente de si le toca estar en

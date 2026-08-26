@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import type { GrandPrixCircuitWeather } from '../../../domain/entities/grand-prix.entity';
 import { RacingCircuit } from '../../../domain/entities/racing-circuit.entity';
 import { TrackTheme } from '../../../domain/entities/track.entity';
 import { TrackCellDto } from './track-cell.dto';
@@ -10,6 +11,8 @@ export class AdminCircuitResponseDto {
   @ApiProperty() checkpoints!: number;
   @ApiProperty({ type: [TrackCellDto] }) path!: TrackCellDto[];
   @ApiProperty({ enum: TrackTheme }) theme!: TrackTheme;
+  @ApiProperty({ enum: ['SUNNY', 'CLOUDY', 'RAINY', 'SNOWY'] })
+  weather!: GrandPrixCircuitWeather;
   @ApiProperty() grip!: number;
   @ApiProperty({ type: String, nullable: true, format: 'uuid' }) imageId!:
     | string
@@ -37,6 +40,7 @@ export class AdminCircuitResponseDto {
     dto.checkpoints = circuit.checkpoints;
     dto.path = circuit.path;
     dto.theme = circuit.theme;
+    dto.weather = circuit.weather;
     dto.grip = circuit.grip;
     dto.imageId = circuit.imageId;
     dto.imageUrl = imageUrl;

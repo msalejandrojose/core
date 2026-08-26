@@ -55,6 +55,7 @@ export class PrismaRacingCircuitRepository implements RacingCircuitRepositoryPor
       data.path = patch.path as unknown as Prisma.InputJsonValue;
     }
     if (patch.theme !== undefined) data.theme = patch.theme;
+    if (patch.weather !== undefined) data.weather = patch.weather;
     if (patch.grip !== undefined) data.grip = patch.grip;
     if (patch.isActive !== undefined) data.isActive = patch.isActive;
     if (patch.imageId !== undefined) data.imageId = patch.imageId;

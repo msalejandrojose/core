@@ -664,9 +664,38 @@ func _on_live_race_finished(_room_id: String, _race_id: String, result: Array, r
 	_live_race_finish_sent = false
 	_clear_live_rivals()
 
-	var screen: CanvasLayer = load("res://scenes/ui/live-race-result-screen.tscn").instantiate()
+	# Podio unificado (TASK-336 fase 3): mismo `podium-screen.tscn` que la
+	# online asíncrona, alimentado con lo que emite `LiveRaceRoomManager`.
+	# `rating_changes` se ignora aquí — el nuevo podio no lo pinta como fila
+	# aparte; el rating se puede reflejar en una siguiente pasada.
+	var podium_participants := []
+	for entry in result:
+		if not (entry is Dictionary):
+			continue
+		var is_player := str(entry.get("userId", "")) == Session.user_id
+		var pos := 99 if bool(entry.get("disconnected", false)) else int(entry.get("position", 99))
+		podium_participants.append({
+			"name": ("Tú" if is_player else "Rival"),
+			"position": pos,
+			"archetype_code": CarLoadout.archetype_code if is_player else "normal",
+			"total_ms": int(entry.get("durationMs", 0)),
+			"best_lap_ms": int(entry.get("durationMs", 0)),
+			"xp": 0,
+			"is_player": is_player,
+		})
+	podium_participants.sort_custom(func(a, b): return int(a.get("position", 99)) < int(b.get("position", 99)))
+
+	var player_name: String = Session.email if Session.is_logged_in() else "JUGADOR"
+	var screen: CanvasLayer = load("res://scenes/ui/podium-screen.tscn").instantiate()
 	add_child(screen)
-	screen.show_result(result, rating_changes)
+	screen.show_result({
+		"participants": podium_participants,
+		"coins_earned": 0,
+		"player_name": player_name,
+	})
+	# `rating_changes` (`Array`) queda sin usar por ahora — al indicar el
+	# tipo con guion bajo el linter no se queja del parámetro.
+	var _unused_ratings = rating_changes
 
 
 func _clear_live_rivals() -> void:

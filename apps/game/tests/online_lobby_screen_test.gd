@@ -25,7 +25,7 @@ func _ready() -> void:
 
 	await _test_estado_inicial()
 	await _test_buscar_pasa_a_buscando()
-	await _test_room_update_actualiza_jugadores()
+	await _test_room_update_actualiza_slots()
 	await _test_countdown_muestra_cuenta_atras()
 	await _test_cancelar_vuelve_a_idle()
 	await _test_fallo_de_conexion_vuelve_a_idle()
@@ -48,9 +48,9 @@ func _ready() -> void:
 func _test_estado_inicial() -> void:
 	var screen := await _open_screen()
 
-	_check(_find_button(screen, "Buscar partida") != null, true,
+	_check(_find_button(screen, "BUSCAR PARTIDA") != null, true,
 		"empieza mostrando el botón de buscar")
-	_check(_find_button(screen, "Cancelar").visible, false,
+	_check(_find_button(screen, "CANCELAR BÚSQUEDA").visible, false,
 		"y el de cancelar escondido")
 
 	screen.close_screen()
@@ -64,24 +64,29 @@ func _test_buscar_pasa_a_buscando() -> void:
 	# síncrona, no depende de que esa conexión llegue a ningún sitio. El
 	# `disconnect_socket()` del final de la suite recoge cualquier intento
 	# que quede a medias.
-	_find_button(screen, "Buscar partida").pressed.emit()
+	_find_button(screen, "BUSCAR PARTIDA").pressed.emit()
 
-	_check(_find_button(screen, "Buscar partida").visible, false,
+	_check(_find_button(screen, "BUSCAR PARTIDA").visible, false,
 		"al buscar, se esconde el botón de buscar")
-	_check(_find_button(screen, "Cancelar").visible, true,
+	_check(_find_button(screen, "CANCELAR BÚSQUEDA").visible, true,
 		"y aparece el de cancelar")
+	_check(screen._status_label.text.contains("BUSCANDO"), true,
+		"y el estado dice que está buscando")
 
 	screen.close_screen()
 
 
-func _test_room_update_actualiza_jugadores() -> void:
+func _test_room_update_actualiza_slots() -> void:
 	var screen := await _open_screen()
 
 	LiveRaceSocket.room_update.emit("room-1", "WAITING_PLAYERS", ["alice", "bot-1"])
 	await get_tree().process_frame
 
-	_check(screen._players_label.text, "2 jugadores en la sala",
-		"el número de jugadores refleja el room-update")
+	# Ahora los jugadores se reflejan en la columna izquierda, no en un label
+	# de "N jugadores". El slot 1 (índice 1) es el primer rival; con 2 ids
+	# en la sala, ese slot pasa a "Encontrado".
+	_check(screen._player_slots[1].status_label.text, "Encontrado",
+		"el segundo slot cambia a 'Encontrado' con dos jugadores en la sala")
 
 	screen.close_screen()
 
@@ -94,7 +99,7 @@ func _test_countdown_muestra_cuenta_atras() -> void:
 
 	_check(screen._status_label.text.contains("3"), true,
 		"la cuenta atrás se ve en el estado")
-	_check(_find_button(screen, "Cancelar").visible, true,
+	_check(_find_button(screen, "CANCELAR BÚSQUEDA").visible, true,
 		"y sigue habiendo forma de cancelar durante la cuenta atrás")
 
 	screen.close_screen()
@@ -103,12 +108,12 @@ func _test_countdown_muestra_cuenta_atras() -> void:
 func _test_cancelar_vuelve_a_idle() -> void:
 	var screen := await _open_screen()
 
-	_find_button(screen, "Buscar partida").pressed.emit()
-	_find_button(screen, "Cancelar").pressed.emit()
+	_find_button(screen, "BUSCAR PARTIDA").pressed.emit()
+	_find_button(screen, "CANCELAR BÚSQUEDA").pressed.emit()
 
-	_check(_find_button(screen, "Buscar partida").visible, true,
+	_check(_find_button(screen, "BUSCAR PARTIDA").visible, true,
 		"cancelar devuelve el botón de buscar")
-	_check(_find_button(screen, "Cancelar").visible, false,
+	_check(_find_button(screen, "CANCELAR BÚSQUEDA").visible, false,
 		"y esconde el de cancelar")
 
 	screen.close_screen()
@@ -117,13 +122,13 @@ func _test_cancelar_vuelve_a_idle() -> void:
 func _test_fallo_de_conexion_vuelve_a_idle() -> void:
 	var screen := await _open_screen()
 
-	_find_button(screen, "Buscar partida").pressed.emit()
+	_find_button(screen, "BUSCAR PARTIDA").pressed.emit()
 	LiveRaceSocket.connection_failed.emit("sin red")
 	await get_tree().process_frame
 
-	_check(_find_button(screen, "Buscar partida").visible, true,
+	_check(_find_button(screen, "BUSCAR PARTIDA").visible, true,
 		"un fallo de conexión también devuelve al estado inicial")
-	_check(screen._status_label.text.contains("sin red"), true,
+	_check(screen._status_label.text.contains("SIN RED"), true,
 		"con el motivo del fallo a la vista")
 
 	screen.close_screen()

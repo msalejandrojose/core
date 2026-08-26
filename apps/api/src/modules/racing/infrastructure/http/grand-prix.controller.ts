@@ -12,11 +12,13 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type AccessTokenPayload } from '../../../iam/application/ports/token-issuer.port';
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
+import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
 import { GetGrandPrixLeaderboardUseCase } from '../../application/use-cases/get-grand-prix-leaderboard.use-case';
 import { GetGrandPrixUseCase } from '../../application/use-cases/get-grand-prix.use-case';
 import { ListGrandPrixUseCase } from '../../application/use-cases/list-grand-prix.use-case';
 import { StartOrResumeGrandPrixAttemptUseCase } from '../../application/use-cases/start-or-resume-grand-prix-attempt.use-case';
 import { SubmitGrandPrixStageResultUseCase } from '../../application/use-cases/submit-grand-prix-stage-result.use-case';
+import { GrandPrix } from '../../domain/entities/grand-prix.entity';
 import { GrandPrixAttemptResponseDto } from './dto/grand-prix-attempt.response.dto';
 import {
   GrandPrixLeaderboardEntryDto,
@@ -41,6 +43,7 @@ export class GrandPrixController {
     private readonly startOrResume: StartOrResumeGrandPrixAttemptUseCase,
     private readonly submitStageResult: SubmitGrandPrixStageResultUseCase,
     private readonly getLeaderboard: GetGrandPrixLeaderboardUseCase,
+    private readonly viewTokens: FileViewTokenService,
   ) {}
 
   @Get()
@@ -48,14 +51,14 @@ export class GrandPrixController {
   @ApiOkResponse({ type: [GrandPrixResponseDto] })
   async list(): Promise<GrandPrixResponseDto[]> {
     const items = await this.listGrandPrix.execute();
-    return items.map((item) => GrandPrixResponseDto.fromDomain(item));
+    return items.map((item) => this.toResponse(item));
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Grand Prix por id, con sus circuitos en orden' })
   @ApiOkResponse({ type: GrandPrixResponseDto })
   async get(@Param('id') id: string): Promise<GrandPrixResponseDto> {
-    return GrandPrixResponseDto.fromDomain(await this.getGrandPrix.execute(id));
+    return this.toResponse(await this.getGrandPrix.execute(id));
   }
 
   @Post(':id/attempts')
@@ -130,5 +133,23 @@ export class GrandPrixController {
       ),
       yourPosition: result.yourPosition,
     };
+  }
+
+  private toResponse(gp: GrandPrix): GrandPrixResponseDto {
+    const stageImageByTrackId = new Map<string, string | null>();
+    for (const stage of gp.stages) {
+      stageImageByTrackId.set(stage.trackId, stage.circuitImageId);
+    }
+    return GrandPrixResponseDto.fromDomain(
+      gp,
+      this.imageUrl(gp.imageId),
+      (trackId) => this.imageUrl(stageImageByTrackId.get(trackId) ?? null),
+    );
+  }
+
+  private imageUrl(imageId: string | null): string | null {
+    return imageId
+      ? `/files/view?token=${this.viewTokens.issue(imageId)}`
+      : null;
   }
 }

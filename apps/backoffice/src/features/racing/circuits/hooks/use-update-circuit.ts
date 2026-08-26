@@ -2,13 +2,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/lib/toast';
 import { apiClient } from '@/api/client';
 import { getApiErrorMessage } from '@/lib/api-error';
-import type { TrackCellRow, TrackTheme } from '../../types';
+import type { CircuitWeather, TrackCellRow, TrackTheme } from '../../types';
 
 export interface UpdateCircuitInput {
   name?: string;
   checkpoints?: number;
   path?: TrackCellRow[];
   theme?: TrackTheme;
+  weather?: CircuitWeather;
   grip?: number;
   isActive?: boolean;
   /** `null` limpia la imagen; `undefined` la deja tal cual. */
