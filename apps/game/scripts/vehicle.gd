@@ -38,7 +38,7 @@ class_name Vehicle extends Node3D
 # Posición de salida, capturada antes del primer frame. Se usa @onready y no
 # _ready porque la moto sobreescribe _ready sin llamar a super().
 
-@onready var _start_sphere_position: Vector3 = sphere.position
+@onready var _start_sphere_position: Vector3 = sphere.global_position
 @onready var _start_model_transform: Transform3D = vehicle_model.transform
 
 var input: Vector3
@@ -203,16 +203,42 @@ func set_body(scene: PackedScene, animate: bool = false) -> void:
 ## velocidad de la esfera y el estado derivado: si solo se recoloca, el coche
 ## reaparece con la inercia del intento anterior y el crono nuevo empieza con
 ## el coche ya lanzado.
+##
+## `spawn_world_position` es la posición GLOBAL de la línea de meta del
+## circuito actual (`track_builder.start_position`). `yaw_absolute` es el
+## rumbo final que debe tener el coche en el mundo — NO se suma a nada,
+## reemplaza. Antes se pasaba como delta y con `rotate_y()` se acumulaba
+## sobre la transform base, lo que dejaba el coche mal orientado tras varios
+## reinicios y en cambios de sentido.
+##
+## La esfera es un `RigidBody3D` con física propia; asignar `.position` a
+## secas mientras el motor la está integrando puede llegar "tarde" al mundo
+## y dejar el coche desalineado con `spawn_world_position` durante el
+## primer frame. Con `freeze` + `global_position` + descongelar de golpe, la
+## reposición es atómica.
 
-func reset_to_start(yaw: float = 0.0) -> void:
+func reset_to_start(yaw_absolute: float = 0.0, spawn_world_position: Vector3 = Vector3.INF) -> void:
 
-	sphere.position = _start_sphere_position
+	# Compat: si el llamador antiguo no pasa posición, usa la global capturada
+	# al arrancar la escena (`@onready`).
+	var use_spawn: Vector3 = (
+		_start_sphere_position if spawn_world_position == Vector3.INF
+		else spawn_world_position + Vector3(0, 0.5, 0)
+	)
+
+	sphere.freeze = true
+	sphere.global_position = use_spawn
 	sphere.linear_velocity = Vector3.ZERO
 	sphere.angular_velocity = Vector3.ZERO
+	sphere.freeze = false
 
-	vehicle_model.transform = _start_model_transform
-	if yaw != 0.0:
-		vehicle_model.rotate_y(yaw)
+	# Reposicionar el modelo YA (no esperar al próximo `_physics_process`) para
+	# que la cámara y cualquier snapshot que vaya justo después vean el coche
+	# en su sitio, no en el del intento anterior. Se usa `global_*` explícito
+	# porque el padre `Vehicle` puede estar donde sea — antes se le movía a
+	# `start_position`, ahora no, pero mejor no depender de esa invariante.
+	vehicle_model.global_position = use_spawn - Vector3(0, 0.65, 0)
+	vehicle_model.global_rotation = Vector3(0, yaw_absolute, 0)
 
 	input = Vector3.ZERO
 	nitro_charge = 1.0

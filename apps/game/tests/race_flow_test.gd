@@ -86,7 +86,14 @@ func _ready() -> void:
 	var restart_ms := Time.get_ticks_msec() - before
 
 	_check(restart_ms < 1000, true, "el reinicio tarda menos de 1 s (%d ms)" % restart_ms)
-	_check(sphere.position.distance_to(Vector3(0, 0.5, 0)) < 0.001, true, "el coche vuelve a la salida")
+	# El reinicio recoloca la esfera en la línea de meta REAL del circuito
+	# (`builder.start_position`), no en el origen del mundo — antes salía casi
+	# por casualidad porque el kenney-01 tiene meta en (0,0,0) y el fallback
+	# a la posición local de la escena coincidía; con la nueva firma explícita
+	# de `reset_to_start(yaw, spawn)` esto queda cerrado por contrato.
+	var builder: TrackBuilder = main.get_node("TrackBuilder")
+	var expected_spawn := builder.start_position + Vector3(0, 0.5, 0)
+	_check(sphere.global_position.distance_to(expected_spawn) < 0.001, true, "el coche vuelve a la salida")
 	_check(sphere.linear_velocity.length() < 0.001, true, "el reinicio quita la inercia")
 	_check_eq(vehicle.linear_speed, 0.0, "el reinicio limpia la velocidad interna")
 	_check(timer.running, false, "el reinicio para el crono")

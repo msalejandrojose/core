@@ -460,8 +460,12 @@ func restart() -> void:
 	# La salida es la línea de meta. En sentido inverso, mirando al otro lado:
 	# el circuito es el mismo, se recorre al revés.
 	var reversed := _effective_reverse()
-	vehicle.position = track_builder.start_position
-	vehicle.reset_to_start(track_builder.start_yaw + (PI if reversed else 0.0))
+	var spawn_yaw: float = track_builder.start_yaw + (PI if reversed else 0.0)
+	# `reset_to_start` reposiciona la esfera atómicamente (freeze + global +
+	# unfreeze) y setea la rotación ABSOLUTA — antes se movía primero el
+	# padre Vehicle y luego se rotaba con `rotate_y()`, que acumulaba yaw y
+	# dejaba el coche mal orientado tras un reinicio o un cambio de sentido.
+	vehicle.reset_to_start(spawn_yaw, track_builder.start_position)
 	lap_timer.set_reversed(reversed)
 	view.snap()
 	VehicleInput.release()
