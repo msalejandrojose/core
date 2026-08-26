@@ -1,34 +1,26 @@
 extends CanvasLayer
 
-## Taller: elegir arquetipo de coche (normal/4x4/F1) y equipar piezas (ruedas,
-## alerón, chasis), viendo el efecto combinado en velocidad y agarre y una
-## vista 3D en vivo del coche elegido.
+## Taller: elegir arquetipo de coche (normal/4x4/F1) y coche del catálogo
+## (skins del backoffice). Antes también dejaba equipar piezas (ruedas,
+## alerón, chasis) con un panel derecho de rendimiento y barras, pero se
+## retiró para simplificar la pantalla a una sola columna con lo esencial:
+## comprar y seleccionar el coche.
 ##
-## Cada toque guarda al momento contra la API (mismo patrón que Ajustes: sin
-## botón "Guardar" aparte) y refresca `CarLoadout` para que el cambio se note
-## en la próxima vez que se reconstruya el coche, sin reiniciar la app. La
-## única excepción es el arquetipo: la lista de variantes solo PREVISUALIZA
-## (vista 3D + resaltado) hasta que se pulsa "Cambiar", para poder mirar las
-## tres sin comprometerse ni gastar una llamada a la API por cada vistazo.
+## Cada toque en un skin guarda al momento contra la API (mismo patrón que
+## Ajustes: sin botón "Guardar" aparte) y refresca `CarLoadout`. La única
+## excepción es el arquetipo: la lista de variantes solo PREVISUALIZA (vista
+## 3D + resaltado) hasta que se pulsa "Cambiar", para poder mirar las
+## opciones sin comprometerse ni gastar una llamada a la API por cada vistazo.
+##
+## Las piezas equipadas se mandan siempre como `null` — el taller ya no
+## permite tocarlas, pero se conservan como concepto en la API por si algún
+## día vuelve el panel.
 ##
 ## Requiere cuenta: el equipamiento vive en el servidor por jugador
 ## (`GET/PATCH /racing/cars/me`), así que sin sesión no hay dónde guardarlo.
 
-## category → etiqueta visible, en el orden en que se muestran.
-const CATEGORIES := [
-	["TIRES", "Ruedas"],
-	["WING", "Alerón"],
-	["CHASSIS", "Chasis"],
-]
-
-## Rango de la barra de rendimiento. Los arquetipos y piezas actuales se
-## mueven en ese entorno alrededor de 1.0× — no hay un máximo teórico real,
-## así que la barra se satura en vez de intentar acertar un tope exacto.
-const STAT_BAR_MIN := 0.5
-const STAT_BAR_MAX := 1.5
-
-## Gris neutro de las píldoras sin elegir (arquetipo, pieza) — mismo tono que
-## usa `main_menu.gd` para sus opciones, ver comentario en `ui_theme.gd`.
+## Gris neutro de las píldoras sin elegir — mismo tono que usa `main_menu.gd`
+## para sus opciones, ver comentario en `ui_theme.gd`.
 const _OPTION_BG := Color("e9e4d9")
 
 signal closed()
@@ -47,11 +39,6 @@ var _change_button: Button
 ## ninguna pantalla en medio, solo tarjetas flotando sobre el garaje.
 var _director: Node
 
-var _speed_bar: ProgressBar
-var _grip_bar: ProgressBar
-var _offroad_bar: ProgressBar
-var _stats_label: Label
-
 var _catalog: Dictionary = {}
 var _loadout: Dictionary = {}
 var _busy: bool = false
@@ -62,10 +49,7 @@ var _busy: bool = false
 var _pending_archetype_id: String = ""
 
 var _archetype_buttons: Dictionary = {}
-## category (String) → { part_id_or_"" (String): Button }
-var _part_buttons: Dictionary = {}
-## skin_id_or_"" (String) → Button — coches/skins creados en el backoffice
-## (TASK pedida tras las referencias: "ver todos los coches disponibles").
+## skin_id_or_"" (String) → Button — coches/skins creados en el backoffice.
 var _skin_buttons: Dictionary = {}
 var _all_buttons: Array[Button] = []
 
@@ -175,10 +159,9 @@ func _load() -> void:
 	_build_loaded()
 
 
-## Manda el estado completo (arquetipo + los tres huecos, tal cual quedan
-## marcados ahora mismo) y aplica la respuesta. Si falla, se revierte la UI a
-## lo último confirmado — un toque no puede dejar la pantalla mintiendo sobre
-## qué hay equipado de verdad.
+## Manda el estado completo (arquetipo + skin — las piezas se envían como
+## null porque la UI ya no permite tocarlas). Si falla, se revierte la UI a
+## lo último confirmado.
 func _save() -> void:
 	if _busy:
 		return
@@ -186,12 +169,9 @@ func _save() -> void:
 	_set_buttons_disabled(true)
 
 	var archetype_id: String = _loadout.get("archetype", {}).get("id", "")
-	var tires_id = _selected_part_id("TIRES")
-	var wing_id = _selected_part_id("WING")
-	var chassis_id = _selected_part_id("CHASSIS")
 	var skin_id = _selected_skin_id()
 
-	var response = await RacingApi.set_car_loadout(archetype_id, tires_id, wing_id, chassis_id, skin_id)
+	var response = await RacingApi.set_car_loadout(archetype_id, null, null, null, skin_id)
 
 	_busy = false
 	_set_buttons_disabled(false)
@@ -206,24 +186,11 @@ func _save() -> void:
 	_loadout = response.data
 	await CarLoadout.refresh()
 	_sync_buttons()
-	_refresh_stats()
-
-
-func _selected_part_id(category: String):
-	var current: Variant = _loadout.get(_part_field(category))
-	return current.get("id") if current is Dictionary else null
 
 
 func _selected_skin_id():
 	var current: Variant = _loadout.get("skin")
 	return current.get("id") if current is Dictionary else null
-
-
-func _part_field(category: String) -> String:
-	match category:
-		"TIRES": return "tiresPart"
-		"WING": return "wingPart"
-		_: return "chassisPart"
 
 
 # --- Construcción tras cargar -----------------------------------------------------
@@ -239,21 +206,18 @@ func _build_loaded() -> void:
 	_populate_body()
 
 	_sync_buttons()
-	_refresh_stats()
 	_show_preview(_pending_archetype_id)
 
 
 func _populate_body() -> void:
+	# Solo un panel a la izquierda. El resto del cuerpo se deja libre para
+	# que se vea el garaje 3D de fondo con el coche equipado — antes había
+	# una segunda tarjeta a la derecha con rendimiento + piezas, retirada
+	# para que la pantalla se centre en comprar y seleccionar el coche.
 	_body.add_child(_build_variants_panel())
-
-	# Sin panel central: entre las dos tarjetas se ve el garaje de verdad
-	# (`MenuGarage` + el coche equipado, ver `race_director.gd`) — pedido
-	# explícito, nada de una pantalla propia flotando en medio.
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.add_child(spacer)
-
-	_body.add_child(_build_upgrades_panel())
 
 
 ## Tras comprar algo en la tienda (TASK-320): recarga catálogo y saldo, y
@@ -271,13 +235,11 @@ func _reload_after_purchase() -> void:
 		_body.remove_child(child)
 		child.free()
 	_archetype_buttons.clear()
-	_part_buttons.clear()
 	_skin_buttons.clear()
 	_all_buttons.clear()
 
 	_populate_body()
 	_sync_buttons()
-	_refresh_stats()
 	_show_preview(_pending_archetype_id)
 
 
@@ -361,89 +323,15 @@ func _build_variants_panel() -> Control:
 	_all_buttons.append(_change_button)
 	panel.add_child(_change_button)
 
-	return card
-
-
-## Columna derecha ("ACCESORIOS Y MEJORAS" del boceto), sin la parte de
-## accesorios decorativos (madera, herramientas…) porque esa aún no existe
-## como sistema real — solo lo que ya está implementado: rendimiento del
-## arquetipo elegido y las piezas equipables (ruedas/alerón/chasis).
-func _build_upgrades_panel() -> Control:
-	var card := UiTheme.card_panel()
-	card.custom_minimum_size = Vector2(360, 0)
-
-	var panel := VBoxContainer.new()
-	panel.add_theme_constant_override("separation", 12)
-	card.add_child(panel)
-
-	panel.add_child(_heading("Rendimiento"))
-	_speed_bar = _stat_bar()
-	panel.add_child(_stat_row("Velocidad", _speed_bar))
-	_grip_bar = _stat_bar()
-	panel.add_child(_stat_row("Agarre", _grip_bar))
-	_offroad_bar = _stat_bar()
-	panel.add_child(_stat_row("Fuera de asfalto", _offroad_bar))
-
-	_stats_label = _label("", UiTheme.FONT_XS)
-	panel.add_child(_stats_label)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(scroll)
-
-	var parts_column := VBoxContainer.new()
-	parts_column.add_theme_constant_override("separation", 12)
-	scroll.add_child(parts_column)
-
-	for entry in CATEGORIES:
-		var category: String = entry[0]
-		var label: String = entry[1]
-
-		parts_column.add_child(_heading(label))
-		var row := HFlowContainer.new()
-		row.add_theme_constant_override("h_separation", 12)
-		row.add_theme_constant_override("v_separation", 12)
-		parts_column.add_child(row)
-
-		var group := ButtonGroup.new()
-		var buttons: Dictionary = {}
-
-		var none_button := _toggle_button("Ninguna", group)
-		none_button.pressed.connect(func() -> void: _pick_part(category, ""))
-		row.add_child(none_button)
-		buttons[""] = none_button
-
-		for part_entry in _catalog.get("parts", []):
-			var part: Dictionary = part_entry.get("part", {})
-			if part.get("category", "") != category:
-				continue
-			var id: String = part.get("id", "")
-			var owned: bool = part_entry.get("owned", false)
-			var price = part.get("priceCoins")
-			var part_name: String = part.get("name", part.get("code", "?"))
-
-			var button: Button
-			if owned:
-				button = _toggle_button(part_name, group)
-				button.pressed.connect(func() -> void: _pick_part(category, id))
-			elif price != null:
-				button = _button(
-					"🔒 %s · %d monedas" % [part_name, int(price)],
-					func() -> void: _purchase("PART", id))
-			else:
-				button = _toggle_button("🔒 %s" % part_name, group)
-				button.disabled = true
-
-			row.add_child(button)
-			buttons[id] = button
-
-		_part_buttons[category] = buttons
-
-	parts_column.add_child(_heading("Coches disponibles"))
+	# "Coches disponibles" — skins creados en el backoffice. Antes vivía en
+	# el panel derecho junto a las piezas; se movió aquí al retirar ese
+	# panel. Elegir uno guarda al momento, sin pasar por "Cambiar" — un
+	# skin no toca las stats, así que no hay nada que previsualizar.
+	panel.add_child(_heading("Coches disponibles"))
 	var skins_row := HFlowContainer.new()
 	skins_row.add_theme_constant_override("h_separation", 12)
 	skins_row.add_theme_constant_override("v_separation", 12)
-	parts_column.add_child(skins_row)
+	panel.add_child(skins_row)
 
 	var skin_group := ButtonGroup.new()
 
@@ -459,10 +347,6 @@ func _build_upgrades_panel() -> Control:
 		var price = skin.get("priceCoins")
 		var skin_name: String = skin.get("name", skin.get("code", "?"))
 
-		# Los creados en el backoffice que el jugador todavía no tiene se ven
-		# igual (para que sepa que existen); si tienen precio se pueden
-		# comprar al toque, si no, se quedan bloqueados sin más — mismo
-		# criterio que arquetipos y piezas (TASK-320).
 		var button: Button
 		if owned:
 			button = _toggle_button(skin_name, skin_group)
@@ -479,37 +363,6 @@ func _build_upgrades_panel() -> Control:
 		_skin_buttons[id] = button
 
 	return card
-
-
-func _stat_row(label: String, bar: ProgressBar) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	var text := _label(label, UiTheme.FONT_XS)
-	text.custom_minimum_size = Vector2(140, 0)
-	row.add_child(text)
-	row.add_child(bar)
-	return row
-
-
-func _stat_bar() -> ProgressBar:
-	var bar := ProgressBar.new()
-	bar.min_value = STAT_BAR_MIN
-	bar.max_value = STAT_BAR_MAX
-	bar.show_percentage = false
-	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bar.custom_minimum_size = Vector2(0, 24)
-
-	var track := StyleBoxFlat.new()
-	track.bg_color = _OPTION_BG
-	track.set_corner_radius_all(12)
-	bar.add_theme_stylebox_override("background", track)
-
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = UiTheme.GOOD
-	fill.set_corner_radius_all(12)
-	bar.add_theme_stylebox_override("fill", fill)
-
-	return bar
 
 
 ## Solo cambia lo que se ve (lista resaltada + coche 3D): no guarda nada
@@ -539,15 +392,9 @@ func _show_preview(archetype_id: String, animate: bool = false) -> void:
 	_director.preview_archetype_body(code, animate)
 
 
-func _pick_part(category: String, id: String) -> void:
-	_loadout[_part_field(category)] = _find_wrapped(_catalog.get("parts", []), "part", id) if id != "" else null
-	_save()
-
-
-## Coche del backoffice elegido en "Coches disponibles". Mismo patrón que
-## `_pick_part`: guarda al momento, sin paso de "Cambiar" — a diferencia del
-## arquetipo, un skin no cambia las stats, así que no hay nada que
-## previsualizar antes de comprometerse.
+## Coche del backoffice elegido en "Coches disponibles". Guarda al momento,
+## sin paso de "Cambiar" — a diferencia del arquetipo, un skin no cambia
+## las stats, así que no hay nada que previsualizar antes de comprometerse.
 func _pick_skin(id: String) -> void:
 	_loadout["skin"] = _find_wrapped(_catalog.get("skins", []), "skin", id) if id != "" else null
 	_save()
@@ -589,28 +436,6 @@ func _sync_buttons() -> void:
 		if not owned_archetype_ids.get(id, false) and not purchasable_archetype_ids.get(id, false):
 			_archetype_buttons[id].disabled = true
 
-	for entry in CATEGORIES:
-		var category: String = entry[0]
-		var selected = _selected_part_id(category)
-		var buttons: Dictionary = _part_buttons.get(category, {})
-		for id in buttons:
-			buttons[id].button_pressed = id == (selected if selected != null else "")
-
-	var owned_part_ids := {"": true}
-	var purchasable_part_ids := {}
-	for part_entry in _catalog.get("parts", []):
-		var part: Dictionary = part_entry.get("part", {})
-		var pid: String = part.get("id", "")
-		if part_entry.get("owned", false):
-			owned_part_ids[pid] = true
-		elif part.get("priceCoins") != null:
-			purchasable_part_ids[pid] = true
-	for entry in CATEGORIES:
-		var buttons: Dictionary = _part_buttons.get(entry[0], {})
-		for id in buttons:
-			if not owned_part_ids.get(id, false) and not purchasable_part_ids.get(id, false):
-				buttons[id].disabled = true
-
 	var selected_skin = _selected_skin_id()
 	var owned_skin_ids := {"": true}
 	var purchasable_skin_ids := {}
@@ -632,19 +457,6 @@ func _sync_buttons() -> void:
 		# `_pick_skin` ni a `_purchase`.
 		if not owned_skin_ids.get(id, false) and not purchasable_skin_ids.get(id, false):
 			button.disabled = true
-
-
-func _refresh_stats() -> void:
-	var stats: Dictionary = _loadout.get("stats", {})
-	var speed: float = stats.get("speedScale", 1.0)
-	var grip: float = stats.get("grip", 1.0)
-	var offroad: float = _loadout.get("archetype", {}).get("offroadGripModifier", 1.0)
-
-	_speed_bar.value = speed
-	_grip_bar.value = grip
-	_offroad_bar.value = offroad
-
-	_stats_label.text = "Velocidad ×%.2f — Agarre ×%.2f — Fuera de asfalto ×%.2f" % [speed, grip, offroad]
 
 
 func _flash_error(message: String) -> void:
