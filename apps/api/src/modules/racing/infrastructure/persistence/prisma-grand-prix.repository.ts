@@ -11,10 +11,26 @@ import {
 import { GrandPrix } from '../../domain/entities/grand-prix.entity';
 import { toGrandPrixDomain } from '../mappers/grand-prix.mapper';
 
+// `circuit` va incluido en cada `track` para poder denormalizar clima e
+// imagen del circuito en el stage — la pantalla de intermedio los enseña.
 const WITH_STAGES = {
   stages: {
     orderBy: { order: 'asc' as const },
-    include: { track: { select: { id: true, slug: true, name: true } } },
+    include: {
+      track: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          circuit: {
+            select: {
+              weather: true,
+              imageId: true,
+            },
+          },
+        },
+      },
+    },
   },
 };
 
@@ -86,10 +102,15 @@ export class PrismaGrandPrixRepository implements GrandPrixRepositoryPort {
         slug: data.slug,
         name: data.name,
         isActive: data.isActive,
+        difficulty: data.difficulty,
+        creditsReward: data.creditsReward,
+        xpReward: data.xpReward,
+        imageId: data.imageId,
         stages: {
           create: data.stages.map((s) => ({
             trackId: s.trackId,
             order: s.order,
+            laps: s.laps,
           })),
         },
       },
@@ -114,12 +135,21 @@ export class PrismaGrandPrixRepository implements GrandPrixRepositoryPort {
         data: {
           ...(patch.name !== undefined ? { name: patch.name } : {}),
           ...(patch.isActive !== undefined ? { isActive: patch.isActive } : {}),
+          ...(patch.difficulty !== undefined
+            ? { difficulty: patch.difficulty }
+            : {}),
+          ...(patch.creditsReward !== undefined
+            ? { creditsReward: patch.creditsReward }
+            : {}),
+          ...(patch.xpReward !== undefined ? { xpReward: patch.xpReward } : {}),
+          ...(patch.imageId !== undefined ? { imageId: patch.imageId } : {}),
           ...(patch.stages
             ? {
                 stages: {
                   create: patch.stages.map((s) => ({
                     trackId: s.trackId,
                     order: s.order,
+                    laps: s.laps,
                   })),
                 },
               }

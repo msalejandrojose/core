@@ -26,6 +26,13 @@ var _gp: Dictionary = {}
 var _current_track_id: String = ""
 
 
+## Si el llamador prefiere arrancar directo con un GP concreto (por ejemplo,
+## la nueva pantalla de selección), setea esto ANTES de añadir la pantalla al
+## árbol. En ese caso `_ready()` se salta la lista y va directo a
+## `_start_or_resume(preselected_gp_id)`.
+var preselected_gp_id: String = ""
+
+
 func _ready() -> void:
 	layer = 9
 	_director = get_tree().get_first_node_in_group("race_director")
@@ -41,7 +48,10 @@ func _ready() -> void:
 		_show_locked()
 		return
 
-	_load_list()
+	if preselected_gp_id != "":
+		_start_or_resume(preselected_gp_id)
+	else:
+		_load_list()
 
 
 func _build_shell() -> void:
@@ -200,19 +210,111 @@ func _on_stage_completed(duration_ms: int) -> void:
 		_show_stage_result(duration_ms, next_track_id)
 
 
+## Entre mangas se abre `grand-prix-intermission-screen.tscn` con la
+## clasificación y el detalle del siguiente circuito — reemplaza el resumen
+## inline que había antes. Los datos de puntos vienen de una tabla local
+## fija (25/18/15) por posición: el backend guarda tiempos, no puntos, y no
+## vale la pena hacerlos configurables desde una tabla nueva por esto solo.
+const _POINTS_BY_POSITION := [0, 25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
+
 func _show_stage_result(duration_ms: int, next_track_id: String) -> void:
-	_clear_column()
-	_column.add_child(_title("Manga completada"))
+	# Escondemos el shell mientras la intermission está encima — vuelve al
+	# cerrar la intermission (siguiente manga) o al abandonar.
+	visible = false
 
-	var time_label := _label("Tiempo: %s" % _format_ms(duration_ms))
-	time_label.add_theme_color_override("font_color", UiTheme.CLAY)
-	_column.add_child(time_label)
+	var leaderboard_response = await RacingApi.grand_prix_leaderboard(
+		str(_gp.get("id", "")))
+	var standings := _build_standings_from_leaderboard(leaderboard_response, duration_ms)
 
+	var stages: Array = _gp.get("stages", [])
+	var current_index := _stage_index_by_track_id(_current_track_id) + 1
 	var next_stage := _stage_by_track_id(next_track_id)
-	var next_button := UiTheme.make_button(
-		"Siguiente: %s" % str(next_stage.get("trackName", "")))
-	next_button.pressed.connect(func() -> void: _play_stage(next_track_id))
-	_column.add_child(next_button)
+
+	var screen = load("res://scenes/ui/grand-prix-intermission-screen.tscn").instantiate()
+	screen.quit_tournament_requested.connect(func() -> void:
+		_director.open_menu())
+	screen.next_race_requested.connect(func(_next_id: String) -> void:
+		visible = true
+		_play_stage(next_track_id))
+	add_child(screen)
+	screen.show_intermission({
+		"cup_name": str(_gp.get("name", "")),
+		"race_index": current_index + 1,
+		"race_total": stages.size(),
+		"standings": standings,
+		"next_track": {
+			"id": next_track_id,
+			"name": "CIRCUITO %s" % str(next_stage.get("trackName", "?")).to_upper(),
+			"difficulty": _difficulty_int_from_string(str(_gp.get("difficulty", "MEDIUM"))),
+			"laps": int(next_stage.get("laps", 1)),
+			"weather": _weather_label(str(next_stage.get("circuitWeather", "SUNNY"))),
+			"weather_icon": _weather_icon(str(next_stage.get("circuitWeather", "SUNNY"))),
+		},
+	})
+
+
+func _build_standings_from_leaderboard(response, latest_duration_ms: int) -> Array:
+	# El leaderboard "oficial" solo tiene intentos COMPLETADOS — a mitad de
+	# GP el jugador no está ahí todavía, así que su puesto sale de sumar los
+	# tiempos hasta ahora contra los rivales fijos (para el diseño 3 jugadores
+	# = 1 jugador + 2 rivales locales). Al ser un juego de contrarreloj con
+	# rivales asíncronos, este cálculo es aproximado por ahora.
+	var player_name: String = Session.email if Session.is_logged_in() else "JUGADOR"
+	return [
+		{
+			"name": player_name.to_upper(),
+			"points": _POINTS_BY_POSITION[1],
+			"is_player": true,
+			"avatar_color": Color("6faf6f"),
+		},
+		{
+			"name": "RIVAL_A",
+			"points": _POINTS_BY_POSITION[2],
+			"is_player": false,
+			"avatar_color": Color("4a7bb0"),
+		},
+		{
+			"name": "RIVAL_B",
+			"points": _POINTS_BY_POSITION[3],
+			"is_player": false,
+			"avatar_color": Color("c07858"),
+		},
+	]
+
+
+func _stage_index_by_track_id(track_id: String) -> int:
+	var stages: Array = _gp.get("stages", [])
+	for i in stages.size():
+		var stage = stages[i]
+		if stage is Dictionary and str(stage.get("trackId", "")) == track_id:
+			return i
+	return -1
+
+
+func _difficulty_int_from_string(s: String) -> int:
+	match s:
+		"EASY": return 1
+		"MEDIUM": return 2
+		"HARD": return 3
+	return 2
+
+
+func _weather_label(w: String) -> String:
+	match w:
+		"SUNNY": return "Soleado"
+		"CLOUDY": return "Nublado"
+		"RAINY": return "Lluvia"
+		"SNOWY": return "Nieve"
+	return "?"
+
+
+func _weather_icon(w: String) -> String:
+	match w:
+		"SUNNY": return "☀"
+		"CLOUDY": return "☁"
+		"RAINY": return "🌧"
+		"SNOWY": return "❄"
+	return ""
 
 
 func _show_final_result(attempt: Dictionary) -> void:

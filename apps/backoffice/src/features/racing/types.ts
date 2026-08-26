@@ -28,6 +28,7 @@ export interface CircuitRow {
   checkpoints: number;
   path: TrackCellRow[];
   theme: TrackTheme;
+  weather: CircuitWeather;
   grip: number;
   isActive: boolean;
   /** Si está entre los circuitos destacados HOY (lo decide el rotador diario). */
@@ -105,11 +106,31 @@ export interface TerrainEffectRow {
   slowsTopSpeed: boolean;
 }
 
+export type GrandPrixDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+export type CircuitWeather = 'SUNNY' | 'CLOUDY' | 'RAINY' | 'SNOWY';
+
+export const GRAND_PRIX_DIFFICULTY_LABELS: Record<GrandPrixDifficulty, string> = {
+  EASY: 'Fácil',
+  MEDIUM: 'Media',
+  HARD: 'Difícil',
+};
+
+export const CIRCUIT_WEATHER_LABELS: Record<CircuitWeather, string> = {
+  SUNNY: 'Soleado',
+  CLOUDY: 'Nublado',
+  RAINY: 'Lluvia',
+  SNOWY: 'Nieve',
+};
+
 export interface GrandPrixStageRow {
   trackId: string;
   trackSlug: string;
   trackName: string;
   order: number;
+  laps: number;
+  circuitWeather: CircuitWeather;
+  /** Ruta relativa (`/files/view?token=...`) — usa `resolveCircuitImageUrl()`. */
+  circuitImageUrl: string | null;
 }
 
 export interface GrandPrixRow {
@@ -117,6 +138,12 @@ export interface GrandPrixRow {
   slug: string;
   name: string;
   isActive: boolean;
+  difficulty: GrandPrixDifficulty;
+  creditsReward: number;
+  xpReward: number;
+  imageId: string | null;
+  /** Ruta relativa (`/files/view?token=...`) — usa `resolveCircuitImageUrl()`. */
+  imageUrl: string | null;
   stages: GrandPrixStageRow[];
 }
 

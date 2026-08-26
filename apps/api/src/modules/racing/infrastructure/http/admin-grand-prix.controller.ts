@@ -17,10 +17,12 @@ import {
 import { ApiPaginatedResponse } from '../../../../shared/http/decorators/api-paginated-response.decorator';
 import { PaginatedResponseDto } from '../../../../shared/http/dto/paginated-response.dto';
 import { RequiresPermission } from '../../../iam/infrastructure/http/decorators/requires-permission.decorator';
+import { FileViewTokenService } from '../../../storage/infrastructure/http/file-view-token.service';
 import { AdminCreateGrandPrixUseCase } from '../../application/use-cases/admin-create-grand-prix.use-case';
 import { AdminGetGrandPrixUseCase } from '../../application/use-cases/admin-get-grand-prix.use-case';
 import { AdminListGrandPrixUseCase } from '../../application/use-cases/admin-list-grand-prix.use-case';
 import { AdminUpdateGrandPrixUseCase } from '../../application/use-cases/admin-update-grand-prix.use-case';
+import { GrandPrix } from '../../domain/entities/grand-prix.entity';
 import { CreateGrandPrixDto } from './dto/create-grand-prix.dto';
 import { GrandPrixResponseDto } from './dto/grand-prix.response.dto';
 import { ListAdminGrandPrixQueryDto } from './dto/list-admin-grand-prix.query.dto';
@@ -36,6 +38,7 @@ export class AdminGrandPrixController {
     private readonly getGrandPrix: AdminGetGrandPrixUseCase,
     private readonly createGrandPrix: AdminCreateGrandPrixUseCase,
     private readonly updateGrandPrix: AdminUpdateGrandPrixUseCase,
+    private readonly viewTokens: FileViewTokenService,
   ) {}
 
   @Get()
@@ -51,7 +54,7 @@ export class AdminGrandPrixController {
       search: query.search,
     });
     return PaginatedResponseDto.of(
-      items.map((item) => GrandPrixResponseDto.fromDomain(item)),
+      items.map((item) => this.toResponse(item)),
       total,
       query.page,
       query.limit,
@@ -65,7 +68,7 @@ export class AdminGrandPrixController {
   async get(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<GrandPrixResponseDto> {
-    return GrandPrixResponseDto.fromDomain(await this.getGrandPrix.execute(id));
+    return this.toResponse(await this.getGrandPrix.execute(id));
   }
 
   @Post()
@@ -73,9 +76,7 @@ export class AdminGrandPrixController {
   @ApiOperation({ summary: 'Crear un Grand Prix' })
   @ApiCreatedResponse({ type: GrandPrixResponseDto })
   async create(@Body() dto: CreateGrandPrixDto): Promise<GrandPrixResponseDto> {
-    return GrandPrixResponseDto.fromDomain(
-      await this.createGrandPrix.execute(dto),
-    );
+    return this.toResponse(await this.createGrandPrix.execute(dto));
   }
 
   @Patch(':id')
@@ -90,8 +91,24 @@ export class AdminGrandPrixController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateGrandPrixDto,
   ): Promise<GrandPrixResponseDto> {
+    return this.toResponse(await this.updateGrandPrix.execute(id, dto));
+  }
+
+  private toResponse(gp: GrandPrix): GrandPrixResponseDto {
+    const stageImageByTrackId = new Map<string, string | null>();
+    for (const stage of gp.stages) {
+      stageImageByTrackId.set(stage.trackId, stage.circuitImageId);
+    }
     return GrandPrixResponseDto.fromDomain(
-      await this.updateGrandPrix.execute(id, dto),
+      gp,
+      this.imageUrl(gp.imageId),
+      (trackId) => this.imageUrl(stageImageByTrackId.get(trackId) ?? null),
     );
+  }
+
+  private imageUrl(imageId: string | null): string | null {
+    return imageId
+      ? `/files/view?token=${this.viewTokens.issue(imageId)}`
+      : null;
   }
 }

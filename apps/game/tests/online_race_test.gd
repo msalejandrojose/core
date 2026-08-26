@@ -249,8 +249,8 @@ func _test_al_cruzar_meta_sube_el_resultado(
 	var coins: Array = response_data.get("coinsEarned", [])
 	_check(coins.size(), 2, "el desglose de monedas llega completo hasta la señal")
 
-	var screen := _find_online_race_result_screen(race_hud)
-	_check(screen != null, true, "el HUD instancia OnlineRaceResultScreen, no la genérica")
+	var screen := _find_podium_screen(race_hud)
+	_check(screen != null, true, "el HUD instancia PodiumScreen con el podio unificado")
 	if screen != null:
 		screen.queue_free()
 		await get_tree().process_frame
@@ -288,12 +288,12 @@ func _test_sin_red_la_carrera_se_sigue_jugando(timer: LapTimer, director: RaceDi
 
 ## Recursivo y no un simple `get_children()`: igual que en `race_result_test.gd`,
 ## el nodo "RaceHud" de `main.tscn` es una instancia de sub-escena.
-func _find_online_race_result_screen(root: Node) -> Node:
+func _find_podium_screen(root: Node) -> Node:
 	var script: Script = root.get_script()
-	if script != null and script.resource_path.ends_with("online_race_result_screen.gd"):
+	if script != null and script.resource_path.ends_with("podium_screen.gd"):
 		return root
 	for child in root.get_children():
-		var found := _find_online_race_result_screen(child)
+		var found := _find_podium_screen(child)
 		if found != null:
 			return found
 	return null

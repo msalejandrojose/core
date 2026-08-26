@@ -1,5 +1,8 @@
 import { PaginatedResult } from '../../../../shared/types/paginated-result';
-import { GrandPrix } from '../../domain/entities/grand-prix.entity';
+import {
+  GrandPrix,
+  GrandPrixDifficulty,
+} from '../../domain/entities/grand-prix.entity';
 
 export const GRAND_PRIX_REPOSITORY = Symbol('RACING_GRAND_PRIX_REPOSITORY');
 
@@ -12,18 +15,28 @@ export interface AdminListGrandPrixOptions {
 export interface CreateGrandPrixStageData {
   trackId: string;
   order: number;
+  laps: number;
 }
 
 export interface CreateGrandPrixData {
   slug: string;
   name: string;
   isActive: boolean;
+  difficulty: GrandPrixDifficulty;
+  creditsReward: number;
+  xpReward: number;
+  imageId: string | null;
   stages: CreateGrandPrixStageData[];
 }
 
 export interface UpdateGrandPrixPatch {
   name?: string;
   isActive?: boolean;
+  difficulty?: GrandPrixDifficulty;
+  creditsReward?: number;
+  xpReward?: number;
+  /** `null` limpia la imagen; `undefined` la deja tal cual. */
+  imageId?: string | null;
   /** Si viene, sustituye la lista de mangas entera (no hace merge parcial). */
   stages?: CreateGrandPrixStageData[];
 }

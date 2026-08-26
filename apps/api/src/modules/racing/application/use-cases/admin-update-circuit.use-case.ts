@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { GrandPrixCircuitWeather } from '../../domain/entities/grand-prix.entity';
 import { RacingCircuit } from '../../domain/entities/racing-circuit.entity';
 import { TrackTheme } from '../../domain/entities/track.entity';
 import { InvalidTrackPathError } from '../../domain/errors/invalid-track-path.error';
@@ -17,6 +18,7 @@ export interface UpdateCircuitInput {
   checkpoints?: number;
   path?: TrackCell[];
   theme?: TrackTheme;
+  weather?: GrandPrixCircuitWeather;
   grip?: number;
   isActive?: boolean;
   /** `null` limpia la imagen; `undefined` la deja tal cual. */
@@ -46,6 +48,7 @@ export class AdminUpdateCircuitUseCase {
       checkpoints: input.checkpoints,
       path: input.path,
       theme: input.theme,
+      weather: input.weather,
       grip: input.grip,
       isActive: input.isActive,
       imageId: input.imageId,

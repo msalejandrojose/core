@@ -7,10 +7,20 @@ import { GrandPrixAttemptRepositoryPort } from '../ports/grand-prix-attempt-repo
 import { GrandPrixRepositoryPort } from '../ports/grand-prix-repository.port';
 import { StartOrResumeGrandPrixAttemptUseCase } from './start-or-resume-grand-prix-attempt.use-case';
 
-const GP = new GrandPrix('gp-1', 'copa-verano', 'Copa de Verano', true, [
-  new GrandPrixStage('track-1', 'kenney-01', 'Kenney', 0),
-  new GrandPrixStage('track-2', 'kenney-02', 'Otro', 1),
-]);
+const GP = new GrandPrix(
+  'gp-1',
+  'copa-verano',
+  'Copa de Verano',
+  true,
+  [
+    new GrandPrixStage('track-1', 'kenney-01', 'Kenney', 0, 1, 'SUNNY', null),
+    new GrandPrixStage('track-2', 'kenney-02', 'Otro', 1, 1, 'SUNNY', null),
+  ],
+  'MEDIUM',
+  0,
+  0,
+  null,
+);
 
 class FakeGrandPrixRepository implements Partial<GrandPrixRepositoryPort> {
   constructor(private readonly grandPrix: GrandPrix | null) {}
@@ -68,7 +78,17 @@ describe('StartOrResumeGrandPrixAttemptUseCase', () => {
   });
 
   it('rechaza un Grand Prix inactivo, igual que si no existiera', async () => {
-    const inactive = new GrandPrix(GP.id, GP.slug, GP.name, false, GP.stages);
+    const inactive = new GrandPrix(
+      GP.id,
+      GP.slug,
+      GP.name,
+      false,
+      GP.stages,
+      GP.difficulty,
+      GP.creditsReward,
+      GP.xpReward,
+      GP.imageId,
+    );
     const { useCase: uc } = useCase(inactive, null);
     await expect(uc.execute('user-1', 'gp-1')).rejects.toMatchObject({
       code: 'RACING_GRAND_PRIX_NOT_FOUND',

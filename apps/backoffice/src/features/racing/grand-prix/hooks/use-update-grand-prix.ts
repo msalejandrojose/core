@@ -2,11 +2,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/lib/toast';
 import { apiClient } from '@/api/client';
 import { getApiErrorMessage } from '@/lib/api-error';
+import type { GrandPrixDifficulty } from '../../types';
+import type { CreateGrandPrixStageInput } from './use-create-grand-prix';
 
 export interface UpdateGrandPrixInput {
   name?: string;
-  trackIds?: string[];
+  stages?: CreateGrandPrixStageInput[];
   isActive?: boolean;
+  difficulty?: GrandPrixDifficulty;
+  creditsReward?: number;
+  xpReward?: number;
+  /** `null` limpia la imagen; `undefined` la deja tal cual. */
+  imageId?: string | null;
 }
 
 const KEY = ['racing-grand-prix-list'];

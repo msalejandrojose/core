@@ -14,8 +14,11 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import type { GrandPrixCircuitWeather } from '../../../domain/entities/grand-prix.entity';
 import { TrackTheme } from '../../../domain/entities/track.entity';
 import { TrackCellDto } from './track-cell.dto';
+
+const WEATHER_VALUES = ['SUNNY', 'CLOUDY', 'RAINY', 'SNOWY'] as const;
 
 // Sin `slug`: no es editable (ver comentario en `AdminUpdateCircuitUseCase`).
 // Sin `isInRotation`/`rotatedAt`: los escribe solo el rotador diario.
@@ -45,6 +48,11 @@ export class UpdateCircuitDto {
   @IsOptional()
   @IsEnum(TrackTheme)
   theme?: TrackTheme;
+
+  @ApiPropertyOptional({ enum: WEATHER_VALUES })
+  @IsOptional()
+  @IsEnum(WEATHER_VALUES)
+  weather?: GrandPrixCircuitWeather;
 
   @ApiPropertyOptional()
   @IsOptional()

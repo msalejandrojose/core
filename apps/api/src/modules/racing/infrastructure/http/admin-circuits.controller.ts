@@ -77,6 +77,7 @@ export class AdminCircuitsController {
       checkpoints: dto.checkpoints,
       path: dto.path,
       theme: dto.theme,
+      weather: dto.weather,
       grip: dto.grip,
       isActive: dto.isActive,
       imageId: dto.imageId,

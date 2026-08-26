@@ -121,8 +121,10 @@ func _test_race_finished_abre_el_resultado_y_limpia() -> void:
 	_check(_director._live_rivals.is_empty(), true,
 		"y limpia todos los fantasmas de rivales")
 
-	var screen := _director.get_node_or_null("LiveRaceResultScreen")
-	_check(screen != null, true, "se abre la pantalla de resultado")
+	# El podio unificado se instancia como `PodiumScreen` (TASK-336 fase 3),
+	# ya no como `LiveRaceResultScreen`.
+	var screen := _director.get_node_or_null("PodiumScreen")
+	_check(screen != null, true, "se abre la pantalla de resultado (podio)")
 	if screen != null:
 		screen.queue_free()
 

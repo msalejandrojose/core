@@ -36,7 +36,17 @@ class FakeGrandPrixRepository implements Partial<GrandPrixRepositoryPort> {
     this.created.push(data);
     this.slugs.add(data.slug);
     return Promise.resolve(
-      new GrandPrix('new-id', data.slug, data.name, data.isActive, []),
+      new GrandPrix(
+        'new-id',
+        data.slug,
+        data.name,
+        data.isActive,
+        [],
+        data.difficulty,
+        data.creditsReward,
+        data.xpReward,
+        data.imageId,
+      ),
     );
   }
 }
@@ -89,9 +99,13 @@ describe('AdminCreateGrandPrixUseCase', () => {
         slug: 'copa-verano',
         name: 'Copa de Verano',
         isActive: true,
+        difficulty: 'MEDIUM',
+        creditsReward: 0,
+        xpReward: 0,
+        imageId: null,
         stages: [
-          { trackId: 'track-1', order: 0 },
-          { trackId: 'track-2', order: 1 },
+          { trackId: 'track-1', order: 0, laps: 1 },
+          { trackId: 'track-2', order: 1, laps: 1 },
         ],
       },
     ]);
@@ -106,6 +120,10 @@ describe('AdminCreateGrandPrixUseCase', () => {
       slug: 'copa-verano',
       name: 'x',
       isActive: true,
+      difficulty: 'MEDIUM',
+      creditsReward: 0,
+      xpReward: 0,
+      imageId: null,
       stages: [],
     });
 

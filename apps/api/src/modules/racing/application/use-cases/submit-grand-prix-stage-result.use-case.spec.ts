@@ -10,10 +10,20 @@ import { GrandPrixAttemptRepositoryPort } from '../ports/grand-prix-attempt-repo
 import { GrandPrixRepositoryPort } from '../ports/grand-prix-repository.port';
 import { SubmitGrandPrixStageResultUseCase } from './submit-grand-prix-stage-result.use-case';
 
-const GP = new GrandPrix('gp-1', 'copa-verano', 'Copa de Verano', true, [
-  new GrandPrixStage('track-1', 'kenney-01', 'Kenney', 0),
-  new GrandPrixStage('track-2', 'kenney-02', 'Otro', 1),
-]);
+const GP = new GrandPrix(
+  'gp-1',
+  'copa-verano',
+  'Copa de Verano',
+  true,
+  [
+    new GrandPrixStage('track-1', 'kenney-01', 'Kenney', 0, 1, 'SUNNY', null),
+    new GrandPrixStage('track-2', 'kenney-02', 'Otro', 1, 1, 'SUNNY', null),
+  ],
+  'MEDIUM',
+  0,
+  0,
+  null,
+);
 
 function attemptWithResults(results: GrandPrixStageResult[]): GrandPrixAttempt {
   return new GrandPrixAttempt(

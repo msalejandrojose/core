@@ -1,4 +1,5 @@
 import { PaginatedResult } from '../../../../shared/types/paginated-result';
+import { GrandPrixCircuitWeather } from '../../domain/entities/grand-prix.entity';
 import { RacingCircuit } from '../../domain/entities/racing-circuit.entity';
 import { TrackTheme } from '../../domain/entities/track.entity';
 import { TrackCell } from '../../domain/track-path';
@@ -19,6 +20,7 @@ export interface UpdateCircuitPatch {
   checkpoints?: number;
   path?: TrackCell[];
   theme?: TrackTheme;
+  weather?: GrandPrixCircuitWeather;
   grip?: number;
   isActive?: boolean;
   /** `null` limpia la imagen; `undefined` la deja tal cual. */

@@ -154,14 +154,45 @@ func _on_lap_finished(duration_ms: int, previous_best_ms: Variant, is_new_record
 	screen.show_result(duration_ms, previous_best_ms, is_new_record)
 
 
-## Podio de carrera online asíncrona (TASK-287): mismo hueco que
-## `_on_lap_finished`, pero con el podio de hasta 3 corredores y las
-## monedas ganadas que trae `response_data` (la respuesta de
-## `POST .../online-races`, ver `RaceDirector.online_race_finished`).
-func _on_online_race_finished(response_data: Dictionary, previous_best_ms: Variant, is_new_record: bool) -> void:
-	var screen: CanvasLayer = load("res://scenes/ui/online-race-result-screen.tscn").instantiate()
+## Podio de carrera online asíncrona (TASK-287) — se abre `podium-screen.tscn`
+## con los datos reales de `response_data` (respuesta de `POST .../online-races`).
+## `previous_best_ms`/`is_new_record` se ignoran aquí porque el podio ya
+## enseña los tiempos del podio en sí; el récord personal antes se mostraba
+## como fila aparte y encima no encajaba con el diseño de tres columnas.
+func _on_online_race_finished(response_data: Dictionary, _previous_best_ms: Variant, _is_new_record: bool) -> void:
+	var participants: Array = response_data.get("participants", [])
+	participants = participants.duplicate()
+	participants.sort_custom(func(a, b): return int(a.get("position", 99)) < int(b.get("position", 99)))
+
+	var podium_participants := []
+	for entry in participants:
+		if not (entry is Dictionary):
+			continue
+		var is_player := str(entry.get("role", "")) == "PLAYER"
+		podium_participants.append({
+			"name": ("Tú" if is_player else "Rival"),
+			"position": int(entry.get("position", 0)),
+			"archetype_code": CarLoadout.archetype_code if is_player else "normal",
+			"total_ms": int(entry.get("durationMs", 0)),
+			"best_lap_ms": int(entry.get("durationMs", 0)),
+			"xp": 0,
+			"is_player": is_player,
+		})
+
+	var coins_earned := 0
+	for reward in response_data.get("coinsEarned", []):
+		if reward is Dictionary:
+			coins_earned += int(reward.get("amount", 0))
+
+	var player_name: String = Session.email if Session.is_logged_in() else "JUGADOR"
+
+	var screen: CanvasLayer = load("res://scenes/ui/podium-screen.tscn").instantiate()
 	add_child(screen)
-	screen.show_result(response_data, previous_best_ms, is_new_record)
+	screen.show_result({
+		"participants": podium_participants,
+		"coins_earned": coins_earned,
+		"player_name": player_name,
+	})
 
 
 ## Contrarreloj de 3 vueltas (TASK-312): el contador de vuelta ocupa el mismo

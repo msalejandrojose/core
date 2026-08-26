@@ -175,10 +175,11 @@ export class FilesController {
   }
 
   @Get(':id/view')
+  @Public()
   @ApiOperation({
     summary:
       'Visualiza el binario de un fichero inline (imagen/vídeo/doc) proxeado por ' +
-      'la API, sin exponer la ruta del bucket. Soporta HTTP Range. Requiere auth.',
+      'la API, sin exponer la ruta del bucket. Soporta HTTP Range.',
   })
   async viewById(
     @Param('id') id: string,
@@ -222,6 +223,7 @@ export class FilesController {
       'Content-Disposition': `inline; filename="${sanitizeFilename(file.originalName)}"`,
       'Accept-Ranges': 'bytes',
       'Cache-Control': 'private, max-age=0, must-revalidate',
+      'Cross-Origin-Resource-Policy': 'cross-origin',
     });
 
     const rangeHeader = req.headers.range;
