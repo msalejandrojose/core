@@ -49,7 +49,10 @@ func _build(race_data: Dictionary) -> void:
 	var coins_earned: int = int(race_data.get("coins_earned", 0))
 	var player_name: String = str(race_data.get("player_name", "JUGADOR"))
 
-	var backdrop := UiTheme.blurred_backdrop(3.0, Color(0.06, 0.05, 0.04, 0.35))
+	# Tinte más claro (alpha 0.35 → 0.18) para que el fondo no quede casi
+	# negro: la sensación reportada era que el podio "salía sobre una
+	# pantalla en negro" y perdía toda la escena de detrás.
+	var backdrop := UiTheme.blurred_backdrop(3.0, Color(0.06, 0.05, 0.04, 0.18))
 	add_child(backdrop)
 
 	var root := Control.new()
@@ -89,7 +92,12 @@ func _build(race_data: Dictionary) -> void:
 
 func _build_podium_3d(viewport: SubViewport, participants: Array) -> void:
 	var camera := Camera3D.new()
-	camera.look_at_from_position(Vector3(0, 3.2, 7.0), Vector3(0, 0.8, 0), Vector3.UP)
+	# Cámara acercada (de 7.0 a 4.6 en Z, 3.2 a 2.4 en Y) y con menos
+	# ángulo de visión (75° → 55°) para que los tres coches ocupen más
+	# encuadre y el podio quede centrado. Antes se veía todo lejos y con
+	# demasiado espacio muerto arriba y a los lados.
+	camera.fov = 55.0
+	camera.look_at_from_position(Vector3(0, 2.4, 4.6), Vector3(0, 0.9, 0), Vector3.UP)
 	viewport.add_child(camera)
 
 	var key_light := DirectionalLight3D.new()

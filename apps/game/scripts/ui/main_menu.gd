@@ -355,7 +355,7 @@ func _build_race_config_panel() -> Control:
 	content.add_child(_current_track_slot)
 
 	var more_tracks := _action_button(UiTheme.pill_button(
-		"Más circuitos", _OPTION_BG, UiTheme.CARD_INK, Vector2(0, 52), UiTheme.FONT_XS))
+		"Más circuitos", _OPTION_BG, UiTheme.CARD_INK, Vector2(0, 68), UiTheme.FONT_SM))
 	more_tracks.pressed.connect(_open_track_select)
 	content.add_child(more_tracks)
 
@@ -374,7 +374,8 @@ func _build_race_config_panel() -> Control:
 	_cc_slider.step = 1
 	_cc_slider.tick_count = cc_values.size()
 	_cc_slider.ticks_on_borders = true
-	_cc_slider.custom_minimum_size = Vector2(0, 32)
+	# Slider más alto (32 → 44) para que el pulgar tenga sitio en móvil.
+	_cc_slider.custom_minimum_size = Vector2(0, 44)
 	# Deja hueco para que la etiqueta central ("Normal"/"Inverso" queda a la
 	# izquierda con su propia columna) no choque con el borde de la tarjeta.
 	_cc_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -388,7 +389,9 @@ func _build_race_config_panel() -> Control:
 		label.text = GameSettings.ENGINE_NAMES[value]
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size", UiTheme.FONT_SM)
+		# Cilindrada subida de SM a MD (28 → 32): antes se veía muy pequeña,
+		# reportado como poco legible en móvil.
+		label.add_theme_font_size_override("font_size", UiTheme.FONT_MD)
 		cc_labels_row.add_child(label)
 		_cc_labels.append(label)
 
@@ -476,8 +479,9 @@ func _rebuild_current_track_card() -> void:
 
 	var holder := Control.new()
 	# Más alto que las miniaturas de la rejilla de antes (44): al ser una
-	# sola, hay sitio de sobra y la portada se aprecia de verdad.
-	holder.custom_minimum_size = Vector2(0, 120)
+	# sola, hay sitio de sobra y la portada se aprecia de verdad. Ampliado
+	# después de las quejas de que se veía pequeño (120 → 180).
+	holder.custom_minimum_size = Vector2(0, 180)
 	inner.add_child(holder)
 
 	var index := TrackCatalog.ids().find(id)
@@ -756,7 +760,11 @@ func _label(text: String) -> Label:
 ## (`UiTheme.metal_block()`) y el segmento solo se ilumina al pasar por encima
 ## o pulsar.
 func _icon_button(text: String, on_pressed: Callable) -> Button:
-	var button := _action_button(UiTheme.segment_button(text, Vector2(160, 72), UiTheme.FONT_XS))
+	# Subido de (160, 72) FONT_XS a (200, 96) FONT_SM: el ancho antiguo caía
+	# por debajo del área táctil cómoda en móvil (referencia iOS/Android es
+	# 44-48pt = ~88px con densidad 2x) y el texto quedaba muy pequeño para
+	# leer de un vistazo.
+	var button := _action_button(UiTheme.segment_button(text, Vector2(200, 96), UiTheme.FONT_SM))
 	button.pressed.connect(on_pressed)
 	return button
 
@@ -771,26 +779,29 @@ func _icon_button(text: String, on_pressed: Callable) -> Button:
 ## `MOUSE_FILTER_IGNORE` entera para que no se coma los clics: el que responde
 ## sigue siendo el botón de debajo.
 func _mode_button(label: String, icon_kind: int) -> Button:
+	# Alto subido de 88 a 108 y font_size de SM a MD: los modos son el toque
+	# más frecuente del menú, más área táctil y letra más grande que se lee
+	# de un vistazo en móvil.
 	var button := UiTheme.pill_button(
-		"", _OPTION_BG, UiTheme.CARD_INK, Vector2(0, 88), UiTheme.FONT_SM,
+		"", _OPTION_BG, UiTheme.CARD_INK, Vector2(0, 108), UiTheme.FONT_MD,
 		UiTheme.GOOD, Color.WHITE)
 
 	var row := HBoxContainer.new()
 	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	row.add_theme_constant_override("separation", 14)
+	row.add_theme_constant_override("separation", 16)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for side in ["left", "right"]:
-		row.add_theme_constant_override("margin_" + side, 16)
+		row.add_theme_constant_override("margin_" + side, 20)
 	button.add_child(row)
 
 	var icon := ModeIcon.new()
 	icon.kind = icon_kind
-	icon.custom_minimum_size = Vector2(52, 52)
+	icon.custom_minimum_size = Vector2(64, 64)
 	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(icon)
 
-	var text := UiTheme.heading_label(label, UiTheme.FONT_SM, UiTheme.CARD_INK)
+	var text := UiTheme.heading_label(label, UiTheme.FONT_MD, UiTheme.CARD_INK)
 	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(text)
