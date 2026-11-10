@@ -34,6 +34,7 @@
     "seed:racing:cars": "pnpm build && node dist/seeds/seed-racing-cars.js",
     "seed:racing:terrain": "pnpm build && node dist/seeds/seed-racing-terrain.js",
     "seed:racing:coin-rewards": "pnpm build && node dist/seeds/seed-racing-coin-rewards.js",
+    "seed:ritmo": "pnpm build && node dist/seeds/seed-ritmo.js",
     "seed:racing:bots": "pnpm build && node dist/seeds/seed-racing-bots.js",
     "seed:racing:matchmaking-config": "pnpm build && node dist/seeds/seed-racing-matchmaking-config.js",
     "seed:racing:push-notifications": "pnpm build && node dist/seeds/seed-racing-push-notifications.js",
