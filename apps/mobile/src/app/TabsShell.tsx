@@ -11,12 +11,14 @@ import {
 import { Redirect, Route } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  homeOutline,
+  flameOutline,
   notificationsOutline,
   settingsOutline,
+  trendingUpOutline,
 } from 'ionicons/icons';
-import HomePage from '@/features/home/HomePage';
-import SectionScreen from '@/features/sections/SectionScreen';
+import TodayPage from '@/features/ritmo/TodayPage';
+import ProgressPage from '@/features/ritmo/ProgressPage';
+import OnboardingPage from '@/features/ritmo/OnboardingPage';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import SettingsPage from '@/features/settings/SettingsPage';
 import AppearancePage from '@/features/settings/AppearancePage';
@@ -26,10 +28,19 @@ import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { usePushNotifications } from '@/features/notifications/use-push-notifications';
 
 /**
- * Shell del área autenticada: tab bar inferior (Inicio / Notificaciones /
- * Ajustes) sobre un `IonRouterOutlet`, cada tab con su propio stack de
- * navegación. La ruta base `/tabs/home` y un fallback cubren cualquier ruta no
- * reconocida (p. ej. venir de `/login` tras autenticarse).
+ * Shell del área autenticada de Ritmo: tab bar inferior (Hoy / Progreso /
+ * Notificaciones / Ajustes) sobre un `IonRouterOutlet`, cada tab con su propio
+ * stack de navegación. La ruta base `/tabs/today` y un fallback cubren
+ * cualquier ruta no reconocida (p. ej. venir de `/login` tras autenticarse).
+ *
+ * Sustituye las tabs genéricas del shell base (Inicio con KPIs + secciones
+ * dinámicas), que son de un companion app interno y no de este producto. Se
+ * modifica aquí, en la rama del proyecto, en vez de abstraer un sistema de tabs
+ * "pluggable" en `main`: con un solo proyecto consumiéndolo sería una
+ * abstracción prematura.
+ *
+ * Las tabs de registro (comida, actividad, peso) NO existen: son sheets que se
+ * abren desde el FAB de Hoy, que es donde cae el pulgar.
  */
 export default function TabsShell() {
   const { t } = useTranslation();
@@ -49,8 +60,15 @@ export default function TabsShell() {
   return (
     <IonTabs>
       <IonRouterOutlet>
-        <Route exact path="/tabs/home" component={HomePage} />
-        <Route exact path="/tabs/home/s/:code" component={SectionScreen} />
+        <Route exact path="/tabs/today" component={TodayPage} />
+        <Route
+          exact
+          path="/tabs/today/onboarding"
+          component={OnboardingPage}
+        />
+        <Route exact path="/tabs/progress" component={ProgressPage} />
+        {/* Editar el objetivo reutiliza la pantalla de onboarding. */}
+        <Route exact path="/tabs/progress/goal" component={OnboardingPage} />
         <Route exact path="/tabs/notifications" component={NotificationsPage} />
         <Route exact path="/tabs/settings" component={SettingsPage} />
         <Route
@@ -65,15 +83,19 @@ export default function TabsShell() {
           component={ChangePasswordPage}
         />
         <Route exact path="/tabs">
-          <Redirect to="/tabs/home" />
+          <Redirect to="/tabs/today" />
         </Route>
-        <Route render={() => <Redirect to="/tabs/home" />} />
+        <Route render={() => <Redirect to="/tabs/today" />} />
       </IonRouterOutlet>
 
       <IonTabBar slot="bottom">
-        <IonTabButton tab="home" href="/tabs/home">
-          <IonIcon icon={homeOutline} aria-hidden="true" />
-          <IonLabel>{t('tabs.home')}</IonLabel>
+        <IonTabButton tab="today" href="/tabs/today">
+          <IonIcon icon={flameOutline} aria-hidden="true" />
+          <IonLabel>{t('tabs.today')}</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="progress" href="/tabs/progress">
+          <IonIcon icon={trendingUpOutline} aria-hidden="true" />
+          <IonLabel>{t('tabs.progress')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="notifications" href="/tabs/notifications">
           <IonIcon icon={notificationsOutline} aria-hidden="true" />

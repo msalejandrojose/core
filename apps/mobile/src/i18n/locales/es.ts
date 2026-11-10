@@ -10,6 +10,8 @@ export const es = {
   translation: {
     tabs: {
       home: 'Inicio',
+      today: 'Hoy',
+      progress: 'Progreso',
       notifications: 'Notificaciones',
       settings: 'Ajustes',
     },
