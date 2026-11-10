@@ -268,6 +268,15 @@ model User {
   racingWallet              RacingWallet?
   racingLeagueStandings     RacingLeagueStanding[]
 
+  // Ritmo (proyecto actividad física y calorías)
+  ritmoProfile          RitmoProfile?
+  ritmoBodyMeasurements RitmoBodyMeasurement[]
+  ritmoActivityTypes    RitmoActivityType[]    @relation("RitmoActivityTypeOwner")
+  ritmoActivitySessions RitmoActivitySession[]
+  ritmoFoods            RitmoFood[]            @relation("RitmoFoodOwner")
+  ritmoMealEntries      RitmoMealEntry[]
+  ritmoDailyLogs        RitmoDailyLog[]
+
   @@map("user")
 }
 
@@ -2306,4 +2315,328 @@ model RacingFriendship {
   @@index([requesterId, status])
   @@index([addresseeId, status])
   @@map("racing_friendship")
+}
+
+// ---------------------------------------------------------------------------
+// Ritmo — actividad física y calorías
+//
+// Modelos del proyecto Ritmo (rama `ritmo-dev`). Viven en el mismo schema que
+// Core para poder colgar todo del `User` de `iam` por FK. Prefijo `Ritmo*` y
+// tablas `ritmo_*`, igual que el bloque de Racing.
+//
+// Alcance v1: perfil con objetivo calórico, historial corporal, sesiones de
+// actividad registradas a mano y registro de comidas sobre un catálogo de
+// alimentos. Las integraciones (HealthKit / Google Fit / Strava) no entran en
+// la v1, pero `RitmoActivitySession.source` + `externalId` ya dejan el hueco
+// para que entren sin migrar datos.
+// ---------------------------------------------------------------------------
+
+enum RitmoSex {
+  MALE
+  FEMALE
+  OTHER
+}
+
+/// Nivel de actividad habitual, al margen de los entrenos registrados. Es el
+/// multiplicador que convierte BMR en TDEE (1.2 … 1.9 en Harris-Benedict).
+enum RitmoActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum RitmoGoalType {
+  LOSE_WEIGHT
+  MAINTAIN
+  GAIN_MUSCLE
+}
+
+/// De dónde viene una sesión de actividad. La v1 solo escribe `MANUAL`; el
+/// resto están declarados para que enchufar una integración sea un adapter
+/// nuevo y no una migración del enum.
+enum RitmoActivitySource {
+  MANUAL
+  HEALTHKIT
+  GOOGLE_FIT
+  STRAVA
+  GARMIN
+}
+
+/// Esfuerzo percibido (RPE simplificado). Se usa como fallback para estimar
+/// calorías cuando la sesión no trae pulsaciones.
+enum RitmoEffort {
+  LIGHT
+  MODERATE
+  VIGOROUS
+}
+
+enum RitmoMealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+/// Procedencia de un alimento del catálogo. `USER` son los que crea una
+/// persona para sí misma (`ownerUserId` no nulo).
+enum RitmoFoodSource {
+  CURATED
+  OPEN_FOOD_FACTS
+  USER
+}
+
+/// Perfil del proyecto: una fila por usuario. Separado de `User` a propósito
+/// — son datos del dominio de Ritmo, no de IAM, y así la rama no toca el
+/// modelo compartido más allá de la relación.
+///
+/// `bmrKcal` / `tdeeKcal` / `dailyKcalTarget` se guardan calculados en vez de
+/// derivarse en cada lectura: son la base de la pantalla principal, cambian
+/// solo cuando cambia el perfil o el peso, y materializarlos deja constancia
+/// de con qué objetivo se vivió cada día (el histórico no se reescribe si
+/// mañana cambia la fórmula).
+model RitmoProfile {
+  id     String @id @default(uuid()) @db.Char(36)
+  userId String @unique @map("user_id") @db.Char(36)
+
+  sex           RitmoSex?
+  birthDate     DateTime?          @map("birth_date") @db.Date
+  heightCm      Decimal?           @map("height_cm") @db.Decimal(5, 1)
+  activityLevel RitmoActivityLevel @default(MODERATE) @map("activity_level")
+
+  goalType             RitmoGoalType @default(MAINTAIN) @map("goal_type")
+  targetWeightKg       Decimal?      @map("target_weight_kg") @db.Decimal(5, 2)
+  /// Ritmo objetivo en kg/semana (negativo si es déficit). Acotado en dominio
+  /// a ±1.0 para no permitir planes insanos.
+  weeklyWeightChangeKg Decimal?      @map("weekly_weight_change_kg") @db.Decimal(4, 2)
+
+  bmrKcal         Int? @map("bmr_kcal")
+  tdeeKcal        Int? @map("tdee_kcal")
+  dailyKcalTarget Int? @map("daily_kcal_target")
+
+  proteinTargetG Int? @map("protein_target_g")
+  carbsTargetG   Int? @map("carbs_target_g")
+  fatTargetG     Int? @map("fat_target_g")
+
+  /// Zona horaria IANA del usuario. Necesaria para saber a qué día natural
+  /// pertenece una comida o un entreno registrado a las 00:30.
+  timezone String @default("Europe/Madrid") @db.VarChar(64)
+
+  onboardedAt DateTime? @map("onboarded_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ritmo_profile")
+}
+
+/// Historial corporal. Una fila por usuario y día medido (no por pesada): si
+/// alguien se pesa dos veces el mismo día, se actualiza la fila — la serie
+/// temporal de la gráfica necesita un punto por día, no ruido.
+model RitmoBodyMeasurement {
+  id     String @id @default(uuid()) @db.Char(36)
+  userId String @map("user_id") @db.Char(36)
+
+  measuredOn DateTime @map("measured_on") @db.Date
+  weightKg   Decimal  @map("weight_kg") @db.Decimal(5, 2)
+  bodyFatPct Decimal? @map("body_fat_pct") @db.Decimal(4, 1)
+  waistCm    Decimal? @map("waist_cm") @db.Decimal(5, 1)
+  notes      String?  @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, measuredOn])
+  @@index([userId, measuredOn])
+  @@map("ritmo_body_measurement")
+}
+
+/// Catálogo de tipos de actividad con su valor MET, que es lo que permite
+/// estimar calorías sin pulsómetro: kcal ≈ MET × peso(kg) × horas.
+///
+/// `ownerUserId` nulo = catálogo global del sistema; no nulo = actividad que
+/// se ha inventado un usuario y solo ve él.
+model RitmoActivityType {
+  id          String  @id @default(uuid()) @db.Char(36)
+  /// Slug estable (`running`, `cycling`, `swimming`…). Único solo entre las
+  /// globales; las de usuario no llevan code.
+  code        String? @unique @db.VarChar(64)
+  name        String  @db.VarChar(120)
+  /// Metabolic Equivalent of Task del Compendium of Physical Activities.
+  met         Decimal @db.Decimal(4, 2)
+  /// Nombre del icono en la app móvil (no una URL: lo resuelve el cliente).
+  icon        String? @db.VarChar(64)
+  ownerUserId String? @map("owner_user_id") @db.Char(36)
+  isArchived  Boolean @default(false) @map("is_archived")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner    User?                  @relation("RitmoActivityTypeOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sessions RitmoActivitySession[]
+
+  @@index([ownerUserId])
+  @@map("ritmo_activity_type")
+}
+
+/// Una sesión de actividad registrada. `kcalBurned` se persiste calculado en
+/// el momento del registro: depende del peso de ese día y del MET vigente, y
+/// recalcularlo después cambiaría el histórico del usuario.
+model RitmoActivitySession {
+  id             String @id @default(uuid()) @db.Char(36)
+  userId         String @map("user_id") @db.Char(36)
+  activityTypeId String @map("activity_type_id") @db.Char(36)
+
+  startedAt    DateTime     @map("started_at")
+  /// Día natural al que se imputa la sesión, ya resuelto con la timezone del
+  /// perfil. Desnormalizado para poder agregar por día sin recalcular husos.
+  loggedOn     DateTime     @map("logged_on") @db.Date
+  durationSec  Int          @map("duration_sec")
+  distanceM    Int?         @map("distance_m")
+  avgHeartRate Int?         @map("avg_heart_rate")
+  effort       RitmoEffort?
+  kcalBurned   Int          @map("kcal_burned")
+  notes        String?      @db.VarChar(500)
+
+  source     RitmoActivitySource @default(MANUAL)
+  /// Id de la sesión en el proveedor externo. Junto con `source` evita
+  /// duplicar entrenos al re-sincronizar.
+  externalId String?             @map("external_id") @db.VarChar(191)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityType RitmoActivityType @relation(fields: [activityTypeId], references: [id])
+
+  @@unique([source, externalId])
+  @@index([userId, loggedOn])
+  @@index([activityTypeId])
+  @@map("ritmo_activity_session")
+}
+
+/// Alimento del catálogo, siempre normalizado a 100 g / 100 ml. Las raciones
+/// reales ("1 taza", "1 unidad") van en `RitmoFoodServing`.
+model RitmoFood {
+  id          String          @id @default(uuid()) @db.Char(36)
+  name        String          @db.VarChar(200)
+  brand       String?         @db.VarChar(120)
+  /// EAN/UPC para escanear. Único: dos filas no pueden reclamar el mismo
+  /// código de barras.
+  barcode     String?         @unique @db.VarChar(32)
+  source      RitmoFoodSource @default(CURATED)
+  externalId  String?         @map("external_id") @db.VarChar(191)
+  ownerUserId String?         @map("owner_user_id") @db.Char(36)
+  /// Revisado por nosotros: la app puede priorizar estos en el buscador.
+  isVerified  Boolean         @default(false) @map("is_verified")
+  /// true si el alimento se mide en ml (bebidas) en vez de g.
+  isLiquid    Boolean         @default(false) @map("is_liquid")
+
+  kcalPer100       Int      @map("kcal_per_100")
+  proteinPer100G   Decimal  @map("protein_per_100_g") @db.Decimal(6, 2)
+  carbsPer100G     Decimal  @map("carbs_per_100_g") @db.Decimal(6, 2)
+  fatPer100G       Decimal  @map("fat_per_100_g") @db.Decimal(6, 2)
+  fiberPer100G     Decimal? @map("fiber_per_100_g") @db.Decimal(6, 2)
+  sugarPer100G     Decimal? @map("sugar_per_100_g") @db.Decimal(6, 2)
+  saturatedPer100G Decimal? @map("saturated_per_100_g") @db.Decimal(6, 2)
+  sodiumPer100Mg   Decimal? @map("sodium_per_100_mg") @db.Decimal(8, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner       User?              @relation("RitmoFoodOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  servings    RitmoFoodServing[]
+  mealEntries RitmoMealEntry[]
+
+  @@index([ownerUserId])
+  @@index([name])
+  @@map("ritmo_food")
+}
+
+/// Ración precalculada de un alimento ("1 rebanada = 30 g"), para que el
+/// usuario no tenga que pesar todo.
+model RitmoFoodServing {
+  id        String  @id @default(uuid()) @db.Char(36)
+  foodId    String  @map("food_id") @db.Char(36)
+  label     String  @db.VarChar(80)
+  grams     Decimal @db.Decimal(7, 2)
+  isDefault Boolean @default(false) @map("is_default")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  food        RitmoFood        @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  mealEntries RitmoMealEntry[]
+
+  @@unique([foodId, label])
+  @@map("ritmo_food_serving")
+}
+
+/// Lo que alguien ha comido. Guarda un snapshot de kcal y macros en vez de
+/// recalcular desde `RitmoFood`: si el catálogo se corrige o el alimento se
+/// borra, el diario de ayer no cambia. `foodId` queda como referencia débil.
+///
+/// `customName` cubre el registro rápido sin catálogo ("menú del día, 700
+/// kcal"), que es lo que hace que la gente no abandone la app.
+model RitmoMealEntry {
+  id       String        @id @default(uuid()) @db.Char(36)
+  userId   String        @map("user_id") @db.Char(36)
+  loggedOn DateTime      @map("logged_on") @db.Date
+  mealType RitmoMealType @map("meal_type")
+
+  foodId     String? @map("food_id") @db.Char(36)
+  servingId  String? @map("serving_id") @db.Char(36)
+  customName String? @map("custom_name") @db.VarChar(200)
+  /// Cantidad consumida en gramos (o ml si el alimento es líquido).
+  quantityG  Decimal @map("quantity_g") @db.Decimal(7, 2)
+
+  kcal     Int
+  proteinG Decimal @map("protein_g") @db.Decimal(6, 2)
+  carbsG   Decimal @map("carbs_g") @db.Decimal(6, 2)
+  fatG     Decimal @map("fat_g") @db.Decimal(6, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  food    RitmoFood?        @relation(fields: [foodId], references: [id], onDelete: SetNull)
+  serving RitmoFoodServing? @relation(fields: [servingId], references: [id], onDelete: SetNull)
+
+  @@index([userId, loggedOn])
+  @@index([foodId])
+  @@index([servingId])
+  @@map("ritmo_meal_entry")
+}
+
+/// Agregado diario materializado: es la pantalla principal de la app, y
+/// derivarla en cada apertura obligaría a sumar todas las comidas y sesiones
+/// del día. Se recalcula al escribir una comida, una sesión o una pesada.
+///
+/// `kcalTarget` es un snapshot del objetivo vigente ese día.
+model RitmoDailyLog {
+  id      String   @id @default(uuid()) @db.Char(36)
+  userId  String   @map("user_id") @db.Char(36)
+  logDate DateTime @map("log_date") @db.Date
+
+  kcalIn     Int      @default(0) @map("kcal_in")
+  kcalBurned Int      @default(0) @map("kcal_burned")
+  kcalTarget Int?     @map("kcal_target")
+  proteinG   Decimal  @default(0) @map("protein_g") @db.Decimal(7, 2)
+  carbsG     Decimal  @default(0) @map("carbs_g") @db.Decimal(7, 2)
+  fatG       Decimal  @default(0) @map("fat_g") @db.Decimal(7, 2)
+  steps      Int?
+  waterMl    Int?     @map("water_ml")
+  weightKg   Decimal? @map("weight_kg") @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, logDate])
+  @@index([userId, logDate])
+  @@map("ritmo_daily_log")
 }
