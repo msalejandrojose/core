@@ -6,12 +6,16 @@ import {
   formatGrams,
   formatKcal,
   formatWeight,
+  mealForHour,
+  longDate,
+  formatNumber,
   ratio,
 } from './format';
 
 describe('formatKcal', () => {
   it('redondea a entero', () => {
-    expect(formatKcal(1840.4)).toBe('1840');
+    expect(formatKcal(1840.4)).toBe('1.840');
+    expect(formatKcal(-412)).toBe('\u2212412');
     expect(formatKcal(0)).toBe('0');
   });
 });
@@ -19,14 +23,14 @@ describe('formatKcal', () => {
 describe('formatGrams', () => {
   it('omite el decimal cuando es redondo', () => {
     expect(formatGrams(42)).toBe('42 g');
-    expect(formatGrams(4.15)).toBe('4.2 g');
+    expect(formatGrams(4.15)).toBe('4,2 g');
   });
 });
 
 describe('formatWeight', () => {
   it('siempre con un decimal', () => {
-    expect(formatWeight(80)).toBe('80.0 kg');
-    expect(formatWeight(80.44)).toBe('80.4 kg');
+    expect(formatWeight(80)).toBe('80,0 kg');
+    expect(formatWeight(80.44)).toBe('80,4 kg');
   });
 });
 
@@ -41,7 +45,7 @@ describe('formatDuration', () => {
 describe('formatDistance', () => {
   it('cambia a km a partir de 1000 m', () => {
     expect(formatDistance(850)).toBe('850 m');
-    expect(formatDistance(5200)).toBe('5.2 km');
+    expect(formatDistance(5200)).toBe('5,2 km');
   });
 });
 
@@ -73,5 +77,33 @@ describe('ratio', () => {
   it('sin objetivo no inventa progreso', () => {
     expect(ratio(1000, null)).toBe(0);
     expect(ratio(1000, 0)).toBe(0);
+  });
+});
+
+describe('formatNumber', () => {
+  it('agrupa siempre los miles y usa coma decimal', () => {
+    expect(formatNumber(9140)).toBe('9.140');
+    expect(formatNumber(1234567)).toBe('1.234.567');
+    expect(formatNumber(74.2, 1)).toBe('74,2');
+  });
+
+  it('usa el menos tipográfico y no deja un −0', () => {
+    expect(formatNumber(-0.4, 1)).toBe('\u22120,4');
+    expect(formatNumber(-0.01, 1)).toBe('0,0');
+  });
+});
+
+describe('mealForHour', () => {
+  it('propone la comida que toca según la hora', () => {
+    expect(mealForHour(8)).toBe('BREAKFAST');
+    expect(mealForHour(14)).toBe('LUNCH');
+    expect(mealForHour(17)).toBe('SNACK');
+    expect(mealForHour(21)).toBe('DINNER');
+  });
+});
+
+describe('longDate', () => {
+  it('escribe el día de la semana y el mes en español', () => {
+    expect(longDate('2026-11-11')).toBe('miércoles, 11 de noviembre');
   });
 });

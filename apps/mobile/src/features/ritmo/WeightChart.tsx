@@ -1,3 +1,5 @@
+import { formatNumber } from './format';
+
 interface WeightChartProps {
   points: { day: string; weightKg: number }[];
   /** Peso objetivo, si lo hay: se pinta como línea de referencia. */
@@ -55,9 +57,10 @@ export function WeightChart({ points, targetKg }: WeightChartProps) {
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       preserveAspectRatio="none"
       role="img"
-      aria-label={`Evolución del peso: de ${values[0].toFixed(1)} a ${values[
-        values.length - 1
-      ].toFixed(1)} kilos`}
+      aria-label={`Evolución del peso: de ${formatNumber(values[0], 1)} a ${formatNumber(
+        values[values.length - 1],
+        1,
+      )} kilos`}
     >
       <line
         className="ritmo-chart__grid"

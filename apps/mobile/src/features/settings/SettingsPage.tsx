@@ -9,8 +9,10 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  IonBackButton,
+  IonButtons,
 } from '@ionic/react';
-import { colorPaletteOutline, personOutline } from 'ionicons/icons';
+import { personOutline } from 'ionicons/icons';
 import { useTranslation } from 'react-i18next';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useAuthStore } from '@/store/auth.store';
@@ -38,6 +40,10 @@ export default function SettingsPage() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+          {/* En Ritmo, Ajustes se abre desde el avatar de Hoy (ya no es pestaña). */}
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/tabs/today" text="Hoy" />
+          </IonButtons>
           <IonTitle>Ajustes</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -69,22 +75,7 @@ export default function SettingsPage() {
                 </IonLabel>
               </IonItem>
 
-              <IonItem
-                button
-                detail
-                lines="none"
-                routerLink="/tabs/settings/appearance"
-                routerDirection="forward"
-              >
-                <span
-                  slot="start"
-                  className="core-tint-icon core-tint-icon--purple"
-                  aria-hidden="true"
-                >
-                  <IonIcon icon={colorPaletteOutline} />
-                </span>
-                <IonLabel>{t('settings.appearance')}</IonLabel>
-              </IonItem>
+              {/* Sin fila de Apariencia: el Ritmo DS solo define tema claro. */}
             </IonList>
           </>
         ) : null}

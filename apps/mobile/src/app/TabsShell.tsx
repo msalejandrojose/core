@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import {
-  IonBadge,
   IonIcon,
   IonLabel,
   IonRouterOutlet,
@@ -8,17 +7,24 @@ import {
   IonTabButton,
   IonTabs,
 } from '@ionic/react';
-import { Redirect, Route } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { Redirect, Route, useLocation } from 'react-router-dom';
 import {
-  flameOutline,
-  notificationsOutline,
-  settingsOutline,
-  trendingUpOutline,
+  add,
+  barChart,
+  barChartOutline,
+  calendar,
+  calendarOutline,
+  home,
+  homeOutline,
+  people,
+  peopleOutline,
 } from 'ionicons/icons';
 import TodayPage from '@/features/ritmo/TodayPage';
 import ProgressPage from '@/features/ritmo/ProgressPage';
 import OnboardingPage from '@/features/ritmo/OnboardingPage';
+import { ComingSoonPage } from '@/features/ritmo/ComingSoonPage';
+import { RegisterSheets } from '@/features/ritmo/RegisterSheets';
+import { useRegisterStore } from '@/features/ritmo/register.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import SettingsPage from '@/features/settings/SettingsPage';
 import AppearancePage from '@/features/settings/AppearancePage';
@@ -26,89 +32,129 @@ import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { usePushNotifications } from '@/features/notifications/use-push-notifications';
+import { Snackbar } from '@/components/ux';
+
+const PlanPage = () => (
+  <ComingSoonPage
+    title="Plan"
+    icon={calendarOutline}
+    heading="Tu semana, entreno a entreno"
+    description="Aquí verás tus sesiones de la semana y la dieta que sigue a cada una."
+  />
+);
+
+const SocialPage = () => (
+  <ComingSoonPage
+    title="Social"
+    icon={peopleOutline}
+    heading="Entrena con tus amigos"
+    description="Aquí verás a tus amigos y los retos que compartáis."
+  />
+);
 
 /**
- * Shell del área autenticada de Ritmo: tab bar inferior (Hoy / Progreso /
- * Notificaciones / Ajustes) sobre un `IonRouterOutlet`, cada tab con su propio
- * stack de navegación. La ruta base `/tabs/today` y un fallback cubren
- * cualquier ruta no reconocida (p. ej. venir de `/login` tras autenticarse).
+ * El + central. `IonTabBar` solo pinta hijos que sean pestañas (y descarta el
+ * resto), así que se marca con `isTabButton` para ocupar su hueco en la barra.
+ * A diferencia de una `IonTabButton`, NO llama al `onClick` que le inyecta la
+ * barra: ese cambiaría a la pestaña "register", que no existe, y IonTabs avisa
+ * con un error. Aquí solo abre la hoja Registrar.
+ */
+function RegisterTabButton({ onOpen }: { tab: string; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      className="ritmo-tab-register"
+      aria-label="Registrar"
+      onClick={onOpen}
+    >
+      <span className="ritmo-tab-register__fab" aria-hidden="true">
+        <IonIcon icon={add} />
+      </span>
+    </button>
+  );
+}
+RegisterTabButton.isTabButton = true;
+
+/** Pestañas en el orden fijo del DS (TabBar): el + va en el centro. */
+const TABS = [
+  { tab: 'today', href: '/tabs/today', label: 'Hoy', icon: homeOutline, active: home },
+  { tab: 'plan', href: '/tabs/plan', label: 'Plan', icon: calendarOutline, active: calendar },
+  { tab: 'progress', href: '/tabs/progress', label: 'Progreso', icon: barChartOutline, active: barChart },
+  { tab: 'social', href: '/tabs/social', label: 'Social', icon: peopleOutline, active: people },
+] as const;
+
+/**
+ * Shell del área autenticada de Ritmo con la barra de pestañas del diseño:
+ * Hoy · Plan · + · Progreso · Social. El + central no es una pestaña: abre la
+ * hoja "Registrar" encima de la pantalla en la que estés.
  *
- * Sustituye las tabs genéricas del shell base (Inicio con KPIs + secciones
- * dinámicas), que son de un companion app interno y no de este producto. Se
- * modifica aquí, en la rama del proyecto, en vez de abstraer un sistema de tabs
- * "pluggable" en `main`: con un solo proyecto consumiéndolo sería una
- * abstracción prematura.
+ * Notificaciones y Ajustes dejan de ser pestañas (el DS fija cinco): se entra
+ * desde la campana y el avatar de la cabecera de Hoy, y sus rutas no cambian.
  *
- * Las tabs de registro (comida, actividad, peso) NO existen: son sheets que se
- * abren desde el FAB de Hoy, que es donde cae el pulgar.
+ * Las hojas de registro y el snackbar se montan aquí, una sola vez, para que
+ * se puedan abrir desde cualquier pestaña.
  */
 export default function TabsShell() {
-  const { t } = useTranslation();
-  const unread = useUnreadStore((s) => s.unread);
+  const { pathname } = useLocation();
   const refreshUnread = useUnreadStore((s) => s.refresh);
+  const openRegister = useRegisterStore((s) => s.open);
 
   // Push nativas: registra el dispositivo y engancha recepción/tap (no-op en
   // web/PWA). Vive aquí para arrancar una vez al entrar al área autenticada.
   usePushNotifications();
 
-  // Contador del badge al entrar en el área autenticada; el inbox lo mantiene
-  // en sync a partir de aquí (marcar leídas actualiza el store compartido).
+  // Contador de la campana de Hoy al entrar en el área autenticada.
   useEffect(() => {
     void refreshUnread();
   }, [refreshUnread]);
 
-  return (
-    <IonTabs>
-      <IonRouterOutlet>
-        <Route exact path="/tabs/today" component={TodayPage} />
-        <Route
-          exact
-          path="/tabs/today/onboarding"
-          component={OnboardingPage}
-        />
-        <Route exact path="/tabs/progress" component={ProgressPage} />
-        {/* Editar el objetivo reutiliza la pantalla de onboarding. */}
-        <Route exact path="/tabs/progress/goal" component={OnboardingPage} />
-        <Route exact path="/tabs/notifications" component={NotificationsPage} />
-        <Route exact path="/tabs/settings" component={SettingsPage} />
-        <Route
-          exact
-          path="/tabs/settings/appearance"
-          component={AppearancePage}
-        />
-        <Route exact path="/tabs/settings/profile" component={ProfilePage} />
-        <Route
-          exact
-          path="/tabs/settings/change-password"
-          component={ChangePasswordPage}
-        />
-        <Route exact path="/tabs">
-          <Redirect to="/tabs/today" />
-        </Route>
-        <Route render={() => <Redirect to="/tabs/today" />} />
-      </IonRouterOutlet>
+  const tabButton = ({ tab, href, label, icon, active }: (typeof TABS)[number]) => {
+    const selected = pathname.startsWith(href);
+    return (
+      <IonTabButton key={tab} tab={tab} href={href}>
+        <IonIcon icon={selected ? active : icon} aria-hidden="true" />
+        <IonLabel>{label}</IonLabel>
+      </IonTabButton>
+    );
+  };
 
-      <IonTabBar slot="bottom">
-        <IonTabButton tab="today" href="/tabs/today">
-          <IonIcon icon={flameOutline} aria-hidden="true" />
-          <IonLabel>{t('tabs.today')}</IonLabel>
-        </IonTabButton>
-        <IonTabButton tab="progress" href="/tabs/progress">
-          <IonIcon icon={trendingUpOutline} aria-hidden="true" />
-          <IonLabel>{t('tabs.progress')}</IonLabel>
-        </IonTabButton>
-        <IonTabButton tab="notifications" href="/tabs/notifications">
-          <IonIcon icon={notificationsOutline} aria-hidden="true" />
-          <IonLabel>{t('tabs.notifications')}</IonLabel>
-          {unread > 0 ? (
-            <IonBadge color="primary">{unread > 99 ? '99+' : unread}</IonBadge>
-          ) : null}
-        </IonTabButton>
-        <IonTabButton tab="settings" href="/tabs/settings">
-          <IonIcon icon={settingsOutline} aria-hidden="true" />
-          <IonLabel>{t('tabs.settings')}</IonLabel>
-        </IonTabButton>
-      </IonTabBar>
-    </IonTabs>
+  return (
+    <>
+      <IonTabs>
+        <IonRouterOutlet>
+          <Route exact path="/tabs/today" component={TodayPage} />
+          <Route exact path="/tabs/today/onboarding" component={OnboardingPage} />
+          <Route exact path="/tabs/plan" component={PlanPage} />
+          <Route exact path="/tabs/progress" component={ProgressPage} />
+          {/* Editar el objetivo reutiliza la pantalla de onboarding. */}
+          <Route exact path="/tabs/progress/goal" component={OnboardingPage} />
+          <Route exact path="/tabs/social" component={SocialPage} />
+          <Route exact path="/tabs/notifications" component={NotificationsPage} />
+          <Route exact path="/tabs/settings" component={SettingsPage} />
+          <Route exact path="/tabs/settings/appearance" component={AppearancePage} />
+          <Route exact path="/tabs/settings/profile" component={ProfilePage} />
+          <Route
+            exact
+            path="/tabs/settings/change-password"
+            component={ChangePasswordPage}
+          />
+          <Route exact path="/tabs">
+            <Redirect to="/tabs/today" />
+          </Route>
+          <Route render={() => <Redirect to="/tabs/today" />} />
+        </IonRouterOutlet>
+
+        <IonTabBar slot="bottom">
+          {tabButton(TABS[0])}
+          {tabButton(TABS[1])}
+          <RegisterTabButton tab="register" onOpen={() => openRegister('menu')} />
+          {tabButton(TABS[2])}
+          {tabButton(TABS[3])}
+        </IonTabBar>
+      </IonTabs>
+
+      <RegisterSheets />
+      <Snackbar />
+    </>
   );
 }

@@ -15,8 +15,9 @@ interface KcalRingProps {
  *
  * Muestra las kcal RESTANTES (objetivo − ingeridas + gastadas), no las
  * consumidas: es la cifra con la que se decide qué comer ahora. El anillo se
- * llena con lo consumido sobre el objetivo, y al pasarse cambia a brick en vez
- * de mostrar un error — comer de más un día es un dato, no un fallo.
+ * llena con lo consumido sobre el objetivo; al pasarse se queda lleno y el
+ * texto dice "kcal de más", sin rojo ni aviso: el DS de Ritmo no culpa con las
+ * calorías, y comer de más un día es un dato, no un fallo.
  *
  * SVG inline en vez de una librería de gráficas: son dos círculos, y meter una
  * dependencia para esto engordaría el bundle de la app sin ganar nada.
@@ -38,7 +39,7 @@ export function KcalRing({ totals }: KcalRingProps) {
     : 'kcal de hoy';
 
   return (
-    <div className={`ritmo-ring${over ? ' ritmo-ring--over' : ''}`}>
+    <div className="ritmo-ring">
       <svg
         width={SIZE}
         height={SIZE}

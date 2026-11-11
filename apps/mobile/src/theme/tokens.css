@@ -1,222 +1,200 @@
 /* ============================================================================
- * Core Design System → variables de Ionic (app mobile)  ·  MOB-02
+ * Ritmo Design System → variables de la app mobile
  * ----------------------------------------------------------------------------
- * Paleta greige cálida + acento clay/terracota, muestreada de la app de Claude
- * (fuente de verdad: skill core-design-system). Los valores canónicos del DS
- * están en oklch; aquí se mapean a las variables de Ionic en hex/rgb para
- * compatibilidad con su composición interna (rgba con los *-rgb). El lenguaje
- * visual manda sobre los defaults de Ionic.
+ * Fuente de verdad: el artefacto "Ritmo Design System" (tokens.json). Lenguaje
+ * iOS nativo, claro y minimalista: fondo agrupado `bg`, tarjetas `surface` sin
+ * borde ni sombra, un único color de acción `tint` y un color por dominio
+ * (actividad, comida, sueño/peso, corazón, digestión) que nunca se usa para
+ * otra cosa.
  *
- * Modo oscuro con ESTRATEGIA DUAL:
- *   - Por defecto sigue al sistema (`prefers-color-scheme`).
- *   - `.dark` / `[data-theme="dark"]` en <html> fuerza oscuro (toggle de MOB-17).
- *   - `.light` / `[data-theme="light"]` fuerza claro aunque el sistema sea oscuro.
- * Los bloques claro/oscuro se mantienen en paralelo: si tocas uno, revisa el otro.
+ * En esta rama SUSTITUYE al design system de Core (greige + clay). Los alias
+ * `--core-*` del final apuntan a estos tokens para que las pantallas del shell
+ * base (login, avisos, ajustes) adopten el mismo lenguaje sin reescribirlas.
+ *
+ * Solo hay tema claro: el DS de Ritmo no define oscuro. Si se diseña, irá en
+ * un bloque `[data-theme='dark']` con los mismos nombres.
  * ========================================================================== */
 
 :root {
   color-scheme: light;
 
-  /* ---- Superficies (claro) ---- */
-  --ion-background-color: #f0efec; /* fondo app, greige cálido */
-  --ion-background-color-rgb: 240, 239, 236;
-  --ion-text-color: #2a2a27; /* near-black cálido (nunca negro puro) */
-  --ion-text-color-rgb: 42, 42, 39;
-  --ion-border-color: #e5e2db; /* hairline */
+  /* ---- Color: superficies y texto ---- */
+  --ritmo-bg: #f2f2f7;
+  --ritmo-surface: #ffffff;
+  --ritmo-surface-fill: #e3e3e8; /* pista del segmentado, campos de búsqueda */
+  --ritmo-surface-fill-2: #e9e9eb; /* interruptor apagado */
+  --ritmo-separator: #e5e5ea;
+  --ritmo-border: #d1d1d6;
+  --ritmo-border-strong: #c7c7cc; /* casillas vacías, asa de hojas */
+  --ritmo-chevron: #aeaeb2;
+  --ritmo-ink: #1c1c1e; /* 16:1 */
+  --ritmo-ink-2: #3a3a3c;
+  --ritmo-ink-muted: #6c6c70; /* 5,2:1 sobre surface, 4,7:1 sobre bg */
 
-  --ion-toolbar-background: #f0efec;
-  --ion-item-background: #f9f9f7; /* superficie elevada (card) */
-  --ion-card-background: #f9f9f7;
-  --ion-tab-bar-background: #f9f9f7;
+  /* ---- Color: acción ---- */
+  --ritmo-tint: #0064d2;
+  --ritmo-tint-pressed: #004fa6;
+  --ritmo-tint-soft: #eaf2fd;
+  --ritmo-on-tint: #ffffff;
 
-  /* ---- Primary = clay (marca) ---- */
-  --ion-color-primary: #bc6a4a;
-  --ion-color-primary-rgb: 188, 106, 74;
+  /* ---- Color: dominios. Rellenos solo en barras, anillos e iconos y siempre
+   *      junto a su número (no llegan a 3:1); el texto va en su `-ink`. ---- */
+  --ritmo-activity: #34c759;
+  --ritmo-activity-ink: #1f7a35;
+  --ritmo-activity-soft: #e8f8ec;
+  --ritmo-food: #ff9500;
+  --ritmo-food-ink: #b85600;
+  --ritmo-food-soft: #fff1e0;
+  --ritmo-sleep: #5856d6; /* sueño y peso */
+  --ritmo-sleep-ink: #4b49b8;
+  --ritmo-sleep-soft: #f0effb;
+  --ritmo-heart: #ff2d55;
+  --ritmo-heart-ink: #c4123b;
+  --ritmo-heart-soft: #ffe9ee;
+  --ritmo-info: #0a84ff; /* carga baja, agua. Solo relleno */
+  --ritmo-danger: #d70015;
+  --ritmo-danger-soft: #ffe9e7;
+  --ritmo-earth: #8b5a2b; /* digestión */
+  --ritmo-earth-soft: #f5ebdd;
+  --ritmo-gold: #e0a800;
+  --ritmo-gold-deep: #b88400;
+  --ritmo-gold-soft: #fff6d6;
+  --ritmo-gold-ink: #8a6100;
+  --ritmo-silver: #9aa3ae;
+  --ritmo-silver-deep: #6f7782;
+  --ritmo-bronze: #c27c3a;
+  --ritmo-bronze-deep: #9e5f28;
+  --ritmo-snackbar: var(--ritmo-ink);
+  --ritmo-snackbar-link: #8ec5ff; /* 9,4:1 sobre snackbar */
+  --ritmo-tabbar-bg: rgba(249, 249, 249, 0.94);
+
+  /* ---- Tipografía: una sola familia, la del sistema (SF Pro en Apple) ---- */
+  --ritmo-font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', Inter,
+    system-ui, sans-serif;
+
+  /* ---- Espaciado ---- */
+  --ritmo-space-2xs: 4px;
+  --ritmo-space-xs: 6px;
+  --ritmo-space-s: 8px;
+  --ritmo-space-m: 12px;
+  --ritmo-space-l: 14px;
+  --ritmo-space-xl: 16px; /* margen lateral de pantalla y relleno de tarjetas */
+  --ritmo-space-2xl: 20px; /* separación entre bloques en Hoy */
+  --ritmo-space-3xl: 24px;
+  --ritmo-space-4xl: 32px;
+
+  /* ---- Radios ---- */
+  --ritmo-radius-s: 8px;
+  --ritmo-radius-m: 10px;
+  --ritmo-radius-l: 12px;
+  --ritmo-radius-xl: 14px; /* botones principales, snackbar */
+  --ritmo-radius-2xl: 16px; /* tarjetas y listas agrupadas */
+  --ritmo-radius-3xl: 22px; /* héroe, widgets, hojas */
+  --ritmo-radius-pill: 999px;
+
+  /* ---- Sombras: solo en lo que flota ---- */
+  --ritmo-shadow-thumb: 0 2px 6px rgba(0, 0, 0, 0.12);
+  --ritmo-shadow-knob: 0 2px 6px rgba(0, 0, 0, 0.18);
+  --ritmo-shadow-fab: 0 4px 12px rgba(0, 0, 0, 0.18);
+  --ritmo-shadow-float: 0 10px 30px rgba(0, 0, 0, 0.18);
+
+  /* ---- Tamaños ---- */
+  --ritmo-control-s: 36px;
+  --ritmo-control: 44px; /* alto mínimo de cualquier pulsable */
+  --ritmo-control-l: 50px;
+  --ritmo-row: 52px;
+  --ritmo-row-l: 58px;
+  --ritmo-tabbar: 83px;
+
+  /* ==== Mapeo a Ionic ==== */
+  --ion-font-family: var(--ritmo-font-sans);
+  --ion-background-color: #f2f2f7;
+  --ion-background-color-rgb: 242, 242, 247;
+  --ion-text-color: #1c1c1e;
+  --ion-text-color-rgb: 28, 28, 30;
+  --ion-border-color: var(--ritmo-separator);
+  --ion-toolbar-background: var(--ritmo-bg);
+  --ion-toolbar-border-color: transparent;
+  --ion-item-background: var(--ritmo-surface);
+  --ion-item-border-color: var(--ritmo-separator);
+  --ion-card-background: var(--ritmo-surface);
+  --ion-tab-bar-background: var(--ritmo-tabbar-bg);
+  --ion-tab-bar-border-color: var(--ritmo-border);
+  --ion-tab-bar-color: var(--ritmo-ink-muted);
+  --ion-tab-bar-color-selected: var(--ritmo-tint);
+
+  --ion-color-primary: #0064d2;
+  --ion-color-primary-rgb: 0, 100, 210;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #a85638; /* pressed */
-  --ion-color-primary-tint: #c37a5c;
+  --ion-color-primary-shade: #004fa6;
+  --ion-color-primary-tint: #1a74d7;
 
-  /* ---- Secondary = azul funcional (toggles ON, selección "Sistema") ----
-   * NO es color de marca; es el azul funcional del DS. Úsalo con color="secondary". */
-  --ion-color-secondary: #2f6bc4;
-  --ion-color-secondary-rgb: 47, 107, 196;
+  /* Secondary = actividad (verde): interruptores encendidos, check de hecho. */
+  --ion-color-secondary: #34c759;
+  --ion-color-secondary-rgb: 52, 199, 89;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #295eac;
-  --ion-color-secondary-tint: #447aca;
+  --ion-color-secondary-shade: #2eaf4e;
+  --ion-color-secondary-tint: #48cd6a;
 
-  /* ---- Tertiary = purple (avatares de icono alternos) ---- */
-  --ion-color-tertiary: #6f62d8;
-  --ion-color-tertiary-rgb: 111, 98, 216;
+  /* Tertiary = sueño/peso (índigo). */
+  --ion-color-tertiary: #5856d6;
+  --ion-color-tertiary-rgb: 88, 86, 214;
   --ion-color-tertiary-contrast: #ffffff;
   --ion-color-tertiary-contrast-rgb: 255, 255, 255;
-  --ion-color-tertiary-shade: #6156be;
-  --ion-color-tertiary-tint: #7d72dc;
+  --ion-color-tertiary-shade: #4d4cbc;
+  --ion-color-tertiary-tint: #6967da;
 
-  /* ---- Danger = brick (cerrar sesión, borrar) ---- */
-  --ion-color-danger: #a4453b;
-  --ion-color-danger-rgb: 164, 69, 59;
+  --ion-color-success: #1f7a35;
+  --ion-color-success-rgb: 31, 122, 53;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #1b6b2f;
+  --ion-color-success-tint: #358749;
+
+  --ion-color-warning: #b85600;
+  --ion-color-warning-rgb: 184, 86, 0;
+  --ion-color-warning-contrast: #ffffff;
+  --ion-color-warning-contrast-rgb: 255, 255, 255;
+  --ion-color-warning-shade: #a24c00;
+  --ion-color-warning-tint: #bf671a;
+
+  --ion-color-danger: #d70015;
+  --ion-color-danger-rgb: 215, 0, 21;
   --ion-color-danger-contrast: #ffffff;
   --ion-color-danger-contrast-rgb: 255, 255, 255;
-  --ion-color-danger-shade: #903d34;
-  --ion-color-danger-tint: #ad584f;
+  --ion-color-danger-shade: #bd0012;
+  --ion-color-danger-tint: #db1a2c;
 
-  /* ---- Medium = greige muted (metadatos, captions) ---- */
-  --ion-color-medium: #9a968c;
-  --ion-color-medium-rgb: 154, 150, 140;
+  --ion-color-medium: #6c6c70;
+  --ion-color-medium-rgb: 108, 108, 112;
   --ion-color-medium-contrast: #ffffff;
   --ion-color-medium-contrast-rgb: 255, 255, 255;
-  --ion-color-medium-shade: #88847b;
-  --ion-color-medium-tint: #a4a097;
+  --ion-color-medium-shade: #5f5f63;
+  --ion-color-medium-tint: #7b7b7e;
 
-  /* ==== Tokens propios de Core (componentes a medida) ==== */
-
-  /* Superficies semánticas */
-  --core-surface: #f9f9f7; /* card / fila agrupada / sheet */
-  --core-surface-inset: #eceae4; /* campo inset, pill inactiva */
-  --core-surface-row: #e7e6e1; /* bloque de filas sobre fondo */
-  --core-surface-plain: #ffffff; /* lista a pantalla completa, hover */
-  --core-muted: #9a968c; /* texto secundario greige */
-  --core-border: #e5e2db;
-
-  /* Acentos como tokens crudos + tintes al 12% para fondos de icono */
-  --core-clay: #bc6a4a;
-  --core-clay-pressed: #a85638;
-  --core-brick: #a4453b;
-  --core-info: #2f6bc4; /* azul funcional */
-  --core-purple: #6f62d8;
-  --core-tint-clay: rgba(188, 106, 74, 0.12);
-  --core-tint-purple: rgba(111, 98, 216, 0.12);
-
-  /* Radios (DS §5). Base = 16px. */
-  --core-radius-sm: 0.625rem; /* 10 — inputs, botones pequeños */
-  --core-radius-md: 0.875rem; /* 14 — botones, campos inset */
-  --core-radius: 1rem; /* 16 — tarjetas y bloques de filas (default) */
-  --core-radius-lg: 1rem; /* alias del default */
-  --core-radius-xl: 1.5rem; /* 24 — sheets / cards grandes */
-
-  /* Elevación (DS §6). Casi plano; la jerarquía la dan superficie + radio. */
-  --core-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
-  --core-elevation-2: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
-
-  /* Tipografía. Sans para UI (SF/Roboto nativos); serif para wordmark/display.
-   * Fraunces/Lora se cargarían embebidas; mientras, Georgia como fallback digno. */
-  --core-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --core-font-serif: 'Fraunces', 'Lora', Georgia, 'Times New Roman', serif;
-  --ion-font-family: var(--core-font-sans);
-}
-
-/* ---- Oscuro CÁLIDO (no zinc azulado) ---- */
-
-/* a) Sigue al sistema, salvo que se fuerce claro explícitamente. */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light):not([data-theme='light']) {
-    color-scheme: dark;
-
-    --ion-background-color: #1c1b19;
-    --ion-background-color-rgb: 28, 27, 25;
-    --ion-text-color: #f2f1ec;
-    --ion-text-color-rgb: 242, 241, 236;
-    --ion-border-color: #38362f;
-
-    --ion-toolbar-background: #1c1b19;
-    --ion-item-background: #262523;
-    --ion-card-background: #262523;
-    --ion-tab-bar-background: #262523;
-
-    --ion-color-primary: #d08763; /* clay on dark: +L, -croma */
-    --ion-color-primary-rgb: 208, 135, 99;
-    --ion-color-primary-contrast: #1c1b19;
-    --ion-color-primary-contrast-rgb: 28, 27, 25;
-    --ion-color-primary-shade: #b7764f;
-    --ion-color-primary-tint: #d69373;
-
-    --ion-color-secondary: #6fa0e8; /* blue on dark */
-    --ion-color-secondary-rgb: 111, 160, 232;
-    --ion-color-secondary-contrast: #1c1b19;
-    --ion-color-secondary-contrast-rgb: 28, 27, 25;
-
-    --ion-color-danger: #d9745f; /* brick on dark */
-    --ion-color-danger-rgb: 217, 116, 95;
-    --ion-color-danger-contrast: #1c1b19;
-    --ion-color-danger-contrast-rgb: 28, 27, 25;
-
-    --ion-color-medium: #a19d93;
-    --ion-color-medium-rgb: 161, 157, 147;
-
-    --core-surface: #262523;
-    --core-surface-inset: #2f2e2b;
-    --core-surface-row: #2a2926;
-    --core-surface-plain: #201f1d;
-    --core-muted: #a19d93;
-    --core-border: #38362f;
-
-    --core-clay: #d08763;
-    --core-clay-pressed: #b7764f;
-    --core-brick: #d9745f;
-    --core-info: #6fa0e8;
-    --core-purple: #9b90ea;
-    --core-tint-clay: rgba(208, 135, 99, 0.16);
-    --core-tint-purple: rgba(155, 144, 234, 0.16);
-
-    --core-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 1px rgba(0, 0, 0, 0.18);
-    --core-elevation-2: 0 10px 28px rgba(0, 0, 0, 0.44), 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-}
-
-/* b) Toggle manual: fuerza oscuro con clase/atributo en <html> (MOB-17).
- *    Mantener sincronizado con el bloque (a). */
-:root.dark,
-:root[data-theme='dark'] {
-  color-scheme: dark;
-
-  --ion-background-color: #1c1b19;
-  --ion-background-color-rgb: 28, 27, 25;
-  --ion-text-color: #f2f1ec;
-  --ion-text-color-rgb: 242, 241, 236;
-  --ion-border-color: #38362f;
-
-  --ion-toolbar-background: #1c1b19;
-  --ion-item-background: #262523;
-  --ion-card-background: #262523;
-  --ion-tab-bar-background: #262523;
-
-  --ion-color-primary: #d08763;
-  --ion-color-primary-rgb: 208, 135, 99;
-  --ion-color-primary-contrast: #1c1b19;
-  --ion-color-primary-contrast-rgb: 28, 27, 25;
-  --ion-color-primary-shade: #b7764f;
-  --ion-color-primary-tint: #d69373;
-
-  --ion-color-secondary: #6fa0e8;
-  --ion-color-secondary-rgb: 111, 160, 232;
-  --ion-color-secondary-contrast: #1c1b19;
-  --ion-color-secondary-contrast-rgb: 28, 27, 25;
-
-  --ion-color-danger: #d9745f;
-  --ion-color-danger-rgb: 217, 116, 95;
-  --ion-color-danger-contrast: #1c1b19;
-  --ion-color-danger-contrast-rgb: 28, 27, 25;
-
-  --ion-color-medium: #a19d93;
-  --ion-color-medium-rgb: 161, 157, 147;
-
-  --core-surface: #262523;
-  --core-surface-inset: #2f2e2b;
-  --core-surface-row: #2a2926;
-  --core-surface-plain: #201f1d;
-  --core-muted: #a19d93;
-  --core-border: #38362f;
-
-  --core-clay: #d08763;
-  --core-clay-pressed: #b7764f;
-  --core-brick: #d9745f;
-  --core-info: #6fa0e8;
-  --core-purple: #9b90ea;
-  --core-tint-clay: rgba(208, 135, 99, 0.16);
-  --core-tint-purple: rgba(155, 144, 234, 0.16);
-
-  --core-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 1px rgba(0, 0, 0, 0.18);
-  --core-elevation-2: 0 10px 28px rgba(0, 0, 0, 0.44), 0 2px 8px rgba(0, 0, 0, 0.3);
+  /* ==== Alias del DS de Core → Ritmo (pantallas del shell base) ==== */
+  --core-surface: var(--ritmo-surface);
+  --core-surface-inset: var(--ritmo-surface-fill);
+  --core-surface-row: var(--ritmo-surface);
+  --core-surface-plain: var(--ritmo-surface);
+  --core-muted: var(--ritmo-ink-muted);
+  --core-border: var(--ritmo-separator);
+  --core-clay: var(--ritmo-tint);
+  --core-clay-pressed: var(--ritmo-tint-pressed);
+  --core-brick: var(--ritmo-danger);
+  --core-info: var(--ritmo-tint);
+  --core-purple: var(--ritmo-sleep);
+  --core-tint-clay: var(--ritmo-tint-soft);
+  --core-tint-purple: var(--ritmo-sleep-soft);
+  --core-radius-sm: var(--ritmo-radius-l);
+  --core-radius-md: var(--ritmo-radius-xl);
+  --core-radius: var(--ritmo-radius-2xl);
+  --core-radius-lg: var(--ritmo-radius-2xl);
+  --core-radius-xl: var(--ritmo-radius-3xl);
+  --core-elevation-1: none; /* tarjetas sin sombra: se separan por color */
+  --core-elevation-2: var(--ritmo-shadow-float);
+  --core-font-sans: var(--ritmo-font-sans);
+  --core-font-serif: var(--ritmo-font-sans); /* Ritmo no usa serif */
 }

@@ -15,7 +15,7 @@ import {
 } from '@ionic/react';
 import { trendingDownOutline } from 'ionicons/icons';
 import { ritmoApi, type Progress } from './api';
-import { formatKcal, formatWeight } from './format';
+import { formatKcal, formatNumber, formatWeight } from './format';
 import { useRitmoStore } from './ritmo.store';
 import { WeightChart } from './WeightChart';
 import { EmptyState, ErrorState, SkeletonList } from '@/components/ux';
@@ -153,13 +153,13 @@ export default function ProgressPage() {
                           fontSize: 15,
                           color:
                             delta === 0
-                              ? 'var(--core-muted)'
-                              : 'var(--ion-color-primary)',
+                              ? 'var(--ritmo-ink-muted)'
+                              : 'var(--ritmo-sleep-ink)',
                           fontVariantNumeric: 'tabular-nums',
                         }}
                       >
                         {delta > 0 ? '+' : ''}
-                        {(Math.round(delta * 10) / 10).toFixed(1)} kg
+                        {formatNumber(Math.round(delta * 10) / 10, 1)} kg
                       </span>
                     ) : null}
                   </div>

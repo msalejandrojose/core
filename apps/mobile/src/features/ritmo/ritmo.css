@@ -1,19 +1,96 @@
 /* ============================================================================
  * Ritmo — estilos propios de la feature.
  * ----------------------------------------------------------------------------
- * Solo lo que no cubren las recetas del DS en `theme/components.css`: el anillo
- * de calorías, las barras de macros y la gráfica de peso. Todo con tokens del
- * DS (greige + clay), sin colores nuevos.
+ * Lo que no cubren las recetas de `theme/components.css`: estructura de
+ * pantalla, anillo de kcal, macros, gráfica de peso y hoja Registrar. Solo
+ * tokens del Ritmo DS. Cada dato va en el color de SU dominio y nunca en otro:
+ * calorías y macros en `food`, entrenos en `activity`, peso en `sleep`.
  * ========================================================================== */
 
+/* ---- Estructura de pantalla ---- */
+.ritmo-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-l);
+  padding: var(--ritmo-space-s) var(--ritmo-space-xl) var(--ritmo-space-4xl);
+}
+.ritmo-screen--today {
+  gap: var(--ritmo-space-2xl);
+}
+.ritmo-page-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 4px;
+}
+.ritmo-page-head__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ritmo-space-m);
+}
+.ritmo-daynav {
+  display: flex;
+  align-items: center;
+}
+.ritmo-daynav ion-button {
+  --color: var(--ritmo-tint);
+  --padding-start: 6px;
+  --padding-end: 6px;
+  min-height: var(--ritmo-control);
+  margin: 0;
+}
+
+/* ---- Cabecera: campana y avatar ---- */
+.ritmo-header-icon {
+  --color: var(--ritmo-tint);
+  position: relative;
+}
+.ritmo-header-icon ion-icon {
+  font-size: 24px;
+}
+.ritmo-header-avatar ion-icon {
+  font-size: 34px;
+  color: var(--ritmo-border);
+}
+.ritmo-header-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  --background: var(--ritmo-heart);
+  --color: var(--ritmo-on-tint);
+  --padding-start: 5px;
+  --padding-end: 5px;
+  font-size: 11px;
+  min-width: 18px;
+  border-radius: var(--ritmo-radius-pill);
+}
+
+/* ---- Cabecera de sección con valor a la derecha ---- */
+.ritmo-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-right: var(--ritmo-space-xl);
+}
+.ritmo-section-head .core-section-label {
+  margin-bottom: var(--ritmo-space-xs);
+}
+.ritmo-section-head__value {
+  font-size: 13px;
+  color: var(--ritmo-food-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Tarjeta héroe: anillo + balance ---- */
 .ritmo-hero {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 20px 16px;
+  gap: var(--ritmo-space-2xl);
 }
 
-/* ---- Anillo de kcal ---- */
+/* ---- Anillo de kcal (ProgressRing en `food`) ---- */
 .ritmo-ring {
   flex: 0 0 auto;
   position: relative;
@@ -24,17 +101,14 @@
   transform: rotate(-90deg); /* empieza arriba, no a las 3 en punto */
 }
 .ritmo-ring__track {
-  stroke: var(--core-surface-inset);
+  stroke: var(--ritmo-bg);
 }
 .ritmo-ring__value {
-  stroke: var(--ion-color-primary);
-  transition: stroke-dashoffset 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  stroke: var(--ritmo-food);
+  transition: stroke-dashoffset 200ms ease-out;
 }
-/* Por encima del objetivo el anillo pasa a brick: el aviso es el color, no un
-   mensaje de error — pasarse de kcal un día no es un fallo. */
-.ritmo-ring--over .ritmo-ring__value {
-  stroke: var(--ion-color-danger);
-}
+/* Pasarse no es un fallo (DS: nunca culpa con las calorías). El anillo sigue
+   lleno en `food` y el texto dice "kcal de más"; no se tiñe de rojo. */
 .ritmo-ring__center {
   position: absolute;
   inset: 0;
@@ -43,135 +117,144 @@
   text-align: center;
 }
 .ritmo-ring__number {
-  font-family: var(--core-font-serif);
-  font-size: 30px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--ion-text-color);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ritmo-ink);
 }
 .ritmo-ring__caption {
-  font-size: 12px;
-  color: var(--core-muted);
-  margin-top: 3px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ritmo-ink-muted);
 }
 
-/* ---- Balance del día (ingeridas / gastadas) ---- */
+/* ---- Balance del día ---- */
 .ritmo-balance {
   flex: 1 1 auto;
   display: grid;
-  gap: 12px;
+  gap: var(--ritmo-space-m);
 }
 .ritmo-balance__row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--ritmo-space-s);
 }
 .ritmo-balance__label {
-  font-size: 14px;
-  color: var(--core-muted);
+  font-size: 15px;
+  color: var(--ritmo-ink-muted);
 }
 .ritmo-balance__value {
   font-size: 17px;
-  font-weight: 500;
-  color: var(--ion-text-color);
+  font-weight: 600;
+  color: var(--ritmo-ink);
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- Barras de macros ---- */
+/* ---- Barras de macros (ProgressBar en `food`) ---- */
 .ritmo-macros {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: var(--ritmo-space-l);
 }
 /* Nombre encima del valor: en tres columnas de ~100px no caben en línea. */
 .ritmo-macro__head {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-bottom: 8px;
+  margin-bottom: var(--ritmo-space-s);
 }
 .ritmo-macro__name {
   font-size: 13px;
-  color: var(--core-muted);
+  color: var(--ritmo-ink-muted);
 }
 .ritmo-macro__value {
   font-size: 15px;
+  font-weight: 600;
   white-space: nowrap;
-  color: var(--ion-text-color);
+  color: var(--ritmo-ink);
   font-variant-numeric: tabular-nums;
 }
 .ritmo-macro__track {
   height: 6px;
-  border-radius: 999px;
-  background: var(--core-surface-inset);
+  border-radius: var(--ritmo-radius-pill);
+  background: var(--ritmo-bg);
   overflow: hidden;
 }
 .ritmo-macro__fill {
   height: 100%;
-  border-radius: 999px;
-  background: var(--ion-color-primary);
-  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.ritmo-macro--carbs .ritmo-macro__fill {
-  background: var(--core-purple);
-}
-.ritmo-macro--fat .ritmo-macro__fill {
-  background: var(--core-muted);
+  border-radius: var(--ritmo-radius-pill);
+  background: var(--ritmo-food);
+  transition: width 200ms ease-out;
 }
 
-/* ---- Navegador de día ---- */
-.ritmo-daynav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
+/* ---- Filas del diario (GroupedList) ---- */
+.ritmo-list {
+  padding-left: var(--ritmo-space-xl);
 }
-.ritmo-daynav__label {
-  min-width: 96px;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--ion-text-color);
-}
-
-/* ---- Fila de entrada del diario ---- */
 .ritmo-entry {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  min-height: 56px; /* área táctil iOS HIG */
+  gap: var(--ritmo-space-m);
+  min-height: var(--ritmo-row-l);
+  padding: 8px var(--ritmo-space-s) 8px 0;
 }
+/* Separador que empieza en el texto, no en el borde. */
 .ritmo-entry + .ritmo-entry {
-  border-top: 0.5px solid var(--core-border);
+  border-top: 1px solid var(--ritmo-separator);
 }
 .ritmo-entry__body {
   flex: 1 1 auto;
   min-width: 0;
+  text-align: left;
 }
 .ritmo-entry__name {
   font-size: 16px;
-  color: var(--ion-text-color);
+  line-height: 21px;
+  color: var(--ritmo-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .ritmo-entry__meta {
   font-size: 13px;
-  color: var(--core-muted);
-  margin-top: 2px;
+  line-height: 18px;
+  color: var(--ritmo-ink-muted);
+  margin-top: 1px;
 }
 .ritmo-entry__kcal {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--ion-text-color);
-  font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
+  font-size: 15px;
+  color: var(--ritmo-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.ritmo-entry__kcal--burned {
+  color: var(--ritmo-activity-ink);
+  font-weight: 600;
+}
+.ritmo-entry__delete {
+  --color: var(--ritmo-chevron);
+  --padding-start: 8px;
+  --padding-end: 8px;
+  min-height: var(--ritmo-control);
+  margin: 0;
+}
+.ritmo-entry--action {
+  width: 100%;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ritmo-tint);
+  font-size: 16px;
+}
+.ritmo-entry--action .ritmo-entry__body {
+  color: var(--ritmo-tint);
 }
 
-/* ---- Gráfica de peso ---- */
+/* ---- Gráfica de peso (`sleep`: sueño y peso) ---- */
 .ritmo-chart {
   width: 100%;
   height: 160px;
@@ -180,23 +263,105 @@
 }
 .ritmo-chart__line {
   fill: none;
-  stroke: var(--ion-color-primary);
-  stroke-width: 2;
+  stroke: var(--ritmo-sleep);
+  stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 .ritmo-chart__area {
-  fill: var(--core-tint-clay);
+  fill: var(--ritmo-sleep-soft);
   stroke: none;
 }
 .ritmo-chart__dot {
-  fill: var(--ion-color-primary);
+  fill: var(--ritmo-sleep);
 }
 .ritmo-chart__grid {
-  stroke: var(--core-border);
-  stroke-width: 0.5;
+  stroke: var(--ritmo-separator);
+  stroke-width: 1;
 }
 .ritmo-chart__axis {
   font-size: 11px;
-  fill: var(--core-muted);
+  font-weight: 500;
+  fill: var(--ritmo-ink-muted);
+}
+
+/* ---- Hojas: barra "Cancelar · Título · Acción" (NavBar en hoja) ---- */
+ion-modal.ritmo-sheet-auto {
+  --height: auto;
+}
+.ritmo-sheet-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.ritmo-sheet-bar__action {
+  justify-self: start;
+  min-height: var(--ritmo-control);
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ritmo-tint);
+  font: inherit;
+  font-size: 17px;
+  cursor: pointer;
+}
+.ritmo-sheet-bar__title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ritmo-ink);
+}
+
+/* ---- Hoja Registrar ---- */
+.ritmo-register {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-l);
+  padding: var(--ritmo-space-l) var(--ritmo-space-xl)
+    calc(var(--ritmo-space-4xl) + env(safe-area-inset-bottom, 0px));
+}
+.ritmo-register__hint {
+  padding: 0 4px;
+}
+.ritmo-register__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ritmo-space-s);
+}
+.ritmo-register__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ritmo-space-xs);
+  padding: var(--ritmo-space-m) 4px;
+  border: 0;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.ritmo-register__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+.ritmo-register__icon--food {
+  background: var(--ritmo-food-soft);
+  color: var(--ritmo-food-ink);
+}
+.ritmo-register__icon--activity {
+  background: var(--ritmo-activity-soft);
+  color: var(--ritmo-activity-ink);
+}
+.ritmo-register__icon--sleep {
+  background: var(--ritmo-sleep-soft);
+  color: var(--ritmo-sleep-ink);
+}
+.ritmo-register__label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
 }

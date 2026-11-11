@@ -1,4 +1,5 @@
 import {
+  IonBackButton,
   IonButton,
   IonButtons,
   IonContent,
@@ -120,6 +121,10 @@ export default function NotificationsPage() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+          {/* En Ritmo, se abre desde la campana de Hoy (ya no es pestaña). */}
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/tabs/today" text="Hoy" />
+          </IonButtons>
           <IonTitle>Notificaciones</IonTitle>
           <IonButtons slot="end">
             {unread > 0 ? (

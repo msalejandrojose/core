@@ -21,6 +21,8 @@ import {
 } from './api';
 import { useRitmoStore } from './ritmo.store';
 import { tapSuccess } from './haptics';
+import { formatKcal } from './format';
+import { snackbar } from '@/lib/snackbar';
 import { ErrorState, SkeletonList } from '@/components/ux';
 import { toast } from '@/lib/toast';
 
@@ -76,7 +78,7 @@ export function LogActivitySheet({ isOpen, onClose }: LogActivitySheetProps) {
     if (!typeId || !valid) return;
     setSaving(true);
     try {
-      await ritmoApi.logActivity({
+      const session = await ritmoApi.logActivity({
         activityTypeId: typeId,
         // El día visible puede no ser hoy (se puede rellenar ayer), así que la
         // hora de inicio se ancla a mediodía de ESE día: sin hora real, el
@@ -87,7 +89,17 @@ export function LogActivitySheet({ isOpen, onClose }: LogActivitySheetProps) {
       });
       await refreshDay();
       void tapSuccess();
-      toast.success('Actividad registrada');
+      snackbar.undo(
+        `Entreno registrado · ${formatKcal(session.kcalBurned)} kcal`,
+        async () => {
+          try {
+            await ritmoApi.deleteActivity(session.id);
+            await refreshDay();
+          } catch {
+            toast.error('No se pudo deshacer');
+          }
+        },
+      );
       onClose();
     } catch (e) {
       if (isApiError(e) && e.code === 'RITMO_WEIGHT_UNKNOWN') {
@@ -156,7 +168,7 @@ export function LogActivitySheet({ isOpen, onClose }: LogActivitySheetProps) {
                     textAlign: 'left',
                   }}
                 >
-                  <span className="core-tint-icon">
+                  <span className="core-tint-icon core-tint-icon--activity">
                     <IonIcon icon={barbellOutline} aria-hidden="true" />
                   </span>
                   <span

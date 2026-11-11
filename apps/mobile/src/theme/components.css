@@ -1,128 +1,396 @@
 /* ============================================================================
- * Core DS → recetas de componentes (app mobile)  ·  MOB-02
+ * Ritmo DS → recetas de componentes (app mobile)
  * ----------------------------------------------------------------------------
- * Overrides de componentes Ionic + clases utilitarias con los tokens de
- * tokens.css. Se hace por CSS (no por `style` inline) porque es la vía idiomática
- * para las CSS custom props de Ionic y para no repetir estilos por pantalla.
+ * Overrides de Ionic + clases utilitarias con los tokens de `tokens.css`. Cada
+ * bloque sigue la anatomía del componente homónimo del Ritmo Design System.
+ * Las clases `core-*` se conservan con su nombre para no romper las pantallas
+ * del shell base; su aspecto ya es el de Ritmo.
  * ========================================================================== */
 
-/* ---- Botones: radio del DS, sin sombra, sin uppercase ---- */
+body {
+  font-family: var(--ritmo-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ritmo-tint);
+  outline-offset: 2px;
+}
+
+/* ============================== Button ==================================== */
+/* Principal: tint + on-tint, alto control-l, radius-xl, headline. */
 ion-button {
-  --border-radius: var(--core-radius-md);
+  --border-radius: var(--ritmo-radius-xl);
   --box-shadow: none;
   text-transform: none;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+ion-button[size='large'],
+ion-button[expand='block'] {
+  min-height: var(--ritmo-control-l);
+  font-size: 17px;
+}
+/* Secundario tintado: tint-soft con texto tint ("Otra", "+ Lo de siempre"). */
+ion-button.ritmo-btn-soft {
+  --background: var(--ritmo-tint-soft);
+  --background-activated: var(--ritmo-tint-soft);
+  --background-hover: var(--ritmo-tint-soft);
+  --color: var(--ritmo-tint);
+}
+/* Deshabilitado: surface-fill + ink-muted en los botones con relleno; los de
+ * texto o icono solo apagan el color. */
+ion-button[disabled]:not([fill='clear']):not([fill='outline']) {
+  --background: var(--ritmo-surface-fill);
+  --color: var(--ritmo-ink-muted);
+  opacity: 1;
+}
+ion-button[disabled][fill='clear'] {
+  --color: var(--ritmo-chevron);
+  opacity: 1;
 }
 
-/* ---- Inputs inset ---- */
-ion-input.core-field {
-  --border-radius: var(--core-radius-md);
-  --highlight-color-focused: var(--ion-color-primary);
+/* ============================== Campos ==================================== */
+ion-input.core-field,
+ion-textarea.core-field {
+  --border-radius: var(--ritmo-radius-l);
+  --highlight-color-focused: var(--ritmo-tint);
   margin-top: 2px;
 }
-
-/* ---- Tab bar / toolbar: hairline sutil + safe-area ---- */
-ion-tab-bar {
-  --border: 0.5px solid var(--core-border);
+ion-searchbar {
+  --background: var(--ritmo-surface-fill);
+  --border-radius: var(--ritmo-radius-l);
+  --box-shadow: none;
+  --placeholder-color: var(--ritmo-ink-muted);
+  --icon-color: var(--ritmo-ink-muted);
+  padding-inline: 0;
 }
+
+/* ============================== NavBar ==================================== */
 ion-toolbar {
-  --border-color: var(--core-border);
+  --background: var(--ritmo-bg);
+  --border-width: 0 !important;
+  --color: var(--ritmo-ink);
+}
+ion-header ion-toolbar ion-button {
+  --color: var(--ritmo-tint);
+  font-weight: 400;
+  font-size: 17px;
+}
+ion-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+/* Hojas modales: asa en border-strong y radio 3xl arriba. */
+ion-modal {
+  --border-radius: var(--ritmo-radius-3xl);
+  --background: var(--ritmo-bg);
+  --backdrop-opacity: 0.32;
+}
+ion-modal::part(handle) {
+  background: var(--ritmo-border-strong);
+  width: 36px;
+  height: 5px;
+}
+
+/* ============================== TabBar ==================================== */
+/* Alto tabbar, fondo translúcido con desenfoque y borde superior en border.
+ * Cinco columnas: Hoy · Plan · + · Progreso · Social. */
+ion-tab-bar {
+  --background: var(--ritmo-tabbar-bg);
+  --border: 1px solid var(--ritmo-border);
+  --color: var(--ritmo-ink-muted);
+  --color-selected: var(--ritmo-tint);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+ion-tab-button {
+  --color: var(--ritmo-ink-muted);
+  --color-selected: var(--ritmo-tint);
+  font-size: 10px;
+  font-weight: 500;
+}
+ion-tab-button.tab-selected {
+  font-weight: 600;
+}
+ion-tab-button ion-label {
+  font-size: 10px;
+  margin-top: 2px;
+}
+ion-tab-button ion-icon {
+  font-size: 24px;
+}
+/* Botón + central: 48px en tint con shadow-fab. */
+.ritmo-tab-register {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ritmo-control);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.ritmo-tab-register__fab {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--ritmo-tint);
+  color: var(--ritmo-on-tint);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--ritmo-shadow-fab);
+}
+.ritmo-tab-register__fab ion-icon {
+  font-size: 26px;
+  color: var(--ritmo-on-tint);
 }
 
 /* ============================ Tipografía ================================== */
-
-/* Wordmark / display serif (pantallas de marca, login). DS §3. */
-.core-display {
-  font-family: var(--core-font-serif);
-  font-size: 40px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-  color: var(--ion-text-color);
+/* large-title: una vez por pantalla. */
+.core-display,
+.core-title,
+.ritmo-large-title {
+  font-family: var(--ritmo-font-sans);
+  font-size: 34px;
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--ritmo-ink);
   margin: 0;
 }
-
-/* Título de pantalla grande (saludo, cabecera editorial). */
-.core-title {
-  font-family: var(--core-font-serif);
+/* title-1: detalle o paso de alta. */
+.ritmo-title-1 {
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 700;
+  margin: 0;
+}
+/* title-3: título de tarjeta. */
+.ritmo-title-3 {
+  font-size: 20px;
+  line-height: 25px;
+  font-weight: 700;
+  margin: 0;
+}
+/* metric: la cifra protagonista de un bloque. */
+.ritmo-metric {
   font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  color: var(--ion-text-color);
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
+}
+.core-subtitle,
+.ritmo-subhead {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ritmo-ink-muted);
   margin: 0;
 }
-
-/* Subtítulo / caption bajo un título. */
-.core-subtitle {
+.ritmo-callout {
   font-size: 15px;
-  color: var(--core-muted);
-  margin: 0;
+  line-height: 20px;
+  color: var(--ritmo-ink-2);
 }
-
-/* Cabecera de sección tipo iOS (Ajustes): minúsculas, muted, sin mayúsculas. */
+/* Kicker sobre el título grande ("JUEVES, 5 DE NOVIEMBRE"). */
+.ritmo-kicker {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ritmo-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+/* section-header de GroupedList: mayúsculas, ink-muted, a 16px del borde. */
 .core-section-label {
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 400;
-  color: var(--core-muted);
-  margin: 0 0 8px 4px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  color: var(--ritmo-ink-muted);
+  margin: 0 0 var(--ritmo-space-xs) var(--ritmo-space-xl);
 }
 
-/* ============================ Superficies ================================= */
-
-/* Bloque de filas agrupadas sobre el fondo (tarjeta redondeada, elevación 1). */
+/* ======================= GroupedList y Card =============================== */
+/* Sin bordes ni sombras: se separan del fondo por color. */
 .core-group {
-  background: var(--core-surface);
-  border-radius: var(--core-radius);
-  box-shadow: var(--core-elevation-1);
+  background: var(--ritmo-surface);
+  border-radius: var(--ritmo-radius-2xl);
+  box-shadow: none;
   overflow: hidden;
 }
-
-/* Tarjeta suelta (elevación 1, radio grande). */
 .core-card {
-  background: var(--core-surface);
-  border-radius: var(--core-radius);
-  box-shadow: var(--core-elevation-1);
-  padding: 16px;
+  background: var(--ritmo-surface);
+  border-radius: var(--ritmo-radius-2xl);
+  box-shadow: none;
+  padding: var(--ritmo-space-xl);
+}
+.ritmo-hero-card {
+  background: var(--ritmo-surface);
+  border-radius: var(--ritmo-radius-3xl);
+  padding: var(--ritmo-space-xl);
+}
+/* Listas de Ionic dentro de un grupo: separador que empieza en el texto. */
+ion-list.core-list,
+.core-group ion-list {
+  background: transparent;
+  padding: 0;
+}
+.core-group ion-item {
+  --background: var(--ritmo-surface);
+  --border-color: var(--ritmo-separator);
+  --min-height: var(--ritmo-row);
+  --padding-start: var(--ritmo-space-xl);
+  --inner-padding-end: var(--ritmo-space-l);
+}
+.core-group ion-item:last-of-type {
+  --border-width: 0;
+  --inner-border-width: 0;
+}
+ion-item {
+  --detail-icon-color: var(--ritmo-chevron);
+  --detail-icon-opacity: 1;
 }
 
-/* Avatar de icono con tinte de categoría (DS §7 / patterns §5). Envuelve un
- * IonIcon: fondo tintado al 12% + icono al color pleno. */
+/* Icono de fila: 32px en cuadrado radius-s con fondo -soft del dominio. */
 .core-tint-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--core-radius-md);
-  background: var(--core-tint-clay);
-  color: var(--core-clay);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ritmo-radius-s);
+  background: var(--ritmo-tint-soft);
+  color: var(--ritmo-tint);
   flex: 0 0 auto;
 }
-.core-tint-icon.core-tint-icon--purple {
-  background: var(--core-tint-purple);
-  color: var(--core-purple);
-}
 .core-tint-icon ion-icon {
-  font-size: 20px;
+  font-size: 18px;
+}
+.core-tint-icon--purple,
+.core-tint-icon--sleep {
+  background: var(--ritmo-sleep-soft);
+  color: var(--ritmo-sleep-ink);
+}
+.core-tint-icon--activity {
+  background: var(--ritmo-activity-soft);
+  color: var(--ritmo-activity-ink);
+}
+.core-tint-icon--food {
+  background: var(--ritmo-food-soft);
+  color: var(--ritmo-food-ink);
+}
+.core-tint-icon--heart {
+  background: var(--ritmo-heart-soft);
+  color: var(--ritmo-heart-ink);
 }
 
-/* ============================ Segmented / pills =========================== */
-
-/* Segmented control tipo pill (DS §8 / patterns §4). La activa es superficie
- * sólida oscura sobre el track inset. */
+/* ========================= SegmentedControl =============================== */
+/* Pista surface-fill con radius-l y 2px de relleno; seleccionado en surface
+ * con radius-m, shadow-thumb y peso 600. */
 ion-segment.core-segment {
-  --background: var(--core-surface-inset);
-  border-radius: var(--core-radius);
-  padding: 3px;
+  --background: var(--ritmo-surface-fill);
+  border-radius: var(--ritmo-radius-l);
+  padding: 2px;
 }
 ion-segment.core-segment ion-segment-button {
-  --background-checked: var(--ion-text-color);
-  --color: var(--core-muted);
-  --color-checked: var(--ion-background-color);
-  --indicator-color: var(--ion-text-color);
-  --border-radius: var(--core-radius-md);
-  min-height: 34px;
-  text-transform: none;
+  --background-checked: var(--ritmo-surface);
+  --color: var(--ritmo-ink);
+  --color-checked: var(--ritmo-ink);
+  --indicator-color: var(--ritmo-surface);
+  --indicator-box-shadow: var(--ritmo-shadow-thumb);
+  --border-radius: var(--ritmo-radius-m);
+  min-height: var(--ritmo-control);
+  font-size: 15px;
   font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+ion-segment.core-segment ion-segment-button.segment-button-checked {
+  font-weight: 600;
+}
+
+/* =============================== Chip ===================================== */
+.ritmo-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--ritmo-radius-pill);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ritmo-chip--done {
+  color: var(--ritmo-activity-ink);
+  background: var(--ritmo-activity-soft);
+}
+.ritmo-chip--near {
+  color: var(--ritmo-food-ink);
+  background: var(--ritmo-food-soft);
+}
+.ritmo-chip--below {
+  color: var(--ritmo-heart-ink);
+  background: var(--ritmo-danger-soft);
+}
+.ritmo-chip--ongoing {
+  color: var(--ritmo-ink-muted);
+  background: var(--ritmo-bg);
+}
+
+/* ============================= Snackbar =================================== */
+/* Fondo snackbar, texto callout en surface y "Deshacer" en snackbar-link. Va
+ * sobre la tab bar, a space-xl de los lados. */
+.ritmo-snackbar {
+  position: fixed;
+  left: var(--ritmo-space-xl);
+  right: var(--ritmo-space-xl);
+  bottom: calc(var(--ritmo-tabbar) + var(--ritmo-space-s) + env(safe-area-inset-bottom, 0px));
+  z-index: 30000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 8px 0 16px;
+  border-radius: var(--ritmo-radius-xl);
+  background: var(--ritmo-snackbar);
+  color: var(--ritmo-surface);
+  box-shadow: var(--ritmo-shadow-float);
+  animation: ritmo-snackbar-in 180ms ease-out;
+}
+.ritmo-snackbar__text {
+  flex: 1;
+  font-size: 15px;
+  line-height: 20px;
+}
+.ritmo-snackbar__action {
+  min-height: var(--ritmo-control);
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--ritmo-snackbar-link);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ritmo-snackbar__action:focus-visible {
+  outline: 2px solid var(--ritmo-snackbar-link);
+  border-radius: 8px;
+}
+@keyframes ritmo-snackbar-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ritmo-snackbar {
+    animation: none;
+  }
 }
