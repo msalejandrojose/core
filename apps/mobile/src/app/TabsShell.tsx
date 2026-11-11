@@ -16,9 +16,9 @@ import {
   settingsOutline,
   trendingUpOutline,
 } from 'ionicons/icons';
-import TodayPage from '@/features/nutre/TodayPage';
-import ProgressPage from '@/features/nutre/ProgressPage';
-import OnboardingPage from '@/features/nutre/OnboardingPage';
+import TodayPage from '@/features/ritmo/TodayPage';
+import ProgressPage from '@/features/ritmo/ProgressPage';
+import OnboardingPage from '@/features/ritmo/OnboardingPage';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import SettingsPage from '@/features/settings/SettingsPage';
 import AppearancePage from '@/features/settings/AppearancePage';
@@ -28,7 +28,7 @@ import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { usePushNotifications } from '@/features/notifications/use-push-notifications';
 
 /**
- * Shell del área autenticada de Nutre: tab bar inferior (Hoy / Progreso /
+ * Shell del área autenticada de Ritmo: tab bar inferior (Hoy / Progreso /
  * Notificaciones / Ajustes) sobre un `IonRouterOutlet`, cada tab con su propio
  * stack de navegación. La ruta base `/tabs/today` y un fallback cubren
  * cualquier ruta no reconocida (p. ej. venir de `/login` tras autenticarse).

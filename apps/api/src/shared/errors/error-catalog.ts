@@ -594,33 +594,33 @@ export const ERROR_CATALOG = {
     defaultMessage: 'No se pudo enviar el mensaje de WhatsApp.',
   },
 
-  // Nutre (actividad física y calorías)
-  NUTRE_PROFILE_NOT_FOUND: {
+  // Ritmo (actividad física y calorías)
+  RITMO_PROFILE_NOT_FOUND: {
     httpStatus: 404,
     level: 'info',
     defaultMessage: 'Todavía no has configurado tu perfil de actividad.',
   },
-  NUTRE_ACTIVITY_TYPE_NOT_FOUND: {
+  RITMO_ACTIVITY_TYPE_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Tipo de actividad no encontrado.',
   },
-  NUTRE_ACTIVITY_SESSION_NOT_FOUND: {
+  RITMO_ACTIVITY_SESSION_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Sesión de actividad no encontrada.',
   },
-  NUTRE_FOOD_NOT_FOUND: {
+  RITMO_FOOD_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Alimento no encontrado.',
   },
-  NUTRE_MEAL_ENTRY_NOT_FOUND: {
+  RITMO_MEAL_ENTRY_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Entrada de comida no encontrada.',
   },
-  NUTRE_WEIGHT_UNKNOWN: {
+  RITMO_WEIGHT_UNKNOWN: {
     httpStatus: 409,
     level: 'info',
     defaultMessage:
