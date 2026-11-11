@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import {
+  IonBackButton,
   IonButton,
+  IonButtons,
   IonContent,
+  IonHeader,
   IonInput,
   IonItem,
   IonLabel,
@@ -11,6 +14,7 @@ import {
   IonSegmentButton,
   IonSelect,
   IonSelectOption,
+  IonToolbar,
 } from '@ionic/react';
 import {
   isApiError,
@@ -114,7 +118,9 @@ export default function OnboardingPage() {
         isEditing ? 'Objetivo actualizado' : 'Listo',
         isEditing ? undefined : 'Ya puedes empezar a registrar tu día.',
       );
-      history.replace('/tabs/today');
+      // Editando se vuelve a Progreso, que es de donde se llega; en el
+      // onboarding no hay pantalla previa a la que volver.
+      history.replace(isEditing ? '/tabs/progress' : '/tabs/today');
     } catch (e) {
       toast.error(
         'No se pudo guardar tu perfil',
@@ -127,8 +133,20 @@ export default function OnboardingPage() {
 
   return (
     <IonPage>
+      {isEditing ? (
+        <IonHeader className="ion-no-border">
+          <IonToolbar>
+            <IonButtons slot="start">
+              <IonBackButton defaultHref="/tabs/progress" text="Progreso" />
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+      ) : null}
       <IonContent className="ion-padding">
-        <h1 className="core-title" style={{ margin: '32px 4px 6px' }}>
+        <h1
+          className="core-title"
+          style={{ margin: isEditing ? '8px 4px 6px' : '32px 4px 6px' }}
+        >
           {isEditing ? 'Tu objetivo' : 'Vamos a calcular tu objetivo'}
         </h1>
         <p className="core-subtitle" style={{ margin: '0 4px 28px' }}>

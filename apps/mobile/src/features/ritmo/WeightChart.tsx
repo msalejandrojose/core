@@ -26,9 +26,12 @@ export function WeightChart({ points, targetKg }: WeightChartProps) {
   const values = points.map((p) => p.weightKg);
   const rawMin = Math.min(...values, targetKg ?? Infinity);
   const rawMax = Math.max(...values, targetKg ?? -Infinity);
+  // El span mínimo de 2 kg se reparte alrededor del centro: si solo se
+  // acolchara por fuera, con datos planos ambas etiquetas redondearían igual.
   const span = Math.max(rawMax - rawMin, 2);
-  const min = rawMin - span * 0.15;
-  const max = rawMax + span * 0.15;
+  const mid = (rawMin + rawMax) / 2;
+  const min = mid - span / 2 - span * 0.15;
+  const max = mid + span / 2 + span * 0.15;
 
   const innerW = WIDTH - PADDING.left - PADDING.right;
   const innerH = HEIGHT - PADDING.top - PADDING.bottom;

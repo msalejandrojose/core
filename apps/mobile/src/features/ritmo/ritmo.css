@@ -85,18 +85,20 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
+/* Nombre encima del valor: en tres columnas de ~100px no caben en línea. */
 .ritmo-macro__head {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 6px;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
 }
 .ritmo-macro__name {
   font-size: 13px;
   color: var(--core-muted);
 }
 .ritmo-macro__value {
-  font-size: 13px;
+  font-size: 15px;
+  white-space: nowrap;
   color: var(--ion-text-color);
   font-variant-numeric: tabular-nums;
 }

@@ -41,7 +41,7 @@ export function MacroBars({ totals, profile }: MacroBarsProps) {
             <span className="ritmo-macro__name">{macro.name}</span>
             <span className="ritmo-macro__value">
               {macro.target
-                ? `${Math.round(macro.value)}/${macro.target}`
+                ? `${Math.round(macro.value)} / ${macro.target} g`
                 : formatGrams(macro.value)}
             </span>
           </div>

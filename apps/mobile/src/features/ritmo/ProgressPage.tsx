@@ -147,7 +147,7 @@ export default function ProgressPage() {
                     <span className="core-title" style={{ fontSize: 24 }}>
                       {formatWeight(last as number)}
                     </span>
-                    {delta !== null ? (
+                    {delta !== null && weights.length > 1 ? (
                       <span
                         style={{
                           fontSize: 15,
@@ -163,10 +163,18 @@ export default function ProgressPage() {
                       </span>
                     ) : null}
                   </div>
-                  <WeightChart
-                    points={weights}
-                    targetKg={profile?.targetWeightKg ?? null}
-                  />
+                  {weights.length > 1 ? (
+                    <WeightChart
+                      points={weights}
+                      targetKg={profile?.targetWeightKg ?? null}
+                    />
+                  ) : (
+                    // Un solo punto no es una tendencia: mejor decirlo que
+                    // dibujar un punto suelto en mitad de la tarjeta.
+                    <p className="ritmo-entry__meta" style={{ margin: 0 }}>
+                      Registra otra pesada para ver la evolución.
+                    </p>
+                  )}
                 </>
               )}
             </div>
@@ -179,7 +187,9 @@ export default function ProgressPage() {
                 <div className="ritmo-entry__body">
                   <div className="ritmo-entry__name">Calorías comidas</div>
                   <div className="ritmo-entry__meta">
-                    {loggedDays.length} días con registro
+                    {loggedDays.length === 1
+                      ? '1 día con registro'
+                      : `${loggedDays.length} días con registro`}
                   </div>
                 </div>
                 <span className="ritmo-entry__kcal">
