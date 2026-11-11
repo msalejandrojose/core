@@ -1,0 +1,527 @@
+/* Hojas de registro de Ritmo: medidas del lienzo de diseño. */
+
+/* Hojas a pantalla completa (Añadir, Entreno, Copiar): fondo bg. */
+ion-modal.rk-modal-full {
+  --height: 94%;
+  --border-radius: var(--ritmo-radius-3xl);
+  align-items: flex-end;
+}
+ion-modal.rk-modal-full ion-content {
+  --background: var(--ritmo-bg);
+}
+
+/* ---- Registrar ---- */
+.register__hint {
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--ritmo-ink-muted);
+}
+.register__suggest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-m);
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--ritmo-surface);
+}
+.register__suggest-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ritmo-space-m);
+}
+.register__suggest-kicker {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ritmo-food-ink);
+  text-transform: uppercase;
+}
+.register__suggest-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+.register__water {
+  display: flex;
+  align-items: center;
+  gap: var(--ritmo-space-m);
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--ritmo-surface);
+}
+.register__water-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.register__water-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+.register__glasses {
+  display: flex;
+  gap: 4px;
+}
+.register__glasses span {
+  width: 14px;
+  height: 20px;
+  border-radius: 3px 3px 5px 5px;
+  background: var(--ritmo-separator);
+}
+.register__glasses span.is-full {
+  background: var(--ritmo-info);
+}
+.register__water-btn {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--ritmo-radius-l);
+  background: var(--ritmo-bg);
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 22px;
+  cursor: pointer;
+}
+.register__water-btn--plus {
+  background: var(--ritmo-tint-soft);
+  color: var(--ritmo-tint);
+}
+.register__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ritmo-space-s);
+}
+.register__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 4px;
+  border: 0;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.register__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.register__icon--food {
+  background: var(--ritmo-food-soft);
+  color: var(--ritmo-food-ink);
+}
+.register__icon--activity {
+  background: var(--ritmo-activity-soft);
+  color: var(--ritmo-activity-ink);
+}
+.register__icon--sleep {
+  background: var(--ritmo-sleep-soft);
+  color: var(--ritmo-sleep-ink);
+}
+.register__label {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* ---- Añadir alimento ---- */
+.addfood {
+  gap: var(--ritmo-space-m);
+  padding-bottom: 120px; /* deja sitio a la barra fija de abajo */
+}
+.addfood__hint {
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--ritmo-ink-muted);
+}
+.addfood__combos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.addfood__combo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-s);
+  padding: 12px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+}
+.addfood__combo-icons {
+  display: flex;
+  padding-right: 36px;
+}
+.addfood__combo-name {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.addfood__combo-meta {
+  font-size: 12px;
+  color: var(--ritmo-ink-muted);
+}
+.addfood__combo-add {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: var(--ritmo-tint-soft);
+  color: var(--ritmo-tint);
+}
+.addfood__combo-add.is-on {
+  background: var(--ritmo-tint);
+  color: var(--ritmo-on-tint);
+}
+.addfood__freq {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 4px;
+  padding: 12px 6px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+}
+.addfood__freq-item {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--ritmo-ink);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.addfood__freq-bubble {
+  position: relative;
+  display: flex;
+}
+.addfood__freq-check {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--ritmo-surface);
+  box-sizing: border-box;
+  background: var(--ritmo-tint);
+  color: var(--ritmo-on-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.addfood__freq-name {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+}
+.addfood__freq-kcal {
+  font-size: 11px;
+  color: var(--ritmo-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.addfood__list {
+  padding-left: 12px;
+}
+.addfood__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+}
+.addfood__list > .addfood__item + .addfood__item {
+  border-top: 0;
+}
+.addfood__cell {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 6px 0;
+}
+.addfood__item + .addfood__item .addfood__cell {
+  border-top: 1px solid var(--ritmo-separator);
+}
+.addfood__kcal input {
+  width: 64px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--ritmo-radius-m);
+  background: var(--ritmo-surface-fill);
+  font: inherit;
+  font-size: 15px;
+  text-align: right;
+  color: var(--ritmo-ink);
+}
+.addfood__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  box-sizing: border-box;
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: var(--ritmo-space-m);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--ritmo-border);
+}
+.addfood__bar-count {
+  font-size: 15px;
+  font-weight: 600;
+}
+.addfood__bar .rk-btn {
+  flex: none;
+  padding: 0 26px;
+}
+
+/* ---- Registrar entreno ---- */
+.workout__info {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--ritmo-radius-xl);
+  background: var(--ritmo-tint-soft);
+  color: var(--ritmo-tint);
+}
+.workout__info span {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ritmo-ink);
+}
+.workout__types {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ritmo-space-s);
+}
+.workout__type {
+  min-height: 70px;
+  padding: 8px 4px;
+  border-radius: var(--ritmo-radius-xl);
+  border: 2px solid transparent;
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.workout__type span {
+  font-size: 13px;
+  font-weight: 600;
+}
+.workout__type[aria-pressed='true'] {
+  border-color: var(--ritmo-tint);
+  background: var(--ritmo-tint-soft);
+  color: var(--ritmo-tint);
+}
+.workout__others {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ritmo-space-xs);
+  padding-top: 4px;
+}
+.workout__chip {
+  min-height: var(--ritmo-control);
+  padding: 0 14px;
+  border-radius: var(--ritmo-radius-pill);
+  border: 1px solid var(--ritmo-border);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.workout__chip[aria-pressed='true'] {
+  background: var(--ritmo-tint);
+  border-color: var(--ritmo-tint);
+  color: var(--ritmo-on-tint);
+}
+.workout__row {
+  min-height: 56px;
+  padding-right: 10px;
+}
+.workout__when {
+  font-size: 16px;
+}
+.workout__estimate {
+  display: flex;
+  align-items: center;
+  gap: var(--ritmo-space-m);
+  padding: 12px 14px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+}
+.workout__estimate span {
+  flex: 1;
+  font-size: 15px;
+  color: var(--ritmo-ink-2);
+}
+.workout__estimate strong {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ritmo-activity-ink);
+  font-variant-numeric: tabular-nums;
+}
+.workout__save {
+  margin-top: 6px;
+}
+
+/* ---- Peso ---- */
+.weight__card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 18px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+}
+.weight__step {
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ritmo-bg);
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 26px;
+  cursor: pointer;
+}
+.weight__value {
+  min-width: 140px;
+  text-align: center;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+.weight__value span {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ritmo-ink-muted);
+  letter-spacing: 0;
+}
+.weight__note {
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--ritmo-ink-muted);
+  text-align: center;
+}
+
+/* ---- Copiar comidas ---- */
+.copy__days {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ritmo-space-s);
+}
+.copy__day {
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 0;
+  border-radius: var(--ritmo-radius-xl);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.copy__day-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+.copy__day-sub {
+  font-size: 12px;
+  color: var(--ritmo-ink-muted);
+}
+.copy__day[aria-pressed='true'] {
+  background: var(--ritmo-tint);
+  color: var(--ritmo-on-tint);
+}
+.copy__day[aria-pressed='true'] .copy__day-sub {
+  color: var(--ritmo-on-tint);
+}
+.copy__all {
+  font-size: 15px;
+}
+.copy__list {
+  padding-left: 6px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  overflow: hidden;
+}
+.copy__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 58px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--ritmo-ink);
+  cursor: pointer;
+  text-align: left;
+}
+.copy__check {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.copy__cell {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 4px;
+}
+.copy__row + .copy__row .copy__cell {
+  border-top: 1px solid var(--ritmo-separator);
+}
+.copy__target {
+  min-height: 50px;
+  padding: 0 16px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+}
+.copy__hint {
+  margin-top: -6px;
+}
+.copy__go {
+  margin-top: 8px;
+}

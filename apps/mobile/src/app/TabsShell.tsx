@@ -24,6 +24,11 @@ import ProgressPage from '@/features/ritmo/ProgressPage';
 import OnboardingPage from '@/features/ritmo/OnboardingPage';
 import { ComingSoonPage } from '@/features/ritmo/ComingSoonPage';
 import { RegisterSheets } from '@/features/ritmo/RegisterSheets';
+import FoodDayPage from '@/features/ritmo/pages/FoodDayPage';
+import RecipesPage from '@/features/ritmo/pages/RecipesPage';
+import NewRecipePage from '@/features/ritmo/pages/NewRecipePage';
+import RecoveryPage from '@/features/ritmo/pages/RecoveryPage';
+import AlertsPage from '@/features/ritmo/pages/AlertsPage';
 import { useRegisterStore } from '@/features/ritmo/register.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import SettingsPage from '@/features/settings/SettingsPage';
@@ -124,6 +129,11 @@ export default function TabsShell() {
         <IonRouterOutlet>
           <Route exact path="/tabs/today" component={TodayPage} />
           <Route exact path="/tabs/today/onboarding" component={OnboardingPage} />
+          <Route exact path="/tabs/today/comida" component={FoodDayPage} />
+          <Route exact path="/tabs/today/recetas" component={RecipesPage} />
+          <Route exact path="/tabs/today/recetas/nueva" component={NewRecipePage} />
+          <Route exact path="/tabs/today/recuperacion" component={RecoveryPage} />
+          <Route exact path="/tabs/today/avisos" component={AlertsPage} />
           <Route exact path="/tabs/plan" component={PlanPage} />
           <Route exact path="/tabs/progress" component={ProgressPage} />
           {/* Editar el objetivo reutiliza la pantalla de onboarding. */}

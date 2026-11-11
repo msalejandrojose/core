@@ -155,6 +155,33 @@ export interface LogMealBody {
   fatG?: number;
 }
 
+/** Un alimento tal y como se volvería a registrar (su última cantidad). */
+export interface HabitItem {
+  key: string;
+  foodId: string | null;
+  name: string;
+  quantityG: number;
+  kcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  count: number;
+  lastOn: string;
+}
+
+export interface HabitCombo {
+  items: HabitItem[];
+  count: number;
+  kcal: number;
+}
+
+/** Lo de siempre, frecuentes y recientes de un momento del día. */
+export interface MealHabits {
+  combos: HabitCombo[];
+  frequent: HabitItem[];
+  recent: HabitItem[];
+}
+
 export interface LogActivityBody {
   activityTypeId: string;
   startedAt: string;
@@ -245,4 +272,8 @@ export const ritmoApi = {
   logMeal: (body: LogMealBody) =>
     call<MealEntry>('POST', '/ritmo/meals', { body }),
   deleteMeal: (id: string) => call<void>('DELETE', `/ritmo/meals/${id}`),
+  mealHabits: (mealType: MealType) =>
+    call<MealHabits>('GET', '/ritmo/meals/habits', {
+      params: { query: { mealType } },
+    }),
 };

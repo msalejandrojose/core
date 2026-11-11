@@ -8,6 +8,7 @@ import {
   formatWeight,
   mealForHour,
   longDate,
+  joinNames,
   formatNumber,
   ratio,
 } from './format';
@@ -105,5 +106,13 @@ describe('mealForHour', () => {
 describe('longDate', () => {
   it('escribe el día de la semana y el mes en español', () => {
     expect(longDate('2026-11-11')).toBe('miércoles, 11 de noviembre');
+  });
+});
+
+describe('joinNames', () => {
+  it('une como se diría en español', () => {
+    expect(joinNames(['Huevo entero'])).toBe('Huevo entero');
+    expect(joinNames(['Huevo entero', 'Pan de trigo'])).toBe('Huevo entero y pan de trigo');
+    expect(joinNames(['Avena', 'Leche', 'Plátano'])).toBe('Avena, leche y plátano');
   });
 });

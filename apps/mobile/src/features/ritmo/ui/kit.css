@@ -1,0 +1,424 @@
+/* Piezas comunes del diseño de Ritmo (ver kit.tsx). Solo tokens del DS. */
+
+.rk-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.rk-chevron {
+  color: var(--ritmo-chevron);
+  flex: none;
+}
+
+/* Pantalla del diseño: bg, márgenes de 16 y bloques a 14px. */
+.rk-screen {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-l);
+  padding: calc(8px + env(safe-area-inset-top, 0px)) var(--ritmo-space-xl) var(--ritmo-space-4xl);
+  background: var(--ritmo-bg);
+  color: var(--ritmo-ink);
+}
+.rk-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-l);
+  padding: var(--ritmo-space-l) var(--ritmo-space-xl) calc(var(--ritmo-space-3xl) + env(safe-area-inset-bottom, 0px));
+  color: var(--ritmo-ink);
+}
+
+/* Volver / acciones de texto en tint. */
+.rk-back,
+.rk-textbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--ritmo-control);
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ritmo-tint);
+  font: inherit;
+  font-size: 17px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.rk-back {
+  padding-left: 0;
+  padding-right: 8px;
+}
+.rk-textbtn--strong {
+  font-weight: 600;
+}
+.rk-textbtn:disabled {
+  color: var(--ritmo-ink-muted);
+  cursor: default;
+}
+.rk-iconbtn {
+  width: var(--ritmo-control);
+  height: var(--ritmo-control);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ritmo-tint);
+  cursor: pointer;
+  position: relative;
+}
+.rk-navrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--ritmo-control);
+}
+.rk-navrow__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Título grande (large-title) con subtítulo opcional. */
+.rk-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 4px;
+}
+.rk-title h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.rk-title__sub {
+  font-size: 15px;
+  color: var(--ritmo-ink-muted);
+}
+
+/* Barra de hoja. */
+.rk-sheetbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.rk-sheetbar > :first-child {
+  justify-self: start;
+}
+.rk-sheetbar__title {
+  font-size: 17px;
+  font-weight: 600;
+}
+.rk-sheetbar__end {
+  justify-self: end;
+}
+
+/* Cabecera de sección (section-header). */
+.rk-sechead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 0 16px;
+}
+.rk-sechead h2 {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+  color: var(--ritmo-ink-muted);
+  text-transform: uppercase;
+}
+.rk-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-xs);
+}
+.rk-note {
+  margin: 0;
+  padding: 0 16px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ritmo-ink-muted);
+}
+
+/* Tarjetas y listas agrupadas. */
+.rk-card {
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  padding: var(--ritmo-space-xl);
+}
+.rk-hero {
+  border-radius: 20px;
+  background: var(--ritmo-surface);
+  padding: var(--ritmo-space-xl);
+}
+.rk-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 16px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  overflow: hidden;
+}
+.rk-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--ritmo-row);
+  padding-right: 16px;
+  color: var(--ritmo-ink);
+  text-decoration: none;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+button.rk-row,
+a.rk-row {
+  cursor: pointer;
+}
+.rk-row + .rk-row,
+.rk-list > li + li > .rk-row,
+.rk-list > li + li {
+  border-top: 1px solid var(--ritmo-separator);
+}
+.rk-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.rk-row__title {
+  font-size: 16px;
+  line-height: 21px;
+}
+.rk-row__sub {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ritmo-ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rk-row__value {
+  font-size: 15px;
+  color: var(--ritmo-ink-muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* Botones de pantalla. */
+.rk-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--ritmo-control-l);
+  padding: 0 22px;
+  border: 0;
+  border-radius: var(--ritmo-radius-xl);
+  background: var(--ritmo-tint);
+  color: var(--ritmo-on-tint);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.rk-btn:active {
+  background: var(--ritmo-tint-pressed);
+}
+.rk-btn--soft {
+  background: var(--ritmo-tint-soft);
+  color: var(--ritmo-tint);
+}
+.rk-btn--done {
+  background: var(--ritmo-activity-soft);
+  color: var(--ritmo-activity-ink);
+}
+.rk-btn:disabled {
+  background: var(--ritmo-surface-fill);
+  color: var(--ritmo-ink-muted);
+  cursor: default;
+}
+.rk-btn--small {
+  min-height: 48px;
+  font-size: 16px;
+}
+.rk-tilebtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--ritmo-control);
+  border: 0;
+  border-radius: var(--ritmo-radius-l);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-tint);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* Contador ±. */
+.rk-stepper {
+  display: flex;
+  align-items: center;
+  border-radius: var(--ritmo-radius-m);
+  background: var(--ritmo-surface-fill);
+}
+.rk-stepper button {
+  width: 44px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+.rk-stepper span {
+  min-width: 26px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Segmentado. */
+.rk-seg {
+  display: grid;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--ritmo-radius-l);
+  background: var(--ritmo-surface-fill);
+}
+.rk-seg button {
+  min-height: var(--ritmo-control);
+  border: 0;
+  border-radius: var(--ritmo-radius-m);
+  background: transparent;
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.rk-seg--small button {
+  font-size: 14px;
+}
+.rk-seg button[aria-pressed='true'] {
+  background: var(--ritmo-surface);
+  font-weight: 600;
+  box-shadow: var(--ritmo-shadow-thumb);
+}
+
+/* Buscador. */
+.rk-search {
+  position: relative;
+  /* Sin crecer: dentro de una columna flex, `flex: 1` repartiría el alto. */
+  flex: 0 0 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--ritmo-control);
+  padding: 0 10px;
+  box-sizing: border-box;
+  border-radius: var(--ritmo-radius-l);
+  background: var(--ritmo-surface-fill);
+  color: var(--ritmo-ink-muted);
+}
+.rk-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 16px;
+}
+.rk-search input::placeholder {
+  color: var(--ritmo-ink-muted);
+}
+
+/* Interruptor. */
+.rk-switch {
+  width: 51px;
+  height: 31px;
+  flex: none;
+  box-sizing: border-box;
+  padding: 2px;
+  border-radius: var(--ritmo-radius-pill);
+  background: var(--ritmo-surface-fill-2);
+  display: flex;
+  justify-content: flex-start;
+  transition: background 200ms;
+}
+.rk-switch > span {
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--ritmo-surface);
+  box-shadow: var(--ritmo-shadow-knob);
+}
+.rk-switch--on {
+  background: var(--ritmo-activity);
+  justify-content: flex-end;
+}
+
+/* Kicker de tarjeta ("AHORA TOCA"). */
+.rk-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ritmo-tint);
+}
+
+/* Marca de datos de ejemplo. */
+.rk-example {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: var(--ritmo-radius-pill);
+  background: var(--ritmo-bg);
+  color: var(--ritmo-ink-muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+/* Asa de las hojas a medida (cuando no la pinta Ionic). */
+.rk-grab {
+  align-self: center;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ritmo-border-strong);
+}
+
+/* En una fila (buscador + botones) sí ocupa el ancho sobrante. */
+.rk-search-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.rk-search-row > .rk-search {
+  flex: 1;
+}
