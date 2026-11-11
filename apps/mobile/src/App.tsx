@@ -8,6 +8,9 @@ import LoginPage from '@/features/auth/LoginPage';
 import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage';
 import VerifyEmailPage from '@/features/auth/VerifyEmailPage';
+import EmailAuthPage from '@/features/auth/EmailAuthPage';
+import SignupProfilePage from '@/features/ritmo/signup/SignupProfilePage';
+import ConnectPage from '@/features/ritmo/signup/ConnectPage';
 import TabsShell from '@/app/TabsShell';
 import { ErrorBoundary, OfflineBanner } from '@/components/ux';
 
@@ -65,6 +68,13 @@ export default function App() {
             />
             <Route
               exact
+              path="/correo"
+              render={() =>
+                isAuthenticated ? <Redirect to={home} /> : <EmailAuthPage />
+              }
+            />
+            <Route
+              exact
               path="/forgot"
               render={() =>
                 isAuthenticated ? (
@@ -72,6 +82,22 @@ export default function App() {
                 ) : (
                   <ForgotPasswordPage />
                 )
+              }
+            />
+
+            {/* Alta de Ritmo: con sesión pero fuera de las pestañas (sin tab bar). */}
+            <Route
+              exact
+              path="/alta/perfil"
+              render={() =>
+                isAuthenticated ? <SignupProfilePage /> : <Redirect to="/login" />
+              }
+            />
+            <Route
+              exact
+              path="/alta/conectar"
+              render={() =>
+                isAuthenticated ? <ConnectPage /> : <Redirect to="/login" />
               }
             />
 

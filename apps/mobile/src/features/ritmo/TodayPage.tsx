@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Redirect } from 'react-router-dom';
-import { IonContent, IonPage, IonRefresher, IonRefresherContent } from '@ionic/react';
+import {
+  IonContent,
+  IonPage,
+  IonRefresher,
+  IonRefresherContent,
+} from '@ionic/react';
 import type { DaySummary, HabitItem, MealHabits, MealType } from './api';
 import {
   MEAL_HOUR,
@@ -24,6 +29,8 @@ import { tapSuccess } from './haptics';
 import { FoodIcon } from './ui/food-icons';
 import { CheckCircle, Chevron, ExampleTag, Icon, Ring } from './ui/kit';
 import { PATHS } from './ui/paths';
+import { FirstDay } from './FirstDay';
+import { isFirstDay } from './first-day';
 import { ErrorState, SkeletonList } from '@/components/ux';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { snackbar } from '@/lib/snackbar';
@@ -41,7 +48,9 @@ const MEAL_LOGGED: Record<MealType, string> = {
 
 /** "¿Te faltan la comida y la merienda? Añádelas con el +." */
 function missedText(missed: MealType[]): string {
-  const withArticle = missed.map((t) => `${t === 'BREAKFAST' ? 'el' : 'la'} ${mealLabel(t).toLowerCase()}`);
+  const withArticle = missed.map(
+    (t) => `${t === 'BREAKFAST' ? 'el' : 'la'} ${mealLabel(t).toLowerCase()}`,
+  );
   if (missed.length === 1) {
     return `¿Te falta ${withArticle[0]}? ${missed[0] === 'BREAKFAST' ? 'Añádelo' : 'Añádela'} con el +.`;
   }
@@ -57,12 +66,27 @@ interface Suggestion {
 }
 
 /** "Lo de siempre" de una comida, o su alimento más frecuente si no hay combinación. */
-function suggestionFor(mealType: MealType, habits: MealHabits | undefined): Suggestion | null {
+function suggestionFor(
+  mealType: MealType,
+  habits: MealHabits | undefined,
+): Suggestion | null {
   if (!habits) return null;
   const combo = habits.combos[0];
-  if (combo) return { mealType, items: combo.items, kcal: combo.kcal, count: combo.count };
+  if (combo)
+    return {
+      mealType,
+      items: combo.items,
+      kcal: combo.kcal,
+      count: combo.count,
+    };
   const top = habits.frequent[0];
-  if (top && top.count >= 2) return { mealType, items: [top], kcal: Math.round(top.kcal), count: top.count };
+  if (top && top.count >= 2)
+    return {
+      mealType,
+      items: [top],
+      kcal: Math.round(top.kcal),
+      count: top.count,
+    };
   return null;
 }
 
@@ -125,7 +149,10 @@ export default function TodayPage() {
   const next = pending[0] ?? null;
   // Comidas de antes de esta hora que se quedaron sin registrar.
   const missed = summary
-    ? MEAL_ORDER.filter((t) => !pending.includes(t) && !summary.meals.some((m) => m.mealType === t))
+    ? MEAL_ORDER.filter(
+        (t) =>
+          !pending.includes(t) && !summary.meals.some((m) => m.mealType === t),
+      )
     : [];
 
   useEffect(() => {
@@ -133,10 +160,11 @@ export default function TodayPage() {
   }, [pending, loadHabits]);
 
   if (profileStatus === 'ready' && needsOnboarding) {
-    return <Redirect to="/tabs/today/onboarding" />;
+    return <Redirect to="/alta/perfil" />;
   }
 
   const suggestion = next ? suggestionFor(next, habitsByMeal[next]) : null;
+  const firstDay = isFirstDay(profile, today, timezone);
   const totals = summary?.totals;
   const remaining = totals?.kcalRemaining ?? null;
 
@@ -148,11 +176,14 @@ export default function TodayPage() {
       invalidateHabits();
       void tapSuccess();
       const kcal = created.reduce((sum, e) => sum + e.kcal, 0);
-      snackbar.undo(`${MEAL_LOGGED[s.mealType]} · ${formatKcal(kcal)} kcal`, async () => {
-        await deleteEntries(created.map((c) => c.id));
-        await refreshDay();
-        invalidateHabits();
-      });
+      snackbar.undo(
+        `${MEAL_LOGGED[s.mealType]} · ${formatKcal(kcal)} kcal`,
+        async () => {
+          await deleteEntries(created.map((c) => c.id));
+          await refreshDay();
+          invalidateHabits();
+        },
+      );
     } catch {
       toast.error('No se pudo registrar');
     } finally {
@@ -163,7 +194,9 @@ export default function TodayPage() {
   // "Hecho hoy": comidas registradas (una fila por momento) y entrenos.
   const done = summary
     ? [
-        ...MEAL_ORDER.filter((t) => summary.meals.some((m) => m.mealType === t)).map((t) => ({
+        ...MEAL_ORDER.filter((t) =>
+          summary.meals.some((m) => m.mealType === t),
+        ).map((t) => ({
           key: t,
           title: mealLabel(t),
           meta: `${formatKcal(summary.meals.filter((m) => m.mealType === t).reduce((s, m) => s + m.kcal, 0))} kcal`,
@@ -195,22 +228,39 @@ export default function TodayPage() {
         <div className="rk-screen today">
           <header className="today-head">
             <span className="today-head__kicker">
-              {longDate(today)} · {nowIn(timezone)}
+              {firstDay
+                ? longDate(today)
+                : `${longDate(today)} · ${nowIn(timezone)}`}
             </span>
             <div className="today-head__row">
               <h1>Hoy</h1>
               <div className="today-head__actions">
+                {firstDay ? null : (
+                  <Link
+                    to="/tabs/today/avisos"
+                    className="rk-iconbtn"
+                    aria-label={
+                      unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos'
+                    }
+                  >
+                    <Icon d={PATHS.bell} />
+                    {unread > 0 ? (
+                      <span className="today-head__dot" aria-hidden="true" />
+                    ) : null}
+                  </Link>
+                )}
                 <Link
-                  to="/tabs/today/avisos"
+                  to="/tabs/settings"
                   className="rk-iconbtn"
-                  aria-label={unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos'}
+                  aria-label="Perfil"
                 >
-                  <Icon d={PATHS.bell} />
-                  {unread > 0 ? <span className="today-head__dot" aria-hidden="true" /> : null}
-                </Link>
-                <Link to="/tabs/settings" className="rk-iconbtn" aria-label="Perfil">
                   <span className="today-avatar" aria-hidden="true">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
                       <circle cx="12" cy="9" r="4" />
                       <path d="M4 21a8 7 0 0 1 16 0z" />
                     </svg>
@@ -221,9 +271,14 @@ export default function TodayPage() {
           </header>
 
           {dayStatus === 'error' ? (
-            <ErrorState message="No se pudo cargar el día." onRetry={() => void loadDay()} />
+            <ErrorState
+              message="No se pudo cargar el día."
+              onRetry={() => void loadDay()}
+            />
           ) : !summary || !totals ? (
             <SkeletonList rows={5} />
+          ) : firstDay ? (
+            <FirstDay profile={profile} summary={summary} />
           ) : (
             <>
               <section aria-labelledby="ahora" className="rk-hero today-now">
@@ -233,7 +288,9 @@ export default function TodayPage() {
                 {next ? (
                   <>
                     <div className="today-now__text">
-                      <span className="today-now__title">{mealLabel(next)}</span>
+                      <span className="today-now__title">
+                        {mealLabel(next)}
+                      </span>
                       <span className="today-now__body">
                         {remaining !== null && remaining > 0
                           ? `Te quedan ${formatKcal(remaining)} kcal.`
@@ -250,7 +307,8 @@ export default function TodayPage() {
                               {joinNames(suggestion.items.map((i) => i.name))}
                             </span>
                             <span className="rk-row__sub">
-                              {formatKcal(suggestion.kcal)} kcal · {suggestion.count} veces
+                              {formatKcal(suggestion.kcal)} kcal ·{' '}
+                              {suggestion.count} veces
                             </span>
                           </span>
                         </div>
@@ -288,7 +346,9 @@ export default function TodayPage() {
                       {missed.length ? 'Nada más por ahora' : 'Día completo'}
                     </span>
                     <span className="today-now__body">
-                      {missed.length ? missedText(missed) : 'Has registrado todas las comidas de hoy.'}
+                      {missed.length
+                        ? missedText(missed)
+                        : 'Has registrado todas las comidas de hoy.'}
                     </span>
                   </div>
                 )}
@@ -314,7 +374,8 @@ export default function TodayPage() {
                         : `${formatKcal(-remaining)} kcal de más`}
                   </span>
                   <span className="rk-row__sub">
-                    Comido {formatKcal(totals.kcalIn)} · entreno {formatKcal(totals.kcalBurned)} kcal
+                    Comido {formatKcal(totals.kcalIn)} · entreno{' '}
+                    {formatKcal(totals.kcalBurned)} kcal
                   </span>
                 </span>
                 <Chevron />
@@ -325,7 +386,9 @@ export default function TodayPage() {
                   58
                 </span>
                 <span className="rk-row__main">
-                  <span className="today-row__title">Recuperación moderada</span>
+                  <span className="today-row__title">
+                    Recuperación moderada
+                  </span>
                   <span className="rk-row__sub">
                     <ExampleTag /> Revisa las series de mañana
                   </span>
@@ -347,7 +410,9 @@ export default function TodayPage() {
                       <span className="rk-row__main">
                         <span className="rk-row__title">{mealLabel(type)}</span>
                         <span className="rk-row__sub">
-                          {s ? `Lo de siempre · ${formatKcal(s.kcal)} kcal` : 'Sin registrar'}
+                          {s
+                            ? `Lo de siempre · ${formatKcal(s.kcal)} kcal`
+                            : 'Sin registrar'}
                         </span>
                       </span>
                       <span className="rk-row__value">{MEAL_HOUR[type]}</span>
@@ -364,7 +429,9 @@ export default function TodayPage() {
                   <span className="rk-row__title today-day__toggle-label">
                     Hecho hoy · {done.length}
                   </span>
-                  <span className={`today-day__chevron${showDone ? ' is-open' : ''}`}>
+                  <span
+                    className={`today-day__chevron${showDone ? ' is-open' : ''}`}
+                  >
                     <Chevron />
                   </span>
                 </button>
@@ -383,7 +450,9 @@ export default function TodayPage() {
               <Link to="/tabs/plan" className="today-row">
                 <span className="today-tomorrow">Mañana</span>
                 <span className="rk-row__main">
-                  <span className="today-row__title">Series 6 × 800 m · 7:30</span>
+                  <span className="today-row__title">
+                    Series 6 × 800 m · 7:30
+                  </span>
                   <span className="rk-row__sub">
                     <ExampleTag /> Carga alta · dieta de 3.200 kcal
                   </span>

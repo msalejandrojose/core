@@ -1,160 +1,103 @@
-import { useState, type FormEvent } from 'react';
-import {
-  IonButton,
-  IonContent,
-  IonIcon,
-  IonInput,
-  IonNote,
-  IonPage,
-  IonSpinner,
-} from '@ionic/react';
-import { logoFacebook, logoGoogle } from 'ionicons/icons';
-import { useLogin } from './use-login';
+import { Link } from 'react-router-dom';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { useGoogleLogin } from './use-google-login';
-import { useFacebookLogin } from './use-facebook-login';
+import { rememberLoginMethod } from './login-method';
+import { GoogleMark } from './GoogleMark';
+import { RitmoMark } from './RitmoMark';
+import './auth.css';
+
+const PERKS = [
+  {
+    text: 'Se sincroniza con Garmin y la app Salud',
+    bg: 'var(--ritmo-activity-soft)',
+    fg: 'var(--ritmo-activity-ink)',
+    d: 'M6 6h12v12H6zM9 6l1-3h4l1 3M9 18l1 3h4l1-3M12 10v2l1.5 1',
+  },
+  {
+    text: 'Una dieta que sigue a tu entrenamiento',
+    bg: 'var(--ritmo-food-soft)',
+    fg: 'var(--ritmo-food-ink)',
+    d: 'M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2 0-3 2-3 6s1 4 3 4',
+  },
+  {
+    text: 'Apunta lo que comes en segundos',
+    bg: 'var(--ritmo-tint-soft)',
+    fg: 'var(--ritmo-tint)',
+    d: 'M12 3a9 9 0 1 0 .01 0M12 7v5l3 2',
+  },
+];
 
 /**
- * Pantalla de login. Look editorial y tranquilo (DS §1): wordmark serif, mucho
- * aire, un único acento clay en el botón. Campos inset con radio grande.
- * Debajo del login email/password, atajos de login social (Google/Facebook)
- * contra `POST /auth/google` y `POST /auth/facebook`.
+ * Acceso (lienzo "Acceso"): marca, tres razones y las formas de entrar.
+ *
+ * "Continuar con Apple" está en el diseño pero aún no hay endpoint en la API:
+ * se añadirá con él (es obligatorio en iOS si se ofrece Google). Facebook, que
+ * traía el shell base, no está en el diseño de Ritmo.
  */
 export default function LoginPage() {
-  const { submit, loading, error } = useLogin();
   const google = useGoogleLogin();
-  const facebook = useFacebookLogin();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const anyLoading = loading || google.loading || facebook.loading;
-  const errorMessage = error ?? google.error ?? facebook.error;
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!email.trim() || !password) return;
-    void submit(email.trim(), password);
-  }
 
   return (
     <IonPage>
-      <IonContent className="ion-padding">
-        <div
-          style={{
-            minHeight: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            maxWidth: 420,
-            margin: '0 auto',
-            paddingBottom: '10vh',
-          }}
-        >
-          <h1 className="core-display" style={{ marginBottom: 6 }}>
-            Core
-          </h1>
-          <p className="core-subtitle" style={{ marginBottom: 28 }}>
-            Inicia sesión para continuar
-          </p>
-
-          <form onSubmit={onSubmit} style={{ display: 'grid', gap: 14 }}>
-            <IonInput
-              className="core-field"
-              label="Email"
-              labelPlacement="stacked"
-              fill="outline"
-              type="email"
-              autocomplete="email"
-              inputmode="email"
-              placeholder="tu@email.com"
-              value={email}
-              onIonInput={(e) => setEmail(e.detail.value ?? '')}
-            />
-            <IonInput
-              className="core-field"
-              label="Contraseña"
-              labelPlacement="stacked"
-              fill="outline"
-              type="password"
-              autocomplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onIonInput={(e) => setPassword(e.detail.value ?? '')}
-            />
-
-            {errorMessage && (
-              <IonNote color="danger" style={{ fontSize: 14 }}>
-                {errorMessage}
-              </IonNote>
-            )}
-
-            <IonButton
-              type="submit"
-              expand="block"
-              disabled={anyLoading}
-              style={{ marginTop: 8 }}
-            >
-              {loading ? <IonSpinner name="crescent" /> : 'Entrar'}
-            </IonButton>
-
-            <IonButton
-              routerLink="/forgot"
-              fill="clear"
-              size="small"
-              style={{ marginTop: 4, justifySelf: 'center' }}
-            >
-              ¿Olvidaste tu contraseña?
-            </IonButton>
-          </form>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              margin: '24px 0',
-              color: 'var(--core-muted)',
-              fontSize: 13,
-            }}
-          >
-            <span style={{ flex: 1, height: 1, background: 'var(--core-border)' }} />
-            o continúa con
-            <span style={{ flex: 1, height: 1, background: 'var(--core-border)' }} />
+      <IonContent>
+        <div className="login">
+          <div className="login__brand">
+            <RitmoMark />
+            <h1>Ritmo</h1>
+            <p>Entrena, come y descansa con un plan que se ajusta a ti.</p>
           </div>
 
-          <div style={{ display: 'grid', gap: 10 }}>
-            <IonButton
-              expand="block"
-              fill="outline"
-              color="medium"
-              disabled={anyLoading}
-              onClick={() => void google.submit()}
-            >
-              {google.loading ? (
-                <IonSpinner name="crescent" />
-              ) : (
-                <>
-                  <IonIcon icon={logoGoogle} slot="start" />
-                  Continuar con Google
-                </>
-              )}
-            </IonButton>
+          <ul className="login__perks">
+            {PERKS.map((p) => (
+              <li key={p.text}>
+                <span
+                  className="login__perk-icon"
+                  style={{ background: p.bg, color: p.fg }}
+                  aria-hidden="true"
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d={p.d} />
+                  </svg>
+                </span>
+                <span>{p.text}</span>
+              </li>
+            ))}
+          </ul>
 
-            <IonButton
-              expand="block"
-              fill="outline"
-              color="medium"
-              disabled={anyLoading}
-              onClick={() => void facebook.submit()}
+          <div className="login__actions">
+            {google.error ? (
+              <p className="login__error" role="alert">
+                {google.error}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              className="login__google"
+              disabled={google.loading}
+              onClick={() => {
+                rememberLoginMethod('google');
+                void google.submit();
+              }}
             >
-              {facebook.loading ? (
-                <IonSpinner name="crescent" />
-              ) : (
-                <>
-                  <IonIcon icon={logoFacebook} slot="start" />
-                  Continuar con Facebook
-                </>
-              )}
-            </IonButton>
+              {google.loading ? <IonSpinner name="crescent" /> : <GoogleMark />}
+              Continuar con Google
+            </button>
+            <Link to="/correo" className="login__email">
+              Continuar con correo
+            </Link>
+            <p className="login__legal">
+              Si no tienes cuenta, la creas al continuar. Al hacerlo aceptas los
+              Términos y la Política de privacidad.
+            </p>
           </div>
         </div>
       </IonContent>

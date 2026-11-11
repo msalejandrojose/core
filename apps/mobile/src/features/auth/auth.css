@@ -1,0 +1,148 @@
+/* Acceso de Ritmo (lienzo "Acceso"). */
+.login {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: calc(72px + env(safe-area-inset-top, 0px)) 24px calc(32px + env(safe-area-inset-bottom, 0px));
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+}
+.login__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.login__brand h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.login__brand p {
+  margin: 0;
+  max-width: 300px;
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--ritmo-ink-2);
+}
+.login__perks {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.login__perks li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.login__perk-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login__actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.login__google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  border-radius: var(--ritmo-radius-xl);
+  border: 1px solid var(--ritmo-border-strong);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.login__google:disabled {
+  opacity: 0.6;
+}
+.login__email {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ritmo-control);
+  color: var(--ritmo-tint);
+  font-size: 17px;
+  text-decoration: none;
+}
+.login__legal {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ritmo-ink-muted);
+  text-align: center;
+}
+.login__error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ritmo-danger);
+  text-align: center;
+}
+
+/* Continuar con correo. */
+.email-auth__title {
+  font-size: 30px !important;
+  line-height: 36px !important;
+}
+.email-auth__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-l);
+}
+.email-auth__field {
+  min-height: var(--ritmo-row);
+  gap: 12px;
+}
+.email-auth__field > span {
+  width: 96px;
+  flex: none;
+  font-size: 16px;
+}
+.email-auth__field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 16px;
+}
+.email-auth__forgot {
+  align-self: center;
+  font-size: 15px;
+}
+.email-auth__sent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ritmo-ink-2);
+}
+.email-auth__sent strong {
+  font-size: 17px;
+  color: var(--ritmo-ink);
+}
