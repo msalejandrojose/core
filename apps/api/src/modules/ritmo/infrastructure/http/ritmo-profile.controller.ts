@@ -32,7 +32,9 @@ export class RitmoProfileController {
   ) {}
 
   @Get('profile')
-  @ApiOperation({ summary: 'Mi perfil de actividad, con los targets calculados.' })
+  @ApiOperation({
+    summary: 'Mi perfil de actividad, con los targets calculados.',
+  })
   @ApiOkResponse({ type: ProfileResponseDto })
   @ApiNotFoundResponse({
     description:
@@ -41,12 +43,15 @@ export class RitmoProfileController {
   async profile(
     @CurrentUser() current: AccessTokenPayload,
   ): Promise<ProfileResponseDto> {
-    return ProfileResponseDto.from(await this.getMyProfile.execute(current.sub));
+    return ProfileResponseDto.from(
+      await this.getMyProfile.execute(current.sub),
+    );
   }
 
   @Put('profile')
   @ApiOperation({
-    summary: 'Guardar mi perfil (onboarding o edición) y recalcular los targets.',
+    summary:
+      'Guardar mi perfil (onboarding o edición) y recalcular los targets.',
   })
   @ApiOkResponse({ type: ProfileResponseDto })
   async saveProfile(

@@ -14,7 +14,10 @@ import {
 import { RefreshDailyLogUseCase } from './refresh-daily-log.use-case';
 
 /** Igual que `SaveMeasurementData`, pero el día es opcional. */
-export interface LogWeightInput extends Omit<SaveMeasurementData, 'measuredOn'> {
+export interface LogWeightInput extends Omit<
+  SaveMeasurementData,
+  'measuredOn'
+> {
   measuredOn: string | null;
 }
 

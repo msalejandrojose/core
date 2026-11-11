@@ -25,7 +25,9 @@ export class PrismaRitmoFoodRepository implements RitmoFoodRepositoryPort {
       where: {
         AND: [
           this.visibleTo(userId),
-          { OR: [{ name: { contains: query } }, { brand: { contains: query } }] },
+          {
+            OR: [{ name: { contains: query } }, { brand: { contains: query } }],
+          },
         ],
       },
       // Los verificados primero: ante "arroz", antes el del catálogo revisado

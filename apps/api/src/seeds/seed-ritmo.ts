@@ -206,7 +206,10 @@ async function main(): Promise<void> {
     };
 
     if (existing) {
-      await prisma.ritmoFood.update({ where: { id: existing.id }, data: values });
+      await prisma.ritmoFood.update({
+        where: { id: existing.id },
+        data: values,
+      });
       continue;
     }
 

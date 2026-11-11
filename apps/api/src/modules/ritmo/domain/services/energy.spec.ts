@@ -65,7 +65,11 @@ describe('dailyKcalTarget', () => {
 
 describe('macroTargets', () => {
   it('fija proteína por peso, grasa por fracción de kcal y el resto a hidratos', () => {
-    const m = macroTargets({ kcalTarget: 2000, weightKg: 80, goal: 'LOSE_WEIGHT' });
+    const m = macroTargets({
+      kcalTarget: 2000,
+      weightKg: 80,
+      goal: 'LOSE_WEIGHT',
+    });
     expect(m.proteinTargetG).toBe(160); // 2.0 g/kg
     expect(m.fatTargetG).toBe(56); // 25% de 2000 kcal / 9
     // 2000 - 160*4 - 56*9 = 856 kcal → 214 g
@@ -73,7 +77,11 @@ describe('macroTargets', () => {
   });
 
   it('recorta los hidratos a 0 en vez de devolver un plan imposible', () => {
-    const m = macroTargets({ kcalTarget: 1200, weightKg: 140, goal: 'LOSE_WEIGHT' });
+    const m = macroTargets({
+      kcalTarget: 1200,
+      weightKg: 140,
+      goal: 'LOSE_WEIGHT',
+    });
     expect(m.carbsTargetG).toBe(0);
   });
 });

@@ -43,7 +43,8 @@ export class LogMealDto {
   foodId?: string;
 
   @ApiPropertyOptional({
-    description: 'Ración del alimento; entonces `quantity` son unidades de ración.',
+    description:
+      'Ración del alimento; entonces `quantity` son unidades de ración.',
   })
   @IsOptional()
   @IsUUID()
@@ -68,7 +69,10 @@ export class LogMealDto {
   @MaxLength(200)
   customName?: string;
 
-  @ApiPropertyOptional({ example: 700, description: 'Solo en registro rápido.' })
+  @ApiPropertyOptional({
+    example: 700,
+    description: 'Solo en registro rápido.',
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)

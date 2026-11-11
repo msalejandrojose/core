@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import type { DailyLog } from '../../domain/entities/daily-log.entity';
-import type { MealEntry } from '../../domain/entities/meal-entry.entity';
+import type {
+  MealEntry,
+  MealType,
+} from '../../domain/entities/meal-entry.entity';
 import type {
   CreateMealEntryData,
   DailyLogPatch,
@@ -67,6 +70,19 @@ export class PrismaRitmoDiaryRepository implements RitmoDiaryRepositoryPort {
     return rows.map(toMealEntry);
   }
 
+  async listMealEntriesSince(
+    userId: string,
+    fromDay: string,
+    mealType: MealType,
+  ): Promise<MealEntry[]> {
+    const rows = await this.prisma.ritmoMealEntry.findMany({
+      where: { userId, mealType, loggedOn: { gte: toDateOnly(fromDay) } },
+      orderBy: [{ loggedOn: 'asc' }, { createdAt: 'asc' }],
+      include: FOOD_NAME,
+    });
+    return rows.map(toMealEntry);
+  }
+
   async sumIntakeByDay(userId: string, day: string): Promise<DayIntakeTotals> {
     const agg = await this.prisma.ritmoMealEntry.aggregate({
       where: { userId, loggedOn: toDateOnly(day) },
@@ -106,7 +122,10 @@ export class PrismaRitmoDiaryRepository implements RitmoDiaryRepositoryPort {
     to: string,
   ): Promise<DailyLog[]> {
     const rows = await this.prisma.ritmoDailyLog.findMany({
-      where: { userId, logDate: { gte: toDateOnly(from), lte: toDateOnly(to) } },
+      where: {
+        userId,
+        logDate: { gte: toDateOnly(from), lte: toDateOnly(to) },
+      },
       orderBy: { logDate: 'asc' },
     });
     return rows.map(toDailyLog);
