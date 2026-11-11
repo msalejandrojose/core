@@ -1,0 +1,202 @@
+/* ============================================================================
+ * Nutre — estilos propios de la feature.
+ * ----------------------------------------------------------------------------
+ * Solo lo que no cubren las recetas del DS en `theme/components.css`: el anillo
+ * de calorías, las barras de macros y la gráfica de peso. Todo con tokens del
+ * DS (greige + clay), sin colores nuevos.
+ * ========================================================================== */
+
+.nutre-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 16px;
+}
+
+/* ---- Anillo de kcal ---- */
+.nutre-ring {
+  flex: 0 0 auto;
+  position: relative;
+  width: 128px;
+  height: 128px;
+}
+.nutre-ring svg {
+  transform: rotate(-90deg); /* empieza arriba, no a las 3 en punto */
+}
+.nutre-ring__track {
+  stroke: var(--core-surface-inset);
+}
+.nutre-ring__value {
+  stroke: var(--ion-color-primary);
+  transition: stroke-dashoffset 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Por encima del objetivo el anillo pasa a brick: el aviso es el color, no un
+   mensaje de error — pasarse de kcal un día no es un fallo. */
+.nutre-ring--over .nutre-ring__value {
+  stroke: var(--ion-color-danger);
+}
+.nutre-ring__center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.nutre-ring__number {
+  font-family: var(--core-font-serif);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ion-text-color);
+}
+.nutre-ring__caption {
+  font-size: 12px;
+  color: var(--core-muted);
+  margin-top: 3px;
+}
+
+/* ---- Balance del día (ingeridas / gastadas) ---- */
+.nutre-balance {
+  flex: 1 1 auto;
+  display: grid;
+  gap: 12px;
+}
+.nutre-balance__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.nutre-balance__label {
+  font-size: 14px;
+  color: var(--core-muted);
+}
+.nutre-balance__value {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Barras de macros ---- */
+.nutre-macros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+/* Nombre encima del valor: en tres columnas de ~100px no caben en línea. */
+.nutre-macro__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.nutre-macro__name {
+  font-size: 13px;
+  color: var(--core-muted);
+}
+.nutre-macro__value {
+  font-size: 15px;
+  white-space: nowrap;
+  color: var(--ion-text-color);
+  font-variant-numeric: tabular-nums;
+}
+.nutre-macro__track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--core-surface-inset);
+  overflow: hidden;
+}
+.nutre-macro__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ion-color-primary);
+  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nutre-macro--carbs .nutre-macro__fill {
+  background: var(--core-purple);
+}
+.nutre-macro--fat .nutre-macro__fill {
+  background: var(--core-muted);
+}
+
+/* ---- Navegador de día ---- */
+.nutre-daynav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.nutre-daynav__label {
+  min-width: 96px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+}
+
+/* ---- Fila de entrada del diario ---- */
+.nutre-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  min-height: 56px; /* área táctil iOS HIG */
+}
+.nutre-entry + .nutre-entry {
+  border-top: 0.5px solid var(--core-border);
+}
+.nutre-entry__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.nutre-entry__name {
+  font-size: 16px;
+  color: var(--ion-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nutre-entry__meta {
+  font-size: 13px;
+  color: var(--core-muted);
+  margin-top: 2px;
+}
+.nutre-entry__kcal {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+/* ---- Gráfica de peso ---- */
+.nutre-chart {
+  width: 100%;
+  height: 160px;
+  display: block;
+  overflow: visible;
+}
+.nutre-chart__line {
+  fill: none;
+  stroke: var(--ion-color-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.nutre-chart__area {
+  fill: var(--core-tint-clay);
+  stroke: none;
+}
+.nutre-chart__dot {
+  fill: var(--ion-color-primary);
+}
+.nutre-chart__grid {
+  stroke: var(--core-border);
+  stroke-width: 0.5;
+}
+.nutre-chart__axis {
+  font-size: 11px;
+  fill: var(--core-muted);
+}
