@@ -18,6 +18,7 @@ import { useRitmoStore } from './ritmo.store';
 import { tapSuccess } from './haptics';
 import { EmptyState } from '@/components/ux';
 import { toast } from '@/lib/toast';
+import { snackbar } from '@/lib/snackbar';
 
 interface LogMealSheetProps {
   isOpen: boolean;
@@ -27,6 +28,14 @@ interface LogMealSheetProps {
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
+
+/** Mensaje en pasado del snackbar, con el género de cada comida. */
+const MEAL_LOGGED: Record<MealType, string> = {
+  BREAKFAST: 'Desayuno registrado',
+  LUNCH: 'Comida registrada',
+  DINNER: 'Cena registrada',
+  SNACK: 'Snack registrado',
+};
 
 /**
  * Registrar comida. Dos caminos en el mismo sheet, porque son el mismo gesto
@@ -105,7 +114,7 @@ export function LogMealSheet({
   async function save() {
     setSaving(true);
     try {
-      await ritmoApi.logMeal(
+      const entry = await ritmoApi.logMeal(
         selected
           ? { mealType, foodId: selected.id, quantity: parsedQuantity }
           : {
@@ -117,7 +126,17 @@ export function LogMealSheet({
       );
       await refreshDay();
       void tapSuccess();
-      toast.success('Comida registrada');
+      snackbar.undo(
+        `${MEAL_LOGGED[mealType]} · ${formatKcal(entry.kcal)} kcal`,
+        async () => {
+          try {
+            await ritmoApi.deleteMeal(entry.id);
+            await refreshDay();
+          } catch {
+            toast.error('No se pudo deshacer');
+          }
+        },
+      );
       reset();
       onClose();
     } catch (e) {
@@ -189,7 +208,7 @@ export function LogMealSheet({
                 <div className="ritmo-entry__body">
                   <div className="ritmo-entry__name">{selected.name}</div>
                   <div className="ritmo-entry__meta">
-                    {selected.kcalPer100} kcal / 100{' '}
+                    {formatKcal(selected.kcalPer100)} kcal / 100{' '}
                     {selected.isLiquid ? 'ml' : 'g'}
                   </div>
                 </div>
@@ -248,7 +267,7 @@ export function LogMealSheet({
                     {food.brand ? `${food.name} · ${food.brand}` : food.name}
                   </div>
                   <div className="ritmo-entry__meta">
-                    {food.kcalPer100} kcal / 100 {food.isLiquid ? 'ml' : 'g'}
+                    {formatKcal(food.kcalPer100)} kcal / 100 {food.isLiquid ? 'ml' : 'g'}
                   </div>
                 </div>
               </button>

@@ -25,19 +25,45 @@ export function mealLabel(type: MealType): string {
   return MEAL_LABELS[type];
 }
 
-/** kcal siempre enteras: medio kcal no significa nada para el usuario. */
-export function formatKcal(value: number): string {
-  return `${Math.round(value)}`;
+/**
+ * La comida más probable a una hora del día: es la que se preselecciona al
+ * registrar desde el botón +, para que lo normal sea un toque menos.
+ */
+export function mealForHour(hour: number): MealType {
+  if (hour < 11) return 'BREAKFAST';
+  if (hour < 16) return 'LUNCH';
+  if (hour < 19) return 'SNACK';
+  return 'DINNER';
 }
 
-/** Gramos con un decimal como máximo, y sin el `.0` cuando es redondo. */
+/**
+ * Número con el formato del DS de Ritmo: punto de millar y coma decimal
+ * (`1.240`, `74,2`) y menos tipográfico (`−0,4`). A mano y no con
+ * `Intl('es-ES')`, porque esa localización no agrupa los números de cuatro
+ * cifras ("1240") y el DS los quiere siempre agrupados.
+ */
+export function formatNumber(value: number, decimals = 0): string {
+  const negative = value < 0;
+  const fixed = Math.abs(value).toFixed(decimals);
+  const [int, dec] = fixed.split('.');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const sign = negative && Number(fixed) !== 0 ? '\u2212' : '';
+  return `${sign}${grouped}${dec ? `,${dec}` : ''}`;
+}
+
+/** kcal siempre enteras: medio kcal no significa nada para el usuario. */
+export function formatKcal(value: number): string {
+  return formatNumber(Math.round(value));
+}
+
+/** Gramos con un decimal como máximo, y sin el `,0` cuando es redondo. */
 export function formatGrams(value: number): string {
   const rounded = Math.round(value * 10) / 10;
-  return Number.isInteger(rounded) ? `${rounded} g` : `${rounded.toFixed(1)} g`;
+  return `${formatNumber(rounded, Number.isInteger(rounded) ? 0 : 1)} g`;
 }
 
 export function formatWeight(value: number): string {
-  return `${(Math.round(value * 10) / 10).toFixed(1)} kg`;
+  return `${formatNumber(Math.round(value * 10) / 10, 1)} kg`;
 }
 
 /** Duración humana: `45 min`, `1 h 20 min`, `2 h`. */
@@ -52,7 +78,7 @@ export function formatDuration(seconds: number): string {
 
 export function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.round(meters)} m`;
-  return `${(Math.round(meters / 100) / 10).toFixed(1)} km`;
+  return `${formatNumber(Math.round(meters / 100) / 10, 1)} km`;
 }
 
 const MONTHS = [
@@ -83,6 +109,19 @@ export function dayLabel(day: string, today: string): string {
 
   const [, month, dayOfMonth] = day.split('-');
   return `${Number(dayOfMonth)} ${MONTHS[Number(month) - 1]}`;
+}
+
+/**
+ * Fecha completa para el kicker de la cabecera: "miércoles, 11 de noviembre".
+ * Se formatea a mediodía UTC del día para que ningún huso lo mueva de fecha.
+ */
+export function longDate(day: string): string {
+  return new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  }).format(new Date(`${day}T12:00:00Z`));
 }
 
 /** Día natural de hoy en una zona horaria, igual que hace la API. */

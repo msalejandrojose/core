@@ -13,6 +13,8 @@ import { isApiError, ritmoApi } from './api';
 import { useRitmoStore } from './ritmo.store';
 import { tapSuccess } from './haptics';
 import { toast } from '@/lib/toast';
+import { snackbar } from '@/lib/snackbar';
+import { formatNumber, formatWeight } from './format';
 
 interface LogWeightSheetProps {
   isOpen: boolean;
@@ -52,7 +54,9 @@ export function LogWeightSheet({ isOpen, onClose }: LogWeightSheetProps) {
       });
       await Promise.all([loadProfile(), refreshDay()]);
       void tapSuccess();
-      toast.success('Peso registrado');
+      // Sin "Deshacer": la API no tiene borrado de pesadas, y una nueva del
+      // mismo día ya sustituye a esta.
+      snackbar.show(`Peso guardado · ${formatWeight(parsed)}`);
       setWeight('');
       setBodyFat('');
       onClose();
@@ -91,7 +95,7 @@ export function LogWeightSheet({ isOpen, onClose }: LogWeightSheetProps) {
             label="kg"
             labelPlacement="end"
             placeholder={
-              currentWeight ? currentWeight.toFixed(1) : '80.0'
+              currentWeight ? formatNumber(currentWeight, 1) : '80,0'
             }
             value={weight}
             onIonInput={(e) => setWeight(String(e.detail.value ?? ''))}

@@ -3,3 +3,4 @@ export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { ErrorBoundary } from './ErrorBoundary';
 export { OfflineBanner } from './OfflineBanner';
+export { Snackbar } from './Snackbar';
