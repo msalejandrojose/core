@@ -49,7 +49,8 @@ export class GetProgressUseCase {
   }): Promise<Progress> {
     const profile = await this.profiles.findByUserId(input.userId);
     const to =
-      input.to ?? dayInTimezone(new Date(), profile?.timezone ?? 'Europe/Madrid');
+      input.to ??
+      dayInTimezone(new Date(), profile?.timezone ?? 'Europe/Madrid');
     const days = Math.min(Math.max(input.days ?? DEFAULT_DAYS, 1), MAX_DAYS);
     const from = shiftDay(to, -(days - 1));
 

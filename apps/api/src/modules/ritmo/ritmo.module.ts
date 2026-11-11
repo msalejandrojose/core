@@ -9,6 +9,7 @@ import { CreateFoodUseCase } from './application/use-cases/create-food.use-case'
 import { DeleteActivitySessionUseCase } from './application/use-cases/delete-activity-session.use-case';
 import { DeleteMealEntryUseCase } from './application/use-cases/delete-meal-entry.use-case';
 import { GetDaySummaryUseCase } from './application/use-cases/get-day-summary.use-case';
+import { GetMealHabitsUseCase } from './application/use-cases/get-meal-habits.use-case';
 import { GetMyProfileUseCase } from './application/use-cases/get-my-profile.use-case';
 import { GetProgressUseCase } from './application/use-cases/get-progress.use-case';
 import { ListActivityTypesUseCase } from './application/use-cases/list-activity-types.use-case';
@@ -42,9 +43,15 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoDiaryController,
   ],
   providers: [
-    { provide: RITMO_PROFILE_REPOSITORY, useClass: PrismaRitmoProfileRepository },
+    {
+      provide: RITMO_PROFILE_REPOSITORY,
+      useClass: PrismaRitmoProfileRepository,
+    },
     { provide: RITMO_BODY_REPOSITORY, useClass: PrismaRitmoBodyRepository },
-    { provide: RITMO_ACTIVITY_REPOSITORY, useClass: PrismaRitmoActivityRepository },
+    {
+      provide: RITMO_ACTIVITY_REPOSITORY,
+      useClass: PrismaRitmoActivityRepository,
+    },
     { provide: RITMO_FOOD_REPOSITORY, useClass: PrismaRitmoFoodRepository },
     { provide: RITMO_DIARY_REPOSITORY, useClass: PrismaRitmoDiaryRepository },
 
@@ -53,6 +60,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RefreshDailyLogUseCase,
 
     GetMyProfileUseCase,
+    GetMealHabitsUseCase,
     SaveMyProfileUseCase,
     LogWeightUseCase,
     ListActivityTypesUseCase,

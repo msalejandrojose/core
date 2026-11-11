@@ -36,7 +36,10 @@ export class SaveProfileDto {
   @IsIn(SEXES)
   sex?: Sex;
 
-  @ApiPropertyOptional({ example: DAY_EXAMPLE, description: 'Fecha de nacimiento.' })
+  @ApiPropertyOptional({
+    example: DAY_EXAMPLE,
+    description: 'Fecha de nacimiento.',
+  })
   @IsOptional()
   @Matches(DAY_PATTERN, { message: 'birthDate debe tener formato YYYY-MM-DD.' })
   birthDate?: string;

@@ -9,9 +9,7 @@ import type {
 import { toActivityType, toDateOnly, toSession } from './ritmo.mapper';
 
 @Injectable()
-export class PrismaRitmoActivityRepository
-  implements RitmoActivityRepositoryPort
-{
+export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Visible = catálogo global (`ownerUserId` null) + las propias del usuario. */

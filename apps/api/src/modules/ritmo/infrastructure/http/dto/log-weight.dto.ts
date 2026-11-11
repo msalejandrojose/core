@@ -22,7 +22,9 @@ export class LogWeightDto {
     description: 'Día medido. Por defecto, hoy en la zona horaria del perfil.',
   })
   @IsOptional()
-  @Matches(DAY_PATTERN, { message: 'measuredOn debe tener formato YYYY-MM-DD.' })
+  @Matches(DAY_PATTERN, {
+    message: 'measuredOn debe tener formato YYYY-MM-DD.',
+  })
   measuredOn?: string;
 
   @ApiPropertyOptional({ example: 18.5, minimum: 1, maximum: 75 })

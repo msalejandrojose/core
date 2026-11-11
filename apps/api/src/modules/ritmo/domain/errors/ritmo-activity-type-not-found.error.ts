@@ -2,8 +2,12 @@ import { DomainError } from '../../../../shared/errors/domain-error';
 
 export class RitmoActivityTypeNotFoundError extends DomainError {
   constructor(id: string) {
-    super('RITMO_ACTIVITY_TYPE_NOT_FOUND', `Tipo de actividad ${id} no encontrado.`, {
-      id,
-    });
+    super(
+      'RITMO_ACTIVITY_TYPE_NOT_FOUND',
+      `Tipo de actividad ${id} no encontrado.`,
+      {
+        id,
+      },
+    );
   }
 }

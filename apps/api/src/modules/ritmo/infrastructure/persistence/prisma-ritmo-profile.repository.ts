@@ -13,7 +13,9 @@ export class PrismaRitmoProfileRepository implements RitmoProfileRepositoryPort 
   constructor(private readonly prisma: PrismaService) {}
 
   async findByUserId(userId: string): Promise<RitmoProfile | null> {
-    const row = await this.prisma.ritmoProfile.findUnique({ where: { userId } });
+    const row = await this.prisma.ritmoProfile.findUnique({
+      where: { userId },
+    });
     return row ? toProfile(row) : null;
   }
 

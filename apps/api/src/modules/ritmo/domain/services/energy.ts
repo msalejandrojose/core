@@ -116,7 +116,8 @@ export function dailyKcalTarget(
   tdeeKcal: number,
   weeklyWeightChangeKg: number,
 ): number {
-  const dailyDelta = (clampWeeklyChangeKg(weeklyWeightChangeKg) * KCAL_PER_KG_FAT) / 7;
+  const dailyDelta =
+    (clampWeeklyChangeKg(weeklyWeightChangeKg) * KCAL_PER_KG_FAT) / 7;
   return Math.max(Math.round(tdeeKcal + dailyDelta), MIN_DAILY_KCAL);
 }
 
@@ -137,10 +138,11 @@ export function macroTargets(input: {
   weightKg: number;
   goal: GoalType;
 }): MacroTargets {
-  const proteinTargetG = Math.round(PROTEIN_G_PER_KG[input.goal] * input.weightKg);
+  const proteinTargetG = Math.round(
+    PROTEIN_G_PER_KG[input.goal] * input.weightKg,
+  );
   const fatTargetG = Math.round((input.kcalTarget * FAT_KCAL_SHARE) / 9);
-  const remainingKcal =
-    input.kcalTarget - proteinTargetG * 4 - fatTargetG * 9;
+  const remainingKcal = input.kcalTarget - proteinTargetG * 4 - fatTargetG * 9;
   return {
     proteinTargetG,
     fatTargetG,

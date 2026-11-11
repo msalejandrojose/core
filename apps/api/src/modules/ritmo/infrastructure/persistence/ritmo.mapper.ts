@@ -7,12 +7,19 @@
 //  - Las columnas `@db.Date` llegan como `Date` a medianoche UTC. El dominio
 //    habla de días naturales (`YYYY-MM-DD`), que es lo que viaja por HTTP y lo
 //    que la app usa para agrupar.
-import type { ActivitySession, ActivitySource, Effort } from '../../domain/entities/activity-session.entity';
+import type {
+  ActivitySession,
+  ActivitySource,
+  Effort,
+} from '../../domain/entities/activity-session.entity';
 import type { ActivityType } from '../../domain/entities/activity-type.entity';
 import type { BodyMeasurement } from '../../domain/entities/body-measurement.entity';
 import type { DailyLog } from '../../domain/entities/daily-log.entity';
 import type { Food, FoodSource } from '../../domain/entities/food.entity';
-import type { MealEntry, MealType } from '../../domain/entities/meal-entry.entity';
+import type {
+  MealEntry,
+  MealType,
+} from '../../domain/entities/meal-entry.entity';
 import type {
   ActivityLevel,
   GoalType,

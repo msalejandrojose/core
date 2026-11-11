@@ -45,6 +45,12 @@ export interface RitmoDiaryRepositoryPort {
   /** `false` si la entrada no existía o no era del usuario. */
   deleteMealEntry(id: string, userId: string): Promise<boolean>;
   listMealEntriesByDay(userId: string, day: string): Promise<MealEntry[]>;
+  /** Entradas de un momento del día desde `fromDay` (incluido), para hábitos. */
+  listMealEntriesSince(
+    userId: string,
+    fromDay: string,
+    mealType: MealType,
+  ): Promise<MealEntry[]>;
   sumIntakeByDay(userId: string, day: string): Promise<DayIntakeTotals>;
   findDailyLog(userId: string, day: string): Promise<DailyLog | null>;
   /** Alta o actualización del agregado del día (idempotente por usuario+día). */

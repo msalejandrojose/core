@@ -4,7 +4,8 @@ import { ActivitySessionResponseDto } from './activity-session.response.dto';
 import { MealEntryResponseDto } from './meal-entry.response.dto';
 
 export class DayTotalsDto {
-  @ApiProperty({ example: 1840, description: 'kcal ingeridas.' }) kcalIn: number;
+  @ApiProperty({ example: 1840, description: 'kcal ingeridas.' })
+  kcalIn: number;
   @ApiProperty({ example: 336, description: 'kcal gastadas en actividad.' })
   kcalBurned: number;
   @ApiPropertyOptional({ example: 2209, description: 'Objetivo de ese día.' })
@@ -48,8 +49,10 @@ export class DaySummaryResponseDto {
     const dto = new DaySummaryResponseDto();
     dto.day = s.day;
     dto.totals = totals;
-    dto.meals = s.meals.map(MealEntryResponseDto.from);
-    dto.sessions = s.sessions.map(ActivitySessionResponseDto.from);
+    dto.meals = s.meals.map((item) => MealEntryResponseDto.from(item));
+    dto.sessions = s.sessions.map((item) =>
+      ActivitySessionResponseDto.from(item),
+    );
     return dto;
   }
 }

@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -55,4 +56,10 @@ export class SearchFoodsQueryDto {
   @Min(1)
   @Max(50)
   limit?: number;
+}
+
+export class MealHabitsQueryDto {
+  @ApiPropertyOptional({ enum: ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] })
+  @IsIn(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'])
+  mealType!: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
 }

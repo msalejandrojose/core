@@ -10,16 +10,63 @@ const MEAL_LABELS: Record<MealType, string> = {
   BREAKFAST: 'Desayuno',
   LUNCH: 'Comida',
   DINNER: 'Cena',
-  SNACK: 'Snacks',
+  SNACK: 'Merienda',
 };
 
-/** Orden en que se pintan las comidas del día (no el alfabético). */
+/** Orden en que se pintan las comidas del día: el del reloj, no el alfabético. */
 export const MEAL_ORDER: MealType[] = [
   'BREAKFAST',
   'LUNCH',
-  'DINNER',
   'SNACK',
+  'DINNER',
 ];
+
+/** Hora habitual de cada comida, para ordenar "Tu día" y decir "a las 21:00". */
+export const MEAL_HOUR: Record<MealType, string> = {
+  BREAKFAST: '8:00',
+  LUNCH: '14:00',
+  SNACK: '17:30',
+  DINNER: '21:00',
+};
+
+/** Hora "H:MM" en una zona horaria (las horas de los entrenos). */
+export function timeIn(iso: string, timezone: string): string {
+  try {
+    return new Intl.DateTimeFormat('es-ES', {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: timezone,
+    }).format(new Date(iso));
+  } catch {
+    return '';
+  }
+}
+
+/** Hora actual "H:MM" en una zona horaria. */
+export function nowIn(timezone: string): string {
+  return timeIn(new Date().toISOString(), timezone);
+}
+
+/** Hora del día (0–23) en una zona horaria. */
+export function hourIn(timezone: string): number {
+  try {
+    return Number(
+      new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }).format(new Date()),
+    );
+  } catch {
+    return new Date().getHours();
+  }
+}
+
+/**
+ * Lista de nombres en español: "A", "A y B", "A, B y C". La primera en
+ * mayúscula y el resto en minúscula, como se diría ("Huevo entero y pan").
+ */
+export function joinNames(names: string[]): string {
+  const parts = names.map((n, i) => (i === 0 ? n : n.charAt(0).toLowerCase() + n.slice(1)));
+  if (parts.length <= 1) return parts[0] ?? '';
+  return `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}`;
+}
 
 export function mealLabel(type: MealType): string {
   return MEAL_LABELS[type];

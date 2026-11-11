@@ -25,11 +25,13 @@ import { SearchFoodsUseCase } from '../../application/use-cases/search-foods.use
 import { CreateFoodUseCase } from '../../application/use-cases/create-food.use-case';
 import { LogMealEntryUseCase } from '../../application/use-cases/log-meal-entry.use-case';
 import { DeleteMealEntryUseCase } from '../../application/use-cases/delete-meal-entry.use-case';
+import { GetMealHabitsUseCase } from '../../application/use-cases/get-meal-habits.use-case';
+import { MealHabitsResponseDto } from './dto/meal-habits.response.dto';
 import { CreateFoodDto } from './dto/create-food.dto';
 import { FoodResponseDto } from './dto/food.response.dto';
 import { LogMealDto } from './dto/log-meal.dto';
 import { MealEntryResponseDto } from './dto/meal-entry.response.dto';
-import { SearchFoodsQueryDto } from './dto/queries.dto';
+import { MealHabitsQueryDto, SearchFoodsQueryDto } from './dto/queries.dto';
 
 @ApiTags('ritmo')
 @Auth()
@@ -40,7 +42,22 @@ export class RitmoNutritionController {
     private readonly createFood: CreateFoodUseCase,
     private readonly logMeal: LogMealEntryUseCase,
     private readonly deleteMeal: DeleteMealEntryUseCase,
+    private readonly mealHabits: GetMealHabitsUseCase,
   ) {}
+
+  @Get('meals/habits')
+  @ApiOperation({
+    summary:
+      'Lo de siempre, frecuentes y recientes de un momento del día (últimos 90 días).',
+  })
+  @ApiOkResponse({ type: MealHabitsResponseDto })
+  async habits(
+    @CurrentUser() current: AccessTokenPayload,
+    @Query() query: MealHabitsQueryDto,
+  ): Promise<MealHabitsResponseDto> {
+    const habits = await this.mealHabits.execute(current.sub, query.mealType);
+    return MealHabitsResponseDto.from(habits);
+  }
 
   @Get('foods')
   @ApiOperation({
@@ -57,7 +74,7 @@ export class RitmoNutritionController {
       barcode: query.barcode,
       limit: query.limit,
     });
-    return foods.map(FoodResponseDto.from);
+    return foods.map((item) => FoodResponseDto.from(item));
   }
 
   @Post('foods')

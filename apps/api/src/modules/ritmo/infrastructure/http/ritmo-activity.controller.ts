@@ -46,7 +46,7 @@ export class RitmoActivityController {
     @CurrentUser() current: AccessTokenPayload,
   ): Promise<ActivityTypeResponseDto[]> {
     const types = await this.listTypes.execute(current.sub);
-    return types.map(ActivityTypeResponseDto.from);
+    return types.map((item) => ActivityTypeResponseDto.from(item));
   }
 
   @Post('activities')
