@@ -8,6 +8,14 @@ import { Icon, Segmented, SectionHeader, SheetBar, Stepper } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
+import { CardioFields, StrengthEditor } from './WorkoutDetails';
+import {
+  EMPTY_CARDIO,
+  cardioBody,
+  exercisesBody,
+  type DraftCardio,
+  type DraftExercise,
+} from './workout-draft';
 import './sheets.css';
 
 /** Las seis teselas del diseño y el tipo de actividad del catálogo que usan. */
@@ -27,6 +35,9 @@ const LEVELS: { value: Effort; label: string }[] = [
   { value: 'MODERATE', label: 'Moderada' },
   { value: 'VIGOROUS', label: 'Intensa' },
 ];
+/** RPE que equivale a cada intensidad si no se afina (el mismo que usa la API). */
+const EFFORT_RPE: Record<Effort, number> = { LIGHT: 3, MODERATE: 5, VIGOROUS: 8 };
+const CARDIO_KINDS = ['RUN', 'CYCLE', 'WALK', 'HIKE', 'SWIM', 'ELLIPTICAL', 'OTHER_CARDIO'];
 /** Mismos factores que la API (domain/services/energy.ts). */
 const EFFORT_FACTOR: Record<Effort, number> = { LIGHT: 0.85, MODERATE: 1, VIGOROUS: 1.15 };
 
@@ -49,6 +60,9 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
   const [otherId, setOtherId] = useState<string | null>(null);
   const [minutes, setMinutes] = useState(45);
   const [effort, setEffort] = useState<Effort>('MODERATE');
+  const [rpe, setRpe] = useState<number | null>(null);
+  const [exercises, setExercises] = useState<DraftExercise[]>([]);
+  const [cardio, setCardio] = useState<DraftCardio>(EMPTY_CARDIO);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -63,6 +77,9 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
       setOtherId(null);
       setMinutes(45);
       setEffort('MODERATE');
+      setRpe(null);
+      setExercises([]);
+      setCardio(EMPTY_CARDIO);
     }
   }, [isOpen]);
 
@@ -75,6 +92,8 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
     return types.find((t) => t.code === code) ?? null;
   }, [types, tile, otherId]);
 
+  const isStrength = selected?.kind === 'STRENGTH';
+  const isCardio = !!selected && CARDIO_KINDS.includes(selected.kind);
   const weight = profile?.currentWeightKg ?? null;
   const estimate =
     selected && weight
@@ -93,6 +112,9 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
         startedAt: isToday ? new Date().toISOString() : new Date(`${day}T12:00:00.000Z`).toISOString(),
         durationSec: minutes * 60,
         effort,
+        ...(rpe !== null ? { rpe } : {}),
+        ...(isStrength && exercisesBody(exercises)?.length ? { exercises: exercisesBody(exercises) } : {}),
+        ...(isCardio ? cardioBody(cardio) : {}),
       });
       await refreshDay();
       void tapSuccess();
@@ -182,8 +204,34 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
 
           <section className="rk-section" aria-labelledby="int">
             <SectionHeader id="int">Intensidad</SectionHeader>
-            <Segmented label="Intensidad" value={effort} onChange={setEffort} options={LEVELS} />
+            <Segmented
+              label="Intensidad"
+              value={effort}
+              onChange={(v) => {
+                setEffort(v);
+                setRpe(null);
+              }}
+              options={LEVELS}
+            />
+            <div className="rk-list">
+              <div className="rk-row workout__row">
+                <span className="rk-row__main">
+                  <span className="rk-row__title">Esfuerzo (RPE)</span>
+                  <span className="rk-row__sub">{rpe === null ? 'Según la intensidad' : 'De 1, muy fácil, a 10, máximo'}</span>
+                </span>
+                <Stepper
+                  value={rpe ?? EFFORT_RPE[effort]}
+                  minusLabel="Un punto menos de esfuerzo"
+                  plusLabel="Un punto más de esfuerzo"
+                  onMinus={() => setRpe((r) => Math.max(1, (r ?? EFFORT_RPE[effort]) - 1))}
+                  onPlus={() => setRpe((r) => Math.min(10, (r ?? EFFORT_RPE[effort]) + 1))}
+                />
+              </div>
+            </div>
           </section>
+
+          {isStrength ? <StrengthEditor value={exercises} onChange={setExercises} /> : null}
+          {isCardio ? <CardioFields value={cardio} onChange={setCardio} /> : null}
 
           <div className="workout__estimate">
             <span>Calorías estimadas</span>

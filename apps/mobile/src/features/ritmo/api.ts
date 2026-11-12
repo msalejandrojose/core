@@ -58,6 +58,8 @@ export interface ActivityType {
   code: string | null;
   name: string;
   met: number;
+  /** Disciplina: STRENGTH admite series; RUN, CYCLE… son cardio. */
+  kind: string;
   icon: string | null;
   isCustom: boolean;
 }
@@ -195,6 +197,15 @@ export interface LogActivityBody {
   durationSec: number;
   distanceM?: number;
   avgHeartRate?: number;
+  maxHeartRate?: number;
+  elevationGainM?: number;
+  cadence?: number;
+  /** Esfuerzo percibido CR10 (1–10). */
+  rpe?: number;
+  exercises?: {
+    exerciseId: string;
+    sets: { weightKg: number; reps: number; rir?: number; isWarmup?: boolean }[];
+  }[];
   effort?: Effort;
   notes?: string;
 }
@@ -239,7 +250,7 @@ function toApiError(error: unknown, status: number): RitmoApiError {
   };
 }
 
-async function call<T>(
+export async function call<T>(
   method: keyof RawClient,
   path: string,
   init?: unknown,
