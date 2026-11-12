@@ -10,6 +10,7 @@ import { RITMO_PROFILE_REPOSITORY } from './application/ports/ritmo-profile-repo
 import { AddPerformanceMeasurementUseCase } from './application/use-cases/add-performance-measurement.use-case';
 import { CreateExerciseUseCase } from './application/use-cases/create-exercise.use-case';
 import { DeletePerformanceMeasurementUseCase } from './application/use-cases/delete-performance-measurement.use-case';
+import { GetCardioAnalysisUseCase } from './application/use-cases/get-cardio-analysis.use-case';
 import { GetMuscleAnalysisUseCase } from './application/use-cases/get-muscle-analysis.use-case';
 import { GetStrengthAnalysisUseCase } from './application/use-cases/get-strength-analysis.use-case';
 import { GetHeartConfigUseCase } from './application/use-cases/get-heart-config.use-case';
@@ -118,6 +119,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     // Motores de rendimiento.
     GetStrengthAnalysisUseCase,
     GetMuscleAnalysisUseCase,
+    GetCardioAnalysisUseCase,
   ],
 })
 export class RitmoModule {}

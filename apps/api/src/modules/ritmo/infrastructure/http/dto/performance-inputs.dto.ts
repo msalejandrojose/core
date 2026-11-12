@@ -25,6 +25,11 @@ import {
   type ZoneMethod,
 } from '../../../domain/entities/performance.entity';
 
+import {
+  PERFORMANCE_PERIODS,
+  type PerformancePeriod,
+} from '../../../domain/services/performance/periods';
+
 const WEIGHTS = [1, 0.5, 0.25];
 const METHODS: ZoneMethod[] = ['MAX_HR', 'HR_RESERVE', 'CUSTOM'];
 const METRICS: PerfMetric[] = ['VO2MAX', 'LACTATE_THRESHOLD_PACE'];
@@ -138,4 +143,15 @@ export class AddMeasurementDto {
   @ApiProperty({ example: '2026-11-10' })
   @IsISO8601({ strict: true })
   measuredOn!: string;
+}
+
+export class PerformancePeriodQueryDto {
+  @ApiPropertyOptional({
+    enum: PERFORMANCE_PERIODS,
+    default: '30d',
+    description: 'Periodo del resumen: 7, 30 o 90 días, 6 meses o todo.',
+  })
+  @IsOptional()
+  @IsIn(PERFORMANCE_PERIODS as readonly string[])
+  period?: PerformancePeriod;
 }
