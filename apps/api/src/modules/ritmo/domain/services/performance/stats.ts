@@ -94,3 +94,27 @@ export function trendOf(changePct: number | null, band: number): Trend {
   if (changePct < -band) return 'DOWN';
   return 'STABLE';
 }
+
+/** Desviación típica poblacional. */
+export function stdDev(values: number[]): number | null {
+  const m = mean(values);
+  if (m === null) return null;
+  return Math.sqrt(sum(values.map((v) => (v - m) ** 2)) / values.length);
+}
+
+/** Correlación de Pearson; nula con menos de 3 pares o sin variación. */
+export function pearson(xs: number[], ys: number[]): number | null {
+  const n = Math.min(xs.length, ys.length);
+  if (n < 3) return null;
+  const mx = sum(xs.slice(0, n)) / n;
+  const my = sum(ys.slice(0, n)) / n;
+  let num = 0;
+  let dx = 0;
+  let dy = 0;
+  for (let i = 0; i < n; i += 1) {
+    num += (xs[i] - mx) * (ys[i] - my);
+    dx += (xs[i] - mx) ** 2;
+    dy += (ys[i] - my) ** 2;
+  }
+  return dx === 0 || dy === 0 ? null : num / Math.sqrt(dx * dy);
+}
