@@ -271,11 +271,15 @@ model User {
   // Ritmo (proyecto actividad física y calorías)
   ritmoProfile          RitmoProfile?
   ritmoBodyMeasurements RitmoBodyMeasurement[]
-  ritmoActivityTypes    RitmoActivityType[]    @relation("RitmoActivityTypeOwner")
+  ritmoActivityTypes    RitmoActivityType[]           @relation("RitmoActivityTypeOwner")
   ritmoActivitySessions RitmoActivitySession[]
-  ritmoFoods            RitmoFood[]            @relation("RitmoFoodOwner")
+  ritmoFoods            RitmoFood[]                   @relation("RitmoFoodOwner")
   ritmoMealEntries      RitmoMealEntry[]
   ritmoDailyLogs        RitmoDailyLog[]
+  ritmoExercises        RitmoExercise[]               @relation("RitmoExerciseOwner")
+  ritmoStrengthSets     RitmoStrengthSet[]
+  ritmoHeartConfig      RitmoHeartConfig?
+  ritmoPerfMeasurements RitmoPerformanceMeasurement[]
 
   @@map("user")
 }
@@ -2461,17 +2465,19 @@ model RitmoBodyMeasurement {
 /// `ownerUserId` nulo = catálogo global del sistema; no nulo = actividad que
 /// se ha inventado un usuario y solo ve él.
 model RitmoActivityType {
-  id          String  @id @default(uuid()) @db.Char(36)
+  id          String            @id @default(uuid()) @db.Char(36)
   /// Slug estable (`running`, `cycling`, `swimming`…). Único solo entre las
   /// globales; las de usuario no llevan code.
-  code        String? @unique @db.VarChar(64)
-  name        String  @db.VarChar(120)
+  code        String?           @unique @db.VarChar(64)
+  name        String            @db.VarChar(120)
   /// Metabolic Equivalent of Task del Compendium of Physical Activities.
-  met         Decimal @db.Decimal(4, 2)
+  met         Decimal           @db.Decimal(4, 2)
+  /// Disciplina, para que los motores de rendimiento sepan cómo analizarla.
+  kind        RitmoActivityKind @default(OTHER)
   /// Nombre del icono en la app móvil (no una URL: lo resuelve el cliente).
-  icon        String? @db.VarChar(64)
-  ownerUserId String? @map("owner_user_id") @db.Char(36)
-  isArchived  Boolean @default(false) @map("is_archived")
+  icon        String?           @db.VarChar(64)
+  ownerUserId String?           @map("owner_user_id") @db.Char(36)
+  isArchived  Boolean           @default(false) @map("is_archived")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2491,16 +2497,25 @@ model RitmoActivitySession {
   userId         String @map("user_id") @db.Char(36)
   activityTypeId String @map("activity_type_id") @db.Char(36)
 
-  startedAt    DateTime     @map("started_at")
+  startedAt      DateTime     @map("started_at")
   /// Día natural al que se imputa la sesión, ya resuelto con la timezone del
   /// perfil. Desnormalizado para poder agregar por día sin recalcular husos.
-  loggedOn     DateTime     @map("logged_on") @db.Date
-  durationSec  Int          @map("duration_sec")
-  distanceM    Int?         @map("distance_m")
-  avgHeartRate Int?         @map("avg_heart_rate")
-  effort       RitmoEffort?
-  kcalBurned   Int          @map("kcal_burned")
-  notes        String?      @db.VarChar(500)
+  loggedOn       DateTime     @map("logged_on") @db.Date
+  durationSec    Int          @map("duration_sec")
+  distanceM      Int?         @map("distance_m")
+  avgHeartRate   Int?         @map("avg_heart_rate")
+  maxHeartRate   Int?         @map("max_heart_rate")
+  /// Desnivel positivo acumulado, en metros.
+  elevationGainM Int?         @map("elevation_gain_m")
+  /// Cadencia media (pasos/min corriendo, rpm en bici).
+  cadence        Int?
+  /// Esfuerzo percibido de la sesión, escala CR10 (1–10). Base del Session RPE.
+  rpe            Int?         @db.TinyInt
+  /// Segundos en cada zona cardíaca [Z1..Z5], si el dispositivo los da.
+  zoneSeconds    Json?        @map("zone_seconds")
+  effort         RitmoEffort?
+  kcalBurned     Int          @map("kcal_burned")
+  notes          String?      @db.VarChar(500)
 
   source     RitmoActivitySource @default(MANUAL)
   /// Id de la sesión en el proveedor externo. Junto con `source` evita
@@ -2510,8 +2525,9 @@ model RitmoActivitySession {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activityType RitmoActivityType @relation(fields: [activityTypeId], references: [id])
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityType RitmoActivityType  @relation(fields: [activityTypeId], references: [id])
+  strengthSets RitmoStrengthSet[]
 
   @@unique([source, externalId])
   @@index([userId, loggedOn])
@@ -2639,4 +2655,179 @@ model RitmoDailyLog {
   @@unique([userId, logDate])
   @@index([userId, logDate])
   @@map("ritmo_daily_log")
+}
+
+// ---------------------------------------------------------------------------
+// Athlete Performance Engine: datos de entrada de los motores de rendimiento.
+// Solo se persiste lo que el usuario registra o mide; todo lo derivado (e1RM,
+// cargas, tendencias, estancamientos) se calcula al vuelo en el dominio.
+// ---------------------------------------------------------------------------
+
+/// Disciplina de un tipo de actividad. `STRENGTH` admite series; las de
+/// cardio se analizan por ritmo y frecuencia cardíaca.
+enum RitmoActivityKind {
+  STRENGTH
+  RUN
+  CYCLE
+  WALK
+  HIKE
+  SWIM
+  ELLIPTICAL
+  OTHER_CARDIO
+  OTHER
+}
+
+/// Grupos musculares que analiza el MuscleEngine.
+enum RitmoMuscle {
+  CHEST
+  LATS
+  TRAPS
+  FRONT_DELT
+  SIDE_DELT
+  REAR_DELT
+  BICEPS
+  TRICEPS
+  FOREARMS
+  QUADS
+  HAMSTRINGS
+  GLUTES
+  CALVES
+  ABS
+  LOWER_BACK
+}
+
+/// Ejercicio de fuerza. `ownerUserId` nulo = catálogo global; no nulo = lo ha
+/// creado un usuario y solo lo ve él (mismo patrón que `RitmoActivityType`).
+model RitmoExercise {
+  id           String  @id @default(uuid()) @db.Char(36)
+  /// Slug estable (`bench_press`). Único entre los globales.
+  code         String? @unique @db.VarChar(64)
+  name         String  @db.VarChar(120)
+  /// Multiarticular (true) o analítico (false).
+  isCompound   Boolean @default(false) @map("is_compound")
+  /// Sin carga externa por defecto (dominadas, fondos): el volumen usa el
+  /// peso corporal más el lastre.
+  isBodyweight Boolean @default(false) @map("is_bodyweight")
+  ownerUserId  String? @map("owner_user_id") @db.Char(36)
+  isArchived   Boolean @default(false) @map("is_archived")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner   User?                 @relation("RitmoExerciseOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  muscles RitmoExerciseMuscle[]
+  sets    RitmoStrengthSet[]
+
+  @@index([ownerUserId])
+  @@map("ritmo_exercise")
+}
+
+/// Cuánto trabaja un ejercicio cada músculo: 1.0 principal, 0.5 secundario,
+/// 0.25 indirecto. Es un dato, no una constante: se puede ajustar por ejercicio.
+model RitmoExerciseMuscle {
+  exerciseId String      @map("exercise_id") @db.Char(36)
+  muscle     RitmoMuscle
+  weight     Decimal     @db.Decimal(3, 2)
+
+  exercise RitmoExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@id([exerciseId, muscle])
+  @@map("ritmo_exercise_muscle")
+}
+
+/// Una serie de un ejercicio dentro de una sesión de fuerza. `userId` está
+/// desnormalizado para leer el historial de un ejercicio sin pasar por la sesión.
+model RitmoStrengthSet {
+  id         String @id @default(uuid()) @db.Char(36)
+  sessionId  String @map("session_id") @db.Char(36)
+  userId     String @map("user_id") @db.Char(36)
+  exerciseId String @map("exercise_id") @db.Char(36)
+
+  /// Orden del ejercicio dentro de la sesión y de la serie dentro del ejercicio.
+  exerciseOrder Int @map("exercise_order") @db.SmallInt
+  setOrder      Int @map("set_order") @db.SmallInt
+
+  /// Carga externa en kg (0 en peso corporal sin lastre).
+  weightKg Decimal @map("weight_kg") @db.Decimal(6, 2)
+  reps     Int     @db.SmallInt
+  /// Repeticiones en reserva. Nulo = no se apuntó (no se asume ninguna).
+  rir      Int?    @db.TinyInt
+  /// Descanso antes de la serie, en segundos.
+  restSec  Int?    @map("rest_sec") @db.SmallInt
+  /// Las series de calentamiento no cuentan para volumen ni marcas.
+  isWarmup Boolean @default(false) @map("is_warmup")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session  RitmoActivitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise RitmoExercise        @relation(fields: [exerciseId], references: [id])
+
+  @@index([sessionId])
+  @@index([userId, exerciseId])
+  @@map("ritmo_strength_set")
+}
+
+enum RitmoZoneMethod {
+  /// Porcentajes de la FC máxima.
+  MAX_HR
+  /// Porcentajes de la reserva cardíaca (Karvonen): necesita FC en reposo.
+  HR_RESERVE
+  /// Límites fijados a mano por el usuario.
+  CUSTOM
+}
+
+/// Configuración cardíaca del usuario: de aquí salen sus zonas.
+model RitmoHeartConfig {
+  id          String          @id @default(uuid()) @db.Char(36)
+  userId      String          @unique @map("user_id") @db.Char(36)
+  maxHr       Int?            @map("max_hr") @db.SmallInt
+  restingHr   Int?            @map("resting_hr") @db.SmallInt
+  method      RitmoZoneMethod @default(MAX_HR)
+  /// Límite superior en ppm de Z1..Z4 (Z5 llega hasta la FC máxima). Solo con `CUSTOM`.
+  customZones Json?           @map("custom_zones")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ritmo_heart_config")
+}
+
+enum RitmoPerfMetric {
+  /// ml/kg/min.
+  VO2MAX
+  /// Ritmo de umbral de lactato, en segundos por km.
+  LACTATE_THRESHOLD_PACE
+}
+
+/// De dónde sale un valor: una prueba, un dispositivo o un cálculo propio.
+/// Nunca se mezclan: la app enseña siempre cuál es.
+enum RitmoPerfOrigin {
+  LAB_TEST
+  DEVICE
+  FIELD_TEST
+}
+
+/// VO2max y umbral que el usuario trae de un test o de su reloj. Las
+/// estimaciones del motor NO se guardan aquí: se calculan y se marcan como tales.
+model RitmoPerformanceMeasurement {
+  id          String          @id @default(uuid()) @db.Char(36)
+  userId      String          @map("user_id") @db.Char(36)
+  metric      RitmoPerfMetric
+  value       Decimal         @db.Decimal(7, 2)
+  /// FC asociada (ppm), p. ej. la del umbral.
+  heartRate   Int?            @map("heart_rate") @db.SmallInt
+  origin      RitmoPerfOrigin
+  /// Aparato o prueba ("Garmin Forerunner", "test de 30 min").
+  sourceLabel String?         @map("source_label") @db.VarChar(120)
+  measuredOn  DateTime        @map("measured_on") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, metric, measuredOn])
+  @@map("ritmo_performance_measurement")
 }
