@@ -155,3 +155,26 @@ export class PerformancePeriodQueryDto {
   @IsIn(PERFORMANCE_PERIODS as readonly string[])
   period?: PerformancePeriod;
 }
+
+export class RecommendationsQueryDto {
+  @ApiPropertyOptional({
+    description: 'true para incluir también las descartadas.',
+  })
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  includeDismissed?: 'true' | 'false';
+}
+
+export class RecommendationStatusDto {
+  @ApiProperty({
+    example: 'STRENGTH_PLATEAU:6f0dc023-f490-40c0-bc00-d4600ecc4f9d',
+  })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(120)
+  id!: string;
+
+  @ApiProperty({ enum: ['ACTIVE', 'DISMISSED'] })
+  @IsIn(['ACTIVE', 'DISMISSED'])
+  status!: 'ACTIVE' | 'DISMISSED';
+}

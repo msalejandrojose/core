@@ -15,6 +15,10 @@ import type {
   CreateExerciseData,
   RitmoPerformanceRepositoryPort,
 } from '../../application/ports/ritmo-performance-repository.port';
+import type {
+  RecommendationState,
+  RecommendationStatus,
+} from '../../domain/services/performance/recommendation-state';
 import { sortSets, toDateOnly, toDay, toZoneSeconds } from './ritmo.mapper';
 
 const EXERCISE_INCLUDE = { muscles: true } as const;
@@ -214,5 +218,52 @@ export class PrismaRitmoPerformanceRepository implements RitmoPerformanceReposit
       zoneSeconds: toZoneSeconds(r.zoneSeconds),
       sets: sortSets(r.strengthSets),
     }));
+  }
+
+  async listRecommendationStates(
+    userId: string,
+  ): Promise<RecommendationState[]> {
+    const rows = await this.prisma.ritmoRecommendationState.findMany({
+      where: { userId },
+    });
+    return rows.map((r) => ({
+      key: r.key,
+      status: r.status,
+      firstDetectedOn: toDay(r.firstDetectedOn),
+      lastSeenOn: toDay(r.lastSeenOn),
+    }));
+  }
+
+  async saveRecommendationStates(
+    userId: string,
+    states: RecommendationState[],
+  ): Promise<void> {
+    if (!states.length) return;
+    await this.prisma.$transaction(
+      states.map((s) => {
+        const values = {
+          status: s.status,
+          firstDetectedOn: toDateOnly(s.firstDetectedOn),
+          lastSeenOn: toDateOnly(s.lastSeenOn),
+        };
+        return this.prisma.ritmoRecommendationState.upsert({
+          where: { userId_key: { userId, key: s.key } },
+          update: values,
+          create: { userId, key: s.key, ...values },
+        });
+      }),
+    );
+  }
+
+  async setRecommendationStatus(
+    userId: string,
+    key: string,
+    status: RecommendationStatus,
+  ): Promise<boolean> {
+    const { count } = await this.prisma.ritmoRecommendationState.updateMany({
+      where: { userId, key },
+      data: { status },
+    });
+    return count > 0;
   }
 }

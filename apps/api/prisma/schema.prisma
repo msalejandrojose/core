@@ -280,6 +280,7 @@ model User {
   ritmoStrengthSets     RitmoStrengthSet[]
   ritmoHeartConfig      RitmoHeartConfig?
   ritmoPerfMeasurements RitmoPerformanceMeasurement[]
+  ritmoRecommendations  RitmoRecommendationState[]
 
   @@map("user")
 }
@@ -2830,4 +2831,35 @@ model RitmoPerformanceMeasurement {
 
   @@index([userId, metric, measuredOn])
   @@map("ritmo_performance_measurement")
+}
+
+enum RitmoRecommendationStatus {
+  /// La regla se cumple y el usuario no la ha descartado.
+  ACTIVE
+  /// El usuario la ha descartado; no vuelve a salir mientras siga cumpliéndose.
+  DISMISSED
+  /// Dejó de cumplirse. Si vuelve a cumplirse, es una detección nueva.
+  RESOLVED
+}
+
+/// Estado de una recomendación del motor de rendimiento. Las recomendaciones
+/// se calculan al vuelo; aquí solo se guarda lo que no se puede recalcular:
+/// cuándo se detectó por primera vez y si el usuario la descartó.
+model RitmoRecommendationState {
+  id     String                    @id @default(uuid()) @db.Char(36)
+  userId String                    @map("user_id") @db.Char(36)
+  /// Id estable de la recomendación (`STRENGTH_PLATEAU:<ejercicio>`).
+  key    String                    @db.VarChar(120)
+  status RitmoRecommendationStatus @default(ACTIVE)
+
+  firstDetectedOn DateTime @map("first_detected_on") @db.Date
+  lastSeenOn      DateTime @map("last_seen_on") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("ritmo_recommendation_state")
 }

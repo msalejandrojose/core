@@ -8,6 +8,11 @@ import type {
   TrainingSession,
 } from '../../domain/entities/performance.entity';
 
+import type {
+  RecommendationState,
+  RecommendationStatus,
+} from '../../domain/services/performance/recommendation-state';
+
 export const RITMO_PERFORMANCE_REPOSITORY = Symbol(
   'RITMO_PERFORMANCE_REPOSITORY',
 );
@@ -57,4 +62,17 @@ export interface RitmoPerformanceRepositoryPort {
     userId: string,
     fromDay: string | null,
   ): Promise<TrainingSession[]>;
+
+  listRecommendationStates(userId: string): Promise<RecommendationState[]>;
+  /** Guarda el estado completo tras reconciliar (crea o actualiza cada clave). */
+  saveRecommendationStates(
+    userId: string,
+    states: RecommendationState[],
+  ): Promise<void>;
+  /** Cambia el estado de una recomendación; `false` si no existe. */
+  setRecommendationStatus(
+    userId: string,
+    key: string,
+    status: RecommendationStatus,
+  ): Promise<boolean>;
 }
