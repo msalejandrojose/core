@@ -29,6 +29,12 @@ import MedalsPage from '@/features/ritmo/progress/MedalsPage';
 import DigestionPage from '@/features/ritmo/progress/DigestionPage';
 import SharePage from '@/features/ritmo/progress/SharePage';
 import YearPage from '@/features/ritmo/progress/YearPage';
+import PerformancePage from '@/features/ritmo/performance/PerformancePage';
+import StrengthPerfPage from '@/features/ritmo/performance/StrengthPerfPage';
+import MusclesPage from '@/features/ritmo/performance/MusclesPage';
+import CardioPerfPage from '@/features/ritmo/performance/CardioPerfPage';
+import LoadPage from '@/features/ritmo/performance/LoadPage';
+import HybridPage from '@/features/ritmo/performance/HybridPage';
 import { RegisterSheets } from '@/features/ritmo/RegisterSheets';
 import FoodDayPage from '@/features/ritmo/pages/FoodDayPage';
 import RecipesPage from '@/features/ritmo/pages/RecipesPage';
@@ -147,6 +153,12 @@ export default function TabsShell() {
           <Route exact path="/tabs/progress/digestion" component={DigestionPage} />
           <Route exact path="/tabs/progress/compartir" component={SharePage} />
           <Route exact path="/tabs/progress/anual" component={YearPage} />
+          <Route exact path="/tabs/progress/rendimiento" component={PerformancePage} />
+          <Route exact path="/tabs/progress/rendimiento/fuerza" component={StrengthPerfPage} />
+          <Route exact path="/tabs/progress/rendimiento/musculos" component={MusclesPage} />
+          <Route exact path="/tabs/progress/rendimiento/cardio" component={CardioPerfPage} />
+          <Route exact path="/tabs/progress/rendimiento/carga" component={LoadPage} />
+          <Route exact path="/tabs/progress/rendimiento/hibrido" component={HybridPage} />
           <Route exact path="/tabs/social" component={FriendsPage} />
           <Route exact path="/tabs/social/retos" component={ChallengesPage} />
           <Route exact path="/tabs/social/amigo/:id" component={FriendPage} />

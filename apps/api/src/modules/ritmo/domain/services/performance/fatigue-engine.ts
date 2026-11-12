@@ -355,7 +355,9 @@ export function analyzeFatigue(
     else if (status === 'BELOW_USUAL' || status === 'WELL_BELOW_USUAL') {
       recovery = 'FRESH';
     } else recovery = 'NORMAL';
-    basis.push(`Carga reciente ${ratio} veces la habitual.`);
+    basis.push(
+      `Carga reciente ${String(ratio).replace('.', ',')} veces la habitual.`,
+    );
     basis.push(`${demanding7} sesiones exigentes en 7 días.`);
     if (maxStreak >= 2)
       basis.push(`${maxStreak} días seguidos con sesión exigente.`);

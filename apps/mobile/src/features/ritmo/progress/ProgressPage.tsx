@@ -113,6 +113,16 @@ export default function ProgressPage() {
               {goal ? <span className="rk-row__value">{goal.pct} %</span> : null}
               <Chevron />
             </Link>
+            <Link to="/tabs/progress/rendimiento" className="progress__link">
+              <span className="progress__ic progress__ic--tint" aria-hidden="true">
+                <Icon d="M4 16l5-6 4 4 7-9" size={18} stroke={2.2} />
+              </span>
+              <span className="rk-row__main">
+                <span className="rk-row__title">Rendimiento</span>
+                <span className="rk-row__sub">Fuerza, cardio, carga y recomendaciones</span>
+              </span>
+              <Chevron />
+            </Link>
             <Link to="/tabs/progress/informe" className="progress__link">
               <span className="progress__ic progress__ic--food" aria-hidden="true">
                 <Icon d="M5 20V11M12 20V4M19 20v-7" size={18} stroke={2.2} />
