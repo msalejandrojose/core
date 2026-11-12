@@ -6,7 +6,7 @@ import { MEAL_ORDER, dayLabel, formatKcal, joinNames, mealLabel, ratio, todayIn 
 import { useRitmoStore } from '../ritmo.store';
 import { useRegisterStore } from '../register.store';
 import { useHabitsStore } from '../habits.store';
-import { BackLink, Icon, NavRow, SearchField } from '../ui/kit';
+import { BackLink, EmptyCard, Icon, NavRow, SearchField } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { ErrorState, SkeletonList } from '@/components/ux';
 import { toast } from '@/lib/toast';
@@ -157,6 +157,21 @@ export default function FoodDayPage() {
                   Mis recetas
                 </Link>
               </div>
+
+              {summary.meals.length === 0 ? (
+                <EmptyCard
+                  tone="food"
+                  icon={PATHS.fork}
+                  title={day === today ? 'Aún no has apuntado nada hoy' : 'Este día no tiene comidas'}
+                  text={
+                    day === today
+                      ? 'Empieza por el desayuno: con lo de siempre tardas unos segundos.'
+                      : 'Puedes apuntarlas ahora o copiar las de otro día.'
+                  }
+                  primary={{ label: 'Añadir desayuno', onClick: () => openRegister('meal', 'BREAKFAST') }}
+                  secondary={{ label: 'Copiar de ayer', onClick: () => openRegister('copy') }}
+                />
+              ) : null}
 
               <ul aria-label="Comidas del día" className="rk-list foodday__meals">
                 {MEAL_ORDER.map((type) => {

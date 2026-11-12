@@ -422,3 +422,65 @@ a.rk-row {
 .rk-search-row > .rk-search {
   flex: 1;
 }
+
+/* Estado vacío (lienzo "Estados vacíos y errores"). */
+.rk-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 18px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  text-align: center;
+}
+.rk-empty__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rk-empty__icon--food {
+  background: var(--ritmo-food-soft);
+  color: var(--ritmo-food-ink);
+}
+.rk-empty__icon--activity {
+  background: var(--ritmo-activity-soft);
+  color: var(--ritmo-activity-ink);
+}
+.rk-empty__icon--social {
+  background: #f3eaf5;
+  color: #8a3d82;
+}
+.rk-empty__title {
+  font-size: 17px;
+  font-weight: 600;
+}
+.rk-empty__text {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ritmo-ink-muted);
+}
+.rk-empty__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 8px;
+  align-self: stretch;
+}
+.rk-empty__btn {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ritmo-tint-soft);
+  color: var(--ritmo-tint);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rk-empty__btn--primary {
+  background: var(--ritmo-tint);
+  color: var(--ritmo-on-tint);
+}
