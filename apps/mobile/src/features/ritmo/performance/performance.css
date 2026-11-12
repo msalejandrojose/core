@@ -315,3 +315,101 @@ button.perf__card-head,
 .perf__kv b {
   font-weight: 400;
 }
+
+/* Formularios de Cardio (mediciones) */
+.perf__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-s);
+}
+.perf__field {
+  min-height: 52px;
+  padding-right: 10px;
+}
+.perf__field input {
+  width: 96px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--ritmo-radius-s);
+  background: var(--ritmo-bg);
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 16px;
+  text-align: center;
+}
+.perf__field input.perf__date,
+.perf__field input.perf__text {
+  width: 160px;
+}
+.perf__field .workout__unit:empty {
+  display: none;
+}
+
+.perf__toggle {
+  align-self: flex-start;
+  font-size: 15px;
+  padding: 0 16px;
+}
+
+/* Mapa muscular */
+.musclemap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.musclemap__views {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.musclemap__view {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.musclemap__view svg {
+  width: 100%;
+  max-width: 170px;
+  height: auto;
+}
+.musclemap__view figcaption {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ritmo-ink-muted);
+}
+.musclemap__body {
+  fill: var(--ritmo-surface-fill-2);
+}
+.musclemap__muscle {
+  stroke: var(--ritmo-border);
+  stroke-width: 1;
+  cursor: pointer;
+  outline: none;
+}
+.musclemap__muscle.is-selected,
+.musclemap__muscle:focus-visible {
+  stroke: var(--ritmo-tint);
+  stroke-width: 2.5;
+}
+.musclemap__legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ritmo-ink-muted);
+}
+.musclemap__scale {
+  display: flex;
+  gap: 3px;
+}
+.musclemap__scale span {
+  width: 16px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid var(--ritmo-border);
+}

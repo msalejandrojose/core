@@ -18,6 +18,7 @@ import {
 } from './labels';
 import { perfApi, type HeartConfig, type MeasuredOrEstimated, type Period } from './perf.api';
 import { Bar, Chip, Empty, Estimated, PerfPage } from './ui';
+import { Measurements } from './Measurements';
 import { usePerf } from './usePerf';
 import '../sheets/sheets.css';
 
@@ -31,7 +32,8 @@ const PERIODS: { value: Period; label: string }[] = [
 const ZONE_COLOR = ['var(--ritmo-info)', 'var(--ritmo-activity)', 'var(--ritmo-gold)', 'var(--ritmo-food)', 'var(--ritmo-heart)'];
 const METHODS: { value: HeartConfig['method']; label: string }[] = [
   { value: 'MAX_HR', label: '% FC máxima' },
-  { value: 'HR_RESERVE', label: 'Reserva cardíaca' },
+  { value: 'HR_RESERVE', label: 'Reserva' },
+  { value: 'CUSTOM', label: 'A mano' },
 ];
 
 /** FC máxima, en reposo y método: de aquí salen las zonas y el TRIMP. */
@@ -39,6 +41,8 @@ function HeartForm({ onSaved }: { onSaved: () => void }) {
   const [max, setMax] = useState('');
   const [rest, setRest] = useState('');
   const [method, setMethod] = useState<HeartConfig['method']>('MAX_HR');
+  /** Límite superior de Z1..Z4, en ppm (método «A mano»). */
+  const [custom, setCustom] = useState(['', '', '', '']);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -47,19 +51,36 @@ function HeartForm({ onSaved }: { onSaved: () => void }) {
       .then((c) => {
         setMax(c.maxHr ? String(c.maxHr) : '');
         setRest(c.restingHr ? String(c.restingHr) : '');
-        setMethod(c.method === 'CUSTOM' ? 'MAX_HR' : c.method);
+        setMethod(c.method);
+        if (c.customZones?.length === 4) setCustom(c.customZones.map(String));
       })
       .catch(() => undefined);
   }, []);
 
   const maxN = Number(max);
   const restN = Number(rest);
-  const valid = maxN >= 100 && maxN <= 240 && (method === 'MAX_HR' ? rest === '' || (restN >= 25 && restN <= 120) : restN >= 25 && restN <= 120);
+  const restOk = rest === '' || (restN >= 25 && restN <= 120);
+  const zones = custom.map(Number);
+  // Cuatro límites en ppm, de menor a mayor, y por debajo de la FC máxima si se ha dado.
+  const customOk =
+    custom.every((z) => z !== '') &&
+    zones.every((z, i) => z >= 40 && z <= 240 && (i === 0 || z > zones[i - 1])) &&
+    (max === '' || zones[3] < maxN);
+  const maxOk = maxN >= 100 && maxN <= 240;
+  const valid =
+    method === 'CUSTOM'
+      ? customOk && (max === '' || maxOk) && restOk
+      : maxOk && (method === 'MAX_HR' ? restOk : rest !== '' && restOk);
 
   async function save() {
     setSaving(true);
     try {
-      await perfApi.saveHeartConfig({ method, maxHr: maxN, ...(rest ? { restingHr: restN } : {}) });
+      await perfApi.saveHeartConfig({
+        method,
+        ...(max ? { maxHr: maxN } : {}),
+        ...(rest ? { restingHr: restN } : {}),
+        ...(method === 'CUSTOM' ? { customZones: zones } : {}),
+      });
       toast.success('Guardado', 'Tus zonas ya están recalculadas.');
       onSaved();
     } catch (e) {
@@ -88,10 +109,37 @@ function HeartForm({ onSaved }: { onSaved: () => void }) {
         {field('FC en reposo', rest, setRest)}
       </div>
       <Segmented label="Método de zonas" value={method} onChange={setMethod} options={METHODS} />
+      {method === 'CUSTOM' ? (
+        <div className="rk-list">
+          {custom.map((z, i) => (
+            <div key={i} className="rk-row workout__row">
+              <span className="rk-row__main rk-row__title">
+                Z{i + 1} llega hasta
+              </span>
+              <label className="workout__num">
+                <span className="rk-visually-hidden">Límite superior de la zona {i + 1}</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={z}
+                  placeholder="—"
+                  onChange={(e) => setCustom((c) => c.map((x, j) => (j === i ? e.target.value.replace(/\D/g, '') : x)))}
+                />
+              </label>
+              <span className="workout__unit">ppm</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <button type="button" className="rk-btn rk-btn--small" disabled={!valid || saving} onClick={() => void save()}>
         Guardar
       </button>
-      <p className="rk-note">La reserva cardíaca (Karvonen) necesita también la FC en reposo. Con las dos se calcula además tu carga cardiovascular.</p>
+      <p className="rk-note">
+        {method === 'CUSTOM'
+          ? 'Pon dónde acaba cada zona, de menor a mayor. La Z5 va desde el último límite hasta tu FC máxima.'
+          : 'La reserva cardíaca (Karvonen) necesita también la FC en reposo.'}{' '}
+        Con la FC máxima y la de reposo se calcula además tu carga cardiovascular.
+      </p>
     </section>
   );
 }
@@ -268,6 +316,8 @@ export default function CardioPerfPage() {
                 <Metric title="Umbral de lactato" unit="/km" m={a.lactateThreshold} format={(v) => pace(v)} />
               </div>
             </section>
+
+            <Measurements onChange={reload} />
           </>
         );
       }}

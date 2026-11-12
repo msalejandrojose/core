@@ -88,15 +88,28 @@ function Rec({ rec, onDismiss }: { rec: Recommendation; onDismiss: () => void })
 export default function PerformancePage() {
   const [period, setPeriod] = useState<Period>('30d');
   const summary = usePerf(() => perfApi.summary(period), period);
-  const recs = usePerf(() => perfApi.recommendations());
+  // Se piden todas y se separan aquí: las descartadas se pueden recuperar.
+  const recs = usePerf(() => perfApi.allRecommendations());
+  const active = recs.data?.filter((r) => r.status === 'ACTIVE') ?? null;
+  const dismissed = recs.data?.filter((r) => r.status === 'DISMISSED') ?? [];
+  const [showDismissed, setShowDismissed] = useState(false);
 
   async function dismiss(rec: Recommendation) {
     try {
       await perfApi.dismiss(rec.id);
       recs.reload();
-      toast.success('Descartada', 'No volverá a salir mientras siga igual.');
+      toast.success('Descartada', 'Puedes recuperarla abajo, en Descartadas.');
     } catch {
       toast.error('No se pudo descartar');
+    }
+  }
+
+  async function restore(rec: Recommendation) {
+    try {
+      await perfApi.restore(rec.id);
+      recs.reload();
+    } catch {
+      toast.error('No se pudo recuperar');
     }
   }
 
@@ -189,15 +202,37 @@ export default function PerformancePage() {
 
           <section className="rk-section" aria-labelledby="recs">
             <SectionHeader id="recs">Recomendaciones</SectionHeader>
-            {recs.data?.length ? (
+            {active?.length ? (
               <div className="perf__recs">
-                {recs.data.map((r) => (
+                {active.map((r) => (
                   <Rec key={r.id} rec={r} onDismiss={() => void dismiss(r)} />
                 ))}
               </div>
             ) : (
-              <Empty>{recs.error ? 'No se pudieron cargar.' : recs.data ? 'Nada que señalar ahora mismo.' : 'Cargando…'}</Empty>
+              <Empty>{recs.error ? 'No se pudieron cargar.' : active ? 'Nada que señalar ahora mismo.' : 'Cargando…'}</Empty>
             )}
+            {dismissed.length ? (
+              <>
+                <button type="button" className="rk-textbtn perf__toggle" aria-expanded={showDismissed} onClick={() => setShowDismissed((v) => !v)}>
+                  {showDismissed ? 'Ocultar descartadas' : `Ver descartadas (${dismissed.length})`}
+                </button>
+                {showDismissed ? (
+                  <div className="rk-list">
+                    {dismissed.map((r) => (
+                      <div key={r.id} className="rk-row perf__row">
+                        <span className="rk-row__main">
+                          <span className="rk-row__title perf__wrap">{r.title}</span>
+                          <span className="rk-row__sub">Detectado el {shortDay(r.detectedOn)}</span>
+                        </span>
+                        <button type="button" className="rk-textbtn" onClick={() => void restore(r)}>
+                          Recuperar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
             <p className="rk-note">Salen de reglas fijas sobre tus datos. Son sugerencias de entrenamiento, no consejo médico.</p>
           </section>
 

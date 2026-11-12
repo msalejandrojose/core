@@ -1,4 +1,4 @@
-import { call } from '../api';
+import { call, type ActivitySession, type LogActivityBody } from '../api';
 
 /**
  * Contrato de los endpoints del motor de rendimiento (`/ritmo/performance/*`,
@@ -23,6 +23,16 @@ export interface HeartConfig {
   restingHr: number | null;
   method: 'MAX_HR' | 'HR_RESERVE' | 'CUSTOM';
   customZones: number[] | null;
+}
+
+export interface Measurement {
+  id: string;
+  metric: 'VO2MAX' | 'LACTATE_THRESHOLD_PACE';
+  value: number;
+  heartRate: number | null;
+  origin: 'LAB_TEST' | 'DEVICE' | 'FIELD_TEST';
+  sourceLabel: string | null;
+  measuredOn: string;
 }
 
 export interface PerfIndex {
@@ -241,8 +251,20 @@ const q = (period: Period) => ({ params: { query: { period } } });
 
 export const perfApi = {
   exercises: () => call<Exercise[]>('GET', '/ritmo/exercises'),
+  createExercise: (body: { name: string; isCompound?: boolean; isBodyweight?: boolean; muscles: { muscle: string; weight: number }[] }) =>
+    call<Exercise>('POST', '/ritmo/exercises', { body }),
+  measurements: () => call<Measurement[]>('GET', '/ritmo/performance/measurements'),
+  addMeasurement: (body: Omit<Measurement, 'id' | 'heartRate' | 'sourceLabel'> & { heartRate?: number; sourceLabel?: string }) =>
+    call<Measurement>('POST', '/ritmo/performance/measurements', { body }),
+  deleteMeasurement: (id: string) => call<void>('DELETE', `/ritmo/performance/measurements/${id}`),
+  replaceSets: (sessionId: string, exercises: NonNullable<LogActivityBody['exercises']>) =>
+    call<ActivitySession>('PUT', `/ritmo/activities/${sessionId}/sets`, { body: { exercises } }),
+  allRecommendations: () =>
+    call<Recommendation[]>('GET', '/ritmo/performance/recommendations', {
+      params: { query: { includeDismissed: 'true' } },
+    }),
   heartConfig: () => call<HeartConfig>('GET', '/ritmo/heart-config'),
-  saveHeartConfig: (body: { method: HeartConfig['method']; maxHr?: number; restingHr?: number }) =>
+  saveHeartConfig: (body: { method: HeartConfig['method']; maxHr?: number; restingHr?: number; customZones?: number[] }) =>
     call<HeartConfig>('PUT', '/ritmo/heart-config', { body }),
   summary: (period: Period) => call<Summary>('GET', '/ritmo/performance/summary', q(period)),
   recommendations: () => call<Recommendation[]>('GET', '/ritmo/performance/recommendations'),

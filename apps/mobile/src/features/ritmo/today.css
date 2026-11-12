@@ -191,6 +191,9 @@
   font-size: 15px;
   color: var(--ritmo-ink-muted);
 }
+.today-day__done--link {
+  text-decoration: none;
+}
 .today-day__done > span:first-child {
   flex: 1;
 }
