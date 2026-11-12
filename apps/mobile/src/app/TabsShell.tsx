@@ -20,8 +20,15 @@ import {
   peopleOutline,
 } from 'ionicons/icons';
 import TodayPage from '@/features/ritmo/TodayPage';
-import ProgressPage from '@/features/ritmo/ProgressPage';
-import OnboardingPage from '@/features/ritmo/OnboardingPage';
+import ProgressPage from '@/features/ritmo/progress/ProgressPage';
+import GoalsPage from '@/features/ritmo/progress/GoalsPage';
+import NewGoalPage from '@/features/ritmo/progress/NewGoalPage';
+import ReportPage from '@/features/ritmo/progress/ReportPage';
+import WeeklySummaryPage from '@/features/ritmo/progress/WeeklySummaryPage';
+import MedalsPage from '@/features/ritmo/progress/MedalsPage';
+import DigestionPage from '@/features/ritmo/progress/DigestionPage';
+import SharePage from '@/features/ritmo/progress/SharePage';
+import YearPage from '@/features/ritmo/progress/YearPage';
 import { ComingSoonPage } from '@/features/ritmo/ComingSoonPage';
 import { RegisterSheets } from '@/features/ritmo/RegisterSheets';
 import FoodDayPage from '@/features/ritmo/pages/FoodDayPage';
@@ -135,8 +142,14 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/avisos" component={AlertsPage} />
           <Route exact path="/tabs/plan" component={PlanPage} />
           <Route exact path="/tabs/progress" component={ProgressPage} />
-          {/* Editar el objetivo reutiliza la pantalla de onboarding. */}
-          <Route exact path="/tabs/progress/goal" component={OnboardingPage} />
+          <Route exact path="/tabs/progress/objetivos" component={GoalsPage} />
+          <Route exact path="/tabs/progress/objetivos/nuevo" component={NewGoalPage} />
+          <Route exact path="/tabs/progress/informe" component={ReportPage} />
+          <Route exact path="/tabs/progress/resumen" component={WeeklySummaryPage} />
+          <Route exact path="/tabs/progress/medallas" component={MedalsPage} />
+          <Route exact path="/tabs/progress/digestion" component={DigestionPage} />
+          <Route exact path="/tabs/progress/compartir" component={SharePage} />
+          <Route exact path="/tabs/progress/anual" component={YearPage} />
           <Route exact path="/tabs/social" component={SocialPage} />
           <Route exact path="/tabs/notifications" component={NotificationsPage} />
           <Route exact path="/tabs/settings" component={SettingsPage} />

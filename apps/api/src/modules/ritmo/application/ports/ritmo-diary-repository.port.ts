@@ -4,6 +4,12 @@ import type {
   MealType,
 } from '../../domain/entities/meal-entry.entity';
 
+/** Cuántos momentos del día (desayuno, comida…) tienen algo registrado. */
+export interface DayMealCount {
+  day: string;
+  mealsLogged: number;
+}
+
 export const RITMO_DIARY_REPOSITORY = Symbol('RITMO_DIARY_REPOSITORY');
 
 export interface CreateMealEntryData {
@@ -64,4 +70,10 @@ export interface RitmoDiaryRepositoryPort {
     from: string,
     to: string,
   ): Promise<DailyLog[]>;
+  /** Momentos registrados por día entre dos días. Solo días con alguna comida. */
+  mealCountsBetween(
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<DayMealCount[]>;
 }

@@ -3,11 +3,17 @@ import type { BodyMeasurement } from '../../domain/entities/body-measurement.ent
 import type { DailyLog } from '../../domain/entities/daily-log.entity';
 import { dayInTimezone, shiftDay } from '../../domain/services/calendar';
 import {
+  RITMO_ACTIVITY_REPOSITORY,
+  type DaySessionStats,
+  type RitmoActivityRepositoryPort,
+} from '../ports/ritmo-activity-repository.port';
+import {
   RITMO_BODY_REPOSITORY,
   type RitmoBodyRepositoryPort,
 } from '../ports/ritmo-body-repository.port';
 import {
   RITMO_DIARY_REPOSITORY,
+  type DayMealCount,
   type RitmoDiaryRepositoryPort,
 } from '../ports/ritmo-diary-repository.port';
 import {
@@ -20,6 +26,10 @@ export interface Progress {
   to: string;
   measurements: BodyMeasurement[];
   logs: DailyLog[];
+  /** Entrenos por día (solo días con alguno). */
+  sessions: DaySessionStats[];
+  /** Momentos del día con comida registrada (solo días con alguna). */
+  meals: DayMealCount[];
 }
 
 const DEFAULT_DAYS = 30;
@@ -40,6 +50,8 @@ export class GetProgressUseCase {
     private readonly diary: RitmoDiaryRepositoryPort,
     @Inject(RITMO_PROFILE_REPOSITORY)
     private readonly profiles: RitmoProfileRepositoryPort,
+    @Inject(RITMO_ACTIVITY_REPOSITORY)
+    private readonly activity: RitmoActivityRepositoryPort,
   ) {}
 
   async execute(input: {
@@ -54,11 +66,13 @@ export class GetProgressUseCase {
     const days = Math.min(Math.max(input.days ?? DEFAULT_DAYS, 1), MAX_DAYS);
     const from = shiftDay(to, -(days - 1));
 
-    const [measurements, logs] = await Promise.all([
+    const [measurements, logs, sessions, meals] = await Promise.all([
       this.body.listBetween(input.userId, from, to),
       this.diary.listDailyLogsBetween(input.userId, from, to),
+      this.activity.sessionStatsBetween(input.userId, from, to),
+      this.diary.mealCountsBetween(input.userId, from, to),
     ]);
 
-    return { from, to, measurements, logs };
+    return { from, to, measurements, logs, sessions, meals };
   }
 }
