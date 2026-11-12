@@ -10,6 +10,8 @@ import { RITMO_PROFILE_REPOSITORY } from './application/ports/ritmo-profile-repo
 import { AddPerformanceMeasurementUseCase } from './application/use-cases/add-performance-measurement.use-case';
 import { CreateExerciseUseCase } from './application/use-cases/create-exercise.use-case';
 import { DeletePerformanceMeasurementUseCase } from './application/use-cases/delete-performance-measurement.use-case';
+import { GetMuscleAnalysisUseCase } from './application/use-cases/get-muscle-analysis.use-case';
+import { GetStrengthAnalysisUseCase } from './application/use-cases/get-strength-analysis.use-case';
 import { GetHeartConfigUseCase } from './application/use-cases/get-heart-config.use-case';
 import { ListExercisesUseCase } from './application/use-cases/list-exercises.use-case';
 import { ListPerformanceMeasurementsUseCase } from './application/use-cases/list-performance-measurements.use-case';
@@ -42,6 +44,7 @@ import { RitmoAccountController } from './infrastructure/http/ritmo-account.cont
 import { RitmoActivityController } from './infrastructure/http/ritmo-activity.controller';
 import { RitmoDiaryController } from './infrastructure/http/ritmo-diary.controller';
 import { RitmoNutritionController } from './infrastructure/http/ritmo-nutrition.controller';
+import { RitmoPerformanceController } from './infrastructure/http/ritmo-performance.controller';
 import { RitmoPerformanceInputsController } from './infrastructure/http/ritmo-performance-inputs.controller';
 import { RitmoProfileController } from './infrastructure/http/ritmo-profile.controller';
 
@@ -59,6 +62,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoDiaryController,
     RitmoAccountController,
     RitmoPerformanceInputsController,
+    RitmoPerformanceController,
   ],
   providers: [
     {
@@ -110,6 +114,10 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ListPerformanceMeasurementsUseCase,
     ReplaceSessionSetsUseCase,
     SaveHeartConfigUseCase,
+
+    // Motores de rendimiento.
+    GetStrengthAnalysisUseCase,
+    GetMuscleAnalysisUseCase,
   ],
 })
 export class RitmoModule {}
