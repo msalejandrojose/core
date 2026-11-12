@@ -301,3 +301,45 @@ export function Ring({
 export function ExampleTag() {
   return <span className="rk-example">Ejemplo</span>;
 }
+
+/* ------------------------------ Estados vacíos ---------------------------- */
+
+type EmptyTone = 'food' | 'activity' | 'social';
+type EmptyAction = { label: string; onClick: () => void };
+
+/** Tarjeta de estado vacío (lienzo "Estados vacíos y errores"): icono, título, texto y dos acciones. */
+export function EmptyCard({
+  tone,
+  icon,
+  title,
+  text,
+  primary,
+  secondary,
+}: {
+  tone: EmptyTone;
+  icon: string;
+  title: string;
+  text: string;
+  primary: EmptyAction;
+  secondary?: EmptyAction;
+}) {
+  return (
+    <div className="rk-empty">
+      <span className={`rk-empty__icon rk-empty__icon--${tone}`} aria-hidden="true">
+        <Icon d={icon} size={26} />
+      </span>
+      <span className="rk-empty__title">{title}</span>
+      <span className="rk-empty__text">{text}</span>
+      <div className="rk-empty__actions">
+        <button type="button" className="rk-empty__btn rk-empty__btn--primary" onClick={primary.onClick}>
+          {primary.label}
+        </button>
+        {secondary ? (
+          <button type="button" className="rk-empty__btn" onClick={secondary.onClick}>
+            {secondary.label}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
-import { ExampleTag, LargeTitle, NavRow, SearchField, SectionHeader, Segmented } from '../ui/kit';
+import { EmptyCard, ExampleTag, LargeTitle, NavRow, SearchField, SectionHeader, Segmented } from '../ui/kit';
 import { Avatar, Heart } from './Avatar';
 import { FEED, PEOPLE, invite, personById, useSocialStore, type Person } from './social-data';
 import './social.css';
@@ -51,6 +51,17 @@ export default function FriendsPage() {
   const results = PEOPLE.filter((p) => p.name.toLowerCase().includes(query) || p.user.includes(query));
   const following = PEOPLE.filter((p) => follow[p.id]);
   const suggestions = PEOPLE.filter((p) => !follow[p.id]);
+  const feed = FEED.filter((f) => follow[f.who]);
+  const noFriends = (
+    <EmptyCard
+      tone="social"
+      icon={ADD_PERSON}
+      title="Entrenar acompañado engancha más"
+      text="Sigue a tus amigos para ver sus logros, animaros y hacer retos juntos."
+      primary={{ label: 'Buscar amigos', onClick: () => (tab === 'feed' ? setTab('following') : document.querySelector<HTMLInputElement>('.social input[type=search]')?.focus()) }}
+      secondary={{ label: 'Invitar con enlace', onClick: () => void onInvite() }}
+    />
+  );
 
   return (
     <IonPage>
@@ -110,9 +121,10 @@ export default function FriendsPage() {
                 onChange={setTab}
               />
 
-              {tab === 'feed' ? (
+              {tab === 'feed' && !feed.length ? noFriends : null}
+              {tab === 'feed' && feed.length ? (
                 <div className="social__feed">
-                  {FEED.map((f) => {
+                  {feed.map((f) => {
                     const p = personById(f.who)!;
                     const on = !!cheered[f.id];
                     const first = p.name.split(' ')[0];
@@ -142,18 +154,21 @@ export default function FriendsPage() {
                     );
                   })}
                 </div>
-              ) : (
+              ) : null}
+              {tab === 'following' ? (
                 <>
-                  <section className="rk-section" aria-label="Siguiendo">
-                    <SectionHeader>Siguiendo · {following.length}</SectionHeader>
-                    {following.length ? (
+                  {following.length ? (
+                    <section className="rk-section" aria-label="Siguiendo">
+                      <SectionHeader>Siguiendo · {following.length}</SectionHeader>
                       <div className="social__list">
                         {following.map((p) => (
                           <PersonRow key={p.id} p={p} meta={p.meta} />
                         ))}
                       </div>
-                    ) : null}
-                  </section>
+                    </section>
+                  ) : (
+                    noFriends
+                  )}
                   {suggestions.length ? (
                     <section className="rk-section" aria-label="Sugerencias">
                       <SectionHeader>Quizá conozcas</SectionHeader>
@@ -165,7 +180,7 @@ export default function FriendsPage() {
                     </section>
                   ) : null}
                 </>
-              )}
+              ) : null}
             </>
           )}
         </div>
