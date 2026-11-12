@@ -21,7 +21,9 @@ import type {
 } from '../../domain/services/performance/recommendation-state';
 import { sortSets, toDateOnly, toDay, toZoneSeconds } from './ritmo.mapper';
 
-const EXERCISE_INCLUDE = { muscles: true } as const;
+/** Los pesos del catálogo y, si los hay, los ajustes de un usuario. */
+const exerciseInclude = (userId: string) =>
+  ({ muscles: true, overrides: { where: { userId } } }) as const;
 
 interface ExerciseRow {
   id: string;
@@ -31,6 +33,7 @@ interface ExerciseRow {
   isBodyweight: boolean;
   ownerUserId: string | null;
   muscles: { muscle: string; weight: unknown }[];
+  overrides?: { muscle: string; weight: unknown }[];
 }
 
 function toExercise(row: ExerciseRow): Exercise {
@@ -41,7 +44,9 @@ function toExercise(row: ExerciseRow): Exercise {
     isCompound: row.isCompound,
     isBodyweight: row.isBodyweight,
     ownerUserId: row.ownerUserId,
-    muscles: row.muscles
+    customized: !!row.overrides?.length,
+    // Con ajustes personales, sustituyen por completo a los del catálogo.
+    muscles: (row.overrides?.length ? row.overrides : row.muscles)
       .map((m) => ({ muscle: m.muscle as Muscle, weight: Number(m.weight) }))
       .sort((a, b) => b.weight - a.weight),
   };
@@ -105,7 +110,7 @@ export class PrismaRitmoPerformanceRepository implements RitmoPerformanceReposit
   async listExercisesVisibleTo(userId: string): Promise<Exercise[]> {
     const rows = await this.prisma.ritmoExercise.findMany({
       where: this.visibleTo(userId),
-      include: EXERCISE_INCLUDE,
+      include: exerciseInclude(userId),
       orderBy: { name: 'asc' },
     });
     return rows.map(toExercise);
@@ -130,9 +135,57 @@ export class PrismaRitmoPerformanceRepository implements RitmoPerformanceReposit
         ownerUserId: data.userId,
         muscles: { create: data.muscles },
       },
-      include: EXERCISE_INCLUDE,
+      include: exerciseInclude(data.userId),
     });
     return toExercise(row);
+  }
+
+  private async findExercise(
+    exerciseId: string,
+    userId: string,
+  ): Promise<Exercise | null> {
+    const row = await this.prisma.ritmoExercise.findFirst({
+      where: { id: exerciseId, ...this.visibleTo(userId) },
+      include: exerciseInclude(userId),
+    });
+    return row ? toExercise(row) : null;
+  }
+
+  async setExerciseMuscles(
+    exerciseId: string,
+    userId: string,
+    muscles: { muscle: Muscle; weight: number }[],
+  ): Promise<Exercise | null> {
+    const exercise = await this.findExercise(exerciseId, userId);
+    if (!exercise) return null;
+    if (exercise.ownerUserId === userId) {
+      await this.prisma.$transaction([
+        this.prisma.ritmoExerciseMuscle.deleteMany({ where: { exerciseId } }),
+        this.prisma.ritmoExerciseMuscle.createMany({
+          data: muscles.map((m) => ({ exerciseId, ...m })),
+        }),
+      ]);
+    } else {
+      await this.prisma.$transaction([
+        this.prisma.ritmoExerciseMuscleOverride.deleteMany({
+          where: { exerciseId, userId },
+        }),
+        this.prisma.ritmoExerciseMuscleOverride.createMany({
+          data: muscles.map((m) => ({ exerciseId, userId, ...m })),
+        }),
+      ]);
+    }
+    return this.findExercise(exerciseId, userId);
+  }
+
+  async resetExerciseMuscles(
+    exerciseId: string,
+    userId: string,
+  ): Promise<Exercise | null> {
+    await this.prisma.ritmoExerciseMuscleOverride.deleteMany({
+      where: { exerciseId, userId },
+    });
+    return this.findExercise(exerciseId, userId);
   }
 
   async getHeartConfig(userId: string): Promise<HeartConfig | null> {

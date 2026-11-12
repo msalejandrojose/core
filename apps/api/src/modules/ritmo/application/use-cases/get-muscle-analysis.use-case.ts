@@ -5,6 +5,10 @@ import {
   type MuscleAnalysisResult,
 } from '../../domain/services/performance/muscle-engine';
 import {
+  periodDays,
+  type PerformancePeriod,
+} from '../../domain/services/performance/periods';
+import {
   RITMO_BODY_REPOSITORY,
   type RitmoBodyRepositoryPort,
 } from '../ports/ritmo-body-repository.port';
@@ -32,7 +36,10 @@ export class GetMuscleAnalysisUseCase {
     private readonly profiles: RitmoProfileRepositoryPort,
   ) {}
 
-  async execute(userId: string): Promise<MuscleAnalysisResult> {
+  async execute(
+    userId: string,
+    period: PerformancePeriod = 'all',
+  ): Promise<MuscleAnalysisResult> {
     const [sessions, exercises, bodyWeightKg, profile] = await Promise.all([
       this.performance.trainingHistory(userId, null),
       this.performance.listExercisesVisibleTo(userId),
@@ -42,6 +49,7 @@ export class GetMuscleAnalysisUseCase {
     return analyzeMuscles(sessions, exercises, {
       today: dayInTimezone(new Date(), profile?.timezone ?? 'Europe/Madrid'),
       bodyWeightKg,
+      periodDays: periodDays(period),
     });
   }
 }

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { formatNumber } from '../format';
-import { SectionHeader } from '../ui/kit';
-import { SIGNAL_LABEL, STATUS_LABEL, STATUS_TONE, pct, shortDay } from './labels';
-import { perfApi, type ExerciseAnalysis } from './perf.api';
+import { SectionHeader, Segmented } from '../ui/kit';
+import { PERIOD_OPTIONS, PERIOD_TEXT, SIGNAL_LABEL, STATUS_LABEL, STATUS_TONE, pct, shortDay } from './labels';
+import { perfApi, type ExerciseAnalysis, type Period } from './perf.api';
 import { Chip, Columns, Empty, Estimated, PerfPage, Tile } from './ui';
 import { usePerf } from './usePerf';
 
@@ -17,8 +17,9 @@ function ExerciseCard({ ex }: { ex: ExerciseAnalysis }) {
       <button type="button" className="perf__card-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         <span className="rk-row__main">
           <span className="perf__rec-title">{ex.name}</span>
-          <span className="rk-row__sub">
-            {ex.sessions} sesiones · última el {shortDay(ex.lastDay)}
+          <span className="rk-row__sub perf__wrap">
+            {ex.period.sessions} {ex.period.sessions === 1 ? 'sesión' : 'sesiones'} en el periodo · {formatNumber(Math.round(ex.period.volumeKg))} kg
+            {ex.period.changePct !== null ? ` · 1RM ${pct(ex.period.changePct)}` : ''}
           </span>
         </span>
         <Chip tone={STATUS_TONE[ex.plateau.status]}>{STATUS_LABEL[ex.plateau.status]}</Chip>
@@ -57,6 +58,18 @@ function ExerciseCard({ ex }: { ex: ExerciseAnalysis }) {
               <dd>{ex.bestE1rm ? `${kg(ex.bestE1rm.value)} kg · ${shortDay(ex.bestE1rm.day)}` : '—'}</dd>
             </div>
             <div>
+              <dt>En el periodo</dt>
+              <dd>
+                {ex.period.firstE1rm === null ? '—' : `${kg(ex.period.firstE1rm)} → ${kg(ex.period.lastE1rm)} kg`} · mejor {kg(ex.period.bestE1rm)}
+              </dd>
+            </div>
+            <div>
+              <dt>Histórico</dt>
+              <dd>
+                {ex.sessions} sesiones · última el {shortDay(ex.lastDay)}
+              </dd>
+            </div>
+            <div>
               <dt>Últimas 8 semanas</dt>
               <dd>
                 {ev.sessions} sesiones · {kg(ev.baselineMedian)} → {kg(ev.recentMedian)} ({pct(ev.changePct)})
@@ -93,11 +106,20 @@ function ExerciseCard({ ex }: { ex: ExerciseAnalysis }) {
 
 /** Fuerza por ejercicio (StrengthEngine). */
 export default function StrengthPerfPage() {
-  const { data, error, reload } = usePerf(() => perfApi.strength());
+  const [period, setPeriod] = useState<Period>('90d');
+  const { data, error, reload } = usePerf(() => perfApi.strength(period), period);
   return (
-    <PerfPage title="Fuerza" sub="Progresión por ejercicio" data={data} error={error} onRetry={reload}>
-      {(a) =>
-        a.exercises.length ? (
+    <PerfPage
+      title="Fuerza"
+      sub="Progresión por ejercicio"
+      data={data}
+      error={error}
+      onRetry={reload}
+      header={<Segmented label="Periodo" value={period} onChange={setPeriod} options={PERIOD_OPTIONS} small />}
+    >
+      {(a) => {
+        const shown = a.exercises.filter((ex) => ex.period.sessions > 0);
+        return a.exercises.length ? (
           <>
             <div className="progress__tiles">
               <Tile label="Progresando" value={a.summary.PROGRESSING} note="ejercicios" />
@@ -107,20 +129,24 @@ export default function StrengthPerfPage() {
             </div>
             <section className="rk-section" aria-labelledby="ejs">
               <SectionHeader id="ejs">Ejercicios</SectionHeader>
-              <div className="perf__recs">
-                {a.exercises.map((ex) => (
-                  <ExerciseCard key={ex.exerciseId} ex={ex} />
-                ))}
-              </div>
+              {shown.length ? (
+                <div className="perf__recs">
+                  {shown.map((ex) => (
+                    <ExerciseCard key={ex.exerciseId} ex={ex} />
+                  ))}
+                </div>
+              ) : (
+                <Empty>No hay sesiones de fuerza en {PERIOD_TEXT[period]}.</Empty>
+              )}
               <p className="rk-note">
-                El 1RM se estima con Brzycki (hasta 10 repeticiones al fallo) y Epley (11–12); con series más largas no se estima. El estado compara las medianas de las últimas 8 semanas, así que una sesión mala no lo cambia.
+                El estado de cada ejercicio (progresa, estancado…) mira siempre las últimas 8 semanas, elijas el periodo que elijas. El 1RM se estima con Brzycki (hasta 10 repeticiones al fallo) y Epley (11–12); con series más largas no se estima. El estado compara las medianas de las últimas 8 semanas, así que una sesión mala no lo cambia.
               </p>
             </section>
           </>
         ) : (
           <Empty>Registra tus sesiones de fuerza con sus ejercicios y series (peso, repeticiones y RIR) para ver tu progresión.</Empty>
-        )
-      }
+        );
+      }}
     </PerfPage>
   );
 }

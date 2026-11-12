@@ -1,7 +1,8 @@
 import { formatNumber } from '../format';
-import { SectionHeader } from '../ui/kit';
-import { ASSOCIATION, BALANCE_FLAG, KIND_NAME, TREND_LABEL, TREND_TONE, VERDICT_TEXT, pct, shortDay } from './labels';
-import { perfApi, type HybridAnalysis } from './perf.api';
+import { useState } from 'react';
+import { SectionHeader, Segmented } from '../ui/kit';
+import { ASSOCIATION, BALANCE_FLAG, KIND_NAME, PERIOD_OPTIONS, PERIOD_TEXT, TREND_LABEL, TREND_TONE, VERDICT_TEXT, pct, shortDay } from './labels';
+import { perfApi, type HybridAnalysis, type Period } from './perf.api';
 import { Chip, Empty, PerfPage, Tile } from './ui';
 import { usePerf } from './usePerf';
 
@@ -36,9 +37,17 @@ function Corr({ title, c }: { title: string; c: HybridAnalysis['interference']['
 
 /** Fuerza + cardio (HybridEngine). */
 export default function HybridPage() {
-  const { data, error, reload } = usePerf(() => perfApi.hybrid());
+  const [period, setPeriod] = useState<Period>('30d');
+  const { data, error, reload } = usePerf(() => perfApi.hybrid(period), period);
   return (
-    <PerfPage title="Fuerza + cardio" sub="Cómo conviven las dos" data={data} error={error} onRetry={reload}>
+    <PerfPage
+      title="Fuerza + cardio"
+      sub="Cómo conviven las dos"
+      data={data}
+      error={error}
+      onRetry={reload}
+      header={<Segmented label="Periodo" value={period} onChange={setPeriod} options={PERIOD_OPTIONS} small />}
+    >
       {(a) => {
         const b = a.balance;
         if (!b.strength.sessions && !b.cardio.sessions && b.daysSinceStrength === null && b.daysSinceCardio === null) {
@@ -71,7 +80,7 @@ export default function HybridPage() {
             </section>
 
             <section className="rk-section" aria-labelledby="eq">
-              <SectionHeader id="eq">Equilibrio · 4 semanas</SectionHeader>
+              <SectionHeader id="eq">Equilibrio · {PERIOD_TEXT[period]}</SectionHeader>
               <div className="rk-card perf__splits">
                 <Split label="Tiempo" share={b.strengthTimeShare} left={`Fuerza ${b.strength.minutes} min`} right={`Cardio ${b.cardio.minutes} min`} />
                 <Split label="Carga (esfuerzo × minutos)" share={b.strengthLoadShare} left={`Fuerza ${formatNumber(b.strength.load)}`} right={`Cardio ${formatNumber(b.cardio.load)}`} />

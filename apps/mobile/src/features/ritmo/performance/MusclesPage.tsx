@@ -1,25 +1,20 @@
 import { useState } from 'react';
 import { formatNumber } from '../format';
 import { SectionHeader, Segmented } from '../ui/kit';
-import { MUSCLE_NAME, TREND_LABEL, TREND_TONE, pct, shortDay } from './labels';
-import { perfApi, type MuscleAnalysis } from './perf.api';
+import { MUSCLE_NAME, PERIOD_OPTIONS, TREND_LABEL, TREND_TONE, pct, shortDay } from './labels';
+import { perfApi, type MuscleAnalysis, type Period } from './perf.api';
 import { MuscleMap } from './MuscleMap';
+import { Link } from 'react-router-dom';
+import { Chevron } from '../ui/kit';
 import { Bar, Chip, Columns, Empty, PerfPage } from './ui';
 import { usePerf } from './usePerf';
-
-type Win = 'last7' | 'last30' | 'last90';
-const WINDOWS: { value: Win; label: string }[] = [
-  { value: 'last7', label: '7 días' },
-  { value: 'last30', label: '30 días' },
-  { value: 'last90', label: '90 días' },
-];
 
 /** Color de la carga relativa: de gris (nada) al color de actividad (lo más trabajado). */
 const heat = (v: number) => (v === 0 ? 'var(--ritmo-border)' : `color-mix(in srgb, var(--ritmo-activity) ${Math.round(25 + v * 75)}%, var(--ritmo-surface))`);
 
-function MuscleRow({ m, win, max, defaultOpen = false }: { m: MuscleAnalysis; win: Win; max: number; defaultOpen?: boolean }) {
+function MuscleRow({ m, max, defaultOpen = false }: { m: MuscleAnalysis; max: number; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
-  const w = m[win];
+  const w = m.period;
   return (
     <div className="perf__muscle">
       <button type="button" className="perf__muscle-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
@@ -82,8 +77,8 @@ function MuscleRow({ m, win, max, defaultOpen = false }: { m: MuscleAnalysis; wi
 
 /** Carga por grupo muscular (MuscleEngine). */
 export default function MusclesPage() {
-  const { data, error, reload } = usePerf(() => perfApi.muscles());
-  const [win, setWin] = useState<Win>('last7');
+  const [period, setPeriod] = useState<Period>('7d');
+  const { data, error, reload } = usePerf(() => perfApi.muscles(period), period);
   const [selected, setSelected] = useState<string | null>(null);
   return (
     <PerfPage
@@ -92,13 +87,13 @@ export default function MusclesPage() {
       data={data}
       error={error}
       onRetry={reload}
-      header={<Segmented label="Periodo" value={win} onChange={setWin} options={WINDOWS} />}
+      header={<Segmented label="Periodo" value={period} onChange={setPeriod} options={PERIOD_OPTIONS} small />}
     >
       {(a) => {
         const any = a.muscles.some((m) => m.allTime.weightedSets > 0);
         if (!any) return <Empty>Registra ejercicios y series en tus sesiones de fuerza para ver cómo repartes el trabajo.</Empty>;
-        const max = Math.max(...a.muscles.map((m) => m[win].weightedSets));
-        const sorted = [...a.muscles].sort((x, y) => y[win].weightedSets - x[win].weightedSets);
+        const max = Math.max(...a.muscles.map((m) => m.period.weightedSets));
+        const sorted = [...a.muscles].sort((x, y) => y.period.weightedSets - x.period.weightedSets);
         const picked = a.muscles.find((m) => m.muscle === selected) ?? null;
         return (
           <>
@@ -106,10 +101,10 @@ export default function MusclesPage() {
               <SectionHeader id="mapa">Mapa muscular</SectionHeader>
               <div className="rk-card">
                 <MuscleMap
-                  values={Object.fromEntries(a.muscles.map((m) => [m.muscle, max ? m[win].weightedSets / max : 0]))}
+                  values={Object.fromEntries(a.muscles.map((m) => [m.muscle, max ? m.period.weightedSets / max : 0]))}
                   describe={(muscle) => {
                     const m = a.muscles.find((x) => x.muscle === muscle);
-                    return `${formatNumber(m?.[win].weightedSets ?? 0, 1)} series`;
+                    return `${formatNumber(m?.period.weightedSets ?? 0, 1)} series`;
                   }}
                   selected={selected}
                   onSelect={(muscle) => setSelected((cur) => (cur === muscle ? null : muscle))}
@@ -117,7 +112,7 @@ export default function MusclesPage() {
               </div>
               {picked ? (
                 <div className="perf__muscles">
-                  <MuscleRow key={picked.muscle} m={picked} win={win} max={max} defaultOpen />
+                  <MuscleRow key={picked.muscle} m={picked} max={max} defaultOpen />
                 </div>
               ) : (
                 <p className="rk-note">Toca un músculo para ver sus cifras. El color es su carga respecto al músculo que más has trabajado en el periodo.</p>
@@ -127,13 +122,20 @@ export default function MusclesPage() {
             <SectionHeader id="reparto">Reparto del trabajo</SectionHeader>
             <div className="perf__muscles">
               {sorted.map((m) => (
-                <MuscleRow key={m.muscle} m={m} win={win} max={max} />
+                <MuscleRow key={m.muscle} m={m} max={max} />
               ))}
             </div>
             <p className="rk-note">
               Una serie cuenta 1 para el músculo principal, 0,5 para el secundario y 0,25 para el indirecto. Esto mide cuánto has entrenado cada grupo, no cuánto ha crecido ni si está recuperado.
             </p>
           </section>
+            <Link to="/tabs/progress/rendimiento/ejercicios" className="rk-row perf__entry">
+              <span className="rk-row__main">
+                <span className="rk-row__title">Ajustar ejercicios</span>
+                <span className="rk-row__sub perf__wrap">Cambia qué músculos trabaja cada uno</span>
+              </span>
+              <Chevron />
+            </Link>
           </>
         );
       }}

@@ -128,7 +128,20 @@ export type RecoveryStatus =
   | 'HIGH_LOAD'
   | 'INSUFFICIENT_DATA';
 
+/** Lo acumulado en el periodo pedido. */
+export interface FatiguePeriod {
+  /** Días del periodo; null = todo el historial. */
+  days: number | null;
+  sessions: number;
+  /** Carga total (UA) y media por semana. */
+  load: number;
+  avgWeeklyLoad: number;
+  demandingSessions: number;
+  activeDays: number;
+}
+
 export interface FatigueAnalysis {
+  period: FatiguePeriod;
   /** Carga diaria por Session RPE (UA), del día más antiguo a hoy. */
   daily: { day: string; load: number; sessions: number }[];
   load: {
@@ -222,6 +235,8 @@ export interface FatigueOptions {
   /** Instante actual, para las horas desde la última sesión. */
   now: Date;
   sex: Sex;
+  /** Días del periodo del resumen; null u omitido = todo el historial. */
+  periodDays?: number | null;
 }
 
 export function analyzeFatigue(
@@ -370,7 +385,23 @@ export function analyzeFatigue(
     'No incluye sueño ni variabilidad cardíaca: es una lectura de la carga, no del cuerpo.',
   );
 
+  const periodDays = options.periodDays ?? null;
+  const inPeriod = periodDays === null ? past : within(periodDays);
+  const periodLoad = sum(inPeriod.map((s) => sessionLoad(s) ?? 0));
+  const periodSpan = Math.max(
+    1,
+    Math.min(periodDays ?? historyDays, historyDays),
+  );
+
   return {
+    period: {
+      days: periodDays,
+      sessions: inPeriod.length,
+      load: periodLoad,
+      avgWeeklyLoad: Math.round(periodLoad / (periodSpan / 7)),
+      demandingSessions: inPeriod.filter(isDemanding).length,
+      activeDays: new Set(inPeriod.map((s) => s.day)).size,
+    },
     daily,
     load: {
       source: 'CALCULATED',

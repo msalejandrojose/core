@@ -19,10 +19,14 @@ import { GetRecommendationsUseCase } from './application/use-cases/get-recommend
 import { SetRecommendationStatusUseCase } from './application/use-cases/set-recommendation-status.use-case';
 import { GetMuscleAnalysisUseCase } from './application/use-cases/get-muscle-analysis.use-case';
 import { GetStrengthAnalysisUseCase } from './application/use-cases/get-strength-analysis.use-case';
+import { GetActivitySessionUseCase } from './application/use-cases/get-activity-session.use-case';
+import { ListActivitySessionsUseCase } from './application/use-cases/list-activity-sessions.use-case';
+import { UpdateActivitySessionUseCase } from './application/use-cases/update-activity-session.use-case';
 import { GetHeartConfigUseCase } from './application/use-cases/get-heart-config.use-case';
 import { ListExercisesUseCase } from './application/use-cases/list-exercises.use-case';
 import { ListPerformanceMeasurementsUseCase } from './application/use-cases/list-performance-measurements.use-case';
 import { ReplaceSessionSetsUseCase } from './application/use-cases/replace-session-sets.use-case';
+import { SetExerciseMusclesUseCase } from './application/use-cases/set-exercise-muscles.use-case';
 import { SaveHeartConfigUseCase } from './application/use-cases/save-heart-config.use-case';
 import { CreateFoodUseCase } from './application/use-cases/create-food.use-case';
 import { DeleteMyAccountUseCase } from './application/use-cases/delete-my-account.use-case';
@@ -103,6 +107,9 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ListActivityTypesUseCase,
     LogActivitySessionUseCase,
     DeleteActivitySessionUseCase,
+    ListActivitySessionsUseCase,
+    GetActivitySessionUseCase,
+    UpdateActivitySessionUseCase,
     SearchFoodsUseCase,
     CreateFoodUseCase,
     LogMealEntryUseCase,
@@ -121,6 +128,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ListPerformanceMeasurementsUseCase,
     ReplaceSessionSetsUseCase,
     SaveHeartConfigUseCase,
+    SetExerciseMusclesUseCase,
 
     // Motores de rendimiento.
     GetStrengthAnalysisUseCase,

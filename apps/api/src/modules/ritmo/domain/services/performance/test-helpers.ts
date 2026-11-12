@@ -19,6 +19,7 @@ export function exercise(
     isCompound: muscles.length > 1,
     isBodyweight: opts.bodyweight ?? false,
     ownerUserId: null,
+    customized: false,
     muscles: muscles.map(([muscle, weight]) => ({ muscle, weight })),
   };
 }

@@ -46,6 +46,21 @@ export interface RitmoPerformanceRepositoryPort {
   /** De una lista de ids, los que el usuario no puede usar. */
   missingExercises(ids: string[], userId: string): Promise<string[]>;
   createExercise(data: CreateExerciseData): Promise<Exercise>;
+  /**
+   * Cambia los pesos por músculo de un ejercicio PARA ESTE USUARIO. En uno
+   * propio edita el ejercicio; en uno del catálogo guarda un ajuste personal.
+   * Null si el ejercicio no existe o no es visible para él.
+   */
+  setExerciseMuscles(
+    exerciseId: string,
+    userId: string,
+    muscles: MuscleWeight[],
+  ): Promise<Exercise | null>;
+  /** Quita el ajuste personal y vuelve a los pesos del catálogo. */
+  resetExerciseMuscles(
+    exerciseId: string,
+    userId: string,
+  ): Promise<Exercise | null>;
 
   getHeartConfig(userId: string): Promise<HeartConfig | null>;
   saveHeartConfig(userId: string, config: HeartConfig): Promise<HeartConfig>;

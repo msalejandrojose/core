@@ -29,7 +29,9 @@ import MedalsPage from '@/features/ritmo/progress/MedalsPage';
 import DigestionPage from '@/features/ritmo/progress/DigestionPage';
 import SharePage from '@/features/ritmo/progress/SharePage';
 import YearPage from '@/features/ritmo/progress/YearPage';
-import SessionSetsPage from '@/features/ritmo/pages/SessionSetsPage';
+import SessionEditPage from '@/features/ritmo/performance/SessionEditPage';
+import HistoryPage from '@/features/ritmo/performance/HistoryPage';
+import ExercisesPage from '@/features/ritmo/performance/ExercisesPage';
 import PerformancePage from '@/features/ritmo/performance/PerformancePage';
 import StrengthPerfPage from '@/features/ritmo/performance/StrengthPerfPage';
 import MusclesPage from '@/features/ritmo/performance/MusclesPage';
@@ -139,7 +141,7 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/recetas/nueva" component={NewRecipePage} />
           <Route exact path="/tabs/today/recuperacion" component={RecoveryPage} />
           <Route exact path="/tabs/today/avisos" component={AlertsPage} />
-          <Route exact path="/tabs/today/entreno/:id" component={SessionSetsPage} />
+          <Route exact path="/tabs/today/entreno/:id" component={SessionEditPage} />
           <Route exact path="/tabs/plan" component={PlanPage} />
           <Route exact path="/tabs/plan/sesion/:day" component={EditSessionPage} />
           <Route exact path="/tabs/plan/fuerza" component={StrengthPage} />
@@ -161,6 +163,9 @@ export default function TabsShell() {
           <Route exact path="/tabs/progress/rendimiento/cardio" component={CardioPerfPage} />
           <Route exact path="/tabs/progress/rendimiento/carga" component={LoadPage} />
           <Route exact path="/tabs/progress/rendimiento/hibrido" component={HybridPage} />
+          <Route exact path="/tabs/progress/rendimiento/entrenos" component={HistoryPage} />
+          <Route exact path="/tabs/progress/rendimiento/entrenos/:id" component={SessionEditPage} />
+          <Route exact path="/tabs/progress/rendimiento/ejercicios" component={ExercisesPage} />
           <Route exact path="/tabs/social" component={FriendsPage} />
           <Route exact path="/tabs/social/retos" component={ChallengesPage} />
           <Route exact path="/tabs/social/amigo/:id" component={FriendPage} />

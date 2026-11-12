@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import type { ActivitySession } from '../../domain/entities/activity-session.entity';
 import type { ActivityType } from '../../domain/entities/activity-type.entity';
 import type { StrengthSet } from '../../domain/entities/performance.entity';
 import type {
   CreateSessionData,
+  UpdateSessionData,
   RitmoActivityRepositoryPort,
   DaySessionStats,
 } from '../../application/ports/ritmo-activity-repository.port';
@@ -71,6 +73,43 @@ export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPor
       include: SESSION_INCLUDE,
     });
     return row ? toSession(row) : null;
+  }
+
+  async listSessions(
+    userId: string,
+    options: { before: Date | null; limit: number },
+  ): Promise<ActivitySession[]> {
+    const rows = await this.prisma.ritmoActivitySession.findMany({
+      where: {
+        userId,
+        ...(options.before ? { startedAt: { lt: options.before } } : {}),
+      },
+      orderBy: { startedAt: 'desc' },
+      take: options.limit,
+      include: SESSION_INCLUDE,
+    });
+    return rows.map(toSession);
+  }
+
+  async updateSession(
+    id: string,
+    userId: string,
+    data: UpdateSessionData,
+  ): Promise<boolean> {
+    const { loggedOn, zoneSeconds, ...rest } = data;
+    // Condicionado por owner en el WHERE, igual que el borrado.
+    const { count } = await this.prisma.ritmoActivitySession.updateMany({
+      where: { id, userId },
+      data: {
+        ...rest,
+        ...(loggedOn ? { loggedOn: toDateOnly(loggedOn) } : {}),
+        // En una columna JSON, `null` de JS no es NULL de SQL: hay que decirlo.
+        ...(zoneSeconds === undefined
+          ? {}
+          : { zoneSeconds: zoneSeconds ?? Prisma.DbNull }),
+      },
+    });
+    return count > 0;
   }
 
   async deleteSession(id: string, userId: string): Promise<boolean> {

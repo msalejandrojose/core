@@ -38,6 +38,7 @@ const SECTIONS = [
   { to: 'cardio', title: 'Cardio', sub: 'Zonas, eficiencia y predicción de marcas', icon: PATHS.run, tone: 'activity' },
   { to: 'carga', title: 'Carga y descanso', sub: 'Carga reciente frente a la habitual', icon: 'M4 16l5-6 4 4 7-9', tone: 'gold' },
   { to: 'hibrido', title: 'Fuerza + cardio', sub: 'Equilibrio, pierna y evolución comparada', icon: 'M7 7h10M7 17h10M4 12h16', tone: 'dark' },
+  { to: 'entrenos', title: 'Entrenos', sub: 'Tu historial: ver, editar o borrar', icon: 'M5 6h14M5 12h14M5 18h9', tone: 'tint' },
 ] as const;
 
 function IndexTile({ label, index }: { label: string; index: PerfIndex }) {

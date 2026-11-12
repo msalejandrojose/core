@@ -1,15 +1,24 @@
 import { formatNumber } from '../format';
-import { SectionHeader } from '../ui/kit';
-import { LOAD_STATUS, LOAD_TONE, MUSCLE_NAME, RECOVERY_LABEL, pct } from './labels';
-import { perfApi } from './perf.api';
+import { useState } from 'react';
+import { SectionHeader, Segmented } from '../ui/kit';
+import { LOAD_STATUS, LOAD_TONE, MUSCLE_NAME, PERIOD_OPTIONS, PERIOD_TEXT, RECOVERY_LABEL, pct } from './labels';
+import { perfApi, type Period } from './perf.api';
 import { Chip, Columns, Empty, Estimated, PerfPage, Tile } from './ui';
 import { usePerf } from './usePerf';
 
 /** Carga y descanso (FatigueEngine). */
 export default function LoadPage() {
-  const { data, error, reload } = usePerf(() => perfApi.fatigue());
+  const [period, setPeriod] = useState<Period>('30d');
+  const { data, error, reload } = usePerf(() => perfApi.fatigue(period), period);
   return (
-    <PerfPage title="Carga y descanso" sub="Fuerza y cardio juntas" data={data} error={error} onRetry={reload}>
+    <PerfPage
+      title="Carga y descanso"
+      sub="Fuerza y cardio juntas"
+      data={data}
+      error={error}
+      onRetry={reload}
+      header={<Segmented label="Periodo" value={period} onChange={setPeriod} options={PERIOD_OPTIONS} small />}
+    >
       {(a) =>
         a.dataQuality.sessions === 0 ? (
           <Empty>Registra entrenos con su esfuerzo (RPE) para ver tu carga.</Empty>
@@ -29,6 +38,21 @@ export default function LoadPage() {
               </span>
             </div>
 
+            <section className="rk-section" aria-labelledby="per">
+              <SectionHeader id="per">En {PERIOD_TEXT[period]}</SectionHeader>
+              <div className="progress__tiles">
+                <Tile label="Sesiones" value={a.period.sessions} note={`${a.period.activeDays} días activos`} />
+                <Tile label="Carga total" value={formatNumber(a.period.load)} unit="UA" note={`${formatNumber(a.period.avgWeeklyLoad)} por semana`} />
+                <Tile label="Sesiones exigentes" value={a.period.demandingSessions} note="RPE 8 o más" />
+                <Tile
+                  label="Exigentes"
+                  value={a.period.sessions ? `${Math.round((a.period.demandingSessions / a.period.sessions) * 100)} %` : '—'}
+                  note="del total de sesiones"
+                />
+              </div>
+            </section>
+
+            <SectionHeader>Ahora mismo</SectionHeader>
             <div className="progress__tiles">
               <Tile label="Exigentes en 7 días" value={a.demanding.last7} note={`${a.demanding.maxConsecutiveDays} días seguidos como máximo`} />
               <Tile label="Días de descanso" value={a.rest.restDaysLast7} note="en los últimos 7" />

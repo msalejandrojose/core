@@ -32,11 +32,13 @@ import { DeletePerformanceMeasurementUseCase } from '../../application/use-cases
 import { GetHeartConfigUseCase } from '../../application/use-cases/get-heart-config.use-case';
 import { ListExercisesUseCase } from '../../application/use-cases/list-exercises.use-case';
 import { ListPerformanceMeasurementsUseCase } from '../../application/use-cases/list-performance-measurements.use-case';
+import { SetExerciseMusclesUseCase } from '../../application/use-cases/set-exercise-muscles.use-case';
 import { SaveHeartConfigUseCase } from '../../application/use-cases/save-heart-config.use-case';
 import {
   AddMeasurementDto,
   CreateExerciseDto,
   SaveHeartConfigDto,
+  SetExerciseMusclesDto,
 } from './dto/performance-inputs.dto';
 
 // Datos de entrada del motor de rendimiento: catálogo de ejercicios,
@@ -54,6 +56,7 @@ export class RitmoPerformanceInputsController {
     private readonly listMeasurements: ListPerformanceMeasurementsUseCase,
     private readonly addMeasurement: AddPerformanceMeasurementUseCase,
     private readonly deleteMeasurement: DeletePerformanceMeasurementUseCase,
+    private readonly setExerciseMuscles: SetExerciseMusclesUseCase,
   ) {}
 
   @Get('exercises')
@@ -85,6 +88,43 @@ export class RitmoPerformanceInputsController {
       isBodyweight: body.isBodyweight ?? false,
       muscles: body.muscles,
     });
+  }
+
+  @Put('exercises/:id/muscles')
+  @ApiOperation({
+    summary:
+      'Ajustar los pesos por músculo de un ejercicio (solo para mí si es del catálogo).',
+  })
+  @ApiOkResponse({ description: 'Ejercicio con los pesos vigentes.' })
+  muscles(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: SetExerciseMusclesDto,
+  ): Promise<Exercise> {
+    const unique = new Set(body.muscles.map((m) => m.muscle));
+    if (unique.size !== body.muscles.length) {
+      throw new BadRequestException(
+        'Cada músculo solo puede aparecer una vez.',
+      );
+    }
+    if (!body.muscles.some((m) => m.weight === 1)) {
+      throw new BadRequestException(
+        'Hace falta al menos un músculo principal.',
+      );
+    }
+    return this.setExerciseMuscles.execute(id, current.sub, body.muscles);
+  }
+
+  @Delete('exercises/:id/muscles')
+  @ApiOperation({
+    summary: 'Volver a los pesos por músculo del catálogo.',
+  })
+  @ApiOkResponse({ description: 'Ejercicio con los pesos del catálogo.' })
+  resetMuscles(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<Exercise> {
+    return this.setExerciseMuscles.execute(id, current.sub, null);
   }
 
   @Get('heart-config')

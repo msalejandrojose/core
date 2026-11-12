@@ -74,6 +74,8 @@ export interface MuscleAnalysis {
   last90: MuscleWindow;
   /** Todo el historial recibido. */
   allTime: MuscleWindow;
+  /** El periodo pedido (igual que `allTime` si no se pide ninguno). */
+  period: MuscleWindow;
   /** Sesiones por semana en los últimos 28 días. */
   weeklyFrequency: number;
   /** Series ponderadas por semana, las 12 últimas (la última es la actual). */
@@ -99,6 +101,8 @@ export interface MuscleAnalysis {
 }
 
 export interface MuscleAnalysisResult {
+  /** Días del periodo; null = todo el historial. */
+  periodDays: number | null;
   muscles: MuscleAnalysis[];
   /** Proporción de series de trabajo con RIR apuntado (0–1). */
   rirCoverage: number;
@@ -108,6 +112,8 @@ export interface MuscleAnalysisResult {
 
 interface Contribution {
   day: string;
+  /** Días desde la sesión hasta hoy. Se calcula una vez por sesión. */
+  age: number;
   sessionId: string;
   muscle: Muscle;
   weight: number;
@@ -151,6 +157,8 @@ function windowOf(items: Contribution[], days: number): MuscleWindow {
 export interface MuscleOptions {
   today: string;
   bodyWeightKg: number | null;
+  /** Días del periodo; null u omitido = todo el historial. */
+  periodDays?: number | null;
 }
 
 /** Analiza el trabajo por grupo muscular a partir de las series registradas. */
@@ -160,13 +168,19 @@ export function analyzeMuscles(
   options: MuscleOptions,
 ): MuscleAnalysisResult {
   const { today } = options;
+  const periodDays = options.periodDays ?? null;
   const byId = new Map(exercises.map((e) => [e.id, e]));
-  const contributions: Contribution[] = [];
+  // Agrupadas por músculo desde el principio: cada músculo solo recorre lo suyo.
+  const byMuscle = new Map<Muscle, Contribution[]>();
   let working = 0;
   let withRir = 0;
   let unmapped = 0;
 
   for (const session of sessions) {
+    if (!session.sets.length) continue;
+    // La antigüedad se calcula una vez por sesión, no por serie ni por ventana:
+    // parsear la fecha en cada filtro era casi todo el coste del motor.
+    const age = daysBetween(session.day, today);
     for (const set of session.sets) {
       if (set.isWarmup) continue;
       working += 1;
@@ -179,8 +193,14 @@ export function analyzeMuscles(
       const loadKg = setLoadKg(set, exercise, options.bodyWeightKg);
       const stimulus = setStimulus(set);
       for (const m of exercise.muscles) {
-        contributions.push({
+        let list = byMuscle.get(m.muscle);
+        if (!list) {
+          list = [];
+          byMuscle.set(m.muscle, list);
+        }
+        list.push({
           day: session.day,
+          age,
           sessionId: session.id,
           muscle: m.muscle,
           weight: m.weight,
@@ -201,25 +221,27 @@ export function analyzeMuscles(
   const historyDays = firstDay ? daysBetween(firstDay, today) : 0;
 
   const within = (items: Contribution[], from: number, to: number) =>
-    items.filter((c) => {
-      const age = daysBetween(c.day, today);
-      return age >= from && age < to;
-    });
+    items.filter((c) => c.age >= from && c.age < to);
 
   const analyses = MUSCLES.map((muscle) => {
-    const mine = contributions.filter((c) => c.muscle === muscle);
-    const last7 = within(mine, 0, 7);
+    const mine = byMuscle.get(muscle) ?? [];
+    // Casi todas las ventanas caben en 90 días: se filtran sobre lo reciente.
+    const recent = within(mine, 0, 91);
+    const last7 = within(recent, 0, 7);
 
     // Semanas hacia atrás desde hoy: la 0 son los últimos 7 días.
     const weeklySets = Array.from({ length: 12 }, (_, i) => {
       const week = 11 - i;
       return round(
-        within(mine, week * 7, week * 7 + 7).reduce((s, c) => s + c.weight, 0),
+        within(recent, week * 7, week * 7 + 7).reduce(
+          (s, c) => s + c.weight,
+          0,
+        ),
         2,
       );
     });
     const weekVolume = (week: number) =>
-      within(mine, week * 7, week * 7 + 7).reduce(
+      within(recent, week * 7, week * 7 + 7).reduce(
         (s, c) => s + c.volumeKg * c.weight,
         0,
       );
@@ -247,8 +269,8 @@ export function analyzeMuscles(
       const reps = direct.reduce((s, c) => s + c.reps, 0);
       return reps ? direct.reduce((s, c) => s + c.volumeKg, 0) / reps : null;
     };
-    const loadNow = avgLoad(within(mine, 0, 30));
-    const loadChangePct = pctChange(avgLoad(within(mine, 30, 60)), loadNow);
+    const loadNow = avgLoad(within(recent, 0, 30));
+    const loadChangePct = pctChange(avgLoad(within(recent, 30, 60)), loadNow);
 
     const lastTrainedDay = mine
       .filter((c) => c.weight >= SESSION_MIN_WEIGHT)
@@ -268,13 +290,20 @@ export function analyzeMuscles(
     return {
       muscle,
       last7: windowOf(last7, 7),
-      last30: windowOf(within(mine, 0, 30), 30),
-      last90: windowOf(within(mine, 0, 90), 90),
+      last30: windowOf(within(recent, 0, 30), 30),
+      last90: windowOf(within(recent, 0, 90), 90),
       allTime: windowOf(mine, firstDay ? historyDays + 1 : 0),
-      weeklyFrequency: round(windowOf(within(mine, 0, 28), 28).sessions / 4, 2),
+      period:
+        periodDays === null
+          ? windowOf(mine, firstDay ? historyDays + 1 : 0)
+          : windowOf(within(mine, 0, periodDays), periodDays),
+      weeklyFrequency: round(
+        windowOf(within(recent, 0, 28), 28).sessions / 4,
+        2,
+      ),
       weeklySets,
       avgWeeklySets: round(
-        within(mine, 0, 28).reduce((s, c) => s + c.weight, 0) / 4,
+        within(recent, 0, 28).reduce((s, c) => s + c.weight, 0) / 4,
         2,
       ),
       volumeChangePct:
@@ -294,6 +323,7 @@ export function analyzeMuscles(
 
   const maxLoad = Math.max(0, ...analyses.map((a) => a.last7.effectiveSets));
   return {
+    periodDays,
     muscles: analyses.map((a) => ({
       ...a,
       relativeLoad: maxLoad ? round(a.last7.effectiveSets / maxLoad, 2) : 0,
