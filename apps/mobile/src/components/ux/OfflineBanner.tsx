@@ -15,7 +15,7 @@ export function OfflineBanner() {
   return (
     <div className="core-offline-banner" role="status" aria-live="polite">
       <IonIcon icon={cloudOfflineOutline} aria-hidden="true" />
-      <span>Sin conexión</span>
+      <span>Sin conexión. Lo que ya ves sigue aquí; para registrar, vuelve a conectarte.</span>
     </div>
   );
 }

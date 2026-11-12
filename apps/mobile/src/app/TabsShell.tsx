@@ -29,7 +29,6 @@ import MedalsPage from '@/features/ritmo/progress/MedalsPage';
 import DigestionPage from '@/features/ritmo/progress/DigestionPage';
 import SharePage from '@/features/ritmo/progress/SharePage';
 import YearPage from '@/features/ritmo/progress/YearPage';
-import { ComingSoonPage } from '@/features/ritmo/ComingSoonPage';
 import { RegisterSheets } from '@/features/ritmo/RegisterSheets';
 import FoodDayPage from '@/features/ritmo/pages/FoodDayPage';
 import RecipesPage from '@/features/ritmo/pages/RecipesPage';
@@ -38,31 +37,24 @@ import RecoveryPage from '@/features/ritmo/pages/RecoveryPage';
 import AlertsPage from '@/features/ritmo/pages/AlertsPage';
 import { useRegisterStore } from '@/features/ritmo/register.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
-import SettingsPage from '@/features/settings/SettingsPage';
-import AppearancePage from '@/features/settings/AppearancePage';
+import PlanPage from '@/features/ritmo/plan/PlanPage';
+import EditSessionPage from '@/features/ritmo/plan/EditSessionPage';
+import StrengthPage from '@/features/ritmo/plan/StrengthPage';
+import DietPage from '@/features/ritmo/plan/DietPage';
+import ShoppingPage from '@/features/ritmo/plan/ShoppingPage';
+import ShareListPage from '@/features/ritmo/plan/ShareListPage';
+import FriendsPage from '@/features/ritmo/social/FriendsPage';
+import FriendPage from '@/features/ritmo/social/FriendPage';
+import ChallengesPage from '@/features/ritmo/social/ChallengesPage';
+import RitmoProfilePage from '@/features/ritmo/profile/ProfilePage';
+import ConnectionsPage from '@/features/ritmo/profile/ConnectionsPage';
+import HevyConnectPage from '@/features/ritmo/profile/HevyConnectPage';
+import DeleteAccountPage from '@/features/ritmo/profile/DeleteAccountPage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { usePushNotifications } from '@/features/notifications/use-push-notifications';
 import { Snackbar } from '@/components/ux';
-
-const PlanPage = () => (
-  <ComingSoonPage
-    title="Plan"
-    icon={calendarOutline}
-    heading="Tu semana, entreno a entreno"
-    description="Aquí verás tus sesiones de la semana y la dieta que sigue a cada una."
-  />
-);
-
-const SocialPage = () => (
-  <ComingSoonPage
-    title="Social"
-    icon={peopleOutline}
-    heading="Entrena con tus amigos"
-    description="Aquí verás a tus amigos y los retos que compartáis."
-  />
-);
 
 /**
  * El + central. `IonTabBar` solo pinta hijos que sean pestañas (y descarta el
@@ -141,6 +133,11 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/recuperacion" component={RecoveryPage} />
           <Route exact path="/tabs/today/avisos" component={AlertsPage} />
           <Route exact path="/tabs/plan" component={PlanPage} />
+          <Route exact path="/tabs/plan/sesion/:day" component={EditSessionPage} />
+          <Route exact path="/tabs/plan/fuerza" component={StrengthPage} />
+          <Route exact path="/tabs/plan/dieta" component={DietPage} />
+          <Route exact path="/tabs/plan/compra" component={ShoppingPage} />
+          <Route exact path="/tabs/plan/compra/compartir" component={ShareListPage} />
           <Route exact path="/tabs/progress" component={ProgressPage} />
           <Route exact path="/tabs/progress/objetivos" component={GoalsPage} />
           <Route exact path="/tabs/progress/objetivos/nuevo" component={NewGoalPage} />
@@ -150,10 +147,14 @@ export default function TabsShell() {
           <Route exact path="/tabs/progress/digestion" component={DigestionPage} />
           <Route exact path="/tabs/progress/compartir" component={SharePage} />
           <Route exact path="/tabs/progress/anual" component={YearPage} />
-          <Route exact path="/tabs/social" component={SocialPage} />
+          <Route exact path="/tabs/social" component={FriendsPage} />
+          <Route exact path="/tabs/social/retos" component={ChallengesPage} />
+          <Route exact path="/tabs/social/amigo/:id" component={FriendPage} />
           <Route exact path="/tabs/notifications" component={NotificationsPage} />
-          <Route exact path="/tabs/settings" component={SettingsPage} />
-          <Route exact path="/tabs/settings/appearance" component={AppearancePage} />
+          <Route exact path="/tabs/settings" component={RitmoProfilePage} />
+          <Route exact path="/tabs/settings/conexiones" component={ConnectionsPage} />
+          <Route exact path="/tabs/settings/hevy" component={HevyConnectPage} />
+          <Route exact path="/tabs/settings/eliminar" component={DeleteAccountPage} />
           <Route exact path="/tabs/settings/profile" component={ProfilePage} />
           <Route
             exact
