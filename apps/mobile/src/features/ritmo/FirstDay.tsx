@@ -44,7 +44,7 @@ export function FirstDay({
       title: 'Fija un objetivo',
       desc: 'Peso y ritmo semanal',
       done: target !== null,
-      to: '/tabs/progress/goal',
+      to: '/tabs/progress/objetivos/nuevo',
     },
     {
       title: 'Planifica tu semana',

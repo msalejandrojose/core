@@ -139,6 +139,13 @@ export interface Progress {
     kcalIn: number;
     kcalBurned: number;
     kcalTarget: number | null;
+    proteinG: number;
+    /** Entrenos registrados ese día. */
+    sessions: number;
+    /** Minutos de entreno ese día. */
+    activeMinutes: number;
+    /** Momentos del día (desayuno, comida…) con algo registrado. */
+    mealsLogged: number;
   }[];
 }
 
