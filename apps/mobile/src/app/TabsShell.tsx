@@ -38,6 +38,9 @@ import RecoveryPage from '@/features/ritmo/pages/RecoveryPage';
 import AlertsPage from '@/features/ritmo/pages/AlertsPage';
 import { useRegisterStore } from '@/features/ritmo/register.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
+import FriendsPage from '@/features/ritmo/social/FriendsPage';
+import FriendPage from '@/features/ritmo/social/FriendPage';
+import ChallengesPage from '@/features/ritmo/social/ChallengesPage';
 import RitmoProfilePage from '@/features/ritmo/profile/ProfilePage';
 import ConnectionsPage from '@/features/ritmo/profile/ConnectionsPage';
 import HevyConnectPage from '@/features/ritmo/profile/HevyConnectPage';
@@ -54,15 +57,6 @@ const PlanPage = () => (
     icon={calendarOutline}
     heading="Tu semana, entreno a entreno"
     description="Aquí verás tus sesiones de la semana y la dieta que sigue a cada una."
-  />
-);
-
-const SocialPage = () => (
-  <ComingSoonPage
-    title="Social"
-    icon={peopleOutline}
-    heading="Entrena con tus amigos"
-    description="Aquí verás a tus amigos y los retos que compartáis."
   />
 );
 
@@ -152,7 +146,9 @@ export default function TabsShell() {
           <Route exact path="/tabs/progress/digestion" component={DigestionPage} />
           <Route exact path="/tabs/progress/compartir" component={SharePage} />
           <Route exact path="/tabs/progress/anual" component={YearPage} />
-          <Route exact path="/tabs/social" component={SocialPage} />
+          <Route exact path="/tabs/social" component={FriendsPage} />
+          <Route exact path="/tabs/social/retos" component={ChallengesPage} />
+          <Route exact path="/tabs/social/amigo/:id" component={FriendPage} />
           <Route exact path="/tabs/notifications" component={NotificationsPage} />
           <Route exact path="/tabs/settings" component={RitmoProfilePage} />
           <Route exact path="/tabs/settings/conexiones" component={ConnectionsPage} />
