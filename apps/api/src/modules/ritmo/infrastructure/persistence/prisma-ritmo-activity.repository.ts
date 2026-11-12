@@ -2,12 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import type { ActivitySession } from '../../domain/entities/activity-session.entity';
 import type { ActivityType } from '../../domain/entities/activity-type.entity';
+import type { StrengthSet } from '../../domain/entities/performance.entity';
 import type {
   CreateSessionData,
   RitmoActivityRepositoryPort,
   DaySessionStats,
 } from '../../application/ports/ritmo-activity-repository.port';
 import { toActivityType, toDateOnly, toDay, toSession } from './ritmo.mapper';
+
+/** Lo que necesita `toSession`: nombre y disciplina del tipo, y las series. */
+const SESSION_INCLUDE = {
+  activityType: { select: { name: true, kind: true } },
+  strengthSets: true,
+} as const;
 
 @Injectable()
 export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPort {
@@ -40,9 +47,17 @@ export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPor
   }
 
   async createSession(data: CreateSessionData): Promise<ActivitySession> {
+    const { sets, zoneSeconds, ...session } = data;
     const row = await this.prisma.ritmoActivitySession.create({
-      data: { ...data, loggedOn: toDateOnly(data.loggedOn) },
-      include: { activityType: { select: { name: true } } },
+      data: {
+        ...session,
+        zoneSeconds: zoneSeconds ?? undefined,
+        loggedOn: toDateOnly(data.loggedOn),
+        strengthSets: {
+          create: sets.map((s) => ({ ...s, userId: data.userId })),
+        },
+      },
+      include: SESSION_INCLUDE,
     });
     return toSession(row);
   }
@@ -53,7 +68,7 @@ export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPor
   ): Promise<ActivitySession | null> {
     const row = await this.prisma.ritmoActivitySession.findFirst({
       where: { id, userId },
-      include: { activityType: { select: { name: true } } },
+      include: SESSION_INCLUDE,
     });
     return row ? toSession(row) : null;
   }
@@ -67,6 +82,21 @@ export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPor
     return count > 0;
   }
 
+  async replaceSets(
+    sessionId: string,
+    userId: string,
+    sets: StrengthSet[],
+  ): Promise<void> {
+    // Borrar y volver a crear en una transacción: una edición nunca deja la
+    // sesión con la mitad de las series.
+    await this.prisma.$transaction([
+      this.prisma.ritmoStrengthSet.deleteMany({ where: { sessionId, userId } }),
+      this.prisma.ritmoStrengthSet.createMany({
+        data: sets.map((s) => ({ ...s, sessionId, userId })),
+      }),
+    ]);
+  }
+
   async listSessionsByDay(
     userId: string,
     day: string,
@@ -74,7 +104,7 @@ export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPor
     const rows = await this.prisma.ritmoActivitySession.findMany({
       where: { userId, loggedOn: toDateOnly(day) },
       orderBy: { startedAt: 'asc' },
-      include: { activityType: { select: { name: true } } },
+      include: SESSION_INCLUDE,
     });
     return rows.map(toSession);
   }

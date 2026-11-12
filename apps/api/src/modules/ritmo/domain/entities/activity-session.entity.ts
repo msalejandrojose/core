@@ -1,6 +1,8 @@
 // Sesión de actividad registrada. `kcalBurned` es un snapshot calculado en el
 // momento del registro (depende del peso de ese día y del MET vigente):
 // recalcularlo después reescribiría el histórico del usuario.
+import type { ActivityKind, StrengthSet } from './performance.entity';
+
 export type ActivitySource =
   | 'MANUAL'
   | 'HEALTHKIT'
@@ -22,6 +24,16 @@ export interface ActivitySession {
   durationSec: number;
   distanceM: number | null;
   avgHeartRate: number | null;
+  maxHeartRate: number | null;
+  elevationGainM: number | null;
+  cadence: number | null;
+  /** Esfuerzo percibido CR10 (1–10). */
+  rpe: number | null;
+  /** Segundos en Z1..Z5, si el dispositivo los dio. */
+  zoneSeconds: number[] | null;
+  kind: ActivityKind;
+  /** Series de fuerza, en orden. Vacío en cardio. */
+  sets: StrengthSet[];
   effort: Effort | null;
   kcalBurned: number;
   notes: string | null;

@@ -3,11 +3,15 @@
 //
 // `met` (Metabolic Equivalent of Task) es lo que permite estimar el gasto sin
 // pulsómetro, que es el caso normal en la v1 (registro manual).
+import type { ActivityKind } from './performance.entity';
+
 export interface ActivityType {
   id: string;
   code: string | null;
   name: string;
   met: number;
+  /** Disciplina: decide qué motor de rendimiento la analiza. */
+  kind: ActivityKind;
   icon: string | null;
   ownerUserId: string | null;
 }

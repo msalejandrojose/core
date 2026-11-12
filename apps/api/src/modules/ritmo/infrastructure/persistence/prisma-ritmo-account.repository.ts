@@ -16,21 +16,40 @@ export class PrismaRitmoAccountRepository implements RitmoAccountRepositoryPort 
     });
     if (!user) return null;
     const byUser = { where: { userId } };
-    const [profile, measurements, activityTypes, sessions, foods, meals, logs] =
-      await Promise.all([
-        this.prisma.ritmoProfile.findUnique(byUser),
-        this.prisma.ritmoBodyMeasurement.findMany(byUser),
-        this.prisma.ritmoActivityType.findMany({
-          where: { ownerUserId: userId },
-        }),
-        this.prisma.ritmoActivitySession.findMany(byUser),
-        this.prisma.ritmoFood.findMany({
-          where: { ownerUserId: userId },
-          include: { servings: true },
-        }),
-        this.prisma.ritmoMealEntry.findMany(byUser),
-        this.prisma.ritmoDailyLog.findMany(byUser),
-      ]);
+    const [
+      profile,
+      measurements,
+      activityTypes,
+      sessions,
+      foods,
+      meals,
+      logs,
+      exercises,
+      heartConfig,
+      performanceMeasurements,
+    ] = await Promise.all([
+      this.prisma.ritmoProfile.findUnique(byUser),
+      this.prisma.ritmoBodyMeasurement.findMany(byUser),
+      this.prisma.ritmoActivityType.findMany({
+        where: { ownerUserId: userId },
+      }),
+      this.prisma.ritmoActivitySession.findMany({
+        ...byUser,
+        include: { strengthSets: true },
+      }),
+      this.prisma.ritmoFood.findMany({
+        where: { ownerUserId: userId },
+        include: { servings: true },
+      }),
+      this.prisma.ritmoMealEntry.findMany(byUser),
+      this.prisma.ritmoDailyLog.findMany(byUser),
+      this.prisma.ritmoExercise.findMany({
+        where: { ownerUserId: userId },
+        include: { muscles: true },
+      }),
+      this.prisma.ritmoHeartConfig.findUnique(byUser),
+      this.prisma.ritmoPerformanceMeasurement.findMany(byUser),
+    ]);
     return {
       exportedAt: new Date().toISOString(),
       account: user,
@@ -41,6 +60,9 @@ export class PrismaRitmoAccountRepository implements RitmoAccountRepositoryPort 
       foods,
       meals,
       dailyLogs: logs,
+      exercises,
+      heartConfig,
+      performanceMeasurements,
     };
   }
 

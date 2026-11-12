@@ -15,6 +15,9 @@ export interface RitmoAccountExport {
   foods: unknown[];
   meals: unknown[];
   dailyLogs: unknown[];
+  exercises: unknown[];
+  heartConfig: unknown;
+  performanceMeasurements: unknown[];
 }
 
 export interface RitmoAccountRepositoryPort {

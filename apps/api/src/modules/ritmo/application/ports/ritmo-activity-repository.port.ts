@@ -3,6 +3,7 @@ import type {
   ActivitySession,
   Effort,
 } from '../../domain/entities/activity-session.entity';
+import type { StrengthSet } from '../../domain/entities/performance.entity';
 
 /** Entrenos de un día: cuántos y cuántos minutos. */
 export interface DaySessionStats {
@@ -21,9 +22,15 @@ export interface CreateSessionData {
   durationSec: number;
   distanceM: number | null;
   avgHeartRate: number | null;
+  maxHeartRate: number | null;
+  elevationGainM: number | null;
+  cadence: number | null;
+  rpe: number | null;
+  zoneSeconds: number[] | null;
   effort: Effort | null;
   kcalBurned: number;
   notes: string | null;
+  sets: StrengthSet[];
 }
 
 export interface RitmoActivityRepositoryPort {
@@ -36,6 +43,12 @@ export interface RitmoActivityRepositoryPort {
   findSession(id: string, userId: string): Promise<ActivitySession | null>;
   /** Borra la sesión solo si es del usuario. `false` si no existía o no era suya. */
   deleteSession(id: string, userId: string): Promise<boolean>;
+  /** Sustituye todas las series de una sesión del usuario (edición del entreno). */
+  replaceSets(
+    sessionId: string,
+    userId: string,
+    sets: StrengthSet[],
+  ): Promise<void>;
   listSessionsByDay(userId: string, day: string): Promise<ActivitySession[]>;
   /** Suma de kcal gastadas en un día, para el agregado diario. */
   sumKcalByDay(userId: string, day: string): Promise<number>;
