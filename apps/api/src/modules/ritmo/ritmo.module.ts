@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 import { IamModule } from '../iam/iam.module';
+import { RITMO_ACCOUNT_REPOSITORY } from './application/ports/ritmo-account-repository.port';
 import { RITMO_ACTIVITY_REPOSITORY } from './application/ports/ritmo-activity-repository.port';
 import { RITMO_BODY_REPOSITORY } from './application/ports/ritmo-body-repository.port';
 import { RITMO_DIARY_REPOSITORY } from './application/ports/ritmo-diary-repository.port';
 import { RITMO_FOOD_REPOSITORY } from './application/ports/ritmo-food-repository.port';
 import { RITMO_PROFILE_REPOSITORY } from './application/ports/ritmo-profile-repository.port';
 import { CreateFoodUseCase } from './application/use-cases/create-food.use-case';
+import { DeleteMyAccountUseCase } from './application/use-cases/delete-my-account.use-case';
+import { ExportMyDataUseCase } from './application/use-cases/export-my-data.use-case';
 import { DeleteActivitySessionUseCase } from './application/use-cases/delete-activity-session.use-case';
 import { DeleteMealEntryUseCase } from './application/use-cases/delete-meal-entry.use-case';
 import { GetDaySummaryUseCase } from './application/use-cases/get-day-summary.use-case';
@@ -19,11 +22,13 @@ import { LogWeightUseCase } from './application/use-cases/log-weight.use-case';
 import { RefreshDailyLogUseCase } from './application/use-cases/refresh-daily-log.use-case';
 import { SaveMyProfileUseCase } from './application/use-cases/save-my-profile.use-case';
 import { SearchFoodsUseCase } from './application/use-cases/search-foods.use-case';
+import { PrismaRitmoAccountRepository } from './infrastructure/persistence/prisma-ritmo-account.repository';
 import { PrismaRitmoActivityRepository } from './infrastructure/persistence/prisma-ritmo-activity.repository';
 import { PrismaRitmoBodyRepository } from './infrastructure/persistence/prisma-ritmo-body.repository';
 import { PrismaRitmoDiaryRepository } from './infrastructure/persistence/prisma-ritmo-diary.repository';
 import { PrismaRitmoFoodRepository } from './infrastructure/persistence/prisma-ritmo-food.repository';
 import { PrismaRitmoProfileRepository } from './infrastructure/persistence/prisma-ritmo-profile.repository';
+import { RitmoAccountController } from './infrastructure/http/ritmo-account.controller';
 import { RitmoActivityController } from './infrastructure/http/ritmo-activity.controller';
 import { RitmoDiaryController } from './infrastructure/http/ritmo-diary.controller';
 import { RitmoNutritionController } from './infrastructure/http/ritmo-nutrition.controller';
@@ -41,6 +46,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoActivityController,
     RitmoNutritionController,
     RitmoDiaryController,
+    RitmoAccountController,
   ],
   providers: [
     {
@@ -54,6 +60,10 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     },
     { provide: RITMO_FOOD_REPOSITORY, useClass: PrismaRitmoFoodRepository },
     { provide: RITMO_DIARY_REPOSITORY, useClass: PrismaRitmoDiaryRepository },
+    {
+      provide: RITMO_ACCOUNT_REPOSITORY,
+      useClass: PrismaRitmoAccountRepository,
+    },
 
     // Compartido por todas las escrituras del diario: mantiene
     // `ritmo_daily_log` en sync con sus partes.
@@ -72,6 +82,8 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     DeleteMealEntryUseCase,
     GetDaySummaryUseCase,
     GetProgressUseCase,
+    ExportMyDataUseCase,
+    DeleteMyAccountUseCase,
   ],
 })
 export class RitmoModule {}

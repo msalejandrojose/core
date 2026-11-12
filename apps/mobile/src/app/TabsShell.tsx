@@ -38,8 +38,10 @@ import RecoveryPage from '@/features/ritmo/pages/RecoveryPage';
 import AlertsPage from '@/features/ritmo/pages/AlertsPage';
 import { useRegisterStore } from '@/features/ritmo/register.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
-import SettingsPage from '@/features/settings/SettingsPage';
-import AppearancePage from '@/features/settings/AppearancePage';
+import RitmoProfilePage from '@/features/ritmo/profile/ProfilePage';
+import ConnectionsPage from '@/features/ritmo/profile/ConnectionsPage';
+import HevyConnectPage from '@/features/ritmo/profile/HevyConnectPage';
+import DeleteAccountPage from '@/features/ritmo/profile/DeleteAccountPage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
@@ -152,8 +154,10 @@ export default function TabsShell() {
           <Route exact path="/tabs/progress/anual" component={YearPage} />
           <Route exact path="/tabs/social" component={SocialPage} />
           <Route exact path="/tabs/notifications" component={NotificationsPage} />
-          <Route exact path="/tabs/settings" component={SettingsPage} />
-          <Route exact path="/tabs/settings/appearance" component={AppearancePage} />
+          <Route exact path="/tabs/settings" component={RitmoProfilePage} />
+          <Route exact path="/tabs/settings/conexiones" component={ConnectionsPage} />
+          <Route exact path="/tabs/settings/hevy" component={HevyConnectPage} />
+          <Route exact path="/tabs/settings/eliminar" component={DeleteAccountPage} />
           <Route exact path="/tabs/settings/profile" component={ProfilePage} />
           <Route
             exact
