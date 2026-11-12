@@ -14,6 +14,9 @@ import { GetCardioAnalysisUseCase } from './application/use-cases/get-cardio-ana
 import { GetFatigueAnalysisUseCase } from './application/use-cases/get-fatigue-analysis.use-case';
 import { GetHybridAnalysisUseCase } from './application/use-cases/get-hybrid-analysis.use-case';
 import { PerformanceDataLoader } from './application/use-cases/performance-data.loader';
+import { GetPerformanceSummaryUseCase } from './application/use-cases/get-performance-summary.use-case';
+import { GetRecommendationsUseCase } from './application/use-cases/get-recommendations.use-case';
+import { SetRecommendationStatusUseCase } from './application/use-cases/set-recommendation-status.use-case';
 import { GetMuscleAnalysisUseCase } from './application/use-cases/get-muscle-analysis.use-case';
 import { GetStrengthAnalysisUseCase } from './application/use-cases/get-strength-analysis.use-case';
 import { GetHeartConfigUseCase } from './application/use-cases/get-heart-config.use-case';
@@ -126,6 +129,9 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     PerformanceDataLoader,
     GetFatigueAnalysisUseCase,
     GetHybridAnalysisUseCase,
+    GetPerformanceSummaryUseCase,
+    GetRecommendationsUseCase,
+    SetRecommendationStatusUseCase,
   ],
 })
 export class RitmoModule {}

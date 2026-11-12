@@ -1,19 +1,43 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Put,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { type AccessTokenPayload } from '../../../iam/application/ports/token-issuer.port';
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import type { CardioAnalysis } from '../../domain/services/performance/cardio-engine';
 import type { FatigueAnalysis } from '../../domain/services/performance/fatigue-engine';
 import type { HybridAnalysis } from '../../domain/services/performance/hybrid-engine';
+import type { PerformanceSummary } from '../../domain/services/performance/performance-engine';
 import type { MuscleAnalysisResult } from '../../domain/services/performance/muscle-engine';
 import type { StrengthAnalysis } from '../../domain/services/performance/strength-engine';
 import { GetCardioAnalysisUseCase } from '../../application/use-cases/get-cardio-analysis.use-case';
 import { GetFatigueAnalysisUseCase } from '../../application/use-cases/get-fatigue-analysis.use-case';
 import { GetHybridAnalysisUseCase } from '../../application/use-cases/get-hybrid-analysis.use-case';
+import { GetPerformanceSummaryUseCase } from '../../application/use-cases/get-performance-summary.use-case';
+import {
+  GetRecommendationsUseCase,
+  type RecommendationWithState,
+} from '../../application/use-cases/get-recommendations.use-case';
+import { SetRecommendationStatusUseCase } from '../../application/use-cases/set-recommendation-status.use-case';
 import { GetMuscleAnalysisUseCase } from '../../application/use-cases/get-muscle-analysis.use-case';
 import { GetStrengthAnalysisUseCase } from '../../application/use-cases/get-strength-analysis.use-case';
-import { PerformancePeriodQueryDto } from './dto/performance-inputs.dto';
+import {
+  PerformancePeriodQueryDto,
+  RecommendationStatusDto,
+  RecommendationsQueryDto,
+} from './dto/performance-inputs.dto';
 
 // Resultados de los motores de rendimiento. Todo se calcula al vuelo con
 // algoritmos deterministas sobre lo que el usuario ha registrado.
@@ -27,6 +51,9 @@ export class RitmoPerformanceController {
     private readonly cardioAnalysis: GetCardioAnalysisUseCase,
     private readonly fatigueAnalysis: GetFatigueAnalysisUseCase,
     private readonly hybridAnalysis: GetHybridAnalysisUseCase,
+    private readonly performanceSummary: GetPerformanceSummaryUseCase,
+    private readonly getRecommendations: GetRecommendationsUseCase,
+    private readonly setRecommendationStatus: SetRecommendationStatusUseCase,
   ) {}
 
   @Get('strength')
@@ -95,5 +122,54 @@ export class RitmoPerformanceController {
   })
   hybrid(@CurrentUser() current: AccessTokenPayload): Promise<HybridAnalysis> {
     return this.hybridAnalysis.execute(current.sub);
+  }
+
+  @Get('summary')
+  @ApiOperation({
+    summary:
+      'Resumen de rendimiento del periodo: los cinco motores consolidados.',
+  })
+  @ApiOkResponse({
+    description:
+      'Totales, evolución, carga, reparto muscular, estancamientos, índices documentados y calidad de datos.',
+  })
+  summary(
+    @CurrentUser() current: AccessTokenPayload,
+    @Query() query: PerformancePeriodQueryDto,
+  ): Promise<PerformanceSummary> {
+    return this.performanceSummary.execute(current.sub, query.period ?? '30d');
+  }
+
+  @Get('recommendations')
+  @ApiOperation({
+    summary: 'Recomendaciones vigentes, generadas por reglas deterministas.',
+  })
+  @ApiOkResponse({
+    description:
+      'Cada una con categoría, prioridad, explicación, datos, fecha de detección, estado y periodo.',
+  })
+  recommendations(
+    @CurrentUser() current: AccessTokenPayload,
+    @Query() query: RecommendationsQueryDto,
+  ): Promise<RecommendationWithState[]> {
+    return this.getRecommendations.execute(
+      current.sub,
+      query.includeDismissed === 'true',
+    );
+  }
+
+  @Put('recommendations/status')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Descartar una recomendación o reactivarla.' })
+  @ApiNoContentResponse()
+  async recommendationStatus(
+    @CurrentUser() current: AccessTokenPayload,
+    @Body() body: RecommendationStatusDto,
+  ): Promise<void> {
+    await this.setRecommendationStatus.execute(
+      current.sub,
+      body.id,
+      body.status,
+    );
   }
 }
