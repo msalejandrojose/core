@@ -13,6 +13,10 @@ import type {
   Effort,
 } from '../../domain/entities/activity-session.entity';
 import type { ActivityType } from '../../domain/entities/activity-type.entity';
+import type {
+  ActivityKind,
+  StrengthSet,
+} from '../../domain/entities/performance.entity';
 import type { BodyMeasurement } from '../../domain/entities/body-measurement.entity';
 import type { DailyLog } from '../../domain/entities/daily-log.entity';
 import type { Food, FoodSource } from '../../domain/entities/food.entity';
@@ -124,6 +128,7 @@ interface ActivityTypeRow {
   name: string;
   met: Numeric;
   icon: string | null;
+  kind: string;
   ownerUserId: string | null;
 }
 
@@ -133,6 +138,7 @@ export function toActivityType(row: ActivityTypeRow): ActivityType {
     code: row.code,
     name: row.name,
     met: numReq(row.met as Exclude<Numeric, null>),
+    kind: row.kind as ActivityKind,
     icon: row.icon,
     ownerUserId: row.ownerUserId,
   };
@@ -147,11 +153,59 @@ interface SessionRow {
   durationSec: number;
   distanceM: number | null;
   avgHeartRate: number | null;
+  maxHeartRate?: number | null;
+  elevationGainM?: number | null;
+  cadence?: number | null;
+  rpe?: number | null;
+  zoneSeconds?: unknown;
   effort: string | null;
   kcalBurned: number;
   notes: string | null;
   source: string;
-  activityType?: { name: string } | null;
+  activityType?: { name: string; kind?: string } | null;
+  strengthSets?: StrengthSetRow[];
+}
+
+export interface StrengthSetRow {
+  exerciseId: string;
+  exerciseOrder: number;
+  setOrder: number;
+  weightKg: Numeric;
+  reps: number;
+  rir: number | null;
+  restSec: number | null;
+  isWarmup: boolean;
+}
+
+export function toStrengthSet(row: StrengthSetRow): StrengthSet {
+  return {
+    exerciseId: row.exerciseId,
+    exerciseOrder: row.exerciseOrder,
+    setOrder: row.setOrder,
+    weightKg: numReq(row.weightKg as Exclude<Numeric, null>),
+    reps: row.reps,
+    rir: row.rir,
+    restSec: row.restSec,
+    isWarmup: row.isWarmup,
+  };
+}
+
+/** `zone_seconds` es JSON libre en la BBDD: solo vale un array de 5 números. */
+export function toZoneSeconds(value: unknown): number[] | null {
+  return Array.isArray(value) &&
+    value.length === 5 &&
+    value.every((v) => typeof v === 'number')
+    ? value
+    : null;
+}
+
+/** Series en el orden en que se hicieron. */
+export function sortSets(rows: StrengthSetRow[]): StrengthSet[] {
+  return rows
+    .map(toStrengthSet)
+    .sort(
+      (a, b) => a.exerciseOrder - b.exerciseOrder || a.setOrder - b.setOrder,
+    );
 }
 
 export function toSession(row: SessionRow): ActivitySession {
@@ -165,6 +219,13 @@ export function toSession(row: SessionRow): ActivitySession {
     durationSec: row.durationSec,
     distanceM: row.distanceM,
     avgHeartRate: row.avgHeartRate,
+    maxHeartRate: row.maxHeartRate ?? null,
+    elevationGainM: row.elevationGainM ?? null,
+    cadence: row.cadence ?? null,
+    rpe: row.rpe ?? null,
+    zoneSeconds: toZoneSeconds(row.zoneSeconds),
+    kind: (row.activityType?.kind ?? 'OTHER') as ActivityKind,
+    sets: sortSets(row.strengthSets ?? []),
     effort: row.effort as Effort | null,
     kcalBurned: row.kcalBurned,
     notes: row.notes,

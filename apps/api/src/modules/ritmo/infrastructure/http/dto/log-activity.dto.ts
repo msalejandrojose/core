@@ -1,5 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  ValidateNested,
   IsIn,
   IsISO8601,
   IsInt,
@@ -11,6 +16,8 @@ import {
   Min,
 } from 'class-validator';
 import type { Effort } from '../../../domain/entities/activity-session.entity';
+
+import { SessionExerciseDto } from './strength-sets.dto';
 
 const EFFORTS: Effort[] = ['LIGHT', 'MODERATE', 'VIGOROUS'];
 
@@ -48,6 +55,66 @@ export class LogActivityDto {
   @Min(30)
   @Max(250)
   avgHeartRate?: number;
+
+  @ApiPropertyOptional({ example: 176, minimum: 30, maximum: 250 })
+  @IsOptional()
+  @IsInt()
+  @Min(30)
+  @Max(250)
+  maxHeartRate?: number;
+
+  @ApiPropertyOptional({
+    example: 140,
+    description: 'Desnivel positivo, en metros.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(20000)
+  elevationGainM?: number;
+
+  @ApiPropertyOptional({
+    example: 172,
+    description: 'Cadencia media (pasos/min o rpm).',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(300)
+  cadence?: number;
+
+  @ApiPropertyOptional({
+    example: 7,
+    description: 'Esfuerzo percibido de la sesión, CR10 (1–10).',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  rpe?: number;
+
+  @ApiPropertyOptional({
+    example: [300, 1200, 600, 240, 60],
+    description: 'Segundos en cada zona cardíaca, Z1 a Z5.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(5)
+  @ArrayMaxSize(5)
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  zoneSeconds?: number[];
+
+  @ApiPropertyOptional({
+    type: [SessionExerciseDto],
+    description: 'Ejercicios de fuerza con sus series, en orden.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @ValidateNested({ each: true })
+  @Type(() => SessionExerciseDto)
+  exercises?: SessionExerciseDto[];
 
   @ApiPropertyOptional({
     enum: EFFORTS,

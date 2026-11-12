@@ -610,6 +610,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Sesión de actividad no encontrada.',
   },
+  RITMO_EXERCISE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'warn',
+    defaultMessage: 'Ejercicio no encontrado.',
+  },
   RITMO_FOOD_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',

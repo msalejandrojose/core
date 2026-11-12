@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { PrismaService } from '../infrastructure/database/prisma/prisma.service';
+import { ACTIVITY_KINDS, EXERCISES, type Muscle } from './ritmo-exercises.data';
 
 // Seed idempotente del catálogo global de Ritmo: tipos de actividad con su MET
 // y un puñado de alimentos básicos verificados. Ambos con `ownerUserId` null =
@@ -174,8 +175,14 @@ async function main(): Promise<void> {
   for (const type of ACTIVITY_TYPES) {
     await prisma.ritmoActivityType.upsert({
       where: { code: type.code },
-      update: { name: type.name, met: type.met, icon: type.icon },
+      update: {
+        name: type.name,
+        met: type.met,
+        icon: type.icon,
+        kind: (ACTIVITY_KINDS[type.code] ?? 'OTHER') as never,
+      },
       create: {
+        kind: (ACTIVITY_KINDS[type.code] ?? 'OTHER') as never,
         code: type.code,
         name: type.name,
         met: type.met,
@@ -229,6 +236,34 @@ async function main(): Promise<void> {
     });
   }
   console.log(`✔ ${FOODS.length} alimentos del catálogo`);
+
+  for (const ex of EXERCISES) {
+    const values = {
+      name: ex.name,
+      isCompound: ex.compound ?? false,
+      isBodyweight: ex.bodyweight ?? false,
+    };
+    const row = await prisma.ritmoExercise.upsert({
+      where: { code: ex.code },
+      update: values,
+      create: { code: ex.code, ownerUserId: null, ...values },
+      select: { id: true, _count: { select: { muscles: true } } },
+    });
+    // Los pesos por músculo solo se siembran la primera vez: si alguien los
+    // ha ajustado en la BBDD, un re-run no los pisa.
+    if (row._count.muscles > 0) continue;
+    const weights: [Muscle[], number][] = [
+      [ex.p, 1],
+      [ex.s ?? [], 0.5],
+      [ex.i ?? [], 0.25],
+    ];
+    await prisma.ritmoExerciseMuscle.createMany({
+      data: weights.flatMap(([muscles, weight]) =>
+        muscles.map((muscle) => ({ exerciseId: row.id, muscle, weight })),
+      ),
+    });
+  }
+  console.log(`✔ ${EXERCISES.length} ejercicios de fuerza`);
 
   await app.close();
 }

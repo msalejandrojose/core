@@ -5,7 +5,16 @@ import { RITMO_ACTIVITY_REPOSITORY } from './application/ports/ritmo-activity-re
 import { RITMO_BODY_REPOSITORY } from './application/ports/ritmo-body-repository.port';
 import { RITMO_DIARY_REPOSITORY } from './application/ports/ritmo-diary-repository.port';
 import { RITMO_FOOD_REPOSITORY } from './application/ports/ritmo-food-repository.port';
+import { RITMO_PERFORMANCE_REPOSITORY } from './application/ports/ritmo-performance-repository.port';
 import { RITMO_PROFILE_REPOSITORY } from './application/ports/ritmo-profile-repository.port';
+import { AddPerformanceMeasurementUseCase } from './application/use-cases/add-performance-measurement.use-case';
+import { CreateExerciseUseCase } from './application/use-cases/create-exercise.use-case';
+import { DeletePerformanceMeasurementUseCase } from './application/use-cases/delete-performance-measurement.use-case';
+import { GetHeartConfigUseCase } from './application/use-cases/get-heart-config.use-case';
+import { ListExercisesUseCase } from './application/use-cases/list-exercises.use-case';
+import { ListPerformanceMeasurementsUseCase } from './application/use-cases/list-performance-measurements.use-case';
+import { ReplaceSessionSetsUseCase } from './application/use-cases/replace-session-sets.use-case';
+import { SaveHeartConfigUseCase } from './application/use-cases/save-heart-config.use-case';
 import { CreateFoodUseCase } from './application/use-cases/create-food.use-case';
 import { DeleteMyAccountUseCase } from './application/use-cases/delete-my-account.use-case';
 import { ExportMyDataUseCase } from './application/use-cases/export-my-data.use-case';
@@ -27,11 +36,13 @@ import { PrismaRitmoActivityRepository } from './infrastructure/persistence/pris
 import { PrismaRitmoBodyRepository } from './infrastructure/persistence/prisma-ritmo-body.repository';
 import { PrismaRitmoDiaryRepository } from './infrastructure/persistence/prisma-ritmo-diary.repository';
 import { PrismaRitmoFoodRepository } from './infrastructure/persistence/prisma-ritmo-food.repository';
+import { PrismaRitmoPerformanceRepository } from './infrastructure/persistence/prisma-ritmo-performance.repository';
 import { PrismaRitmoProfileRepository } from './infrastructure/persistence/prisma-ritmo-profile.repository';
 import { RitmoAccountController } from './infrastructure/http/ritmo-account.controller';
 import { RitmoActivityController } from './infrastructure/http/ritmo-activity.controller';
 import { RitmoDiaryController } from './infrastructure/http/ritmo-diary.controller';
 import { RitmoNutritionController } from './infrastructure/http/ritmo-nutrition.controller';
+import { RitmoPerformanceInputsController } from './infrastructure/http/ritmo-performance-inputs.controller';
 import { RitmoProfileController } from './infrastructure/http/ritmo-profile.controller';
 
 // Ritmo — actividad física y calorías (proyecto de la rama `ritmo-dev`).
@@ -47,6 +58,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoNutritionController,
     RitmoDiaryController,
     RitmoAccountController,
+    RitmoPerformanceInputsController,
   ],
   providers: [
     {
@@ -60,6 +72,10 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     },
     { provide: RITMO_FOOD_REPOSITORY, useClass: PrismaRitmoFoodRepository },
     { provide: RITMO_DIARY_REPOSITORY, useClass: PrismaRitmoDiaryRepository },
+    {
+      provide: RITMO_PERFORMANCE_REPOSITORY,
+      useClass: PrismaRitmoPerformanceRepository,
+    },
     {
       provide: RITMO_ACCOUNT_REPOSITORY,
       useClass: PrismaRitmoAccountRepository,
@@ -84,6 +100,16 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     GetProgressUseCase,
     ExportMyDataUseCase,
     DeleteMyAccountUseCase,
+
+    // Datos de entrada del motor de rendimiento.
+    AddPerformanceMeasurementUseCase,
+    CreateExerciseUseCase,
+    DeletePerformanceMeasurementUseCase,
+    GetHeartConfigUseCase,
+    ListExercisesUseCase,
+    ListPerformanceMeasurementsUseCase,
+    ReplaceSessionSetsUseCase,
+    SaveHeartConfigUseCase,
   ],
 })
 export class RitmoModule {}

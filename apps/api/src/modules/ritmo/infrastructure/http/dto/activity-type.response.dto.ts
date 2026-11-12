@@ -10,6 +10,11 @@ export class ActivityTypeResponseDto {
     description: 'MET: equivalente metabólico, base del cálculo de kcal.',
   })
   met: number;
+  @ApiProperty({
+    example: 'RUN',
+    description: 'Disciplina (STRENGTH admite series).',
+  })
+  kind: string;
   @ApiPropertyOptional({ example: 'walk' }) icon: string | null;
   @ApiProperty({
     example: false,
@@ -23,6 +28,7 @@ export class ActivityTypeResponseDto {
     dto.code = t.code;
     dto.name = t.name;
     dto.met = t.met;
+    dto.kind = t.kind;
     dto.icon = t.icon;
     dto.isCustom = t.ownerUserId !== null;
     return dto;
