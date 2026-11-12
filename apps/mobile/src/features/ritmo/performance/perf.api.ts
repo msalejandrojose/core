@@ -15,6 +15,10 @@ export interface Exercise {
   code: string | null;
   name: string;
   isBodyweight: boolean;
+  /** null = del catálogo; con valor = creado por el usuario. */
+  ownerUserId: string | null;
+  /** true si el usuario ha ajustado los pesos de un ejercicio del catálogo. */
+  customized: boolean;
   muscles: { muscle: string; weight: number }[];
 }
 
@@ -23,6 +27,19 @@ export interface HeartConfig {
   restingHr: number | null;
   method: 'MAX_HR' | 'HR_RESERVE' | 'CUSTOM';
   customZones: number[] | null;
+}
+
+export interface SessionPatch {
+  startedAt?: string;
+  durationSec?: number;
+  distanceM?: number | null;
+  avgHeartRate?: number | null;
+  maxHeartRate?: number | null;
+  elevationGainM?: number | null;
+  cadence?: number | null;
+  rpe?: number | null;
+  zoneSeconds?: number[] | null;
+  notes?: string | null;
 }
 
 export interface Measurement {
@@ -103,6 +120,16 @@ export interface ExerciseAnalysis {
   totalVolumeKg: number;
   currentE1rm: number | null;
   rirCoverage: number;
+  /** Lo hecho en el periodo pedido. */
+  period: {
+    sessions: number;
+    workingSets: number;
+    volumeKg: number;
+    bestE1rm: number | null;
+    firstE1rm: number | null;
+    lastE1rm: number | null;
+    changePct: number | null;
+  };
   plateau: {
     status: Status;
     signals: string[];
@@ -139,6 +166,8 @@ export interface MuscleAnalysis {
   last30: MuscleWindow;
   last90: MuscleWindow;
   allTime: MuscleWindow;
+  /** El periodo pedido. */
+  period: MuscleWindow;
   weeklyFrequency: number;
   weeklySets: number[];
   avgWeeklySets: number;
@@ -199,6 +228,7 @@ export interface CardioAnalysis {
 }
 
 export interface FatigueAnalysis {
+  period: { days: number | null; sessions: number; load: number; avgWeeklyLoad: number; demandingSessions: number; activeDays: number };
   load: {
     recent: number;
     usual: number;
@@ -220,6 +250,7 @@ export interface FatigueAnalysis {
 
 export interface HybridAnalysis {
   balance: {
+    windowDays: number;
     strength: { sessions: number; minutes: number; load: number };
     cardio: { sessions: number; minutes: number; load: number };
     strengthTimeShare: number | null;
@@ -257,6 +288,18 @@ export const perfApi = {
   addMeasurement: (body: Omit<Measurement, 'id' | 'heartRate' | 'sourceLabel'> & { heartRate?: number; sourceLabel?: string }) =>
     call<Measurement>('POST', '/ritmo/performance/measurements', { body }),
   deleteMeasurement: (id: string) => call<void>('DELETE', `/ritmo/performance/measurements/${id}`),
+  setExerciseMuscles: (id: string, muscles: { muscle: string; weight: number }[]) =>
+    call<Exercise>('PUT', `/ritmo/exercises/${id}/muscles`, { body: { muscles } }),
+  resetExerciseMuscles: (id: string) => call<Exercise>('DELETE', `/ritmo/exercises/${id}/muscles`),
+  /** Historial, del más reciente al más antiguo. `before` es el `startedAt` del último recibido. */
+  history: (before: string | null, limit: number) =>
+    call<ActivitySession[]>('GET', '/ritmo/activities', {
+      params: { query: { limit, ...(before ? { before } : {}) } },
+    }),
+  session: (id: string) => call<ActivitySession>('GET', `/ritmo/activities/${id}`),
+  /** Edición parcial: `null` vacía un campo opcional. */
+  updateSession: (id: string, body: SessionPatch) =>
+    call<ActivitySession>('PATCH', `/ritmo/activities/${id}`, { body }),
   replaceSets: (sessionId: string, exercises: NonNullable<LogActivityBody['exercises']>) =>
     call<ActivitySession>('PUT', `/ritmo/activities/${sessionId}/sets`, { body: { exercises } }),
   allRecommendations: () =>
@@ -272,9 +315,9 @@ export const perfApi = {
     call<void>('PUT', '/ritmo/performance/recommendations/status', { body: { id, status: 'DISMISSED' } }),
   restore: (id: string) =>
     call<void>('PUT', '/ritmo/performance/recommendations/status', { body: { id, status: 'ACTIVE' } }),
-  strength: () => call<StrengthAnalysis>('GET', '/ritmo/performance/strength'),
-  muscles: () => call<MuscleResult>('GET', '/ritmo/performance/muscles'),
+  strength: (period: Period) => call<StrengthAnalysis>('GET', '/ritmo/performance/strength', q(period)),
+  muscles: (period: Period) => call<MuscleResult>('GET', '/ritmo/performance/muscles', q(period)),
   cardio: (period: Period) => call<CardioAnalysis>('GET', '/ritmo/performance/cardio', q(period)),
-  fatigue: () => call<FatigueAnalysis>('GET', '/ritmo/performance/fatigue'),
-  hybrid: () => call<HybridAnalysis>('GET', '/ritmo/performance/hybrid'),
+  fatigue: (period: Period) => call<FatigueAnalysis>('GET', '/ritmo/performance/fatigue', q(period)),
+  hybrid: (period: Period) => call<HybridAnalysis>('GET', '/ritmo/performance/hybrid', q(period)),
 };

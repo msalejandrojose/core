@@ -59,12 +59,14 @@ export interface RitmoActivityRepositoryPort {
   /** Una sesión, solo si es del usuario. */
   findSession(id: string, userId: string): Promise<ActivitySession | null>;
   /**
-   * Sesiones del usuario, de la más reciente a la más antigua. `beforeDay`
-   * pagina hacia atrás: solo días estrictamente anteriores.
+   * Sesiones del usuario, de la más reciente a la más antigua. `before`
+   * pagina hacia atrás: solo las que empezaron antes de ese instante (el
+   * `startedAt` de la última recibida), así un día con varios entrenos nunca
+   * queda partido entre dos páginas.
    */
   listSessions(
     userId: string,
-    options: { beforeDay: string | null; limit: number },
+    options: { before: Date | null; limit: number },
   ): Promise<ActivitySession[]>;
   /** Actualiza una sesión del usuario; `false` si no existe o no es suya. */
   updateSession(

@@ -373,7 +373,7 @@ button.perf__card-head,
 }
 .musclemap__view svg {
   width: 100%;
-  max-width: 170px;
+  max-width: 180px;
   height: auto;
 }
 .musclemap__view figcaption {
@@ -385,15 +385,16 @@ button.perf__card-head,
   fill: var(--ritmo-surface-fill-2);
 }
 .musclemap__muscle {
-  stroke: var(--ritmo-border);
-  stroke-width: 1;
+  stroke: var(--ritmo-border-strong);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
   cursor: pointer;
   outline: none;
 }
 .musclemap__muscle.is-selected,
 .musclemap__muscle:focus-visible {
   stroke: var(--ritmo-tint);
-  stroke-width: 2.5;
+  stroke-width: 2;
 }
 .musclemap__legend {
   display: flex;
@@ -412,4 +413,36 @@ button.perf__card-head,
   height: 10px;
   border-radius: 3px;
   border: 1px solid var(--ritmo-border);
+}
+
+/* Editar entreno */
+.perf__notes {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  resize: vertical;
+}
+.perf__delete {
+  min-height: 50px;
+  border: 0;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-danger);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.perf__entry {
+  min-height: 58px;
+  padding: 8px 14px 8px 16px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
 }

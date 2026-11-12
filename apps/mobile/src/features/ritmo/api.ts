@@ -73,6 +73,13 @@ export interface ActivitySession {
   durationSec: number;
   distanceM: number | null;
   avgHeartRate: number | null;
+  maxHeartRate?: number | null;
+  elevationGainM?: number | null;
+  cadence?: number | null;
+  /** Esfuerzo percibido CR10 (1–10). */
+  rpe?: number | null;
+  /** Segundos en Z1..Z5. */
+  zoneSeconds?: number[] | null;
   /** Disciplina del tipo de actividad (STRENGTH, RUN…). */
   kind?: string;
   /** Series de fuerza, en orden. */
@@ -251,6 +258,7 @@ type RawClient = {
   POST: (path: string, init?: unknown) => Promise<RawResult<unknown>>;
   PUT: (path: string, init?: unknown) => Promise<RawResult<unknown>>;
   DELETE: (path: string, init?: unknown) => Promise<RawResult<unknown>>;
+  PATCH: (path: string, init?: unknown) => Promise<RawResult<unknown>>;
 };
 
 const raw = apiClient as unknown as RawClient;

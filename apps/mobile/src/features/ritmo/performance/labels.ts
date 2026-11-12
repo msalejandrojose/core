@@ -123,7 +123,7 @@ export const BALANCE_FLAG: Record<string, string> = {
   NO_CARDIO: 'Llevas 2 semanas o más sin cardio.',
   NO_STRENGTH: 'Llevas 2 semanas o más sin fuerza.',
   MOSTLY_HARD: 'Más del 40 % de tus sesiones son exigentes.',
-  NO_EASY_SESSIONS: 'No hay ninguna sesión suave en 4 semanas.',
+  NO_EASY_SESSIONS: 'No hay ninguna sesión suave en el periodo.',
 };
 
 export const ASSOCIATION: Record<string, string> = {
@@ -174,3 +174,19 @@ export function minutes(sec: number): string {
   const m = Math.round(sec / 60);
   return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
 }
+
+/** Periodos que aceptan los motores, para los selectores. */
+export const PERIOD_OPTIONS: { value: '7d' | '30d' | '90d' | '6m' | 'all'; label: string }[] = [
+  { value: '7d', label: '7 d' },
+  { value: '30d', label: '30 d' },
+  { value: '90d', label: '90 d' },
+  { value: '6m', label: '6 m' },
+  { value: 'all', label: 'Todo' },
+];
+export const PERIOD_TEXT: Record<string, string> = {
+  '7d': 'últimos 7 días',
+  '30d': 'últimos 30 días',
+  '90d': 'últimos 90 días',
+  '6m': 'últimos 6 meses',
+  all: 'todo el historial',
+};

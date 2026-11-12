@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import { isApiError } from '../api';
 import { toast } from '@/lib/toast';
-import { MUSCLE_NAME } from '../performance/labels';
 import { perfApi, type Exercise } from '../performance/perf.api';
-
-/** Peso de un músculo: sin trabajar → principal → secundario → indirecto. */
-const CYCLE = [0, 1, 0.5, 0.25];
-const LEVEL: Record<number, string> = { 1: 'Principal', 0.5: 'Secundario', 0.25: 'Indirecto' };
+import { MusclePicker } from './MusclePicker';
 
 /**
  * Crear un ejercicio propio: nombre y cuánto trabaja cada músculo. Cada toque
@@ -54,23 +50,7 @@ export function NewExerciseForm({
         <span className="rk-visually-hidden">Nombre del ejercicio</span>
         <input type="text" value={name} placeholder="Nombre del ejercicio" maxLength={120} onChange={(e) => setName(e.target.value)} />
       </label>
-      <div className="workout__muscles" role="group" aria-label="Músculos que trabaja">
-        {Object.keys(MUSCLE_NAME).map((m) => {
-          const w = weights[m] ?? 0;
-          return (
-            <button
-              key={m}
-              type="button"
-              className={`workout__muscle${w ? ` is-${w === 1 ? 'main' : w === 0.5 ? 'sec' : 'ind'}` : ''}`}
-              aria-label={`${MUSCLE_NAME[m]}: ${w ? LEVEL[w] : 'no lo trabaja'}. Toca para cambiar.`}
-              onClick={() => setWeights((s) => ({ ...s, [m]: CYCLE[(CYCLE.indexOf(w) + 1) % CYCLE.length] }))}
-            >
-              {MUSCLE_NAME[m]}
-              {w ? <em>{LEVEL[w]}</em> : null}
-            </button>
-          );
-        })}
-      </div>
+      <MusclePicker value={weights} onChange={setWeights} />
       <button type="button" aria-pressed={bodyweight} className="workout__chip" onClick={() => setBodyweight((v) => !v)}>
         Con peso corporal (dominadas, fondos…)
       </button>

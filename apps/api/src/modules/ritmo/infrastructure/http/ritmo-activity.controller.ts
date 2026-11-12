@@ -105,7 +105,7 @@ export class RitmoActivityController {
   ): Promise<ActivitySessionResponseDto[]> {
     const sessions = await this.listSessions.execute(
       current.sub,
-      query.before ?? null,
+      query.before ? new Date(query.before) : null,
       query.limit ?? 30,
     );
     return sessions.map((s) => ActivitySessionResponseDto.from(s));

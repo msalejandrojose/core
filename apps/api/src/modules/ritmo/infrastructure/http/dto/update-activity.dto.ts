@@ -8,14 +8,12 @@ import {
   IsISO8601,
   IsOptional,
   IsString,
-  Matches,
   Max,
   MaxLength,
   Min,
   ValidateIf,
 } from 'class-validator';
 import type { Effort } from '../../../domain/entities/activity-session.entity';
-import { DAY_EXAMPLE, DAY_PATTERN } from './day.param';
 
 const EFFORTS: Effort[] = ['LIGHT', 'MODERATE', 'VIGOROUS'];
 const MAX_DURATION_SEC = 12 * 60 * 60;
@@ -116,11 +114,12 @@ export class UpdateActivityDto {
 
 export class ListActivitiesQueryDto {
   @ApiPropertyOptional({
-    example: DAY_EXAMPLE,
-    description: 'Solo entrenos de días anteriores a este (para paginar).',
+    example: '2026-11-10T07:30:00.000Z',
+    description:
+      'Cursor: solo entrenos que empezaron antes de este instante (el startedAt del último recibido).',
   })
   @IsOptional()
-  @Matches(DAY_PATTERN, { message: 'before debe tener formato YYYY-MM-DD.' })
+  @IsISO8601()
   before?: string;
 
   @ApiPropertyOptional({ default: 30, minimum: 1, maximum: 100 })

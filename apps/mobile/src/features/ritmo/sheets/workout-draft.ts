@@ -95,6 +95,45 @@ export function cardioBody(c: DraftCardio): Partial<LogActivityBody> {
 
 const text = (n: number) => String(n).replace('.', ',');
 
+/** Campos de cardio de una edición: `null` quita el dato. */
+export interface CardioPatch {
+  distanceM: number | null;
+  avgHeartRate: number | null;
+  maxHeartRate: number | null;
+  elevationGainM: number | null;
+  cadence: number | null;
+  zoneSeconds: number[] | null;
+}
+
+/**
+ * Para editar: lo relleno se manda y lo vacío va como `null`, que en la API
+ * significa «quitar el dato» (al registrar, lo vacío simplemente no se manda).
+ */
+export function cardioPatch(c: DraftCardio): CardioPatch {
+  const f = cardioBody(c);
+  return {
+    distanceM: f.distanceM ?? null,
+    avgHeartRate: f.avgHeartRate ?? null,
+    maxHeartRate: f.maxHeartRate ?? null,
+    elevationGainM: f.elevationGainM ?? null,
+    cadence: f.cadence ?? null,
+    zoneSeconds: f.zoneSeconds ?? null,
+  };
+}
+
+/** Datos de cardio guardados → borrador editable. */
+export function cardioDraftFromSession(s: ActivitySession): DraftCardio {
+  const n = (v: number | null | undefined) => (v === null || v === undefined ? '' : String(v));
+  return {
+    distanceKm: s.distanceM ? text(Math.round(s.distanceM / 10) / 100) : '',
+    avgHr: n(s.avgHeartRate),
+    maxHr: n(s.maxHeartRate),
+    elevation: n(s.elevationGainM),
+    cadence: n(s.cadence),
+    zones: s.zoneSeconds?.length === 5 ? s.zoneSeconds.map((z) => (z ? text(Math.round((z / 60) * 10) / 10) : '')) : ['', '', '', '', ''],
+  };
+}
+
 /** Series guardadas → borrador editable, agrupadas por ejercicio y en su orden. */
 export function draftsFromSets(
   sets: NonNullable<ActivitySession['sets']>,

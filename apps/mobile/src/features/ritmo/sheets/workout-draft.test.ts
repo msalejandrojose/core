@@ -2,7 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/api/client', () => ({ apiClient: {} }));
 
-import { EMPTY_CARDIO, cardioBody, draftsFromSets, exercisesBody, type DraftExercise, type DraftSet } from './workout-draft';
+import {
+  EMPTY_CARDIO,
+  cardioBody,
+  cardioDraftFromSession,
+  cardioPatch,
+  draftsFromSets,
+  exercisesBody,
+  type DraftExercise,
+  type DraftSet,
+} from './workout-draft';
 
 const set = (weight: string, reps: string, rir = '', warmup = false): DraftSet => ({ weight, reps, rir, warmup });
 const ex = (sets: DraftSet[], extra: Partial<DraftExercise> = {}): DraftExercise => ({
@@ -96,5 +105,34 @@ describe('draftsFromSets', () => {
       { weightKg: 72.5, reps: 8, isWarmup: true },
       { weightKg: 72.5, reps: 8, rir: 2, restSec: 90 },
     ]);
+  });
+});
+
+describe('editar el cardio de un entreno', () => {
+  const saved = {
+    distanceM: 8400,
+    avgHeartRate: 150,
+    maxHeartRate: null,
+    elevationGainM: 60,
+    cadence: 172,
+    zoneSeconds: [300, 1500, 0, 210, 0],
+  } as never;
+
+  it('carga lo guardado en el formulario y, sin tocar nada, manda lo mismo', () => {
+    const draft = cardioDraftFromSession(saved);
+    expect(draft).toMatchObject({ distanceKm: '8,4', avgHr: '150', maxHr: '', cadence: '172', zones: ['5', '25', '', '3,5', ''] });
+    expect(cardioPatch(draft)).toEqual({
+      distanceM: 8400,
+      avgHeartRate: 150,
+      maxHeartRate: null,
+      elevationGainM: 60,
+      cadence: 172,
+      zoneSeconds: [300, 1500, 0, 210, 0],
+    });
+  });
+
+  it('lo que se vacía se manda como null para borrarlo', () => {
+    const draft = { ...cardioDraftFromSession(saved), distanceKm: '', zones: ['', '', '', '', ''] };
+    expect(cardioPatch(draft)).toMatchObject({ distanceM: null, zoneSeconds: null, avgHeartRate: 150 });
   });
 });

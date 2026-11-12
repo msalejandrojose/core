@@ -5,7 +5,7 @@ import {
   type RitmoActivityRepositoryPort,
 } from '../ports/ritmo-activity-repository.port';
 
-/** Historial de entrenos, del más reciente al más antiguo, paginado por día. */
+/** Historial de entrenos, del más reciente al más antiguo, paginado por cursor. */
 @Injectable()
 export class ListActivitySessionsUseCase {
   constructor(
@@ -15,9 +15,9 @@ export class ListActivitySessionsUseCase {
 
   execute(
     userId: string,
-    beforeDay: string | null,
+    before: Date | null,
     limit: number,
   ): Promise<ActivitySession[]> {
-    return this.activity.listSessions(userId, { beforeDay, limit });
+    return this.activity.listSessions(userId, { before, limit });
   }
 }

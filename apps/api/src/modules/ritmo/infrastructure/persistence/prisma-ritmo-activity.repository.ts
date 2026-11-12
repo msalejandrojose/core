@@ -77,14 +77,12 @@ export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPor
 
   async listSessions(
     userId: string,
-    options: { beforeDay: string | null; limit: number },
+    options: { before: Date | null; limit: number },
   ): Promise<ActivitySession[]> {
     const rows = await this.prisma.ritmoActivitySession.findMany({
       where: {
         userId,
-        ...(options.beforeDay
-          ? { loggedOn: { lt: toDateOnly(options.beforeDay) } }
-          : {}),
+        ...(options.before ? { startedAt: { lt: options.before } } : {}),
       },
       orderBy: { startedAt: 'desc' },
       take: options.limit,
