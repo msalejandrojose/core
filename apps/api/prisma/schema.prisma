@@ -281,6 +281,7 @@ model User {
   ritmoHeartConfig      RitmoHeartConfig?
   ritmoPerfMeasurements RitmoPerformanceMeasurement[]
   ritmoRecommendations  RitmoRecommendationState[]
+  ritmoMuscleOverrides  RitmoExerciseMuscleOverride[]
 
   @@map("user")
 }
@@ -2715,9 +2716,10 @@ model RitmoExercise {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner   User?                 @relation("RitmoExerciseOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  muscles RitmoExerciseMuscle[]
-  sets    RitmoStrengthSet[]
+  owner     User?                         @relation("RitmoExerciseOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  muscles   RitmoExerciseMuscle[]
+  overrides RitmoExerciseMuscleOverride[]
+  sets      RitmoStrengthSet[]
 
   @@index([ownerUserId])
   @@map("ritmo_exercise")
@@ -2862,4 +2864,21 @@ model RitmoRecommendationState {
 
   @@unique([userId, key])
   @@map("ritmo_recommendation_state")
+}
+
+/// Pesos por músculo que un usuario ha ajustado para un ejercicio del
+/// catálogo global. Si hay filas para (usuario, ejercicio), sustituyen por
+/// completo a las del catálogo SOLO para ese usuario; el catálogo no cambia.
+/// En los ejercicios propios no se usa: se edita `ritmo_exercise_muscle`.
+model RitmoExerciseMuscleOverride {
+  userId     String      @map("user_id") @db.Char(36)
+  exerciseId String      @map("exercise_id") @db.Char(36)
+  muscle     RitmoMuscle
+  weight     Decimal     @db.Decimal(3, 2)
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise RitmoExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@id([userId, exerciseId, muscle])
+  @@map("ritmo_exercise_muscle_override")
 }

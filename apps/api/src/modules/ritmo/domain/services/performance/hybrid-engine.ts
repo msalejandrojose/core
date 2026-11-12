@@ -21,8 +21,8 @@ import type { StrengthAnalysis } from './strength-engine';
 
 // ------------------------------ Equilibrio --------------------------------
 
-/** Días que se miran para el reparto entre disciplinas. */
-const BALANCE_DAYS = 28;
+/** Días que se miran para el reparto entre disciplinas si no se pide otro periodo. */
+export const BALANCE_DAYS = 28;
 /** Días sin una disciplina a partir de los cuales se señala su ausencia. */
 const ABSENCE_DAYS = 14;
 /** Proporción de sesiones exigentes a partir de la cual se señala. */
@@ -52,10 +52,11 @@ export interface DisciplineBalance {
 function balance(
   sessions: TrainingSession[],
   today: string,
+  windowDays: number,
 ): DisciplineBalance {
   const recent = sessions.filter((s) => {
     const age = daysBetween(s.day, today);
-    return age >= 0 && age < BALANCE_DAYS;
+    return age >= 0 && age < windowDays;
   });
   const part = (items: TrainingSession[]) => ({
     sessions: items.length,
@@ -106,7 +107,7 @@ function balance(
   if (known >= 6 && intensity.easy === 0) flags.push('NO_EASY_SESSIONS');
 
   return {
-    windowDays: BALANCE_DAYS,
+    windowDays,
     strength,
     cardio,
     strengthTimeShare: share(strength.minutes, cardio.minutes),
@@ -505,9 +506,12 @@ export function analyzeHybrid(
   strength: StrengthAnalysis,
   cardioPlateaus: CardioPlateau[],
   today: string,
+  /** Días del reparto entre disciplinas; null = todo el historial. Por defecto, 28. */
+  balanceDays: number | null = BALANCE_DAYS,
 ): HybridAnalysis {
   return {
-    balance: balance(sessions, today),
+    // «Todo» es una ventana lo bastante grande para cualquier historial.
+    balance: balance(sessions, today, balanceDays ?? 36500),
     lowerBody: lowerBody(sessions, exercises, today),
     interference: interference(sessions, strength, today),
     evolution: evolution(strength, cardioPlateaus),

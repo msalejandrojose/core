@@ -7,8 +7,10 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
@@ -23,12 +25,19 @@ import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import { ListActivityTypesUseCase } from '../../application/use-cases/list-activity-types.use-case';
 import { LogActivitySessionUseCase } from '../../application/use-cases/log-activity-session.use-case';
+import { GetActivitySessionUseCase } from '../../application/use-cases/get-activity-session.use-case';
+import { ListActivitySessionsUseCase } from '../../application/use-cases/list-activity-sessions.use-case';
+import { UpdateActivitySessionUseCase } from '../../application/use-cases/update-activity-session.use-case';
 import { ReplaceSessionSetsUseCase } from '../../application/use-cases/replace-session-sets.use-case';
 import { DeleteActivitySessionUseCase } from '../../application/use-cases/delete-activity-session.use-case';
 import { ActivitySessionResponseDto } from './dto/activity-session.response.dto';
 import { ActivityTypeResponseDto } from './dto/activity-type.response.dto';
 import { LogActivityDto } from './dto/log-activity.dto';
 import { ReplaceSetsDto, flattenSets } from './dto/strength-sets.dto';
+import {
+  ListActivitiesQueryDto,
+  UpdateActivityDto,
+} from './dto/update-activity.dto';
 
 @ApiTags('ritmo')
 @Auth()
@@ -39,6 +48,9 @@ export class RitmoActivityController {
     private readonly logSession: LogActivitySessionUseCase,
     private readonly deleteSession: DeleteActivitySessionUseCase,
     private readonly replaceSets: ReplaceSessionSetsUseCase,
+    private readonly listSessions: ListActivitySessionsUseCase,
+    private readonly getSession: GetActivitySessionUseCase,
+    private readonly updateSession: UpdateActivitySessionUseCase,
   ) {}
 
   @Get('activity-types')
@@ -78,6 +90,56 @@ export class RitmoActivityController {
       sets: flattenSets(body.exercises),
       effort: body.effort ?? null,
       notes: body.notes ?? null,
+    });
+    return ActivitySessionResponseDto.from(session);
+  }
+
+  @Get('activities')
+  @ApiOperation({
+    summary: 'Mi historial de entrenos, del más reciente al más antiguo.',
+  })
+  @ApiOkResponse({ type: [ActivitySessionResponseDto] })
+  async history(
+    @CurrentUser() current: AccessTokenPayload,
+    @Query() query: ListActivitiesQueryDto,
+  ): Promise<ActivitySessionResponseDto[]> {
+    const sessions = await this.listSessions.execute(
+      current.sub,
+      query.before ?? null,
+      query.limit ?? 30,
+    );
+    return sessions.map((s) => ActivitySessionResponseDto.from(s));
+  }
+
+  @Get('activities/:id')
+  @ApiOperation({ summary: 'Un entreno mío, con sus series.' })
+  @ApiOkResponse({ type: ActivitySessionResponseDto })
+  @ApiNotFoundResponse({ description: 'RITMO_ACTIVITY_SESSION_NOT_FOUND.' })
+  async one(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ActivitySessionResponseDto> {
+    return ActivitySessionResponseDto.from(
+      await this.getSession.execute(id, current.sub),
+    );
+  }
+
+  @Patch('activities/:id')
+  @ApiOperation({
+    summary:
+      'Editar un entreno mío (duración, distancia, pulsaciones, RPE…). null vacía un campo.',
+  })
+  @ApiOkResponse({ type: ActivitySessionResponseDto })
+  @ApiNotFoundResponse({ description: 'RITMO_ACTIVITY_SESSION_NOT_FOUND.' })
+  async update(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: UpdateActivityDto,
+  ): Promise<ActivitySessionResponseDto> {
+    const { startedAt, ...rest } = body;
+    const session = await this.updateSession.execute(id, current.sub, {
+      ...rest,
+      ...(startedAt ? { startedAt: new Date(startedAt) } : {}),
     });
     return ActivitySessionResponseDto.from(session);
   }

@@ -33,6 +33,23 @@ export interface CreateSessionData {
   sets: StrengthSet[];
 }
 
+/** Campos editables de una sesión. `undefined` = no tocar; `null` = vaciar. */
+export interface UpdateSessionData {
+  startedAt?: Date;
+  loggedOn?: string;
+  durationSec?: number;
+  kcalBurned?: number;
+  distanceM?: number | null;
+  avgHeartRate?: number | null;
+  maxHeartRate?: number | null;
+  elevationGainM?: number | null;
+  cadence?: number | null;
+  rpe?: number | null;
+  zoneSeconds?: number[] | null;
+  effort?: Effort | null;
+  notes?: string | null;
+}
+
 export interface RitmoActivityRepositoryPort {
   /** Catálogo visible para el usuario: las globales más las suyas. */
   listTypesVisibleTo(userId: string): Promise<ActivityType[]>;
@@ -41,6 +58,20 @@ export interface RitmoActivityRepositoryPort {
   createSession(data: CreateSessionData): Promise<ActivitySession>;
   /** Una sesión, solo si es del usuario. */
   findSession(id: string, userId: string): Promise<ActivitySession | null>;
+  /**
+   * Sesiones del usuario, de la más reciente a la más antigua. `beforeDay`
+   * pagina hacia atrás: solo días estrictamente anteriores.
+   */
+  listSessions(
+    userId: string,
+    options: { beforeDay: string | null; limit: number },
+  ): Promise<ActivitySession[]>;
+  /** Actualiza una sesión del usuario; `false` si no existe o no es suya. */
+  updateSession(
+    id: string,
+    userId: string,
+    data: UpdateSessionData,
+  ): Promise<boolean>;
   /** Borra la sesión solo si es del usuario. `false` si no existía o no era suya. */
   deleteSession(id: string, userId: string): Promise<boolean>;
   /** Sustituye todas las series de una sesión del usuario (edición del entreno). */

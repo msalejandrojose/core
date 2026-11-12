@@ -65,6 +65,8 @@ export interface Exercise {
   isBodyweight: boolean;
   ownerUserId: string | null;
   muscles: MuscleWeight[];
+  /** true si el usuario ha cambiado los pesos por músculo de un ejercicio del catálogo. */
+  customized: boolean;
 }
 
 export interface StrengthSet {

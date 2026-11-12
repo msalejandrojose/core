@@ -64,8 +64,9 @@ export class RitmoPerformanceController {
   @ApiOkResponse({ description: 'Análisis de fuerza por ejercicio.' })
   strength(
     @CurrentUser() current: AccessTokenPayload,
+    @Query() query: PerformancePeriodQueryDto,
   ): Promise<StrengthAnalysis> {
-    return this.strengthAnalysis.execute(current.sub);
+    return this.strengthAnalysis.execute(current.sub, query.period ?? 'all');
   }
 
   @Get('muscles')
@@ -78,8 +79,9 @@ export class RitmoPerformanceController {
   })
   muscles(
     @CurrentUser() current: AccessTokenPayload,
+    @Query() query: PerformancePeriodQueryDto,
   ): Promise<MuscleAnalysisResult> {
-    return this.muscleAnalysis.execute(current.sub);
+    return this.muscleAnalysis.execute(current.sub, query.period ?? 'all');
   }
 
   @Get('cardio')
@@ -108,8 +110,9 @@ export class RitmoPerformanceController {
   })
   fatigue(
     @CurrentUser() current: AccessTokenPayload,
+    @Query() query: PerformancePeriodQueryDto,
   ): Promise<FatigueAnalysis> {
-    return this.fatigueAnalysis.execute(current.sub);
+    return this.fatigueAnalysis.execute(current.sub, query.period ?? '30d');
   }
 
   @Get('hybrid')
@@ -120,8 +123,11 @@ export class RitmoPerformanceController {
   @ApiOkResponse({
     description: 'Análisis híbrido. Las relaciones son correlaciones.',
   })
-  hybrid(@CurrentUser() current: AccessTokenPayload): Promise<HybridAnalysis> {
-    return this.hybridAnalysis.execute(current.sub);
+  hybrid(
+    @CurrentUser() current: AccessTokenPayload,
+    @Query() query: PerformancePeriodQueryDto,
+  ): Promise<HybridAnalysis> {
+    return this.hybridAnalysis.execute(current.sub, query.period);
   }
 
   @Get('summary')

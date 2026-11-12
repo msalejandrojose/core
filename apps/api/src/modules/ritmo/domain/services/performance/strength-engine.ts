@@ -116,6 +116,8 @@ export interface StrengthOptions {
   today: string;
   /** Peso corporal, para los ejercicios sin carga externa. */
   bodyWeightKg: number | null;
+  /** Días del periodo del resumen; null u omitido = todo el historial. */
+  periodDays?: number | null;
 }
 
 /** Carga real de una serie: en peso corporal, el cuerpo más el lastre. */
@@ -417,10 +419,27 @@ export interface ExerciseAnalysis {
   currentE1rm: number | null;
   /** Proporción de series de trabajo con RIR apuntado (0–1). */
   rirCoverage: number;
+  /** Lo hecho en el periodo pedido (el estancamiento usa su propia ventana). */
+  period: ExercisePeriod;
   plateau: PlateauResult;
 }
 
+export interface ExercisePeriod {
+  sessions: number;
+  workingSets: number;
+  volumeKg: number;
+  /** Mejor e1RM dentro del periodo. */
+  bestE1rm: number | null;
+  /** e1RM de la primera y de la última sesión del periodo que lo permiten. */
+  firstE1rm: number | null;
+  lastE1rm: number | null;
+  /** Cambio (%) entre esas dos. */
+  changePct: number | null;
+}
+
 export interface StrengthAnalysis {
+  /** Días del periodo; null = todo el historial. */
+  periodDays: number | null;
   exercises: ExerciseAnalysis[];
   /** Cuántos ejercicios hay en cada estado. */
   summary: Record<StrengthStatus, number>;
@@ -469,6 +488,7 @@ export function analyzeStrength(
     }
   }
 
+  const periodDays = options.periodDays ?? null;
   const summary: Record<StrengthStatus, number> = {
     PROGRESSING: 0,
     POTENTIAL_PLATEAU: 0,
@@ -495,6 +515,17 @@ export function analyzeStrength(
     const plateau = detectPlateau(history, options.today);
     summary[plateau.status] += 1;
     const withE1rm = history.filter((p) => p.e1rm !== null);
+    const inPeriod = history.filter((p) => {
+      const age = daysBetween(p.day, options.today);
+      return age >= 0 && (periodDays === null || age < periodDays);
+    });
+    const periodE1rm = inPeriod.flatMap((p) =>
+      p.e1rm === null ? [] : [p.e1rm],
+    );
+    const firstE1rm = periodE1rm[0] ?? null;
+    const lastE1rm = periodE1rm[periodE1rm.length - 1] ?? null;
+    const periodChange =
+      periodE1rm.length > 1 ? pctChange(firstE1rm, lastE1rm) : null;
     return {
       exerciseId,
       name: byId.get(exerciseId)?.name ?? 'Ejercicio',
@@ -510,13 +541,28 @@ export function analyzeStrength(
       ),
       currentE1rm: withE1rm[withE1rm.length - 1]?.e1rm ?? null,
       rirCoverage: cov.total ? round(cov.known / cov.total, 2) : 0,
+      period: {
+        sessions: inPeriod.length,
+        workingSets: inPeriod.reduce((n, p) => n + p.workingSets, 0),
+        volumeKg: round(
+          inPeriod.reduce((v, p) => v + p.volumeKg, 0),
+          1,
+        ),
+        bestE1rm: periodE1rm.length ? Math.max(...periodE1rm) : null,
+        firstE1rm,
+        lastE1rm,
+        changePct: periodChange === null ? null : round(periodChange, 1),
+      },
       plateau,
     } satisfies ExerciseAnalysis;
   });
 
-  // Los más entrenados primero: es lo que más le importa al usuario.
+  // Los más entrenados en el periodo primero: es lo que más le importa al usuario.
   analyses.sort(
-    (a, b) => b.sessions - a.sessions || a.name.localeCompare(b.name),
+    (a, b) =>
+      b.period.sessions - a.period.sessions ||
+      b.sessions - a.sessions ||
+      a.name.localeCompare(b.name),
   );
-  return { exercises: analyses, summary };
+  return { periodDays, exercises: analyses, summary };
 }

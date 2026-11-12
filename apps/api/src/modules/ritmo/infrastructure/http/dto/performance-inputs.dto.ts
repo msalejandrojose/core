@@ -76,6 +76,16 @@ export class CreateExerciseDto {
   muscles!: MuscleWeightDto[];
 }
 
+export class SetExerciseMusclesDto {
+  @ApiProperty({ type: [MuscleWeightDto] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(15)
+  @ValidateNested({ each: true })
+  @Type(() => MuscleWeightDto)
+  muscles!: MuscleWeightDto[];
+}
+
 export class SaveHeartConfigDto {
   @ApiPropertyOptional({ example: 188, description: 'FC máxima (ppm).' })
   @IsOptional()
