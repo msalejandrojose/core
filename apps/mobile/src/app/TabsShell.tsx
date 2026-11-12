@@ -128,7 +128,6 @@ export default function TabsShell() {
       <IonTabs>
         <IonRouterOutlet>
           <Route exact path="/tabs/today" component={TodayPage} />
-          <Route exact path="/tabs/today/onboarding" component={OnboardingPage} />
           <Route exact path="/tabs/today/comida" component={FoodDayPage} />
           <Route exact path="/tabs/today/recetas" component={RecipesPage} />
           <Route exact path="/tabs/today/recetas/nueva" component={NewRecipePage} />
