@@ -279,6 +279,10 @@ export const ritmoApi = {
   logMeal: (body: LogMealBody) =>
     call<MealEntry>('POST', '/ritmo/meals', { body }),
   deleteMeal: (id: string) => call<void>('DELETE', `/ritmo/meals/${id}`),
+  /** Volcado de todo lo guardado en Ritmo (Perfil › Descargar mis datos). */
+  exportMyData: () => call<unknown>('GET', '/ritmo/account/export'),
+  /** Borrado definitivo de la cuenta y de todos sus datos. */
+  deleteAccount: () => call<void>('DELETE', '/ritmo/account'),
   mealHabits: (mealType: MealType) =>
     call<MealHabits>('GET', '/ritmo/meals/habits', {
       params: { query: { mealType } },
