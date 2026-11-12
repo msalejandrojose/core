@@ -10,8 +10,15 @@ import type {
   DailyLogPatch,
   DayIntakeTotals,
   RitmoDiaryRepositoryPort,
+  DayMealCount,
 } from '../../application/ports/ritmo-diary-repository.port';
-import { num, toDailyLog, toDateOnly, toMealEntry } from './ritmo.mapper';
+import {
+  num,
+  toDailyLog,
+  toDateOnly,
+  toDay,
+  toMealEntry,
+} from './ritmo.mapper';
 
 const FOOD_NAME = {
   food: { select: { name: true, brand: true } },
@@ -129,5 +136,27 @@ export class PrismaRitmoDiaryRepository implements RitmoDiaryRepositoryPort {
       orderBy: { logDate: 'asc' },
     });
     return rows.map(toDailyLog);
+  }
+
+  async mealCountsBetween(
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<DayMealCount[]> {
+    const rows = await this.prisma.ritmoMealEntry.groupBy({
+      by: ['loggedOn', 'mealType'],
+      where: {
+        userId,
+        loggedOn: { gte: toDateOnly(from), lte: toDateOnly(to) },
+      },
+    });
+    const byDay = new Map<string, number>();
+    for (const r of rows) {
+      const day = toDay(r.loggedOn);
+      byDay.set(day, (byDay.get(day) ?? 0) + 1);
+    }
+    return [...byDay.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, mealsLogged]) => ({ day, mealsLogged }));
   }
 }

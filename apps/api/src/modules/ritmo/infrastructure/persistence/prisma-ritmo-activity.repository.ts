@@ -5,8 +5,9 @@ import type { ActivityType } from '../../domain/entities/activity-type.entity';
 import type {
   CreateSessionData,
   RitmoActivityRepositoryPort,
+  DaySessionStats,
 } from '../../application/ports/ritmo-activity-repository.port';
-import { toActivityType, toDateOnly, toSession } from './ritmo.mapper';
+import { toActivityType, toDateOnly, toDay, toSession } from './ritmo.mapper';
 
 @Injectable()
 export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPort {
@@ -84,5 +85,27 @@ export class PrismaRitmoActivityRepository implements RitmoActivityRepositoryPor
       _sum: { kcalBurned: true },
     });
     return agg._sum.kcalBurned ?? 0;
+  }
+
+  async sessionStatsBetween(
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<DaySessionStats[]> {
+    const rows = await this.prisma.ritmoActivitySession.groupBy({
+      by: ['loggedOn'],
+      where: {
+        userId,
+        loggedOn: { gte: toDateOnly(from), lte: toDateOnly(to) },
+      },
+      _count: { _all: true },
+      _sum: { durationSec: true },
+      orderBy: { loggedOn: 'asc' },
+    });
+    return rows.map((r) => ({
+      day: toDay(r.loggedOn),
+      sessions: r._count._all,
+      minutes: Math.round((r._sum.durationSec ?? 0) / 60),
+    }));
   }
 }
