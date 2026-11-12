@@ -619,3 +619,113 @@ ion-modal.rk-modal-full ion-content {
   flex-direction: column;
   gap: var(--ritmo-space-s);
 }
+
+/* ---- Registrar entreno: calentamiento, descanso, zonas y ejercicio propio ---- */
+button.workout__set-n {
+  width: 24px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ritmo-ink-muted);
+  cursor: pointer;
+}
+button.workout__set-n.is-warmup {
+  color: var(--ritmo-food-ink);
+}
+.workout__rest {
+  border-top: 1px solid var(--ritmo-separator);
+  margin-top: 4px;
+}
+.workout__zones-toggle {
+  margin-top: 0;
+}
+.workout__zones {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px 10px 12px 0;
+  border-top: 1px solid var(--ritmo-separator);
+}
+.workout__zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ritmo-ink-muted);
+}
+.workout__zone .workout__num {
+  width: 100%;
+}
+.workout__zone .workout__num input {
+  padding: 0 2px;
+  font-size: 15px;
+}
+.workout__pick--new {
+  color: var(--ritmo-tint);
+}
+.workout__newex {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ritmo-space-s);
+}
+.workout__newex .rk-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 17px;
+}
+.workout__muscles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.workout__muscle {
+  min-height: 40px;
+  padding: 4px 12px;
+  border-radius: var(--ritmo-radius-pill);
+  border: 1px solid var(--ritmo-border);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+}
+.workout__muscle em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+}
+.workout__muscle.is-main {
+  background: var(--ritmo-tint);
+  border-color: var(--ritmo-tint);
+  color: var(--ritmo-on-tint);
+}
+.workout__muscle.is-sec {
+  background: var(--ritmo-tint-soft);
+  border-color: var(--ritmo-tint);
+  color: var(--ritmo-tint);
+}
+.workout__muscle.is-ind {
+  border-color: var(--ritmo-tint);
+  color: var(--ritmo-tint);
+}
+.workout__newex-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ritmo-space-s);
+}

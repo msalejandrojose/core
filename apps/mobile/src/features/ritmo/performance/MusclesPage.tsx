@@ -3,6 +3,7 @@ import { formatNumber } from '../format';
 import { SectionHeader, Segmented } from '../ui/kit';
 import { MUSCLE_NAME, TREND_LABEL, TREND_TONE, pct, shortDay } from './labels';
 import { perfApi, type MuscleAnalysis } from './perf.api';
+import { MuscleMap } from './MuscleMap';
 import { Bar, Chip, Columns, Empty, PerfPage } from './ui';
 import { usePerf } from './usePerf';
 
@@ -16,8 +17,8 @@ const WINDOWS: { value: Win; label: string }[] = [
 /** Color de la carga relativa: de gris (nada) al color de actividad (lo más trabajado). */
 const heat = (v: number) => (v === 0 ? 'var(--ritmo-border)' : `color-mix(in srgb, var(--ritmo-activity) ${Math.round(25 + v * 75)}%, var(--ritmo-surface))`);
 
-function MuscleRow({ m, win, max }: { m: MuscleAnalysis; win: Win; max: number }) {
-  const [open, setOpen] = useState(false);
+function MuscleRow({ m, win, max, defaultOpen = false }: { m: MuscleAnalysis; win: Win; max: number; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   const w = m[win];
   return (
     <div className="perf__muscle">
@@ -83,6 +84,7 @@ function MuscleRow({ m, win, max }: { m: MuscleAnalysis; win: Win; max: number }
 export default function MusclesPage() {
   const { data, error, reload } = usePerf(() => perfApi.muscles());
   const [win, setWin] = useState<Win>('last7');
+  const [selected, setSelected] = useState<string | null>(null);
   return (
     <PerfPage
       title="Músculos"
@@ -97,9 +99,32 @@ export default function MusclesPage() {
         if (!any) return <Empty>Registra ejercicios y series en tus sesiones de fuerza para ver cómo repartes el trabajo.</Empty>;
         const max = Math.max(...a.muscles.map((m) => m[win].weightedSets));
         const sorted = [...a.muscles].sort((x, y) => y[win].weightedSets - x[win].weightedSets);
+        const picked = a.muscles.find((m) => m.muscle === selected) ?? null;
         return (
-          <section className="rk-section" aria-labelledby="mapa">
-            <SectionHeader id="mapa">Reparto del trabajo</SectionHeader>
+          <>
+            <section className="rk-section" aria-labelledby="mapa">
+              <SectionHeader id="mapa">Mapa muscular</SectionHeader>
+              <div className="rk-card">
+                <MuscleMap
+                  values={Object.fromEntries(a.muscles.map((m) => [m.muscle, max ? m[win].weightedSets / max : 0]))}
+                  describe={(muscle) => {
+                    const m = a.muscles.find((x) => x.muscle === muscle);
+                    return `${formatNumber(m?.[win].weightedSets ?? 0, 1)} series`;
+                  }}
+                  selected={selected}
+                  onSelect={(muscle) => setSelected((cur) => (cur === muscle ? null : muscle))}
+                />
+              </div>
+              {picked ? (
+                <div className="perf__muscles">
+                  <MuscleRow key={picked.muscle} m={picked} win={win} max={max} defaultOpen />
+                </div>
+              ) : (
+                <p className="rk-note">Toca un músculo para ver sus cifras. El color es su carga respecto al músculo que más has trabajado en el periodo.</p>
+              )}
+            </section>
+          <section className="rk-section" aria-labelledby="reparto">
+            <SectionHeader id="reparto">Reparto del trabajo</SectionHeader>
             <div className="perf__muscles">
               {sorted.map((m) => (
                 <MuscleRow key={m.muscle} m={m} win={win} max={max} />
@@ -109,6 +134,7 @@ export default function MusclesPage() {
               Una serie cuenta 1 para el músculo principal, 0,5 para el secundario y 0,25 para el indirecto. Esto mide cuánto has entrenado cada grupo, no cuánto ha crecido ni si está recuperado.
             </p>
           </section>
+          </>
         );
       }}
     </PerfPage>

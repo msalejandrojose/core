@@ -207,6 +207,8 @@ export default function TodayPage() {
           title: s.activityTypeName,
           meta: `${formatDuration(s.durationSec)} · ${formatKcal(s.kcalBurned)} kcal`,
           time: timeIn(s.startedAt, timezone),
+          // Los entrenos de fuerza se abren para editar sus series.
+          to: s.kind === 'STRENGTH' ? `/tabs/today/entreno/${s.id}` : undefined,
         })),
       ]
     : [];
@@ -436,14 +438,24 @@ export default function TodayPage() {
                   </span>
                 </button>
                 {showDone
-                  ? done.map((d) => (
-                      <div key={d.key} className="today-day__done">
-                        <span>
-                          {d.title} · {d.meta}
-                        </span>
-                        <span className="rk-row__value">{d.time}</span>
-                      </div>
-                    ))
+                  ? done.map((d) =>
+                      'to' in d && d.to ? (
+                        <Link key={d.key} to={d.to} className="today-day__done today-day__done--link">
+                          <span>
+                            {d.title} · {d.meta}
+                          </span>
+                          <span className="rk-row__value">{d.time}</span>
+                          <Chevron />
+                        </Link>
+                      ) : (
+                        <div key={d.key} className="today-day__done">
+                          <span>
+                            {d.title} · {d.meta}
+                          </span>
+                          <span className="rk-row__value">{d.time}</span>
+                        </div>
+                      ),
+                    )
                   : null}
               </section>
 

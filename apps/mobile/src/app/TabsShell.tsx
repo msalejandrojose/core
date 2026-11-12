@@ -29,6 +29,7 @@ import MedalsPage from '@/features/ritmo/progress/MedalsPage';
 import DigestionPage from '@/features/ritmo/progress/DigestionPage';
 import SharePage from '@/features/ritmo/progress/SharePage';
 import YearPage from '@/features/ritmo/progress/YearPage';
+import SessionSetsPage from '@/features/ritmo/pages/SessionSetsPage';
 import PerformancePage from '@/features/ritmo/performance/PerformancePage';
 import StrengthPerfPage from '@/features/ritmo/performance/StrengthPerfPage';
 import MusclesPage from '@/features/ritmo/performance/MusclesPage';
@@ -138,6 +139,7 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/recetas/nueva" component={NewRecipePage} />
           <Route exact path="/tabs/today/recuperacion" component={RecoveryPage} />
           <Route exact path="/tabs/today/avisos" component={AlertsPage} />
+          <Route exact path="/tabs/today/entreno/:id" component={SessionSetsPage} />
           <Route exact path="/tabs/plan" component={PlanPage} />
           <Route exact path="/tabs/plan/sesion/:day" component={EditSessionPage} />
           <Route exact path="/tabs/plan/fuerza" component={StrengthPage} />

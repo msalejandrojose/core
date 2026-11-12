@@ -73,6 +73,19 @@ export interface ActivitySession {
   durationSec: number;
   distanceM: number | null;
   avgHeartRate: number | null;
+  /** Disciplina del tipo de actividad (STRENGTH, RUN…). */
+  kind?: string;
+  /** Series de fuerza, en orden. */
+  sets?: {
+    exerciseId: string;
+    exerciseOrder: number;
+    setOrder: number;
+    weightKg: number;
+    reps: number;
+    rir: number | null;
+    restSec: number | null;
+    isWarmup: boolean;
+  }[];
   effort: Effort | null;
   kcalBurned: number;
   notes: string | null;
@@ -204,8 +217,10 @@ export interface LogActivityBody {
   rpe?: number;
   exercises?: {
     exerciseId: string;
-    sets: { weightKg: number; reps: number; rir?: number; isWarmup?: boolean }[];
+    sets: { weightKg: number; reps: number; rir?: number; restSec?: number; isWarmup?: boolean }[];
   }[];
+  /** Segundos en cada zona cardíaca, Z1 a Z5. */
+  zoneSeconds?: number[];
   effort?: Effort;
   notes?: string;
 }
