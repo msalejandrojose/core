@@ -447,18 +447,13 @@ button.perf__card-head,
   background: var(--ritmo-surface);
 }
 
-/* Mapa muscular 3D */
-.musclemap__modes,
-.musclemap3d__sides {
+/* Mapa muscular: figura de hombre o de mujer */
+.musclemap__modes {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 6px;
 }
-.musclemap__modes {
-  justify-content: flex-end;
-}
-.musclemap__modes button,
-.musclemap3d__sides button {
+.musclemap__modes button {
   min-height: 32px;
   padding: 0 14px;
   border: 0;
@@ -470,33 +465,10 @@ button.perf__card-head,
   font-weight: 600;
   cursor: pointer;
 }
-.musclemap__modes button.is-on,
-.musclemap3d__sides button.is-on {
+.musclemap__modes button.is-on {
   background: var(--ritmo-tint);
   color: #ffffff;
 }
-.musclemap3d {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.musclemap3d__stage {
-  position: relative;
-  width: 100%;
-  height: 340px;
-}
-.musclemap3d__canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  touch-action: pan-y;
-  cursor: grab;
-}
-.musclemap3d__sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+.musclemap__hair {
+  fill: var(--ritmo-border-strong);
 }
