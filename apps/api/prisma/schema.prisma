@@ -286,6 +286,12 @@ model User {
   ritmoPlannedSessions  RitmoPlannedSession[]
   ritmoMenuChoices      RitmoMenuChoice[]
   ritmoShoppingChecks   RitmoShoppingCheck[]
+  ritmoSocialProfile    RitmoSocialProfile?
+  ritmoFollowing        RitmoFollow[]                 @relation("RitmoFollower")
+  ritmoFollowers        RitmoFollow[]                 @relation("RitmoFollowee")
+  ritmoCheers           RitmoCheer[]
+  ritmoChallenges       RitmoChallenge[]
+  ritmoChallengeMembers RitmoChallengeMember[]
   ritmoHevyConnection   RitmoHevyConnection?
   ritmoGarminConnection RitmoGarminConnection?
   ritmoDailyHealth      RitmoDailyHealth[]
@@ -3109,4 +3115,79 @@ model RitmoConnectionPrefs {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("ritmo_connection_prefs")
+}
+
+/// Perfil social del usuario: cómo le encuentran y qué comparte.
+model RitmoSocialProfile {
+  userId        String  @id @map("user_id") @db.Char(36)
+  /// Nombre de usuario sin la arroba, en minúsculas.
+  handle        String  @unique @db.VarChar(30)
+  /// Compartir entrenos y objetivos con quien te sigue y sigues.
+  shareActivity Boolean @default(true) @map("share_activity")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ritmo_social_profile")
+}
+
+/// A sigue a B. Dos personas son amigas (y ven lo que la otra comparte) solo
+/// cuando se siguen mutuamente.
+model RitmoFollow {
+  followerId String   @map("follower_id") @db.Char(36)
+  followeeId String   @map("followee_id") @db.Char(36)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  follower User @relation("RitmoFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  followee User @relation("RitmoFollowee", fields: [followeeId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followeeId])
+  @@index([followeeId])
+  @@map("ritmo_follow")
+}
+
+/// Ánimo dado a un logro de la actividad (`s:<sesión>`) o a un reto (`c:<reto>`).
+model RitmoCheer {
+  userId    String   @map("user_id") @db.Char(36)
+  targetKey String   @map("target_key") @db.VarChar(80)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetKey])
+  @@index([targetKey])
+  @@map("ritmo_cheer")
+}
+
+/// Reto entre amigos durante unos días. La clasificación no se guarda: se
+/// calcula con los datos de cada participante.
+model RitmoChallenge {
+  id       String   @id @default(uuid()) @db.Char(36)
+  ownerId  String   @map("owner_id") @db.Char(36)
+  /// SESSIONS, KM, STEPS o LOGGING.
+  kind     String   @db.VarChar(16)
+  startDay DateTime @map("start_day") @db.Date
+  endDay   DateTime @map("end_day") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  owner   User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members RitmoChallengeMember[]
+
+  @@index([endDay])
+  @@map("ritmo_challenge")
+}
+
+model RitmoChallengeMember {
+  challengeId String @map("challenge_id") @db.Char(36)
+  userId      String @map("user_id") @db.Char(36)
+
+  challenge RitmoChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([challengeId, userId])
+  @@index([userId])
+  @@map("ritmo_challenge_member")
 }

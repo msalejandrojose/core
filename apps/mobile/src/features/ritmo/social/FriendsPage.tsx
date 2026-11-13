@@ -1,65 +1,116 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
-import { EmptyCard, ExampleTag, LargeTitle, NavRow, SearchField, SectionHeader, Segmented } from '../ui/kit';
+import { EmptyCard, LargeTitle, NavRow, SearchField, SectionHeader, Segmented } from '../ui/kit';
 import { Avatar, Heart } from './Avatar';
-import { FEED, PEOPLE, invite, personById, useSocialStore, type Person } from './social-data';
+import { colorOf, firstName, invite, personMeta, socialApi, socialErrorText, timeAgo, type FeedItem, type Me, type People, type Person } from './social.api';
 import './social.css';
 
-const TROPHY = 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8';
 const ADD_PERSON = 'M9 4.5a3.5 3.5 0 1 0 .01 0M2.5 20a6.5 6 0 0 1 13 0M19 8v6M16 11h6';
 
-async function onInvite() {
-  const r = await invite();
-  if (r === 'copied') toast.success('Enlace copiado', 'Pégalo en un mensaje para invitar.');
-}
-
-function PersonRow({ p, meta }: { p: Person; meta: string }) {
-  const on = useSocialStore((s) => !!s.follow[p.id]);
-  const toggle = useSocialStore((s) => s.toggleFollow);
+function PersonRow({ p, onChange }: { p: Person; onChange: (next: Person) => void }) {
+  const on = p.relation === 'FRIENDS' || p.relation === 'FOLLOWING';
+  const [busy, setBusy] = useState(false);
+  async function toggle() {
+    setBusy(true);
+    try {
+      onChange(await (on ? socialApi.unfollow(p.id) : socialApi.follow(p.id)));
+    } catch (e) {
+      toast.error('No se pudo guardar', socialErrorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <div className="social__person">
       <Link to={`/tabs/social/amigo/${p.id}`} className="social__person-link">
-        <Avatar name={p.name} color={p.color} size={44} />
+        <Avatar name={p.name} color={colorOf(p.id)} size={44} />
         <span className="rk-row__main">
           <span className="rk-row__title">{p.name}</span>
-          <span className="rk-row__sub">{meta}</span>
+          <span className="rk-row__sub">{personMeta(p)}</span>
         </span>
       </Link>
-      <button
-        type="button"
-        aria-pressed={on}
-        className={`social__follow${on ? ' is-on' : ''}`}
-        onClick={() => toggle(p.id)}
-      >
-        {on ? 'Siguiendo' : 'Seguir'}
+      <button type="button" aria-pressed={on} disabled={busy} className={`social__follow${on ? ' is-on' : ''}`} onClick={() => void toggle()}>
+        {on ? 'Siguiendo' : p.relation === 'FOLLOWS_ME' ? 'Seguir también' : 'Seguir'}
       </button>
     </div>
   );
 }
 
-/** Social › Amigos (lienzo "Amigos"): actividad de quien sigues y a quién sigues. */
+/** Social › Amigos (lienzo "Amigos"): la actividad de tus amigos y a quién sigues. */
 export default function FriendsPage() {
   const [q, setQ] = useState('');
   const [tab, setTab] = useState<'feed' | 'following'>('feed');
-  const follow = useSocialStore((s) => s.follow);
-  const cheered = useSocialStore((s) => s.cheered);
-  const toggleCheer = useSocialStore((s) => s.toggleCheer);
+  const [me, setMe] = useState<Me | null>(null);
+  const [people, setPeople] = useState<People | null>(null);
+  const [feed, setFeed] = useState<FeedItem[] | null>(null);
+  const [results, setResults] = useState<Person[] | null>(null);
 
-  const query = q.trim().toLowerCase();
-  const results = PEOPLE.filter((p) => p.name.toLowerCase().includes(query) || p.user.includes(query));
-  const following = PEOPLE.filter((p) => follow[p.id]);
-  const suggestions = PEOPLE.filter((p) => !follow[p.id]);
-  const feed = FEED.filter((f) => follow[f.who]);
+  const load = useCallback(() => {
+    void Promise.all([socialApi.me(), socialApi.people(), socialApi.feed()])
+      .then(([m, p, f]) => {
+        setMe(m);
+        setPeople(p);
+        setFeed(f);
+      })
+      .catch(() => toast.error('No se pudo cargar Social'));
+  }, []);
+  useEffect(load, [load]);
+
+  const query = q.trim();
+  useEffect(() => {
+    if (query.length < 2) {
+      setResults(null);
+      return;
+    }
+    let alive = true;
+    // Espera a que dejes de escribir antes de buscar.
+    const timer = setTimeout(() => {
+      socialApi
+        .search(query)
+        .then((r) => alive && setResults(r.results))
+        .catch(() => alive && setResults([]));
+    }, 250);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [query]);
+
+  async function onInvite() {
+    const r = await invite(me?.handle);
+    if (r === 'copied') toast.success('Invitación copiada', 'Pégala en un mensaje.');
+  }
+
+  async function toggleShare() {
+    if (!me) return;
+    try {
+      setMe(await socialApi.updateMe({ shareActivity: !me.shareActivity }));
+    } catch (e) {
+      toast.error('No se pudo guardar', socialErrorText(e));
+    }
+  }
+
+  async function cheer(item: FeedItem) {
+    const on = !item.cheered;
+    setFeed((f) => f?.map((x) => (x.key === item.key ? { ...x, cheered: on, cheers: x.cheers + (on ? 1 : -1) } : x)) ?? f);
+    try {
+      await socialApi.cheer(item.key, on);
+    } catch {
+      load();
+    }
+  }
+
+  const following = people ? [...people.friends, ...people.pending] : [];
   const noFriends = (
     <EmptyCard
       tone="social"
       icon={ADD_PERSON}
       title="Entrenar acompañado engancha más"
-      text="Sigue a tus amigos para ver sus logros, animaros y hacer retos juntos."
-      primary={{ label: 'Buscar amigos', onClick: () => (tab === 'feed' ? setTab('following') : document.querySelector<HTMLInputElement>('.social input[type=search]')?.focus()) }}
-      secondary={{ label: 'Invitar con enlace', onClick: () => void onInvite() }}
+      text="Sigue a tus amigos y pídeles que te sigan: cuando os seguís los dos, veis vuestros logros y podéis retaros."
+      primary={{ label: 'Buscar amigos', onClick: () => document.querySelector<HTMLInputElement>('.social input[type=search]')?.focus() }}
+      secondary={{ label: 'Invitar', onClick: () => void onInvite() }}
     />
   );
 
@@ -71,114 +122,117 @@ export default function FriendsPage() {
             actions={
               <>
                 <Link to="/tabs/social/retos" className="rk-textbtn rk-textbtn--strong social__navbtn">
-                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d={TROPHY} />
-                  </svg>
                   Retos
                 </Link>
                 <button type="button" className="rk-textbtn social__navbtn" onClick={() => void onInvite()}>
-                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d={ADD_PERSON} />
-                  </svg>
                   Invitar
                 </button>
               </>
             }
           />
-          <LargeTitle sub={<ExampleTag />}>Amigos</LargeTitle>
+          <LargeTitle sub={me ? `Tú eres @${me.handle}` : undefined}>Amigos</LargeTitle>
 
           <SearchField label="Buscar personas" placeholder="Buscar por nombre o @usuario" value={q} onChange={setQ} />
 
-          {query ? (
+          {query.length >= 2 ? (
             <section className="rk-section" aria-label="Resultados">
-              <SectionHeader>{results.length ? `${results.length} resultados` : 'Sin resultados'}</SectionHeader>
-              {results.length ? (
+              <SectionHeader>{results === null ? 'Buscando…' : results.length ? `${results.length} ${results.length === 1 ? 'resultado' : 'resultados'}` : 'Sin resultados'}</SectionHeader>
+              {results?.length ? (
                 <div className="social__list">
                   {results.map((p) => (
-                    <PersonRow key={p.id} p={p} meta={p.user} />
+                    <PersonRow
+                      key={p.id}
+                      p={p}
+                      onChange={(next) => {
+                        setResults((r) => r?.map((x) => (x.id === next.id ? next : x)) ?? r);
+                        load();
+                      }}
+                    />
                   ))}
                 </div>
               ) : null}
             </section>
           ) : (
             <>
-              <Link to="/tabs/settings" className="social__privacy">
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ritmo-ink-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="5" y="11" width="14" height="10" rx="2" />
-                  <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-                </svg>
-                <span>Compartes entrenos y objetivos cumplidos. Tu peso y tus comidas, no.</span>
-                <span className="social__privacy-link">Cambiar</span>
-              </Link>
+              {me ? (
+                <button type="button" className="social__privacy" aria-pressed={me.shareActivity} onClick={() => void toggleShare()}>
+                  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="5" y="11" width="14" height="10" rx="2" />
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                  </svg>
+                  <span>
+                    {me.shareActivity
+                      ? 'Tus amigos ven tus entrenos y tu objetivo. Tu peso y tus comidas, nunca.'
+                      : 'Ahora no compartes nada con tus amigos.'}
+                  </span>
+                  <span className="social__privacy-link">{me.shareActivity ? 'No compartir' : 'Compartir'}</span>
+                </button>
+              ) : null}
 
               <Segmented
                 label="Vista"
                 options={[
                   { value: 'feed', label: 'Actividad' },
-                  { value: 'following', label: 'Siguiendo' },
+                  { value: 'following', label: 'Personas' },
                 ]}
                 value={tab}
                 onChange={setTab}
               />
 
-              {tab === 'feed' && !feed.length ? noFriends : null}
-              {tab === 'feed' && feed.length ? (
+              {tab === 'feed' && feed && !feed.length ? (
+                people?.friends.length ? (
+                  <p className="rk-note">Tus amigos no han registrado entrenos esta semana.</p>
+                ) : (
+                  noFriends
+                )
+              ) : null}
+              {tab === 'feed' && feed?.length ? (
                 <div className="social__feed">
-                  {feed.map((f) => {
-                    const p = personById(f.who)!;
-                    const on = !!cheered[f.id];
-                    const first = p.name.split(' ')[0];
-                    return (
-                      <article key={f.id} className="social__post">
-                        <div className="social__post-head">
-                          <Link to={`/tabs/social/amigo/${p.id}`} aria-label={first}>
-                            <Avatar name={p.name} color={p.color} size={40} />
-                          </Link>
-                          <div className="rk-row__main">
-                            <span className="social__post-name">{first}</span>
-                            <span className="social__post-when">{f.when}</span>
-                          </div>
-                          <span className={`social__badge social__badge--${f.kind}`}>{f.badge}</span>
+                  {feed.map((f) => (
+                    <article key={f.key} className="social__post">
+                      <div className="social__post-head">
+                        <Link to={`/tabs/social/amigo/${f.userId}`} aria-label={f.name}>
+                          <Avatar name={f.name} color={colorOf(f.userId)} size={40} />
+                        </Link>
+                        <div className="rk-row__main">
+                          <span className="social__post-name">{firstName(f.name)}</span>
+                          <span className="social__post-when">{timeAgo(f.at)}</span>
                         </div>
-                        <p>{f.text}</p>
-                        <button
-                          type="button"
-                          aria-pressed={on}
-                          className={`social__cheer${on ? ' is-on' : ''}`}
-                          onClick={() => toggleCheer(f.id)}
-                        >
-                          <Heart on={on} />
-                          Ánimo · {f.cheers + (on ? 1 : 0)}
-                        </button>
-                      </article>
-                    );
-                  })}
+                        <span className={`social__badge social__badge--${f.kind}`}>{f.badge}</span>
+                      </div>
+                      <p>{f.text}</p>
+                      <button type="button" aria-pressed={f.cheered} className={`social__cheer${f.cheered ? ' is-on' : ''}`} onClick={() => void cheer(f)}>
+                        <Heart on={f.cheered} />
+                        Ánimo · {f.cheers}
+                      </button>
+                    </article>
+                  ))}
                 </div>
               ) : null}
-              {tab === 'following' ? (
+
+              {tab === 'following' && people ? (
                 <>
+                  {people.followers.length ? (
+                    <section className="rk-section" aria-label="Te siguen">
+                      <SectionHeader>Te siguen · {people.followers.length}</SectionHeader>
+                      <div className="social__list">
+                        {people.followers.map((p) => (
+                          <PersonRow key={p.id} p={p} onChange={load} />
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
                   {following.length ? (
                     <section className="rk-section" aria-label="Siguiendo">
                       <SectionHeader>Siguiendo · {following.length}</SectionHeader>
                       <div className="social__list">
                         {following.map((p) => (
-                          <PersonRow key={p.id} p={p} meta={p.meta} />
-                        ))}
-                      </div>
-                    </section>
-                  ) : (
-                    noFriends
-                  )}
-                  {suggestions.length ? (
-                    <section className="rk-section" aria-label="Sugerencias">
-                      <SectionHeader>Quizá conozcas</SectionHeader>
-                      <div className="social__list">
-                        {suggestions.map((p) => (
-                          <PersonRow key={p.id} p={p} meta={p.meta} />
+                          <PersonRow key={p.id} p={p} onChange={load} />
                         ))}
                       </div>
                     </section>
                   ) : null}
+                  {!following.length && !people.followers.length ? noFriends : null}
                 </>
               ) : null}
             </>

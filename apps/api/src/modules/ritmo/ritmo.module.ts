@@ -81,6 +81,16 @@ import {
 } from './application/use-cases/menu.use-cases';
 import { RitmoHevyController } from './infrastructure/http/ritmo-hevy.controller';
 import { RitmoGarminController } from './infrastructure/http/ritmo-garmin.controller';
+import { RitmoSocialController } from './infrastructure/http/ritmo-social.controller';
+import { PrismaRitmoSocialRepository } from './infrastructure/persistence/prisma-ritmo-social.repository';
+import { RITMO_SOCIAL_REPOSITORY } from './application/ports/social.port';
+import {
+  SocialChallengesUseCase,
+  SocialContext,
+  SocialFeedUseCase,
+  SocialPeopleUseCase,
+  SocialProfileUseCase,
+} from './application/use-cases/social.use-cases';
 import { RitmoConnectionsController } from './infrastructure/http/ritmo-connections.controller';
 import { PrismaConnectionPrefsRepository } from './infrastructure/persistence/prisma-connection-prefs.repository';
 import { RITMO_CONNECTION_PREFS } from './application/ports/connection-prefs.port';
@@ -139,6 +149,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoMenuController,
     RitmoHevyController,
     RitmoGarminController,
+    RitmoSocialController,
     RitmoConnectionsController,
     RitmoRecoveryController,
   ],
@@ -160,6 +171,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     { provide: HEVY_CLIENT, useClass: HttpHevyClient },
     { provide: RITMO_GARMIN_REPOSITORY, useClass: PrismaRitmoGarminRepository },
     { provide: GARMIN_CLIENT, useClass: HttpGarminClient },
+    { provide: RITMO_SOCIAL_REPOSITORY, useClass: PrismaRitmoSocialRepository },
     {
       provide: RITMO_CONNECTION_PREFS,
       useClass: PrismaConnectionPrefsRepository,
@@ -259,6 +271,12 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ConnectGarminUseCase,
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,
+    // Social.
+    SocialContext,
+    SocialProfileUseCase,
+    SocialPeopleUseCase,
+    SocialFeedUseCase,
+    SocialChallengesUseCase,
     // Recuperación.
     GetRecoveryUseCase,
     ApplyRecoveryOptionUseCase,

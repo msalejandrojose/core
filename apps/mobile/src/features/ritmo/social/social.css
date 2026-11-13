@@ -435,3 +435,49 @@
   line-height: 1.4;
   color: var(--ritmo-ink-muted);
 }
+
+/* Social con datos reales */
+button.social__privacy {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.reto__friends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.reto__friend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 14px 4px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ritmo-bg);
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.reto__friend.is-on {
+  background: var(--ritmo-tint);
+  color: #ffffff;
+}
+.reto__leave {
+  align-self: center;
+  color: var(--ritmo-danger);
+}
+.reto__card + .reto__card {
+  margin-top: var(--ritmo-space-s);
+}
+.friend__logro {
+  height: auto;
+  padding-block: 10px;
+}
+.friend__logro-title {
+  white-space: normal;
+}

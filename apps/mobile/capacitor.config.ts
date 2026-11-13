@@ -1,4 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { loadEnv } from 'vite';
+
+// Si el build apunta a una API por `http` (un backend de pruebas en la red local
+// o ZeroTier), Android necesita servir la app por `http` y permitir tráfico sin
+// cifrar; si no, el WebView bloquea las llamadas. Contra una API `https` se
+// mantienen los valores seguros por defecto.
+const apiUrl = loadEnv('production', __dirname, 'VITE_').VITE_API_URL ?? '';
+const httpApi = apiUrl.startsWith('http://');
 
 // Config de Capacitor para los builds nativos (iOS/Android). `webDir` apunta al
 // output de Vite. Las plataformas nativas se añaden con `pnpm cap:add:ios` /
@@ -8,6 +16,7 @@ const config: CapacitorConfig = {
   appId: 'es.aj.core',
   appName: 'Core',
   webDir: 'dist',
+  ...(httpApi ? { server: { androidScheme: 'http', cleartext: true } } : {}),
   plugins: {
     // Splash de arranque. El color de fondo casa con `--ion-background-color`
     // (greige cálido). La variante oscura la generan los assets (splash-dark).
