@@ -12,7 +12,7 @@ const GONE = [
   'Tu cuenta, perfil y objetivos',
   'Comidas, alimentos propios y pesos',
   'Actividades y entrenos registrados',
-  'Tus preferencias guardadas en Ritmo',
+  'Tus preferencias guardadas en Brío',
 ];
 
 /** Eliminar cuenta (lienzo "Eliminar cuenta"): borrado definitivo en el servidor. */
@@ -46,7 +46,7 @@ export default function DeleteAccountPage() {
               </svg>
             </span>
             <h1>Cuenta eliminada</h1>
-            <p>Hemos borrado tu cuenta y todo lo que tenías guardado en Ritmo.</p>
+            <p>Hemos borrado tu cuenta y todo lo que tenías guardado en Brío.</p>
             {/* Cerrar sesión limpia los datos en memoria y vuelve al acceso. */}
             <button type="button" className="rk-btn" onClick={logout}>
               Volver al inicio
@@ -65,7 +65,7 @@ export default function DeleteAccountPage() {
           <header className="delete__head">
             <h1>Eliminar cuenta</h1>
             <span className="delete__lead">
-              Se borrará tu cuenta y todo lo que has guardado en Ritmo. No se puede deshacer.
+              Se borrará tu cuenta y todo lo que has guardado en Brío. No se puede deshacer.
             </span>
           </header>
 

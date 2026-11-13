@@ -51,7 +51,7 @@ export default function HomePage() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Core</IonTitle>
+          <IonTitle>Brío</IonTitle>
         </IonToolbar>
       </IonHeader>
 

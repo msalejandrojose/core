@@ -15,9 +15,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon.png'],
       manifest: {
-        name: 'Core',
-        short_name: 'Core',
-        description: 'App móvil de Core',
+        name: 'Brío',
+        short_name: 'Brío',
+        description: 'Actividad, plan de entreno y calorías en una sola app',
         lang: 'es',
         start_url: '/',
         scope: '/',

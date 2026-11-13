@@ -60,7 +60,7 @@ export function FirstDay({
       <section aria-labelledby="empieza" className="rk-hero firstday">
         <div className="today-now__text">
           <span id="empieza" className="today-now__title">
-            Te damos la bienvenida a Ritmo
+            Te damos la bienvenida a Brío
           </span>
           <span className="today-now__body">
             Cuatro pasos para que la app trabaje por ti. Llevas {doneCount} de

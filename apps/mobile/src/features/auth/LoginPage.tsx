@@ -43,7 +43,7 @@ export default function LoginPage() {
         <div className="login">
           <div className="login__brand">
             <RitmoMark />
-            <h1>Ritmo</h1>
+            <h1>Brío</h1>
             <p>Entrena, come y descansa con un plan que se ajusta a ti.</p>
           </div>
 

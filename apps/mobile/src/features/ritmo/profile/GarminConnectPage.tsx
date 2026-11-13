@@ -53,7 +53,7 @@ export default function GarminConnectPage() {
     run(async () => {
       await garminApi.disconnect();
       if (status) setStatus({ ...status, connected: false, lastSyncAt: null, lastError: null });
-      toast.success('Garmin desconectado', 'Lo que ya has traído se queda en Ritmo.');
+      toast.success('Garmin desconectado', 'Lo que ya has traído se queda en Brío.');
     }, 'No se pudo desconectar');
 
   async function paste() {
@@ -127,7 +127,7 @@ export default function GarminConnectPage() {
                 {busy ? 'Sincronizando…' : 'Sincronizar ahora'}
               </button>
               <p className="rk-note">
-                Ritmo trae tus entrenos, el pulso en reposo, el sueño y la variabilidad al abrir la app. Enviar sesiones al reloj aún no es posible con esta conexión.
+                Brío trae tus entrenos, el pulso en reposo, el sueño y la variabilidad al abrir la app. Enviar sesiones al reloj aún no es posible con esta conexión.
               </p>
               {expired ? keyForm('Renovar la clave') : null}
               <button type="button" className="hevy__disconnect" disabled={busy} onClick={() => void disconnect()}>

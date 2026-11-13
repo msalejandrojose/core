@@ -79,7 +79,7 @@ export default function HevyConnectPage() {
     try {
       await hevyApi.disconnect();
       setStatus(status ? { ...status, connected: false, username: null, lastSyncAt: null, lastError: null } : status);
-      toast.success('Hevy desconectado', 'Tus entrenos importados se quedan en Ritmo.');
+      toast.success('Hevy desconectado', 'Tus entrenos importados se quedan en Brío.');
     } catch (e) {
       toast.error('No se pudo desconectar', hevyErrorText(e));
     } finally {
@@ -123,7 +123,7 @@ export default function HevyConnectPage() {
               {busy ? 'Sincronizando…' : 'Sincronizar ahora'}
             </button>
             <p className="rk-note">
-              Ritmo trae lo nuevo de Hevy al abrir la app. Para mandar una rutina, abre una sesión de fuerza de tu plan y pulsa «Enviar rutina a Hevy».
+              Brío trae lo nuevo de Hevy al abrir la app. Para mandar una rutina, abre una sesión de fuerza de tu plan y pulsa «Enviar rutina a Hevy».
             </p>
             <button type="button" className="hevy__disconnect" disabled={busy} onClick={() => void disconnect()}>
               Desconectar Hevy

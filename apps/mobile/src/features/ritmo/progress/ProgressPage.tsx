@@ -96,7 +96,7 @@ export default function ProgressPage() {
               Conexiones
             </Link>
           </div>
-          <LargeTitle sub="Tus registros en Ritmo">Progreso</LargeTitle>
+          <LargeTitle sub="Tus registros en Brío">Progreso</LargeTitle>
 
           <h2 className="progress__h2">Tus metas</h2>
           <div className="progress__list">
@@ -330,7 +330,7 @@ export default function ProgressPage() {
                 <Icon d="M12 4a8 8 0 1 1-7.4 5" size={18} stroke={2.6} />
               </span>
               <span className="rk-row__main">
-                <span className="rk-row__title">Tu {today.slice(0, 4)} en Ritmo</span>
+                <span className="rk-row__title">Tu {today.slice(0, 4)} en Brío</span>
                 <span className="rk-row__sub">Tu año en historias · se abre en diciembre</span>
               </span>
               <Chevron />

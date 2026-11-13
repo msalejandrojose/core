@@ -189,7 +189,7 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <span className="profile__version">Ritmo 1.0 (1)</span>
+          <span className="profile__version">Brío 1.0 (1)</span>
         </div>
 
         <IonModal

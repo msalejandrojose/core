@@ -13,8 +13,8 @@ const httpApi = apiUrl.startsWith('http://');
 // `pnpm cap:add:android` (requieren Xcode / Android SDK) — no se commitean aquí
 // (ver .gitignore). El flujo completo está en NATIVE.md.
 const config: CapacitorConfig = {
-  appId: 'es.aj.core',
-  appName: 'Core',
+  appId: 'es.aj.brio',
+  appName: 'Brío',
   webDir: 'dist',
   ...(httpApi ? { server: { androidScheme: 'http', cleartext: true } } : {}),
   plugins: {
