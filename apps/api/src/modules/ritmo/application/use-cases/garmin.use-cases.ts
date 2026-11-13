@@ -27,6 +27,10 @@ import {
   type GarminClientPort,
   type RitmoGarminRepositoryPort,
 } from '../ports/garmin.port';
+import {
+  RITMO_CONNECTION_PREFS,
+  type ConnectionPrefsPort,
+} from '../ports/connection-prefs.port';
 import { RITMO_SECRET_CIPHER, type SecretCipher } from '../ports/hevy.port';
 import {
   RITMO_BODY_REPOSITORY,
@@ -114,6 +118,8 @@ export class SyncGarminUseCase {
     @Inject(RITMO_PROFILE_REPOSITORY)
     private readonly profiles: RitmoProfileRepositoryPort,
     private readonly refreshDailyLog: RefreshDailyLogUseCase,
+    @Inject(RITMO_CONNECTION_PREFS)
+    private readonly prefs: ConnectionPrefsPort,
   ) {}
 
   async execute(userId: string, now = new Date()): Promise<GarminSyncResult> {
@@ -130,13 +136,14 @@ export class SyncGarminUseCase {
         ? shiftDay(dayInTimezone(conn.lastSyncAt, timezone), -RESYNC_DAYS)
         : shiftDay(today, -FIRST_IMPORT_DAYS);
 
-      const sessions = await this.importActivities(
-        userId,
-        token,
-        from,
-        timezone,
-      );
-      const healthDays = await this.importHealth(userId, token, from, today);
+      // Lo que el usuario ha apagado en Conexiones no se pide a Garmin.
+      const prefs = await this.prefs.get(userId);
+      const sessions = prefs.importActivities
+        ? await this.importActivities(userId, token, from, timezone)
+        : { imported: 0, updated: 0, skipped: 0 };
+      const healthDays = prefs.importHealth
+        ? await this.importHealth(userId, token, from, today)
+        : 0;
       await this.repo.markSync(userId, {
         lastSyncAt: now,
         lastSyncCount: sessions.imported + sessions.updated,

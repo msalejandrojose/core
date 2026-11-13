@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { countedExerciseKcal } from '../../../application/ports/connection-prefs.port';
 import type { DaySummary } from '../../../application/use-cases/get-day-summary.use-case';
 import { ActivitySessionResponseDto } from './activity-session.response.dto';
 import { MealEntryResponseDto } from './meal-entry.response.dto';
@@ -8,12 +9,18 @@ export class DayTotalsDto {
   kcalIn: number;
   @ApiProperty({ example: 336, description: 'kcal gastadas en actividad.' })
   kcalBurned: number;
+  @ApiProperty({
+    example: 336,
+    description:
+      'kcal de actividad que cuentan para el día, según la preferencia del usuario.',
+  })
+  kcalBurnedCounted: number;
   @ApiPropertyOptional({ example: 2209, description: 'Objetivo de ese día.' })
   kcalTarget: number | null;
   @ApiPropertyOptional({
     example: 705,
     description:
-      'kcal que quedan: objetivo − ingeridas + gastadas. null sin objetivo.',
+      'kcal que quedan: objetivo − ingeridas + gastadas que cuentan. null sin objetivo.',
   })
   kcalRemaining: number | null;
   @ApiProperty({ example: 92 }) proteinG: number;
@@ -33,6 +40,10 @@ export class DaySummaryResponseDto {
     const totals = new DayTotalsDto();
     totals.kcalIn = s.log.kcalIn;
     totals.kcalBurned = s.log.kcalBurned;
+    totals.kcalBurnedCounted = countedExerciseKcal(
+      s.log.kcalBurned,
+      s.exerciseKcalSharePct,
+    );
     totals.kcalTarget = s.log.kcalTarget;
     // El "restante" se calcula aquí, en la capa HTTP: es presentación de los
     // totales, no un dato que haya que almacenar ni volver a derivar en el
@@ -40,7 +51,7 @@ export class DaySummaryResponseDto {
     totals.kcalRemaining =
       s.log.kcalTarget === null
         ? null
-        : s.log.kcalTarget - s.log.kcalIn + s.log.kcalBurned;
+        : s.log.kcalTarget - s.log.kcalIn + totals.kcalBurnedCounted;
     totals.proteinG = s.log.proteinG;
     totals.carbsG = s.log.carbsG;
     totals.fatG = s.log.fatG;

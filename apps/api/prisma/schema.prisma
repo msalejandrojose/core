@@ -289,6 +289,7 @@ model User {
   ritmoHevyConnection   RitmoHevyConnection?
   ritmoGarminConnection RitmoGarminConnection?
   ritmoDailyHealth      RitmoDailyHealth[]
+  ritmoConnectionPrefs  RitmoConnectionPrefs?
   ritmoHevyLinks        RitmoHevyExerciseLink[]
 
   @@map("user")
@@ -3091,4 +3092,21 @@ model RitmoShoppingCheck {
 
   @@id([userId, weekStart, itemCode])
   @@map("ritmo_shopping_check")
+}
+
+/// Preferencias de las conexiones del usuario: qué se trae del reloj y cuánto
+/// del gasto de los entrenos se suma a las calorías del día.
+model RitmoConnectionPrefs {
+  userId String @id @map("user_id") @db.Char(36)
+
+  importActivities     Boolean @default(true) @map("import_activities")
+  importHealth         Boolean @default(true) @map("import_health")
+  /// Porcentaje (0–100) de las kcal de ejercicio que se añaden al objetivo del día.
+  exerciseKcalSharePct Int     @default(100) @map("exercise_kcal_share_pct") @db.SmallInt
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ritmo_connection_prefs")
 }

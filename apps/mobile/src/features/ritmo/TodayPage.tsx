@@ -27,7 +27,7 @@ import { useHabitsStore } from './habits.store';
 import { deleteEntries, logItems } from './relog';
 import { tapSuccess } from './haptics';
 import { FoodIcon } from './ui/food-icons';
-import { CheckCircle, Chevron, ExampleTag, Icon, Ring } from './ui/kit';
+import { CheckCircle, Chevron, Icon, Ring } from './ui/kit';
 import { PATHS } from './ui/paths';
 import { FirstDay } from './FirstDay';
 import { isFirstDay } from './first-day';
@@ -36,6 +36,7 @@ import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
 import './ritmo.css';
+import { RecoveryRow } from './pages/RecoveryRow';
 import { TomorrowRow } from './plan/TomorrowRow';
 import './today.css';
 
@@ -103,8 +104,7 @@ function pendingMeals(summary: DaySummary, hour: number): MealType[] {
  * que toca con lo de siempre listo para registrar de un toque, luego las kcal
  * que quedan, la recuperación, tu día y lo de mañana.
  *
- * Recuperación necesita Garmin, que aún no existe: se muestra con datos de
- * ejemplo y su etiqueta. "Mañana" sale de tu plan.
+ * Recuperación es una estimación con tu reloj y tu carga; "Mañana" sale de tu plan.
  */
 export default function TodayPage() {
   const profile = useRitmoStore((s) => s.profile);
@@ -360,10 +360,10 @@ export default function TodayPage() {
               <Link to="/tabs/today/comida" className="today-row today-kcal">
                 <Ring
                   size={52}
-                  // Lo comido sobre lo disponible hoy (objetivo + lo gastado entrenando).
+                  // Lo comido sobre lo disponible hoy (objetivo + la parte del gasto que cuenta).
                   ratio={
                     totals.kcalTarget
-                      ? totals.kcalIn / (totals.kcalTarget + totals.kcalBurned)
+                      ? totals.kcalIn / (totals.kcalTarget + totals.kcalBurnedCounted)
                       : 0
                   }
                   color="var(--ritmo-food)"
@@ -384,20 +384,7 @@ export default function TodayPage() {
                 <Chevron />
               </Link>
 
-              <Link to="/tabs/today/recuperacion" className="today-row">
-                <span className="today-recovery" aria-hidden="true">
-                  58
-                </span>
-                <span className="rk-row__main">
-                  <span className="today-row__title">
-                    Recuperación moderada
-                  </span>
-                  <span className="rk-row__sub">
-                    <ExampleTag /> Revisa las series de mañana
-                  </span>
-                </span>
-                <Chevron />
-              </Link>
+              <RecoveryRow />
 
               <section aria-label="Tu día" className="today-day">
                 {pending.map((type) => {
