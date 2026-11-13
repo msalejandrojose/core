@@ -71,6 +71,20 @@ import { RitmoPerformanceController } from './infrastructure/http/ritmo-performa
 import { RitmoPerformanceInputsController } from './infrastructure/http/ritmo-performance-inputs.controller';
 import { RitmoPlanController } from './infrastructure/http/ritmo-plan.controller';
 import { RitmoHevyController } from './infrastructure/http/ritmo-hevy.controller';
+import { RitmoGarminController } from './infrastructure/http/ritmo-garmin.controller';
+import { PrismaRitmoGarminRepository } from './infrastructure/persistence/prisma-ritmo-garmin.repository';
+import { HttpGarminClient } from './infrastructure/garmin/http-garmin.client';
+import {
+  GARMIN_CLIENT,
+  RITMO_GARMIN_REPOSITORY,
+} from './application/ports/garmin.port';
+import {
+  ConnectGarminUseCase,
+  DisconnectGarminUseCase,
+  GetGarminStatusUseCase,
+  GetRecentHealthUseCase,
+  SyncGarminUseCase,
+} from './application/use-cases/garmin.use-cases';
 import { PrismaRitmoHevyRepository } from './infrastructure/persistence/prisma-ritmo-hevy.repository';
 import { HttpHevyClient } from './infrastructure/hevy/http-hevy.client';
 import {
@@ -106,6 +120,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoPerformanceController,
     RitmoPlanController,
     RitmoHevyController,
+    RitmoGarminController,
   ],
   providers: [
     {
@@ -122,8 +137,10 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     { provide: RITMO_PLAN_REPOSITORY, useClass: PrismaRitmoPlanRepository },
     { provide: RITMO_HEVY_REPOSITORY, useClass: PrismaRitmoHevyRepository },
     { provide: HEVY_CLIENT, useClass: HttpHevyClient },
+    { provide: RITMO_GARMIN_REPOSITORY, useClass: PrismaRitmoGarminRepository },
+    { provide: GARMIN_CLIENT, useClass: HttpGarminClient },
     {
-      // Cifrado de las claves de terceros (Hevy). Usa `RITMO_ENC_KEY` o, si no
+      // Cifrado de las claves de terceros (Hevy, Garmin). Usa `RITMO_ENC_KEY` o, si no
       // está, la de notificaciones. Sin ninguna (dev/CI) no cifra, y avisa.
       provide: RITMO_SECRET_CIPHER,
       useFactory: (config: ConfigService) => {
@@ -132,7 +149,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
           config.get<string>('NOTIFICATIONS_ENC_KEY');
         if (key) return new AesSecretCipher(key);
         new Logger('RitmoModule').warn(
-          'RITMO_ENC_KEY no definida — las claves de Hevy NO se cifran en BBDD.',
+          'RITMO_ENC_KEY no definida — las claves de Hevy y Garmin NO se cifran en BBDD.',
         );
         return new NullSecretCipher();
       },
@@ -206,6 +223,12 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ConnectHevyUseCase,
     DisconnectHevyUseCase,
     SendPlannedRoutineToHevyUseCase,
+    // Garmin y salud diaria.
+    GetGarminStatusUseCase,
+    SyncGarminUseCase,
+    ConnectGarminUseCase,
+    DisconnectGarminUseCase,
+    GetRecentHealthUseCase,
   ],
 })
 export class RitmoModule {}
