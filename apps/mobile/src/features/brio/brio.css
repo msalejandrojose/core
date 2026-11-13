@@ -1,0 +1,367 @@
+/* ============================================================================
+ * Brío — estilos propios de la feature.
+ * ----------------------------------------------------------------------------
+ * Lo que no cubren las recetas de `theme/components.css`: estructura de
+ * pantalla, anillo de kcal, macros, gráfica de peso y hoja Registrar. Solo
+ * tokens del Brío DS. Cada dato va en el color de SU dominio y nunca en otro:
+ * calorías y macros en `food`, entrenos en `activity`, peso en `sleep`.
+ * ========================================================================== */
+
+/* ---- Estructura de pantalla ---- */
+.brio-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--brio-space-l);
+  padding: var(--brio-space-s) var(--brio-space-xl) var(--brio-space-4xl);
+}
+.brio-screen--today {
+  gap: var(--brio-space-2xl);
+}
+.brio-page-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 4px;
+}
+.brio-page-head__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--brio-space-m);
+}
+.brio-daynav {
+  display: flex;
+  align-items: center;
+}
+.brio-daynav ion-button {
+  --color: var(--brio-tint);
+  --padding-start: 6px;
+  --padding-end: 6px;
+  min-height: var(--brio-control);
+  margin: 0;
+}
+
+/* ---- Cabecera: campana y avatar ---- */
+.brio-header-icon {
+  --color: var(--brio-tint);
+  position: relative;
+}
+.brio-header-icon ion-icon {
+  font-size: 24px;
+}
+.brio-header-avatar ion-icon {
+  font-size: 34px;
+  color: var(--brio-border);
+}
+.brio-header-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  --background: var(--brio-heart);
+  --color: var(--brio-on-tint);
+  --padding-start: 5px;
+  --padding-end: 5px;
+  font-size: 11px;
+  min-width: 18px;
+  border-radius: var(--brio-radius-pill);
+}
+
+/* ---- Cabecera de sección con valor a la derecha ---- */
+.brio-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-right: var(--brio-space-xl);
+}
+.brio-section-head .core-section-label {
+  margin-bottom: var(--brio-space-xs);
+}
+.brio-section-head__value {
+  font-size: 13px;
+  color: var(--brio-food-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Tarjeta héroe: anillo + balance ---- */
+.brio-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--brio-space-2xl);
+}
+
+/* ---- Anillo de kcal (ProgressRing en `food`) ---- */
+.brio-ring {
+  flex: 0 0 auto;
+  position: relative;
+  width: 128px;
+  height: 128px;
+}
+.brio-ring svg {
+  transform: rotate(-90deg); /* empieza arriba, no a las 3 en punto */
+}
+.brio-ring__track {
+  stroke: var(--brio-bg);
+}
+.brio-ring__value {
+  stroke: var(--brio-food);
+  transition: stroke-dashoffset 200ms ease-out;
+}
+/* Pasarse no es un fallo (DS: nunca culpa con las calorías). El anillo sigue
+   lleno en `food` y el texto dice "kcal de más"; no se tiñe de rojo. */
+.brio-ring__center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.brio-ring__number {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
+  color: var(--brio-ink);
+}
+.brio-ring__caption {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--brio-ink-muted);
+}
+
+/* ---- Balance del día ---- */
+.brio-balance {
+  flex: 1 1 auto;
+  display: grid;
+  gap: var(--brio-space-m);
+}
+.brio-balance__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--brio-space-s);
+}
+.brio-balance__label {
+  font-size: 15px;
+  color: var(--brio-ink-muted);
+}
+.brio-balance__value {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--brio-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Barras de macros (ProgressBar en `food`) ---- */
+.brio-macros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--brio-space-l);
+}
+/* Nombre encima del valor: en tres columnas de ~100px no caben en línea. */
+.brio-macro__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--brio-space-s);
+}
+.brio-macro__name {
+  font-size: 13px;
+  color: var(--brio-ink-muted);
+}
+.brio-macro__value {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--brio-ink);
+  font-variant-numeric: tabular-nums;
+}
+.brio-macro__track {
+  height: 6px;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-bg);
+  overflow: hidden;
+}
+.brio-macro__fill {
+  height: 100%;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-food);
+  transition: width 200ms ease-out;
+}
+
+/* ---- Filas del diario (GroupedList) ---- */
+.brio-list {
+  padding-left: var(--brio-space-xl);
+}
+.brio-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--brio-space-m);
+  min-height: var(--brio-row-l);
+  padding: 8px var(--brio-space-s) 8px 0;
+}
+/* Separador que empieza en el texto, no en el borde. */
+.brio-entry + .brio-entry {
+  border-top: 1px solid var(--brio-separator);
+}
+.brio-entry__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+.brio-entry__name {
+  font-size: 16px;
+  line-height: 21px;
+  color: var(--brio-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brio-entry__meta {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--brio-ink-muted);
+  margin-top: 1px;
+}
+.brio-entry__kcal {
+  flex: 0 0 auto;
+  font-size: 15px;
+  color: var(--brio-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.brio-entry__kcal--burned {
+  color: var(--brio-activity-ink);
+  font-weight: 600;
+}
+.brio-entry__delete {
+  --color: var(--brio-chevron);
+  --padding-start: 8px;
+  --padding-end: 8px;
+  min-height: var(--brio-control);
+  margin: 0;
+}
+.brio-entry--action {
+  width: 100%;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--brio-tint);
+  font-size: 16px;
+}
+.brio-entry--action .brio-entry__body {
+  color: var(--brio-tint);
+}
+
+/* ---- Gráfica de peso (`sleep`: sueño y peso) ---- */
+.brio-chart {
+  width: 100%;
+  height: 160px;
+  display: block;
+  overflow: visible;
+}
+.brio-chart__line {
+  fill: none;
+  stroke: var(--brio-sleep);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.brio-chart__area {
+  fill: var(--brio-sleep-soft);
+  stroke: none;
+}
+.brio-chart__dot {
+  fill: var(--brio-sleep);
+}
+.brio-chart__grid {
+  stroke: var(--brio-separator);
+  stroke-width: 1;
+}
+.brio-chart__axis {
+  font-size: 11px;
+  font-weight: 500;
+  fill: var(--brio-ink-muted);
+}
+
+/* ---- Hojas: barra "Cancelar · Título · Acción" (NavBar en hoja) ---- */
+ion-modal.brio-sheet-auto {
+  --height: auto;
+}
+.brio-sheet-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.brio-sheet-bar__action {
+  justify-self: start;
+  min-height: var(--brio-control);
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--brio-tint);
+  font: inherit;
+  font-size: 17px;
+  cursor: pointer;
+}
+.brio-sheet-bar__title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--brio-ink);
+}
+
+/* ---- Hoja Registrar ---- */
+.brio-register {
+  display: flex;
+  flex-direction: column;
+  gap: var(--brio-space-l);
+  padding: var(--brio-space-l) var(--brio-space-xl)
+    calc(var(--brio-space-4xl) + env(safe-area-inset-bottom, 0px));
+}
+.brio-register__hint {
+  padding: 0 4px;
+}
+.brio-register__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--brio-space-s);
+}
+.brio-register__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--brio-space-xs);
+  padding: var(--brio-space-m) 4px;
+  border: 0;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.brio-register__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+.brio-register__icon--food {
+  background: var(--brio-food-soft);
+  color: var(--brio-food-ink);
+}
+.brio-register__icon--activity {
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
+}
+.brio-register__icon--sleep {
+  background: var(--brio-sleep-soft);
+  color: var(--brio-sleep-ink);
+}
+.brio-register__label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+}

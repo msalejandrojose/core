@@ -594,38 +594,38 @@ export const ERROR_CATALOG = {
     defaultMessage: 'No se pudo enviar el mensaje de WhatsApp.',
   },
 
-  // Ritmo (actividad física y calorías)
-  RITMO_PROFILE_NOT_FOUND: {
+  // Brío (actividad física y calorías)
+  BRIO_PROFILE_NOT_FOUND: {
     httpStatus: 404,
     level: 'info',
     defaultMessage: 'Todavía no has configurado tu perfil de actividad.',
   },
-  RITMO_ACTIVITY_TYPE_NOT_FOUND: {
+  BRIO_ACTIVITY_TYPE_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Tipo de actividad no encontrado.',
   },
-  RITMO_ACTIVITY_SESSION_NOT_FOUND: {
+  BRIO_ACTIVITY_SESSION_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Sesión de actividad no encontrada.',
   },
-  RITMO_EXERCISE_NOT_FOUND: {
+  BRIO_EXERCISE_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Ejercicio no encontrado.',
   },
-  RITMO_FOOD_NOT_FOUND: {
+  BRIO_FOOD_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Alimento no encontrado.',
   },
-  RITMO_MEAL_ENTRY_NOT_FOUND: {
+  BRIO_MEAL_ENTRY_NOT_FOUND: {
     httpStatus: 404,
     level: 'warn',
     defaultMessage: 'Entrada de comida no encontrada.',
   },
-  RITMO_WEIGHT_UNKNOWN: {
+  BRIO_WEIGHT_UNKNOWN: {
     httpStatus: 409,
     level: 'info',
     defaultMessage:

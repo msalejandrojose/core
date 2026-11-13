@@ -1,0 +1,483 @@
+/* Social (lienzo "Amigos", "Amigo", "Retos"). */
+.social {
+  gap: 14px;
+}
+.social__navbtn {
+  gap: 6px;
+}
+.social__avatar {
+  flex: none;
+  border-radius: 50%;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.social__privacy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--brio-surface);
+  color: var(--brio-ink-2);
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.social__privacy svg {
+  flex: none;
+}
+.social__privacy span:nth-of-type(1) {
+  flex: 1;
+}
+.social__privacy-link {
+  color: var(--brio-tint);
+}
+
+/* Lista de personas */
+.social__list {
+  padding-left: 14px;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+  overflow: hidden;
+}
+.social__person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 6px 14px 6px 0;
+  box-sizing: border-box;
+}
+.social__person + .social__person {
+  border-top: 1px solid var(--brio-separator);
+}
+.social__person-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  color: var(--brio-ink);
+  text-decoration: none;
+}
+.social__follow {
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-tint);
+  color: var(--brio-on-tint);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.social__follow.is-on {
+  background: var(--brio-surface-fill);
+  color: var(--brio-ink);
+}
+
+/* Actividad */
+.social__feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.social__post {
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.social__post p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.social__post-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.social__post-head a {
+  text-decoration: none;
+}
+.social__post-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+.social__post-when {
+  font-size: 12px;
+  color: var(--brio-ink-muted);
+}
+.social__badge {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: var(--brio-radius-pill);
+}
+.social__badge--goal {
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
+}
+.social__badge--pr {
+  background: var(--brio-food-soft);
+  color: var(--brio-food-ink);
+}
+.social__cheer {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-bg);
+  color: var(--brio-ink-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.social__cheer.is-on {
+  background: var(--brio-heart-soft);
+  color: var(--brio-heart-ink);
+}
+
+/* Barras y objetivos */
+.social__bar {
+  height: 6px;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-bg);
+  overflow: hidden;
+}
+.social__bar > div {
+  height: 100%;
+  border-radius: var(--brio-radius-pill);
+}
+.social__goal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 12px 0;
+}
+.social__goal + .social__goal {
+  border-top: 1px solid var(--brio-separator);
+}
+.social__goal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.social__goal-done {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brio-activity-ink);
+}
+
+/* Amigo */
+.friend__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.friend__head h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+.friend__user {
+  font-size: 15px;
+  color: var(--brio-ink-muted);
+}
+.friend__follow {
+  margin-top: 4px;
+  min-height: 40px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+.friend__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.friend__stat {
+  background: var(--brio-surface);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.friend__stat-label {
+  font-size: 12px;
+  color: var(--brio-ink-muted);
+}
+.friend__stat-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+.friend__stat-sub {
+  font-size: 11px;
+  color: var(--brio-ink-muted);
+}
+.friend__logro {
+  min-height: 56px;
+  gap: 12px;
+}
+.friend__logro-icon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.friend__logro-title {
+  font-size: 15px;
+}
+.friend__cheer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--brio-surface);
+  color: var(--brio-heart-ink);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.friend__cheer.is-on {
+  background: var(--brio-heart-soft);
+}
+
+/* Retos */
+.reto__card {
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.reto__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.reto__head svg {
+  flex: none;
+}
+.reto__kicker {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brio-food-ink);
+  text-transform: uppercase;
+}
+.reto__title {
+  font-size: 20px;
+  font-weight: 700;
+}
+.reto__ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reto__ranking li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.reto__pos {
+  width: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--brio-ink-muted);
+}
+.reto__line {
+  gap: 4px;
+}
+.reto__line-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+}
+.reto__me {
+  font-weight: 700;
+}
+.reto__n {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.reto__hint {
+  white-space: normal;
+}
+.reto__cheer {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--brio-bg);
+  color: var(--brio-heart-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.reto__cheer.is-on {
+  background: var(--brio-heart-soft);
+}
+.reto__tag {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--brio-radius-pill);
+}
+.reto__tag--coop {
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
+}
+.reto__tag--pair {
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+}
+.social .social__goal .rk-row__sub {
+  white-space: normal;
+}
+.reto__new {
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.reto__kinds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.reto__kind {
+  min-height: 64px;
+  padding: 8px 10px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--brio-bg);
+  color: var(--brio-ink);
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  text-align: left;
+}
+.reto__kind.is-on {
+  border-color: var(--brio-tint);
+  background: var(--brio-tint-soft);
+}
+.reto__kind-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+.reto__kind-desc {
+  font-size: 12px;
+  color: var(--brio-ink-muted);
+}
+.reto__group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.reto__stack {
+  display: flex;
+}
+.reto__stack .social__avatar {
+  border: 2px solid var(--brio-surface);
+  box-sizing: border-box;
+}
+.reto__stack .social__avatar + .social__avatar {
+  margin-left: -8px;
+}
+.reto__group-names {
+  flex: 1;
+  font-size: 15px;
+}
+.reto__change {
+  font-size: 15px;
+}
+.reto__fine {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--brio-ink-muted);
+}
+
+/* Social con datos reales */
+button.social__privacy {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.reto__friends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.reto__friend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 14px 4px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brio-bg);
+  color: var(--brio-ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.reto__friend.is-on {
+  background: var(--brio-tint);
+  color: #ffffff;
+}
+.reto__leave {
+  align-self: center;
+  color: var(--brio-danger);
+}
+.reto__card + .reto__card {
+  margin-top: var(--brio-space-s);
+}
+.friend__logro {
+  height: auto;
+  padding-block: 10px;
+}
+.friend__logro-title {
+  white-space: normal;
+}

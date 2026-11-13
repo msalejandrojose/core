@@ -1,26 +1,26 @@
 /* ============================================================================
- * Ritmo DS → recetas de componentes (app mobile)
+ * Brío DS → recetas de componentes (app mobile)
  * ----------------------------------------------------------------------------
  * Overrides de Ionic + clases utilitarias con los tokens de `tokens.css`. Cada
- * bloque sigue la anatomía del componente homónimo del Ritmo Design System.
+ * bloque sigue la anatomía del componente homónimo del Brío Design System.
  * Las clases `core-*` se conservan con su nombre para no romper las pantallas
- * del shell base; su aspecto ya es el de Ritmo.
+ * del shell base; su aspecto ya es el de Brío.
  * ========================================================================== */
 
 body {
-  font-family: var(--ritmo-font-sans);
+  font-family: var(--brio-font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 :focus-visible {
-  outline: 2px solid var(--ritmo-tint);
+  outline: 2px solid var(--brio-tint);
   outline-offset: 2px;
 }
 
 /* ============================== Button ==================================== */
 /* Principal: tint + on-tint, alto control-l, radius-xl, headline. */
 ion-button {
-  --border-radius: var(--ritmo-radius-xl);
+  --border-radius: var(--brio-radius-xl);
   --box-shadow: none;
   text-transform: none;
   letter-spacing: 0;
@@ -28,52 +28,52 @@ ion-button {
 }
 ion-button[size='large'],
 ion-button[expand='block'] {
-  min-height: var(--ritmo-control-l);
+  min-height: var(--brio-control-l);
   font-size: 17px;
 }
 /* Secundario tintado: tint-soft con texto tint ("Otra", "+ Lo de siempre"). */
-ion-button.ritmo-btn-soft {
-  --background: var(--ritmo-tint-soft);
-  --background-activated: var(--ritmo-tint-soft);
-  --background-hover: var(--ritmo-tint-soft);
-  --color: var(--ritmo-tint);
+ion-button.brio-btn-soft {
+  --background: var(--brio-tint-soft);
+  --background-activated: var(--brio-tint-soft);
+  --background-hover: var(--brio-tint-soft);
+  --color: var(--brio-tint);
 }
 /* Deshabilitado: surface-fill + ink-muted en los botones con relleno; los de
  * texto o icono solo apagan el color. */
 ion-button[disabled]:not([fill='clear']):not([fill='outline']) {
-  --background: var(--ritmo-surface-fill);
-  --color: var(--ritmo-ink-muted);
+  --background: var(--brio-surface-fill);
+  --color: var(--brio-ink-muted);
   opacity: 1;
 }
 ion-button[disabled][fill='clear'] {
-  --color: var(--ritmo-chevron);
+  --color: var(--brio-chevron);
   opacity: 1;
 }
 
 /* ============================== Campos ==================================== */
 ion-input.core-field,
 ion-textarea.core-field {
-  --border-radius: var(--ritmo-radius-l);
-  --highlight-color-focused: var(--ritmo-tint);
+  --border-radius: var(--brio-radius-l);
+  --highlight-color-focused: var(--brio-tint);
   margin-top: 2px;
 }
 ion-searchbar {
-  --background: var(--ritmo-surface-fill);
-  --border-radius: var(--ritmo-radius-l);
+  --background: var(--brio-surface-fill);
+  --border-radius: var(--brio-radius-l);
   --box-shadow: none;
-  --placeholder-color: var(--ritmo-ink-muted);
-  --icon-color: var(--ritmo-ink-muted);
+  --placeholder-color: var(--brio-ink-muted);
+  --icon-color: var(--brio-ink-muted);
   padding-inline: 0;
 }
 
 /* ============================== NavBar ==================================== */
 ion-toolbar {
-  --background: var(--ritmo-bg);
+  --background: var(--brio-bg);
   --border-width: 0 !important;
-  --color: var(--ritmo-ink);
+  --color: var(--brio-ink);
 }
 ion-header ion-toolbar ion-button {
-  --color: var(--ritmo-tint);
+  --color: var(--brio-tint);
   font-weight: 400;
   font-size: 17px;
 }
@@ -83,12 +83,12 @@ ion-title {
 }
 /* Hojas modales: asa en border-strong y radio 3xl arriba. */
 ion-modal {
-  --border-radius: var(--ritmo-radius-3xl);
-  --background: var(--ritmo-bg);
+  --border-radius: var(--brio-radius-3xl);
+  --background: var(--brio-bg);
   --backdrop-opacity: 0.32;
 }
 ion-modal::part(handle) {
-  background: var(--ritmo-border-strong);
+  background: var(--brio-border-strong);
   width: 36px;
   height: 5px;
 }
@@ -97,16 +97,16 @@ ion-modal::part(handle) {
 /* Alto tabbar, fondo translúcido con desenfoque y borde superior en border.
  * Cinco columnas: Hoy · Plan · + · Progreso · Social. */
 ion-tab-bar {
-  --background: var(--ritmo-tabbar-bg);
-  --border: 1px solid var(--ritmo-border);
-  --color: var(--ritmo-ink-muted);
-  --color-selected: var(--ritmo-tint);
+  --background: var(--brio-tabbar-bg);
+  --border: 1px solid var(--brio-border);
+  --color: var(--brio-ink-muted);
+  --color-selected: var(--brio-tint);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 ion-tab-button {
-  --color: var(--ritmo-ink-muted);
-  --color-selected: var(--ritmo-tint);
+  --color: var(--brio-ink-muted);
+  --color-selected: var(--brio-tint);
   font-size: 10px;
   font-weight: 500;
 }
@@ -121,61 +121,61 @@ ion-tab-button ion-icon {
   font-size: 24px;
 }
 /* Botón + central: 48px en tint con shadow-fab. */
-.ritmo-tab-register {
+.brio-tab-register {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--ritmo-control);
+  min-height: var(--brio-control);
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
 }
-.ritmo-tab-register__fab {
+.brio-tab-register__fab {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--ritmo-tint);
-  color: var(--ritmo-on-tint);
+  background: var(--brio-tint);
+  color: var(--brio-on-tint);
   display: grid;
   place-items: center;
-  box-shadow: var(--ritmo-shadow-fab);
+  box-shadow: var(--brio-shadow-fab);
 }
-.ritmo-tab-register__fab ion-icon {
+.brio-tab-register__fab ion-icon {
   font-size: 26px;
-  color: var(--ritmo-on-tint);
+  color: var(--brio-on-tint);
 }
 
 /* ============================ Tipografía ================================== */
 /* large-title: una vez por pantalla. */
 .core-display,
 .core-title,
-.ritmo-large-title {
-  font-family: var(--ritmo-font-sans);
+.brio-large-title {
+  font-family: var(--brio-font-sans);
   font-size: 34px;
   line-height: 41px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  color: var(--ritmo-ink);
+  color: var(--brio-ink);
   margin: 0;
 }
 /* title-1: detalle o paso de alta. */
-.ritmo-title-1 {
+.brio-title-1 {
   font-size: 30px;
   line-height: 36px;
   font-weight: 700;
   margin: 0;
 }
 /* title-3: título de tarjeta. */
-.ritmo-title-3 {
+.brio-title-3 {
   font-size: 20px;
   line-height: 25px;
   font-weight: 700;
   margin: 0;
 }
 /* metric: la cifra protagonista de un bloque. */
-.ritmo-metric {
+.brio-metric {
   font-size: 28px;
   line-height: 34px;
   font-weight: 700;
@@ -183,22 +183,22 @@ ion-tab-button ion-icon {
   font-variant-numeric: tabular-nums;
 }
 .core-subtitle,
-.ritmo-subhead {
+.brio-subhead {
   font-size: 13px;
   line-height: 18px;
-  color: var(--ritmo-ink-muted);
+  color: var(--brio-ink-muted);
   margin: 0;
 }
-.ritmo-callout {
+.brio-callout {
   font-size: 15px;
   line-height: 20px;
-  color: var(--ritmo-ink-2);
+  color: var(--brio-ink-2);
 }
 /* Kicker sobre el título grande ("JUEVES, 5 DE NOVIEMBRE"). */
-.ritmo-kicker {
+.brio-kicker {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ritmo-ink-muted);
+  color: var(--brio-ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.2px;
 }
@@ -209,28 +209,28 @@ ion-tab-button ion-icon {
   font-weight: 400;
   letter-spacing: 0.2px;
   text-transform: uppercase;
-  color: var(--ritmo-ink-muted);
-  margin: 0 0 var(--ritmo-space-xs) var(--ritmo-space-xl);
+  color: var(--brio-ink-muted);
+  margin: 0 0 var(--brio-space-xs) var(--brio-space-xl);
 }
 
 /* ======================= GroupedList y Card =============================== */
 /* Sin bordes ni sombras: se separan del fondo por color. */
 .core-group {
-  background: var(--ritmo-surface);
-  border-radius: var(--ritmo-radius-2xl);
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
   box-shadow: none;
   overflow: hidden;
 }
 .core-card {
-  background: var(--ritmo-surface);
-  border-radius: var(--ritmo-radius-2xl);
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
   box-shadow: none;
-  padding: var(--ritmo-space-xl);
+  padding: var(--brio-space-xl);
 }
-.ritmo-hero-card {
-  background: var(--ritmo-surface);
-  border-radius: var(--ritmo-radius-3xl);
-  padding: var(--ritmo-space-xl);
+.brio-hero-card {
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-3xl);
+  padding: var(--brio-space-xl);
 }
 /* Listas de Ionic dentro de un grupo: separador que empieza en el texto. */
 ion-list.core-list,
@@ -239,18 +239,18 @@ ion-list.core-list,
   padding: 0;
 }
 .core-group ion-item {
-  --background: var(--ritmo-surface);
-  --border-color: var(--ritmo-separator);
-  --min-height: var(--ritmo-row);
-  --padding-start: var(--ritmo-space-xl);
-  --inner-padding-end: var(--ritmo-space-l);
+  --background: var(--brio-surface);
+  --border-color: var(--brio-separator);
+  --min-height: var(--brio-row);
+  --padding-start: var(--brio-space-xl);
+  --inner-padding-end: var(--brio-space-l);
 }
 .core-group ion-item:last-of-type {
   --border-width: 0;
   --inner-border-width: 0;
 }
 ion-item {
-  --detail-icon-color: var(--ritmo-chevron);
+  --detail-icon-color: var(--brio-chevron);
   --detail-icon-opacity: 1;
 }
 
@@ -260,9 +260,9 @@ ion-item {
   place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: var(--ritmo-radius-s);
-  background: var(--ritmo-tint-soft);
-  color: var(--ritmo-tint);
+  border-radius: var(--brio-radius-s);
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
   flex: 0 0 auto;
 }
 .core-tint-icon ion-icon {
@@ -270,38 +270,38 @@ ion-item {
 }
 .core-tint-icon--purple,
 .core-tint-icon--sleep {
-  background: var(--ritmo-sleep-soft);
-  color: var(--ritmo-sleep-ink);
+  background: var(--brio-sleep-soft);
+  color: var(--brio-sleep-ink);
 }
 .core-tint-icon--activity {
-  background: var(--ritmo-activity-soft);
-  color: var(--ritmo-activity-ink);
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
 }
 .core-tint-icon--food {
-  background: var(--ritmo-food-soft);
-  color: var(--ritmo-food-ink);
+  background: var(--brio-food-soft);
+  color: var(--brio-food-ink);
 }
 .core-tint-icon--heart {
-  background: var(--ritmo-heart-soft);
-  color: var(--ritmo-heart-ink);
+  background: var(--brio-heart-soft);
+  color: var(--brio-heart-ink);
 }
 
 /* ========================= SegmentedControl =============================== */
 /* Pista surface-fill con radius-l y 2px de relleno; seleccionado en surface
  * con radius-m, shadow-thumb y peso 600. */
 ion-segment.core-segment {
-  --background: var(--ritmo-surface-fill);
-  border-radius: var(--ritmo-radius-l);
+  --background: var(--brio-surface-fill);
+  border-radius: var(--brio-radius-l);
   padding: 2px;
 }
 ion-segment.core-segment ion-segment-button {
-  --background-checked: var(--ritmo-surface);
-  --color: var(--ritmo-ink);
-  --color-checked: var(--ritmo-ink);
-  --indicator-color: var(--ritmo-surface);
-  --indicator-box-shadow: var(--ritmo-shadow-thumb);
-  --border-radius: var(--ritmo-radius-m);
-  min-height: var(--ritmo-control);
+  --background-checked: var(--brio-surface);
+  --color: var(--brio-ink);
+  --color-checked: var(--brio-ink);
+  --indicator-color: var(--brio-surface);
+  --indicator-box-shadow: var(--brio-shadow-thumb);
+  --border-radius: var(--brio-radius-m);
+  min-height: var(--brio-control);
   font-size: 15px;
   font-weight: 500;
   text-transform: none;
@@ -312,74 +312,74 @@ ion-segment.core-segment ion-segment-button.segment-button-checked {
 }
 
 /* =============================== Chip ===================================== */
-.ritmo-chip {
+.brio-chip {
   display: inline-flex;
   align-items: center;
   padding: 3px 9px;
-  border-radius: var(--ritmo-radius-pill);
+  border-radius: var(--brio-radius-pill);
   font-size: 12px;
   line-height: 16px;
   font-weight: 600;
   white-space: nowrap;
 }
-.ritmo-chip--done {
-  color: var(--ritmo-activity-ink);
-  background: var(--ritmo-activity-soft);
+.brio-chip--done {
+  color: var(--brio-activity-ink);
+  background: var(--brio-activity-soft);
 }
-.ritmo-chip--near {
-  color: var(--ritmo-food-ink);
-  background: var(--ritmo-food-soft);
+.brio-chip--near {
+  color: var(--brio-food-ink);
+  background: var(--brio-food-soft);
 }
-.ritmo-chip--below {
-  color: var(--ritmo-heart-ink);
-  background: var(--ritmo-danger-soft);
+.brio-chip--below {
+  color: var(--brio-heart-ink);
+  background: var(--brio-danger-soft);
 }
-.ritmo-chip--ongoing {
-  color: var(--ritmo-ink-muted);
-  background: var(--ritmo-bg);
+.brio-chip--ongoing {
+  color: var(--brio-ink-muted);
+  background: var(--brio-bg);
 }
 
 /* ============================= Snackbar =================================== */
 /* Fondo snackbar, texto callout en surface y "Deshacer" en snackbar-link. Va
  * sobre la tab bar, a space-xl de los lados. */
-.ritmo-snackbar {
+.brio-snackbar {
   position: fixed;
-  left: var(--ritmo-space-xl);
-  right: var(--ritmo-space-xl);
-  bottom: calc(var(--ritmo-tabbar) + var(--ritmo-space-s) + env(safe-area-inset-bottom, 0px));
+  left: var(--brio-space-xl);
+  right: var(--brio-space-xl);
+  bottom: calc(var(--brio-tabbar) + var(--brio-space-s) + env(safe-area-inset-bottom, 0px));
   z-index: 30000;
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 48px;
   padding: 0 8px 0 16px;
-  border-radius: var(--ritmo-radius-xl);
-  background: var(--ritmo-snackbar);
-  color: var(--ritmo-surface);
-  box-shadow: var(--ritmo-shadow-float);
-  animation: ritmo-snackbar-in 180ms ease-out;
+  border-radius: var(--brio-radius-xl);
+  background: var(--brio-snackbar);
+  color: var(--brio-surface);
+  box-shadow: var(--brio-shadow-float);
+  animation: brio-snackbar-in 180ms ease-out;
 }
-.ritmo-snackbar__text {
+.brio-snackbar__text {
   flex: 1;
   font-size: 15px;
   line-height: 20px;
 }
-.ritmo-snackbar__action {
-  min-height: var(--ritmo-control);
+.brio-snackbar__action {
+  min-height: var(--brio-control);
   padding: 0 10px;
   border: none;
   background: transparent;
-  color: var(--ritmo-snackbar-link);
+  color: var(--brio-snackbar-link);
   font: inherit;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
-.ritmo-snackbar__action:focus-visible {
-  outline: 2px solid var(--ritmo-snackbar-link);
+.brio-snackbar__action:focus-visible {
+  outline: 2px solid var(--brio-snackbar-link);
   border-radius: 8px;
 }
-@keyframes ritmo-snackbar-in {
+@keyframes brio-snackbar-in {
   from {
     opacity: 0;
     transform: translateY(8px);
@@ -390,7 +390,7 @@ ion-segment.core-segment ion-segment-button.segment-button-checked {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ritmo-snackbar {
+  .brio-snackbar {
     animation: none;
   }
 }

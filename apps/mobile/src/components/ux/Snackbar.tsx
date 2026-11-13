@@ -18,12 +18,12 @@ export function Snackbar() {
   if (!current) return null;
 
   return (
-    <div className="ritmo-snackbar" role="status">
-      <span className="ritmo-snackbar__text">{current.text}</span>
+    <div className="brio-snackbar" role="status">
+      <span className="brio-snackbar__text">{current.text}</span>
       {current.action ? (
         <button
           type="button"
-          className="ritmo-snackbar__action"
+          className="brio-snackbar__action"
           onClick={() => {
             const { run } = current.action!;
             dismiss(current.id);

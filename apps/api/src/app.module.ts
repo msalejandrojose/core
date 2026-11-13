@@ -15,7 +15,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { GeoModule } from './modules/geo/geo.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
-import { RitmoModule } from './modules/ritmo/ritmo.module';
+import { BrioModule } from './modules/brio/brio.module';
 import { RacingModule } from './modules/racing/racing.module';
 import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
 import { DevicesModule } from './modules/devices/devices.module';
@@ -71,7 +71,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     UserNotificationsModule,
     DevicesModule,
     RacingModule,
-    RitmoModule,
+    BrioModule,
     WhatsappModule,
     ErrorLogModule,
     HealthModule,

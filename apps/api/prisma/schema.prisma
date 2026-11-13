@@ -268,35 +268,35 @@ model User {
   racingWallet              RacingWallet?
   racingLeagueStandings     RacingLeagueStanding[]
 
-  // Ritmo (proyecto actividad física y calorías)
-  ritmoProfile          RitmoProfile?
-  ritmoBodyMeasurements RitmoBodyMeasurement[]
-  ritmoActivityTypes    RitmoActivityType[]           @relation("RitmoActivityTypeOwner")
-  ritmoActivitySessions RitmoActivitySession[]
-  ritmoFoods            RitmoFood[]                   @relation("RitmoFoodOwner")
-  ritmoMealEntries      RitmoMealEntry[]
-  ritmoDailyLogs        RitmoDailyLog[]
-  ritmoExercises        RitmoExercise[]               @relation("RitmoExerciseOwner")
-  ritmoStrengthSets     RitmoStrengthSet[]
-  ritmoHeartConfig      RitmoHeartConfig?
-  ritmoPerfMeasurements RitmoPerformanceMeasurement[]
-  ritmoRecommendations  RitmoRecommendationState[]
-  ritmoMuscleOverrides  RitmoExerciseMuscleOverride[]
-  ritmoPlans            RitmoPlan[]
-  ritmoPlannedSessions  RitmoPlannedSession[]
-  ritmoMenuChoices      RitmoMenuChoice[]
-  ritmoShoppingChecks   RitmoShoppingCheck[]
-  ritmoSocialProfile    RitmoSocialProfile?
-  ritmoFollowing        RitmoFollow[]                 @relation("RitmoFollower")
-  ritmoFollowers        RitmoFollow[]                 @relation("RitmoFollowee")
-  ritmoCheers           RitmoCheer[]
-  ritmoChallenges       RitmoChallenge[]
-  ritmoChallengeMembers RitmoChallengeMember[]
-  ritmoHevyConnection   RitmoHevyConnection?
-  ritmoGarminConnection RitmoGarminConnection?
-  ritmoDailyHealth      RitmoDailyHealth[]
-  ritmoConnectionPrefs  RitmoConnectionPrefs?
-  ritmoHevyLinks        RitmoHevyExerciseLink[]
+  // Brío (proyecto actividad física y calorías)
+  brioProfile          BrioProfile?
+  brioBodyMeasurements BrioBodyMeasurement[]
+  brioActivityTypes    BrioActivityType[]           @relation("BrioActivityTypeOwner")
+  brioActivitySessions BrioActivitySession[]
+  brioFoods            BrioFood[]                   @relation("BrioFoodOwner")
+  brioMealEntries      BrioMealEntry[]
+  brioDailyLogs        BrioDailyLog[]
+  brioExercises        BrioExercise[]               @relation("BrioExerciseOwner")
+  brioStrengthSets     BrioStrengthSet[]
+  brioHeartConfig      BrioHeartConfig?
+  brioPerfMeasurements BrioPerformanceMeasurement[]
+  brioRecommendations  BrioRecommendationState[]
+  brioMuscleOverrides  BrioExerciseMuscleOverride[]
+  brioPlans            BrioPlan[]
+  brioPlannedSessions  BrioPlannedSession[]
+  brioMenuChoices      BrioMenuChoice[]
+  brioShoppingChecks   BrioShoppingCheck[]
+  brioSocialProfile    BrioSocialProfile?
+  brioFollowing        BrioFollow[]                 @relation("BrioFollower")
+  brioFollowers        BrioFollow[]                 @relation("BrioFollowee")
+  brioCheers           BrioCheer[]
+  brioChallenges       BrioChallenge[]
+  brioChallengeMembers BrioChallengeMember[]
+  brioHevyConnection   BrioHevyConnection?
+  brioGarminConnection BrioGarminConnection?
+  brioDailyHealth      BrioDailyHealth[]
+  brioConnectionPrefs  BrioConnectionPrefs?
+  brioHevyLinks        BrioHevyExerciseLink[]
 
   @@map("user")
 }
@@ -2339,20 +2339,20 @@ model RacingFriendship {
 }
 
 // ---------------------------------------------------------------------------
-// Ritmo — actividad física y calorías
+// Brío — actividad física y calorías
 //
-// Modelos del proyecto Ritmo (rama `ritmo-dev`). Viven en el mismo schema que
-// Core para poder colgar todo del `User` de `iam` por FK. Prefijo `Ritmo*` y
-// tablas `ritmo_*`, igual que el bloque de Racing.
+// Modelos del proyecto Brío (rama `brio-dev`). Viven en el mismo schema que
+// Core para poder colgar todo del `User` de `iam` por FK. Prefijo `Brío*` y
+// tablas `brio_*`, igual que el bloque de Racing.
 //
 // Alcance v1: perfil con objetivo calórico, historial corporal, sesiones de
 // actividad registradas a mano y registro de comidas sobre un catálogo de
 // alimentos. Las integraciones (HealthKit / Google Fit / Strava) no entran en
-// la v1, pero `RitmoActivitySession.source` + `externalId` ya dejan el hueco
+// la v1, pero `BrioActivitySession.source` + `externalId` ya dejan el hueco
 // para que entren sin migrar datos.
 // ---------------------------------------------------------------------------
 
-enum RitmoSex {
+enum BrioSex {
   MALE
   FEMALE
   OTHER
@@ -2360,7 +2360,7 @@ enum RitmoSex {
 
 /// Nivel de actividad habitual, al margen de los entrenos registrados. Es el
 /// multiplicador que convierte BMR en TDEE (1.2 … 1.9 en Harris-Benedict).
-enum RitmoActivityLevel {
+enum BrioActivityLevel {
   SEDENTARY
   LIGHT
   MODERATE
@@ -2368,7 +2368,7 @@ enum RitmoActivityLevel {
   VERY_ACTIVE
 }
 
-enum RitmoGoalType {
+enum BrioGoalType {
   LOSE_WEIGHT
   MAINTAIN
   GAIN_MUSCLE
@@ -2377,7 +2377,7 @@ enum RitmoGoalType {
 /// De dónde viene una sesión de actividad. La v1 solo escribe `MANUAL`; el
 /// resto están declarados para que enchufar una integración sea un adapter
 /// nuevo y no una migración del enum.
-enum RitmoActivitySource {
+enum BrioActivitySource {
   MANUAL
   HEALTHKIT
   GOOGLE_FIT
@@ -2388,13 +2388,13 @@ enum RitmoActivitySource {
 
 /// Esfuerzo percibido (RPE simplificado). Se usa como fallback para estimar
 /// calorías cuando la sesión no trae pulsaciones.
-enum RitmoEffort {
+enum BrioEffort {
   LIGHT
   MODERATE
   VIGOROUS
 }
 
-enum RitmoMealType {
+enum BrioMealType {
   BREAKFAST
   LUNCH
   DINNER
@@ -2403,14 +2403,14 @@ enum RitmoMealType {
 
 /// Procedencia de un alimento del catálogo. `USER` son los que crea una
 /// persona para sí misma (`ownerUserId` no nulo).
-enum RitmoFoodSource {
+enum BrioFoodSource {
   CURATED
   OPEN_FOOD_FACTS
   USER
 }
 
 /// Perfil del proyecto: una fila por usuario. Separado de `User` a propósito
-/// — son datos del dominio de Ritmo, no de IAM, y así la rama no toca el
+/// — son datos del dominio de Brío, no de IAM, y así la rama no toca el
 /// modelo compartido más allá de la relación.
 ///
 /// `bmrKcal` / `tdeeKcal` / `dailyKcalTarget` se guardan calculados en vez de
@@ -2418,20 +2418,20 @@ enum RitmoFoodSource {
 /// solo cuando cambia el perfil o el peso, y materializarlos deja constancia
 /// de con qué objetivo se vivió cada día (el histórico no se reescribe si
 /// mañana cambia la fórmula).
-model RitmoProfile {
+model BrioProfile {
   id     String @id @default(uuid()) @db.Char(36)
   userId String @unique @map("user_id") @db.Char(36)
 
-  sex           RitmoSex?
-  birthDate     DateTime?          @map("birth_date") @db.Date
-  heightCm      Decimal?           @map("height_cm") @db.Decimal(5, 1)
-  activityLevel RitmoActivityLevel @default(MODERATE) @map("activity_level")
+  sex           BrioSex?
+  birthDate     DateTime?         @map("birth_date") @db.Date
+  heightCm      Decimal?          @map("height_cm") @db.Decimal(5, 1)
+  activityLevel BrioActivityLevel @default(MODERATE) @map("activity_level")
 
-  goalType             RitmoGoalType @default(MAINTAIN) @map("goal_type")
-  targetWeightKg       Decimal?      @map("target_weight_kg") @db.Decimal(5, 2)
+  goalType             BrioGoalType @default(MAINTAIN) @map("goal_type")
+  targetWeightKg       Decimal?     @map("target_weight_kg") @db.Decimal(5, 2)
   /// Ritmo objetivo en kg/semana (negativo si es déficit). Acotado en dominio
   /// a ±1.0 para no permitir planes insanos.
-  weeklyWeightChangeKg Decimal?      @map("weekly_weight_change_kg") @db.Decimal(4, 2)
+  weeklyWeightChangeKg Decimal?     @map("weekly_weight_change_kg") @db.Decimal(4, 2)
 
   bmrKcal         Int? @map("bmr_kcal")
   tdeeKcal        Int? @map("tdee_kcal")
@@ -2451,13 +2451,13 @@ model RitmoProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("ritmo_profile")
+  @@map("brio_profile")
 }
 
 /// Historial corporal. Una fila por usuario y día medido (no por pesada): si
 /// alguien se pesa dos veces el mismo día, se actualiza la fila — la serie
 /// temporal de la gráfica necesita un punto por día, no ruido.
-model RitmoBodyMeasurement {
+model BrioBodyMeasurement {
   id     String @id @default(uuid()) @db.Char(36)
   userId String @map("user_id") @db.Char(36)
 
@@ -2474,7 +2474,7 @@ model RitmoBodyMeasurement {
 
   @@unique([userId, measuredOn])
   @@index([userId, measuredOn])
-  @@map("ritmo_body_measurement")
+  @@map("brio_body_measurement")
 }
 
 /// Catálogo de tipos de actividad con su valor MET, que es lo que permite
@@ -2482,94 +2482,94 @@ model RitmoBodyMeasurement {
 ///
 /// `ownerUserId` nulo = catálogo global del sistema; no nulo = actividad que
 /// se ha inventado un usuario y solo ve él.
-model RitmoActivityType {
-  id          String            @id @default(uuid()) @db.Char(36)
+model BrioActivityType {
+  id          String           @id @default(uuid()) @db.Char(36)
   /// Slug estable (`running`, `cycling`, `swimming`…). Único solo entre las
   /// globales; las de usuario no llevan code.
-  code        String?           @unique @db.VarChar(64)
-  name        String            @db.VarChar(120)
+  code        String?          @unique @db.VarChar(64)
+  name        String           @db.VarChar(120)
   /// Metabolic Equivalent of Task del Compendium of Physical Activities.
-  met         Decimal           @db.Decimal(4, 2)
+  met         Decimal          @db.Decimal(4, 2)
   /// Disciplina, para que los motores de rendimiento sepan cómo analizarla.
-  kind        RitmoActivityKind @default(OTHER)
+  kind        BrioActivityKind @default(OTHER)
   /// Nombre del icono en la app móvil (no una URL: lo resuelve el cliente).
-  icon        String?           @db.VarChar(64)
-  ownerUserId String?           @map("owner_user_id") @db.Char(36)
-  isArchived  Boolean           @default(false) @map("is_archived")
+  icon        String?          @db.VarChar(64)
+  ownerUserId String?          @map("owner_user_id") @db.Char(36)
+  isArchived  Boolean          @default(false) @map("is_archived")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner    User?                  @relation("RitmoActivityTypeOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  sessions RitmoActivitySession[]
+  owner    User?                 @relation("BrioActivityTypeOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sessions BrioActivitySession[]
 
   @@index([ownerUserId])
-  @@map("ritmo_activity_type")
+  @@map("brio_activity_type")
 }
 
 /// Una sesión de actividad registrada. `kcalBurned` se persiste calculado en
 /// el momento del registro: depende del peso de ese día y del MET vigente, y
 /// recalcularlo después cambiaría el histórico del usuario.
-model RitmoActivitySession {
+model BrioActivitySession {
   id             String @id @default(uuid()) @db.Char(36)
   userId         String @map("user_id") @db.Char(36)
   activityTypeId String @map("activity_type_id") @db.Char(36)
 
-  startedAt      DateTime     @map("started_at")
+  startedAt      DateTime    @map("started_at")
   /// Día natural al que se imputa la sesión, ya resuelto con la timezone del
   /// perfil. Desnormalizado para poder agregar por día sin recalcular husos.
-  loggedOn       DateTime     @map("logged_on") @db.Date
-  durationSec    Int          @map("duration_sec")
-  distanceM      Int?         @map("distance_m")
-  avgHeartRate   Int?         @map("avg_heart_rate")
-  maxHeartRate   Int?         @map("max_heart_rate")
+  loggedOn       DateTime    @map("logged_on") @db.Date
+  durationSec    Int         @map("duration_sec")
+  distanceM      Int?        @map("distance_m")
+  avgHeartRate   Int?        @map("avg_heart_rate")
+  maxHeartRate   Int?        @map("max_heart_rate")
   /// Desnivel positivo acumulado, en metros.
-  elevationGainM Int?         @map("elevation_gain_m")
+  elevationGainM Int?        @map("elevation_gain_m")
   /// Cadencia media (pasos/min corriendo, rpm en bici).
   cadence        Int?
   /// Esfuerzo percibido de la sesión, escala CR10 (1–10). Base del Session RPE.
-  rpe            Int?         @db.TinyInt
+  rpe            Int?        @db.TinyInt
   /// Segundos en cada zona cardíaca [Z1..Z5], si el dispositivo los da.
-  zoneSeconds    Json?        @map("zone_seconds")
-  effort         RitmoEffort?
-  kcalBurned     Int          @map("kcal_burned")
-  notes          String?      @db.VarChar(500)
+  zoneSeconds    Json?       @map("zone_seconds")
+  effort         BrioEffort?
+  kcalBurned     Int         @map("kcal_burned")
+  notes          String?     @db.VarChar(500)
 
-  source     RitmoActivitySource @default(MANUAL)
+  source     BrioActivitySource @default(MANUAL)
   /// Id de la sesión en el proveedor externo. Junto con `source` evita
   /// duplicar entrenos al re-sincronizar.
-  externalId String?             @map("external_id") @db.VarChar(191)
+  externalId String?            @map("external_id") @db.VarChar(191)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activityType    RitmoActivityType     @relation(fields: [activityTypeId], references: [id])
-  strengthSets    RitmoStrengthSet[]
-  plannedSessions RitmoPlannedSession[]
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityType    BrioActivityType     @relation(fields: [activityTypeId], references: [id])
+  strengthSets    BrioStrengthSet[]
+  plannedSessions BrioPlannedSession[]
 
   @@unique([source, externalId])
   @@index([userId, loggedOn])
   @@index([activityTypeId])
-  @@map("ritmo_activity_session")
+  @@map("brio_activity_session")
 }
 
 /// Alimento del catálogo, siempre normalizado a 100 g / 100 ml. Las raciones
-/// reales ("1 taza", "1 unidad") van en `RitmoFoodServing`.
-model RitmoFood {
-  id          String          @id @default(uuid()) @db.Char(36)
-  name        String          @db.VarChar(200)
-  brand       String?         @db.VarChar(120)
+/// reales ("1 taza", "1 unidad") van en `BrioFoodServing`.
+model BrioFood {
+  id          String         @id @default(uuid()) @db.Char(36)
+  name        String         @db.VarChar(200)
+  brand       String?        @db.VarChar(120)
   /// EAN/UPC para escanear. Único: dos filas no pueden reclamar el mismo
   /// código de barras.
-  barcode     String?         @unique @db.VarChar(32)
-  source      RitmoFoodSource @default(CURATED)
-  externalId  String?         @map("external_id") @db.VarChar(191)
-  ownerUserId String?         @map("owner_user_id") @db.Char(36)
+  barcode     String?        @unique @db.VarChar(32)
+  source      BrioFoodSource @default(CURATED)
+  externalId  String?        @map("external_id") @db.VarChar(191)
+  ownerUserId String?        @map("owner_user_id") @db.Char(36)
   /// Revisado por nosotros: la app puede priorizar estos en el buscador.
-  isVerified  Boolean         @default(false) @map("is_verified")
+  isVerified  Boolean        @default(false) @map("is_verified")
   /// true si el alimento se mide en ml (bebidas) en vez de g.
-  isLiquid    Boolean         @default(false) @map("is_liquid")
+  isLiquid    Boolean        @default(false) @map("is_liquid")
 
   kcalPer100       Int      @map("kcal_per_100")
   proteinPer100G   Decimal  @map("protein_per_100_g") @db.Decimal(6, 2)
@@ -2583,18 +2583,18 @@ model RitmoFood {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner       User?              @relation("RitmoFoodOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  servings    RitmoFoodServing[]
-  mealEntries RitmoMealEntry[]
+  owner       User?             @relation("BrioFoodOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  servings    BrioFoodServing[]
+  mealEntries BrioMealEntry[]
 
   @@index([ownerUserId])
   @@index([name])
-  @@map("ritmo_food")
+  @@map("brio_food")
 }
 
 /// Ración precalculada de un alimento ("1 rebanada = 30 g"), para que el
 /// usuario no tenga que pesar todo.
-model RitmoFoodServing {
+model BrioFoodServing {
   id        String  @id @default(uuid()) @db.Char(36)
   foodId    String  @map("food_id") @db.Char(36)
   label     String  @db.VarChar(80)
@@ -2603,24 +2603,24 @@ model RitmoFoodServing {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  food        RitmoFood        @relation(fields: [foodId], references: [id], onDelete: Cascade)
-  mealEntries RitmoMealEntry[]
+  food        BrioFood        @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  mealEntries BrioMealEntry[]
 
   @@unique([foodId, label])
-  @@map("ritmo_food_serving")
+  @@map("brio_food_serving")
 }
 
 /// Lo que alguien ha comido. Guarda un snapshot de kcal y macros en vez de
-/// recalcular desde `RitmoFood`: si el catálogo se corrige o el alimento se
+/// recalcular desde `BrioFood`: si el catálogo se corrige o el alimento se
 /// borra, el diario de ayer no cambia. `foodId` queda como referencia débil.
 ///
 /// `customName` cubre el registro rápido sin catálogo ("menú del día, 700
 /// kcal"), que es lo que hace que la gente no abandone la app.
-model RitmoMealEntry {
-  id       String        @id @default(uuid()) @db.Char(36)
-  userId   String        @map("user_id") @db.Char(36)
-  loggedOn DateTime      @map("logged_on") @db.Date
-  mealType RitmoMealType @map("meal_type")
+model BrioMealEntry {
+  id       String       @id @default(uuid()) @db.Char(36)
+  userId   String       @map("user_id") @db.Char(36)
+  loggedOn DateTime     @map("logged_on") @db.Date
+  mealType BrioMealType @map("meal_type")
 
   foodId     String? @map("food_id") @db.Char(36)
   servingId  String? @map("serving_id") @db.Char(36)
@@ -2636,14 +2636,14 @@ model RitmoMealEntry {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  food    RitmoFood?        @relation(fields: [foodId], references: [id], onDelete: SetNull)
-  serving RitmoFoodServing? @relation(fields: [servingId], references: [id], onDelete: SetNull)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  food    BrioFood?        @relation(fields: [foodId], references: [id], onDelete: SetNull)
+  serving BrioFoodServing? @relation(fields: [servingId], references: [id], onDelete: SetNull)
 
   @@index([userId, loggedOn])
   @@index([foodId])
   @@index([servingId])
-  @@map("ritmo_meal_entry")
+  @@map("brio_meal_entry")
 }
 
 /// Agregado diario materializado: es la pantalla principal de la app, y
@@ -2651,7 +2651,7 @@ model RitmoMealEntry {
 /// del día. Se recalcula al escribir una comida, una sesión o una pesada.
 ///
 /// `kcalTarget` es un snapshot del objetivo vigente ese día.
-model RitmoDailyLog {
+model BrioDailyLog {
   id      String   @id @default(uuid()) @db.Char(36)
   userId  String   @map("user_id") @db.Char(36)
   logDate DateTime @map("log_date") @db.Date
@@ -2673,7 +2673,7 @@ model RitmoDailyLog {
 
   @@unique([userId, logDate])
   @@index([userId, logDate])
-  @@map("ritmo_daily_log")
+  @@map("brio_daily_log")
 }
 
 // ---------------------------------------------------------------------------
@@ -2684,7 +2684,7 @@ model RitmoDailyLog {
 
 /// Disciplina de un tipo de actividad. `STRENGTH` admite series; las de
 /// cardio se analizan por ritmo y frecuencia cardíaca.
-enum RitmoActivityKind {
+enum BrioActivityKind {
   STRENGTH
   RUN
   CYCLE
@@ -2697,7 +2697,7 @@ enum RitmoActivityKind {
 }
 
 /// Grupos musculares que analiza el MuscleEngine.
-enum RitmoMuscle {
+enum BrioMuscle {
   CHEST
   LATS
   TRAPS
@@ -2716,8 +2716,8 @@ enum RitmoMuscle {
 }
 
 /// Ejercicio de fuerza. `ownerUserId` nulo = catálogo global; no nulo = lo ha
-/// creado un usuario y solo lo ve él (mismo patrón que `RitmoActivityType`).
-model RitmoExercise {
+/// creado un usuario y solo lo ve él (mismo patrón que `BrioActivityType`).
+model BrioExercise {
   id           String  @id @default(uuid()) @db.Char(36)
   /// Slug estable (`bench_press`). Único entre los globales.
   code         String? @unique @db.VarChar(64)
@@ -2733,32 +2733,32 @@ model RitmoExercise {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner     User?                         @relation("RitmoExerciseOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  muscles   RitmoExerciseMuscle[]
-  overrides RitmoExerciseMuscleOverride[]
-  sets      RitmoStrengthSet[]
-  hevyLinks RitmoHevyExerciseLink[]
+  owner     User?                        @relation("BrioExerciseOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  muscles   BrioExerciseMuscle[]
+  overrides BrioExerciseMuscleOverride[]
+  sets      BrioStrengthSet[]
+  hevyLinks BrioHevyExerciseLink[]
 
   @@index([ownerUserId])
-  @@map("ritmo_exercise")
+  @@map("brio_exercise")
 }
 
 /// Cuánto trabaja un ejercicio cada músculo: 1.0 principal, 0.5 secundario,
 /// 0.25 indirecto. Es un dato, no una constante: se puede ajustar por ejercicio.
-model RitmoExerciseMuscle {
-  exerciseId String      @map("exercise_id") @db.Char(36)
-  muscle     RitmoMuscle
-  weight     Decimal     @db.Decimal(3, 2)
+model BrioExerciseMuscle {
+  exerciseId String     @map("exercise_id") @db.Char(36)
+  muscle     BrioMuscle
+  weight     Decimal    @db.Decimal(3, 2)
 
-  exercise RitmoExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exercise BrioExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
   @@id([exerciseId, muscle])
-  @@map("ritmo_exercise_muscle")
+  @@map("brio_exercise_muscle")
 }
 
 /// Una serie de un ejercicio dentro de una sesión de fuerza. `userId` está
 /// desnormalizado para leer el historial de un ejercicio sin pasar por la sesión.
-model RitmoStrengthSet {
+model BrioStrengthSet {
   id         String @id @default(uuid()) @db.Char(36)
   sessionId  String @map("session_id") @db.Char(36)
   userId     String @map("user_id") @db.Char(36)
@@ -2780,16 +2780,16 @@ model RitmoStrengthSet {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  session  RitmoActivitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise RitmoExercise        @relation(fields: [exerciseId], references: [id])
+  session  BrioActivitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise BrioExercise        @relation(fields: [exerciseId], references: [id])
 
   @@index([sessionId])
   @@index([userId, exerciseId])
-  @@map("ritmo_strength_set")
+  @@map("brio_strength_set")
 }
 
-enum RitmoZoneMethod {
+enum BrioZoneMethod {
   /// Porcentajes de la FC máxima.
   MAX_HR
   /// Porcentajes de la reserva cardíaca (Karvonen): necesita FC en reposo.
@@ -2799,24 +2799,24 @@ enum RitmoZoneMethod {
 }
 
 /// Configuración cardíaca del usuario: de aquí salen sus zonas.
-model RitmoHeartConfig {
-  id          String          @id @default(uuid()) @db.Char(36)
-  userId      String          @unique @map("user_id") @db.Char(36)
-  maxHr       Int?            @map("max_hr") @db.SmallInt
-  restingHr   Int?            @map("resting_hr") @db.SmallInt
-  method      RitmoZoneMethod @default(MAX_HR)
+model BrioHeartConfig {
+  id          String         @id @default(uuid()) @db.Char(36)
+  userId      String         @unique @map("user_id") @db.Char(36)
+  maxHr       Int?           @map("max_hr") @db.SmallInt
+  restingHr   Int?           @map("resting_hr") @db.SmallInt
+  method      BrioZoneMethod @default(MAX_HR)
   /// Límite superior en ppm de Z1..Z4 (Z5 llega hasta la FC máxima). Solo con `CUSTOM`.
-  customZones Json?           @map("custom_zones")
+  customZones Json?          @map("custom_zones")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("ritmo_heart_config")
+  @@map("brio_heart_config")
 }
 
-enum RitmoPerfMetric {
+enum BrioPerfMetric {
   /// ml/kg/min.
   VO2MAX
   /// Ritmo de umbral de lactato, en segundos por km.
@@ -2825,7 +2825,7 @@ enum RitmoPerfMetric {
 
 /// De dónde sale un valor: una prueba, un dispositivo o un cálculo propio.
 /// Nunca se mezclan: la app enseña siempre cuál es.
-enum RitmoPerfOrigin {
+enum BrioPerfOrigin {
   LAB_TEST
   DEVICE
   FIELD_TEST
@@ -2833,27 +2833,27 @@ enum RitmoPerfOrigin {
 
 /// VO2max y umbral que el usuario trae de un test o de su reloj. Las
 /// estimaciones del motor NO se guardan aquí: se calculan y se marcan como tales.
-model RitmoPerformanceMeasurement {
-  id          String          @id @default(uuid()) @db.Char(36)
-  userId      String          @map("user_id") @db.Char(36)
-  metric      RitmoPerfMetric
-  value       Decimal         @db.Decimal(7, 2)
+model BrioPerformanceMeasurement {
+  id          String         @id @default(uuid()) @db.Char(36)
+  userId      String         @map("user_id") @db.Char(36)
+  metric      BrioPerfMetric
+  value       Decimal        @db.Decimal(7, 2)
   /// FC asociada (ppm), p. ej. la del umbral.
-  heartRate   Int?            @map("heart_rate") @db.SmallInt
-  origin      RitmoPerfOrigin
+  heartRate   Int?           @map("heart_rate") @db.SmallInt
+  origin      BrioPerfOrigin
   /// Aparato o prueba ("Garmin Forerunner", "test de 30 min").
-  sourceLabel String?         @map("source_label") @db.VarChar(120)
-  measuredOn  DateTime        @map("measured_on") @db.Date
+  sourceLabel String?        @map("source_label") @db.VarChar(120)
+  measuredOn  DateTime       @map("measured_on") @db.Date
 
   createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, metric, measuredOn])
-  @@map("ritmo_performance_measurement")
+  @@map("brio_performance_measurement")
 }
 
-enum RitmoRecommendationStatus {
+enum BrioRecommendationStatus {
   /// La regla se cumple y el usuario no la ha descartado.
   ACTIVE
   /// El usuario la ha descartado; no vuelve a salir mientras siga cumpliéndose.
@@ -2865,12 +2865,12 @@ enum RitmoRecommendationStatus {
 /// Estado de una recomendación del motor de rendimiento. Las recomendaciones
 /// se calculan al vuelo; aquí solo se guarda lo que no se puede recalcular:
 /// cuándo se detectó por primera vez y si el usuario la descartó.
-model RitmoRecommendationState {
-  id     String                    @id @default(uuid()) @db.Char(36)
-  userId String                    @map("user_id") @db.Char(36)
+model BrioRecommendationState {
+  id     String                   @id @default(uuid()) @db.Char(36)
+  userId String                   @map("user_id") @db.Char(36)
   /// Id estable de la recomendación (`STRENGTH_PLATEAU:<ejercicio>`).
-  key    String                    @db.VarChar(120)
-  status RitmoRecommendationStatus @default(ACTIVE)
+  key    String                   @db.VarChar(120)
+  status BrioRecommendationStatus @default(ACTIVE)
 
   firstDetectedOn DateTime @map("first_detected_on") @db.Date
   lastSeenOn      DateTime @map("last_seen_on") @db.Date
@@ -2881,35 +2881,35 @@ model RitmoRecommendationState {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, key])
-  @@map("ritmo_recommendation_state")
+  @@map("brio_recommendation_state")
 }
 
 /// Pesos por músculo que un usuario ha ajustado para un ejercicio del
 /// catálogo global. Si hay filas para (usuario, ejercicio), sustituyen por
 /// completo a las del catálogo SOLO para ese usuario; el catálogo no cambia.
-/// En los ejercicios propios no se usa: se edita `ritmo_exercise_muscle`.
-model RitmoExerciseMuscleOverride {
-  userId     String      @map("user_id") @db.Char(36)
-  exerciseId String      @map("exercise_id") @db.Char(36)
-  muscle     RitmoMuscle
-  weight     Decimal     @db.Decimal(3, 2)
+/// En los ejercicios propios no se usa: se edita `brio_exercise_muscle`.
+model BrioExerciseMuscleOverride {
+  userId     String     @map("user_id") @db.Char(36)
+  exerciseId String     @map("exercise_id") @db.Char(36)
+  muscle     BrioMuscle
+  weight     Decimal    @db.Decimal(3, 2)
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise RitmoExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise BrioExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
   @@id([userId, exerciseId, muscle])
-  @@map("ritmo_exercise_muscle_override")
+  @@map("brio_exercise_muscle_override")
 }
 
 // ---------------------------------------------------------------------------
 // Plan de entrenamiento: el objetivo (una carrera, por ejemplo) y las sesiones
 // planificadas de cada día. Lo ejecutado sigue viviendo en
-// `ritmo_activity_session`; aquí está lo que se PENSABA hacer.
+// `brio_activity_session`; aquí está lo que se PENSABA hacer.
 // ---------------------------------------------------------------------------
 
 /// Objetivo de entrenamiento del usuario. Solo uno activo a la vez; los demás
 /// quedan archivados como historial.
-model RitmoPlan {
+model BrioPlan {
   id     String @id @default(uuid()) @db.Char(36)
   userId String @map("user_id") @db.Char(36)
 
@@ -2927,15 +2927,15 @@ model RitmoPlan {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessions RitmoPlannedSession[]
+  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions BrioPlannedSession[]
 
   @@index([userId, isActive])
-  @@map("ritmo_plan")
+  @@map("brio_plan")
 }
 
 /// Carga prevista de una sesión: decide cuánto sube o baja la dieta ese día.
-enum RitmoPlanLoad {
+enum BrioPlanLoad {
   REST
   LOW
   MEDIUM
@@ -2947,18 +2947,18 @@ enum RitmoPlanLoad {
 /// Se completa de dos formas: marcándola a mano (`completedAt`) o sola, cuando
 /// ese día se registra un entreno de la misma disciplina. La segunda no
 /// escribe nada aquí: se resuelve al leer la semana.
-model RitmoPlannedSession {
+model BrioPlannedSession {
   id     String  @id @default(uuid()) @db.Char(36)
   userId String  @map("user_id") @db.Char(36)
   /// Plan al que pertenece; nulo si se planificó sin objetivo.
   planId String? @map("plan_id") @db.Char(36)
 
-  day          DateTime          @db.Date
-  kind         RitmoActivityKind
+  day          DateTime         @db.Date
+  kind         BrioActivityKind
   /// Plantilla de la que salió (`series`, `z2`…), si salió de una.
-  templateCode String?           @map("template_code") @db.VarChar(40)
-  title        String            @db.VarChar(120)
-  load         RitmoPlanLoad
+  templateCode String?          @map("template_code") @db.VarChar(40)
+  title        String           @db.VarChar(120)
+  load         BrioPlanLoad
 
   /// Hora prevista, "HH:MM" en la zona del usuario.
   startTime          String? @map("start_time") @db.VarChar(5)
@@ -2981,19 +2981,19 @@ model RitmoPlannedSession {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan             RitmoPlan?            @relation(fields: [planId], references: [id], onDelete: SetNull)
-  completedSession RitmoActivitySession? @relation(fields: [completedSessionId], references: [id], onDelete: SetNull)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan             BrioPlan?            @relation(fields: [planId], references: [id], onDelete: SetNull)
+  completedSession BrioActivitySession? @relation(fields: [completedSessionId], references: [id], onDelete: SetNull)
 
   @@unique([userId, day])
   @@index([planId])
   @@index([completedSessionId])
-  @@map("ritmo_planned_session")
+  @@map("brio_planned_session")
 }
 
 /// Conexión del usuario con Hevy (app de gimnasio). La clave de su API se
 /// guarda cifrada y nunca se devuelve al cliente.
-model RitmoHevyConnection {
+model BrioHevyConnection {
   userId        String    @id @map("user_id") @db.Char(36)
   apiKeyEnc     String    @map("api_key_enc") @db.Text
   username      String?   @db.VarChar(120)
@@ -3007,27 +3007,27 @@ model RitmoHevyConnection {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("ritmo_hevy_connection")
+  @@map("brio_hevy_connection")
 }
 
-/// A qué ejercicio de Ritmo corresponde cada ejercicio de Hevy, por usuario
+/// A qué ejercicio de Brío corresponde cada ejercicio de Hevy, por usuario
 /// (los ejercicios propios de Hevy tienen ids distintos en cada cuenta).
-model RitmoHevyExerciseLink {
+model BrioHevyExerciseLink {
   userId     String @map("user_id") @db.Char(36)
   templateId String @map("template_id") @db.VarChar(64)
   exerciseId String @map("exercise_id") @db.Char(36)
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise RitmoExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise BrioExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
   @@id([userId, templateId])
   @@index([userId, exerciseId])
-  @@map("ritmo_hevy_exercise_link")
+  @@map("brio_hevy_exercise_link")
 }
 
 /// Conexión del usuario con Garmin por su clave personal (Garmin Connect
 /// Personal API). La clave se guarda cifrada y nunca se devuelve al cliente.
-model RitmoGarminConnection {
+model BrioGarminConnection {
   userId        String    @id @map("user_id") @db.Char(36)
   apiKeyEnc     String    @map("api_key_enc") @db.Text
   lastSyncAt    DateTime? @map("last_sync_at")
@@ -3040,12 +3040,12 @@ model RitmoGarminConnection {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("ritmo_garmin_connection")
+  @@map("brio_garmin_connection")
 }
 
 /// Datos de salud de un día medidos por el reloj: pulso, sueño y variabilidad.
 /// Todo es opcional: cada reloj mide cosas distintas.
-model RitmoDailyHealth {
+model BrioDailyHealth {
   userId String   @map("user_id") @db.Char(36)
   day    DateTime @db.Date
 
@@ -3063,18 +3063,18 @@ model RitmoDailyHealth {
   stressAvg      Int? @map("stress_avg") @db.SmallInt
   bodyBatteryMax Int? @map("body_battery_max") @db.SmallInt
 
-  source    RitmoActivitySource @default(GARMIN)
-  updatedAt DateTime            @updatedAt @map("updated_at")
+  source    BrioActivitySource @default(GARMIN)
+  updatedAt DateTime           @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, day])
-  @@map("ritmo_daily_health")
+  @@map("brio_daily_health")
 }
 
 /// Plato elegido por el usuario para una comida de un día, cuando cambia el
 /// que proponía el menú. Sin fila, vale el plato de la rotación.
-model RitmoMenuChoice {
+model BrioMenuChoice {
   userId   String   @map("user_id") @db.Char(36)
   day      DateTime @db.Date
   /// BREAKFAST, LUNCH, SNACK o DINNER.
@@ -3084,11 +3084,11 @@ model RitmoMenuChoice {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, day, meal])
-  @@map("ritmo_menu_choice")
+  @@map("brio_menu_choice")
 }
 
 /// Producto de la lista de la compra de una semana ya marcado como comprado.
-model RitmoShoppingCheck {
+model BrioShoppingCheck {
   userId    String   @map("user_id") @db.Char(36)
   /// Lunes de la semana de la lista.
   weekStart DateTime @map("week_start") @db.Date
@@ -3097,12 +3097,12 @@ model RitmoShoppingCheck {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, weekStart, itemCode])
-  @@map("ritmo_shopping_check")
+  @@map("brio_shopping_check")
 }
 
 /// Preferencias de las conexiones del usuario: qué se trae del reloj y cuánto
 /// del gasto de los entrenos se suma a las calorías del día.
-model RitmoConnectionPrefs {
+model BrioConnectionPrefs {
   userId String @id @map("user_id") @db.Char(36)
 
   importActivities     Boolean @default(true) @map("import_activities")
@@ -3114,11 +3114,11 @@ model RitmoConnectionPrefs {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("ritmo_connection_prefs")
+  @@map("brio_connection_prefs")
 }
 
 /// Perfil social del usuario: cómo le encuentran y qué comparte.
-model RitmoSocialProfile {
+model BrioSocialProfile {
   userId        String  @id @map("user_id") @db.Char(36)
   /// Nombre de usuario sin la arroba, en minúsculas.
   handle        String  @unique @db.VarChar(30)
@@ -3130,26 +3130,26 @@ model RitmoSocialProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("ritmo_social_profile")
+  @@map("brio_social_profile")
 }
 
 /// A sigue a B. Dos personas son amigas (y ven lo que la otra comparte) solo
 /// cuando se siguen mutuamente.
-model RitmoFollow {
+model BrioFollow {
   followerId String   @map("follower_id") @db.Char(36)
   followeeId String   @map("followee_id") @db.Char(36)
   createdAt  DateTime @default(now()) @map("created_at")
 
-  follower User @relation("RitmoFollower", fields: [followerId], references: [id], onDelete: Cascade)
-  followee User @relation("RitmoFollowee", fields: [followeeId], references: [id], onDelete: Cascade)
+  follower User @relation("BrioFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  followee User @relation("BrioFollowee", fields: [followeeId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followeeId])
   @@index([followeeId])
-  @@map("ritmo_follow")
+  @@map("brio_follow")
 }
 
 /// Ánimo dado a un logro de la actividad (`s:<sesión>`) o a un reto (`c:<reto>`).
-model RitmoCheer {
+model BrioCheer {
   userId    String   @map("user_id") @db.Char(36)
   targetKey String   @map("target_key") @db.VarChar(80)
   createdAt DateTime @default(now()) @map("created_at")
@@ -3158,12 +3158,12 @@ model RitmoCheer {
 
   @@id([userId, targetKey])
   @@index([targetKey])
-  @@map("ritmo_cheer")
+  @@map("brio_cheer")
 }
 
 /// Reto entre amigos durante unos días. La clasificación no se guarda: se
 /// calcula con los datos de cada participante.
-model RitmoChallenge {
+model BrioChallenge {
   id       String   @id @default(uuid()) @db.Char(36)
   ownerId  String   @map("owner_id") @db.Char(36)
   /// SESSIONS, KM, STEPS o LOGGING.
@@ -3173,21 +3173,21 @@ model RitmoChallenge {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  owner   User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members RitmoChallengeMember[]
+  owner   User                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members BrioChallengeMember[]
 
   @@index([endDay])
-  @@map("ritmo_challenge")
+  @@map("brio_challenge")
 }
 
-model RitmoChallengeMember {
+model BrioChallengeMember {
   challengeId String @map("challenge_id") @db.Char(36)
   userId      String @map("user_id") @db.Char(36)
 
-  challenge RitmoChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge BrioChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([challengeId, userId])
   @@index([userId])
-  @@map("ritmo_challenge_member")
+  @@map("brio_challenge_member")
 }

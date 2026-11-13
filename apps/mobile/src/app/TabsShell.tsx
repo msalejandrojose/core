@@ -19,47 +19,47 @@ import {
   people,
   peopleOutline,
 } from 'ionicons/icons';
-import TodayPage from '@/features/ritmo/TodayPage';
-import ProgressPage from '@/features/ritmo/progress/ProgressPage';
-import GoalsPage from '@/features/ritmo/progress/GoalsPage';
-import NewGoalPage from '@/features/ritmo/progress/NewGoalPage';
-import ReportPage from '@/features/ritmo/progress/ReportPage';
-import WeeklySummaryPage from '@/features/ritmo/progress/WeeklySummaryPage';
-import MedalsPage from '@/features/ritmo/progress/MedalsPage';
-import DigestionPage from '@/features/ritmo/progress/DigestionPage';
-import SharePage from '@/features/ritmo/progress/SharePage';
-import YearPage from '@/features/ritmo/progress/YearPage';
-import SessionEditPage from '@/features/ritmo/performance/SessionEditPage';
-import HistoryPage from '@/features/ritmo/performance/HistoryPage';
-import ExercisesPage from '@/features/ritmo/performance/ExercisesPage';
-import PerformancePage from '@/features/ritmo/performance/PerformancePage';
-import StrengthPerfPage from '@/features/ritmo/performance/StrengthPerfPage';
-import MusclesPage from '@/features/ritmo/performance/MusclesPage';
-import CardioPerfPage from '@/features/ritmo/performance/CardioPerfPage';
-import LoadPage from '@/features/ritmo/performance/LoadPage';
-import HybridPage from '@/features/ritmo/performance/HybridPage';
-import { RegisterSheets } from '@/features/ritmo/RegisterSheets';
-import FoodDayPage from '@/features/ritmo/pages/FoodDayPage';
-import RecipesPage from '@/features/ritmo/pages/RecipesPage';
-import NewRecipePage from '@/features/ritmo/pages/NewRecipePage';
-import RecoveryPage from '@/features/ritmo/pages/RecoveryPage';
-import AlertsPage from '@/features/ritmo/pages/AlertsPage';
-import { useRegisterStore } from '@/features/ritmo/register.store';
+import TodayPage from '@/features/brio/TodayPage';
+import ProgressPage from '@/features/brio/progress/ProgressPage';
+import GoalsPage from '@/features/brio/progress/GoalsPage';
+import NewGoalPage from '@/features/brio/progress/NewGoalPage';
+import ReportPage from '@/features/brio/progress/ReportPage';
+import WeeklySummaryPage from '@/features/brio/progress/WeeklySummaryPage';
+import MedalsPage from '@/features/brio/progress/MedalsPage';
+import DigestionPage from '@/features/brio/progress/DigestionPage';
+import SharePage from '@/features/brio/progress/SharePage';
+import YearPage from '@/features/brio/progress/YearPage';
+import SessionEditPage from '@/features/brio/performance/SessionEditPage';
+import HistoryPage from '@/features/brio/performance/HistoryPage';
+import ExercisesPage from '@/features/brio/performance/ExercisesPage';
+import PerformancePage from '@/features/brio/performance/PerformancePage';
+import StrengthPerfPage from '@/features/brio/performance/StrengthPerfPage';
+import MusclesPage from '@/features/brio/performance/MusclesPage';
+import CardioPerfPage from '@/features/brio/performance/CardioPerfPage';
+import LoadPage from '@/features/brio/performance/LoadPage';
+import HybridPage from '@/features/brio/performance/HybridPage';
+import { RegisterSheets } from '@/features/brio/RegisterSheets';
+import FoodDayPage from '@/features/brio/pages/FoodDayPage';
+import RecipesPage from '@/features/brio/pages/RecipesPage';
+import NewRecipePage from '@/features/brio/pages/NewRecipePage';
+import RecoveryPage from '@/features/brio/pages/RecoveryPage';
+import AlertsPage from '@/features/brio/pages/AlertsPage';
+import { useRegisterStore } from '@/features/brio/register.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
-import { useHevyAutoSync } from '@/features/ritmo/profile/hevy.api';
-import PlanPage from '@/features/ritmo/plan/PlanPage';
-import EditSessionPage from '@/features/ritmo/plan/EditSessionPage';
-import DietPage from '@/features/ritmo/plan/DietPage';
-import ShoppingPage from '@/features/ritmo/plan/ShoppingPage';
-import FriendsPage from '@/features/ritmo/social/FriendsPage';
-import FriendPage from '@/features/ritmo/social/FriendPage';
-import ChallengesPage from '@/features/ritmo/social/ChallengesPage';
-import RitmoProfilePage from '@/features/ritmo/profile/ProfilePage';
-import ConnectionsPage from '@/features/ritmo/profile/ConnectionsPage';
-import HevyConnectPage from '@/features/ritmo/profile/HevyConnectPage';
-import GarminConnectPage from '@/features/ritmo/profile/GarminConnectPage';
-import { useGarminAutoSync } from '@/features/ritmo/profile/garmin.api';
-import DeleteAccountPage from '@/features/ritmo/profile/DeleteAccountPage';
+import { useHevyAutoSync } from '@/features/brio/profile/hevy.api';
+import PlanPage from '@/features/brio/plan/PlanPage';
+import EditSessionPage from '@/features/brio/plan/EditSessionPage';
+import DietPage from '@/features/brio/plan/DietPage';
+import ShoppingPage from '@/features/brio/plan/ShoppingPage';
+import FriendsPage from '@/features/brio/social/FriendsPage';
+import FriendPage from '@/features/brio/social/FriendPage';
+import ChallengesPage from '@/features/brio/social/ChallengesPage';
+import BrioProfilePage from '@/features/brio/profile/ProfilePage';
+import ConnectionsPage from '@/features/brio/profile/ConnectionsPage';
+import HevyConnectPage from '@/features/brio/profile/HevyConnectPage';
+import GarminConnectPage from '@/features/brio/profile/GarminConnectPage';
+import { useGarminAutoSync } from '@/features/brio/profile/garmin.api';
+import DeleteAccountPage from '@/features/brio/profile/DeleteAccountPage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
@@ -77,11 +77,11 @@ function RegisterTabButton({ onOpen }: { tab: string; onOpen: () => void }) {
   return (
     <button
       type="button"
-      className="ritmo-tab-register"
+      className="brio-tab-register"
       aria-label="Registrar"
       onClick={onOpen}
     >
-      <span className="ritmo-tab-register__fab" aria-hidden="true">
+      <span className="brio-tab-register__fab" aria-hidden="true">
         <IonIcon icon={add} />
       </span>
     </button>
@@ -98,7 +98,7 @@ const TABS = [
 ] as const;
 
 /**
- * Shell del área autenticada de Ritmo con la barra de pestañas del diseño:
+ * Shell del área autenticada de Brío con la barra de pestañas del diseño:
  * Hoy · Plan · + · Progreso · Social. El + central no es una pestaña: abre la
  * hoja "Registrar" encima de la pantalla en la que estés.
  *
@@ -171,7 +171,7 @@ export default function TabsShell() {
           <Route exact path="/tabs/social/retos" component={ChallengesPage} />
           <Route exact path="/tabs/social/amigo/:id" component={FriendPage} />
           <Route exact path="/tabs/notifications" component={NotificationsPage} />
-          <Route exact path="/tabs/settings" component={RitmoProfilePage} />
+          <Route exact path="/tabs/settings" component={BrioProfilePage} />
           <Route exact path="/tabs/settings/conexiones" component={ConnectionsPage} />
           <Route exact path="/tabs/settings/hevy" component={HevyConnectPage} />
           <Route exact path="/tabs/settings/garmin" component={GarminConnectPage} />
