@@ -27,6 +27,8 @@ export class PrismaRitmoAccountRepository implements RitmoAccountRepositoryPort 
       exercises,
       heartConfig,
       performanceMeasurements,
+      plans,
+      plannedSessions,
     ] = await Promise.all([
       this.prisma.ritmoProfile.findUnique(byUser),
       this.prisma.ritmoBodyMeasurement.findMany(byUser),
@@ -49,6 +51,8 @@ export class PrismaRitmoAccountRepository implements RitmoAccountRepositoryPort 
       }),
       this.prisma.ritmoHeartConfig.findUnique(byUser),
       this.prisma.ritmoPerformanceMeasurement.findMany(byUser),
+      this.prisma.ritmoPlan.findMany(byUser),
+      this.prisma.ritmoPlannedSession.findMany(byUser),
     ]);
     return {
       exportedAt: new Date().toISOString(),
@@ -63,6 +67,8 @@ export class PrismaRitmoAccountRepository implements RitmoAccountRepositoryPort 
       exercises,
       heartConfig,
       performanceMeasurements,
+      plans,
+      plannedSessions,
     };
   }
 

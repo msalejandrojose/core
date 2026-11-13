@@ -5,13 +5,17 @@ import { toast } from '@/lib/toast';
 import { isApiError, type GoalType } from '../api';
 import { useRitmoStore } from '../ritmo.store';
 import { profileBody } from '../profile/profile-body';
+import { formatNumber } from '../format';
 import { BackLink, ExampleTag, NavRow, Segmented } from '../ui/kit';
-import { LOAD_EXTRA, TEMPLATES, fmtMinutes, kcal, usePlanStore, type Load } from './plan-data';
+import { usePlanWeekData, type PlanLoad } from './plan.api';
+import { LOAD_CLASS, LOAD_LABEL, dayFull, dayLetter, dayNumber, fmtMinutes } from './plan-labels';
 import { usePlanWeek } from './usePlanWeek';
 import './plan.css';
 
 type Opt = [string, number];
-type MealLoad = Exclude<Load, 'Descanso'>;
+type MealLoad = 'Alta' | 'Media' | 'Baja';
+const MENU_OF: Record<PlanLoad, MealLoad> = { HIGH: 'Alta', MEDIUM: 'Media', LOW: 'Baja', REST: 'Baja' };
+const kcal = (n: number) => formatNumber(n);
 const MENUS: Record<MealLoad, Opt[][]> = {
   Media: [
     [['Avena con plátano y café', 690], ['Tostadas con aguacate y huevos', 720], ['Yogur griego, granola y fruta', 650]],
@@ -33,11 +37,11 @@ const MENUS: Record<MealLoad, Opt[][]> = {
   ],
 };
 const MEALS = ['Desayuno', 'Comida', 'Merienda', 'Cena'];
-const BAR: Record<Load, string> = {
-  Alta: 'var(--ritmo-food)',
-  Media: 'var(--ritmo-activity)',
-  Baja: 'var(--ritmo-info)',
-  Descanso: 'var(--ritmo-border-strong)',
+const BAR: Record<PlanLoad, string> = {
+  HIGH: 'var(--ritmo-food)',
+  MEDIUM: 'var(--ritmo-activity)',
+  LOW: 'var(--ritmo-info)',
+  REST: 'var(--ritmo-border-strong)',
 };
 const GOAL_OF: Record<GoalType, 'perder' | 'mantener' | 'ganar'> = {
   LOSE_WEIGHT: 'perder',
@@ -48,14 +52,14 @@ const GOAL_API = { perder: 'LOSE_WEIGHT', mantener: 'MAINTAIN', ganar: 'GAIN_MUS
 
 /**
  * Dieta y menú (lienzo "Dieta y menú"). El objetivo (perder/mantener/ganar) es
- * el real de tu perfil y «Aplicar» lo guarda; el reparto por carga y el menú
- * son de ejemplo.
+ * el real de tu perfil y «Aplicar» lo guarda; las calorías de cada día salen de
+ * la carga de tu plan. Los menús siguen siendo de ejemplo.
  */
 export default function DietPage() {
-  const { profile, days, todayIdx } = usePlanWeek();
+  const { profile } = usePlanWeek();
+  const { data } = usePlanWeekData();
   const saveProfile = useRitmoStore((s) => s.saveProfile);
-  const week = usePlanStore((s) => s.week);
-  const [sel, setSel] = useState(Math.max(0, todayIdx));
+  const [selDay, setSelDay] = useState<string | null>(null);
   const [goal, setGoal] = useState<'perder' | 'mantener' | 'ganar'>(profile ? GOAL_OF[profile.goalType] : 'mantener');
   const [pick, setPick] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
@@ -63,29 +67,14 @@ export default function DietPage() {
   const savedGoal = profile ? GOAL_OF[profile.goalType] : 'mantener';
   // El objetivo del perfil ya incluye el déficit o superávit; si eliges otro aquí, se previsualiza.
   const shift = { perder: -400, mantener: 0, ganar: 300 };
-  const base = (profile?.dailyKcalTarget ?? 2400) - shift[savedGoal] + shift[goal];
-  const loadOf = (i: number): MealLoad => {
-    const l = TEMPLATES[week[i]].load;
-    return l === 'Descanso' ? 'Baja' : l;
-  };
-  const targets = days.map((_, i) => base + LOAD_EXTRA[loadOf(i)]);
-  const max = Math.max(...targets);
-  const min = Math.min(...targets) - 400;
-
-  const load = loadOf(sel);
-  const meals = MENUS[load].map((opts, m) => {
-    const idx = pick[`${sel}-${m}`] ?? 0;
-    return { meal: MEALS[m], dish: opts[idx][0], k: opts[idx][1], swap: () => setPick((p) => ({ ...p, [`${sel}-${m}`]: (idx + 1) % opts.length })) };
-  });
-  const total = meals.reduce((s, m) => s + m.k, 0);
-  const t = targets[sel];
-  const diff = total - t;
-  const fits = Math.abs(diff) <= t * 0.05;
+  const delta = shift[goal] - shift[savedGoal];
   const prot = profile?.proteinTargetG ?? 150;
-  const fat = Math.round((t * 0.25) / 9);
-  const carbs = Math.round((t - prot * 4 - fat * 9) / 4);
-  const tpl = TEMPLATES[week[sel]];
-  const session = tpl.dur ? `${tpl.name} · ${fmtMinutes(tpl.dur)}` : tpl.name;
+  const days = (data?.days ?? []).map((d, i) => {
+    const diet = data?.diet?.[i];
+    const load: PlanLoad = diet?.load ?? d.planned?.load ?? 'REST';
+    const k = (diet?.kcalTarget ?? profile?.dailyKcalTarget ?? 2400) + delta;
+    return { date: d.day, n: dayNumber(d.day), letter: dayLetter(d.day), full: dayFull(d.day), load, k, planned: d.planned };
+  });
   const changed = goal !== savedGoal;
 
   async function apply() {
@@ -100,6 +89,41 @@ export default function DietPage() {
       setSaving(false);
     }
   }
+
+  if (!days.length) {
+    return (
+      <IonPage>
+        <IonContent>
+          <div className="rk-screen plan">
+            <NavRow back={<BackLink label="Plan" fallback="/tabs/plan" />} />
+            <header className="rk-title">
+              <h1>Dieta y menú</h1>
+            </header>
+          </div>
+        </IonContent>
+      </IonPage>
+    );
+  }
+
+  const sel = Math.max(0, days.findIndex((d) => d.date === (selDay ?? data?.today)));
+  const cur = days[sel];
+  const max = Math.max(...days.map((d) => d.k));
+  const min = Math.min(...days.map((d) => d.k)) - 400;
+  const meals = MENUS[MENU_OF[cur.load]].map((opts, m) => {
+    const idx = pick[`${sel}-${m}`] ?? 0;
+    return { meal: MEALS[m], dish: opts[idx][0], k: opts[idx][1], swap: () => setPick((p) => ({ ...p, [`${sel}-${m}`]: (idx + 1) % opts.length })) };
+  });
+  const total = meals.reduce((s, m) => s + m.k, 0);
+  const t = cur.k;
+  const diff = total - t;
+  const fits = Math.abs(diff) <= t * 0.05;
+  const fat = Math.round((t * 0.25) / 9);
+  const carbs = Math.round((t - prot * 4 - fat * 9) / 4);
+  const session = cur.planned
+    ? cur.planned.plannedDurationMin
+      ? `${cur.planned.title} · ${fmtMinutes(cur.planned.plannedDurationMin)}`
+      : cur.planned.title
+    : 'Sin sesión planificada';
 
   return (
     <IonPage>
@@ -128,7 +152,7 @@ export default function DietPage() {
           <header className="rk-title">
             <h1>Dieta y menú</h1>
             <span className="rk-title__sub plan__sub">
-              Semana del {days[0].n} al {days[6].n} · según tu plan <ExampleTag />
+              Semana del {days[0].n} al {days[6].n} · calorías según la carga de tu plan
             </span>
           </header>
 
@@ -146,7 +170,7 @@ export default function DietPage() {
           <section aria-label="Calorías por día" className="diet__chart">
             <div role="tablist" aria-label="Días" className="diet__days">
               {days.map((d, i) => {
-                const k = targets[i];
+                const k = d.k;
                 const on = i === sel;
                 return (
                   <button
@@ -156,13 +180,13 @@ export default function DietPage() {
                     aria-selected={on}
                     aria-label={`${d.full} ${d.n}: objetivo ${kcal(k)} kcal`}
                     className={`diet__day${on ? ' is-sel' : ''}`}
-                    onClick={() => setSel(i)}
+                    onClick={() => setSelDay(d.date)}
                   >
                     <span className="diet__day-k">{(k / 1000).toFixed(1).replace('.', ',')}</span>
                     <span
                       className="diet__bar"
                       aria-hidden="true"
-                      style={{ height: Math.round(24 + ((k - min) / Math.max(1, max - min)) * 60), background: BAR[loadOf(i)] }}
+                      style={{ height: Math.round(24 + ((k - min) / Math.max(1, max - min)) * 60), background: BAR[d.load] }}
                     />
                     <span className="diet__day-letter">{d.letter}</span>
                   </button>
@@ -171,15 +195,15 @@ export default function DietPage() {
             </div>
             <div className="diet__legend" aria-hidden="true">
               <span>
-                <span style={{ background: BAR.Alta }} />
+                <span style={{ background: BAR.HIGH }} />
                 Carga alta
               </span>
               <span>
-                <span style={{ background: BAR.Media }} />
+                <span style={{ background: BAR.MEDIUM }} />
                 Media
               </span>
               <span>
-                <span style={{ background: BAR.Baja }} />
+                <span style={{ background: BAR.LOW }} />
                 Baja
               </span>
             </div>
@@ -193,8 +217,8 @@ export default function DietPage() {
                 </span>
                 <span className="rk-row__sub">{session}</span>
               </div>
-              <span className={`plan__load plan__load--${load === 'Alta' ? 'high' : load === 'Media' ? 'mid' : 'low'}`}>
-                Carga {load.toLowerCase()}
+              <span className={`plan__load ${LOAD_CLASS[cur.load]}`}>
+                {cur.load === 'REST' ? 'Descanso' : `Carga ${LOAD_LABEL[cur.load].toLowerCase()}`}
               </span>
             </div>
             <div className="diet__total">
@@ -211,6 +235,11 @@ export default function DietPage() {
             </span>
           </section>
 
+          <div className="rk-sechead">
+            <h2>
+              Menú sugerido <ExampleTag />
+            </h2>
+          </div>
           <ul aria-label="Menú del día" className="rk-list">
             {meals.map((m) => (
               <li key={m.meal} className="rk-row diet__meal">

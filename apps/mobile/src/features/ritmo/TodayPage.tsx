@@ -36,6 +36,7 @@ import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
 import './ritmo.css';
+import { TomorrowRow } from './plan/TomorrowRow';
 import './today.css';
 
 /** Mensaje en pasado tras registrar una comida, con su género. */
@@ -102,8 +103,8 @@ function pendingMeals(summary: DaySummary, hour: number): MealType[] {
  * que toca con lo de siempre listo para registrar de un toque, luego las kcal
  * que quedan, la recuperación, tu día y lo de mañana.
  *
- * Recuperación y "Mañana" necesitan Garmin y el plan de entrenamiento, que
- * aún no existen: se muestran con datos de ejemplo y su etiqueta.
+ * Recuperación necesita Garmin, que aún no existe: se muestra con datos de
+ * ejemplo y su etiqueta. "Mañana" sale de tu plan.
  */
 export default function TodayPage() {
   const profile = useRitmoStore((s) => s.profile);
@@ -459,18 +460,7 @@ export default function TodayPage() {
                   : null}
               </section>
 
-              <Link to="/tabs/plan" className="today-row">
-                <span className="today-tomorrow">Mañana</span>
-                <span className="rk-row__main">
-                  <span className="today-row__title">
-                    Series 6 × 800 m · 7:30
-                  </span>
-                  <span className="rk-row__sub">
-                    <ExampleTag /> Carga alta · dieta de 3.200 kcal
-                  </span>
-                </span>
-                <Chevron />
-              </Link>
+              <TomorrowRow today={today} />
             </>
           )}
         </div>

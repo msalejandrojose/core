@@ -716,3 +716,51 @@
 .rk-list.plan__rows > li + li {
   border-top: 0;
 }
+
+/* Semana real: navegación, objetivo y check diario */
+.plan__weeknav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ritmo-space-s);
+}
+.plan__weeknav-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 44px;
+  justify-content: center;
+  border: 0;
+  background: none;
+  color: var(--ritmo-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+}
+.plan__weeknav-label:disabled {
+  opacity: 1;
+}
+.plan__weeknav-back {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ritmo-tint);
+}
+.plan__goal {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.plan__chip--clear {
+  color: var(--ritmo-danger);
+}
+.plan__check {
+  display: flex;
+  gap: var(--ritmo-space-s);
+}
+.plan__check .plan__btn {
+  flex: 1;
+}

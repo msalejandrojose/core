@@ -282,6 +282,8 @@ model User {
   ritmoPerfMeasurements RitmoPerformanceMeasurement[]
   ritmoRecommendations  RitmoRecommendationState[]
   ritmoMuscleOverrides  RitmoExerciseMuscleOverride[]
+  ritmoPlans            RitmoPlan[]
+  ritmoPlannedSessions  RitmoPlannedSession[]
 
   @@map("user")
 }
@@ -2527,9 +2529,10 @@ model RitmoActivitySession {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activityType RitmoActivityType  @relation(fields: [activityTypeId], references: [id])
-  strengthSets RitmoStrengthSet[]
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityType    RitmoActivityType     @relation(fields: [activityTypeId], references: [id])
+  strengthSets    RitmoStrengthSet[]
+  plannedSessions RitmoPlannedSession[]
 
   @@unique([source, externalId])
   @@index([userId, loggedOn])
@@ -2881,4 +2884,94 @@ model RitmoExerciseMuscleOverride {
 
   @@id([userId, exerciseId, muscle])
   @@map("ritmo_exercise_muscle_override")
+}
+
+// ---------------------------------------------------------------------------
+// Plan de entrenamiento: el objetivo (una carrera, por ejemplo) y las sesiones
+// planificadas de cada día. Lo ejecutado sigue viviendo en
+// `ritmo_activity_session`; aquí está lo que se PENSABA hacer.
+// ---------------------------------------------------------------------------
+
+/// Objetivo de entrenamiento del usuario. Solo uno activo a la vez; los demás
+/// quedan archivados como historial.
+model RitmoPlan {
+  id     String @id @default(uuid()) @db.Char(36)
+  userId String @map("user_id") @db.Char(36)
+
+  /// Nombre del objetivo ("Media maratón de Valencia").
+  name          String    @db.VarChar(120)
+  /// Fecha de la carrera o de la meta, si la hay.
+  raceDate      DateTime? @map("race_date") @db.Date
+  /// Distancia de la carrera en metros (21097 = media maratón).
+  raceDistanceM Int?      @map("race_distance_m")
+  /// Tiempo objetivo en segundos, si se ha fijado.
+  targetTimeSec Int?      @map("target_time_sec")
+  notes         String?   @db.VarChar(500)
+  isActive      Boolean   @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions RitmoPlannedSession[]
+
+  @@index([userId, isActive])
+  @@map("ritmo_plan")
+}
+
+/// Carga prevista de una sesión: decide cuánto sube o baja la dieta ese día.
+enum RitmoPlanLoad {
+  REST
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Lo planificado para un día. Una sesión por día y usuario.
+///
+/// Se completa de dos formas: marcándola a mano (`completedAt`) o sola, cuando
+/// ese día se registra un entreno de la misma disciplina. La segunda no
+/// escribe nada aquí: se resuelve al leer la semana.
+model RitmoPlannedSession {
+  id     String  @id @default(uuid()) @db.Char(36)
+  userId String  @map("user_id") @db.Char(36)
+  /// Plan al que pertenece; nulo si se planificó sin objetivo.
+  planId String? @map("plan_id") @db.Char(36)
+
+  day          DateTime          @db.Date
+  kind         RitmoActivityKind
+  /// Plantilla de la que salió (`series`, `z2`…), si salió de una.
+  templateCode String?           @map("template_code") @db.VarChar(40)
+  title        String            @db.VarChar(120)
+  load         RitmoPlanLoad
+
+  /// Hora prevista, "HH:MM" en la zona del usuario.
+  startTime          String? @map("start_time") @db.VarChar(5)
+  plannedDurationMin Int?    @map("planned_duration_min") @db.SmallInt
+  plannedDistanceM   Int?    @map("planned_distance_m")
+  /// Ritmo objetivo en segundos por km.
+  targetPaceSecPerKm Int?    @map("target_pace_sec_per_km") @db.SmallInt
+  /// Detalle libre de la sesión (series, repeticiones, ejercicios).
+  structure          Json?
+  notes              String? @db.VarChar(500)
+
+  /// Check diario: cuándo se marcó como hecha y qué se hizo de verdad.
+  completedAt        DateTime? @map("completed_at")
+  /// Entreno real con el que se cumplió, si se enlazó uno.
+  completedSessionId String?   @map("completed_session_id") @db.Char(36)
+  actualNotes        String?   @map("actual_notes") @db.VarChar(500)
+  /// Se decidió no hacerla (no cuenta como pendiente ni como hecha).
+  skipped            Boolean   @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan             RitmoPlan?            @relation(fields: [planId], references: [id], onDelete: SetNull)
+  completedSession RitmoActivitySession? @relation(fields: [completedSessionId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, day])
+  @@index([planId])
+  @@index([completedSessionId])
+  @@map("ritmo_planned_session")
 }
