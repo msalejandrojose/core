@@ -87,7 +87,7 @@ sitios: Google/Facebook console, la API (`apps/api/.env`) y la app
    crea (o reusa) un proyecto y registra credenciales OAuth 2.0:
    - **Web client ID** (tipo "Web application") — lo usa Android vía
      Credential Manager y también la API para verificar el token.
-   - **iOS client ID** (tipo "iOS", con el bundle id `es.aj.core`).
+   - **iOS client ID** (tipo "iOS", con el bundle id `es.aj.brio`).
 2. Rellena en `apps/mobile/.env`: `VITE_GOOGLE_WEB_CLIENT_ID`,
    `VITE_GOOGLE_IOS_CLIENT_ID`.
 3. Rellena en `apps/api/.env`: `GOOGLE_CLIENT_ID` con el/los client ID que
@@ -154,7 +154,7 @@ la migración `add_social_login_to_user`.
 
 ## Notas
 
-- `appId`: `es.aj.core` · `appName`: `Core` (en `capacitor.config.ts`).
+- `appId`: `es.aj.brio` · `appName`: `Brío` (en `capacitor.config.ts`).
 - El estilo de la status bar (claro/oscuro) se ajusta en caliente desde
   `ThemeProvider` según el tema del usuario.
 - La splash se auto-oculta al cargar la web (sin spinner), con fondo greige

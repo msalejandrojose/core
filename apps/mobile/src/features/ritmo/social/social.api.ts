@@ -126,8 +126,8 @@ export const KIND_TEXT: Record<ChallengeKind, { label: string; desc: string; tit
 /** Invitar: hoja nativa de compartir si existe; si no, copia el enlace. */
 export async function invite(handle?: string): Promise<'shared' | 'copied' | 'none'> {
   const data = {
-    title: 'Ritmo',
-    text: handle ? `Entrena conmigo en Ritmo. Búscame como @${handle}` : 'Entrena conmigo en Ritmo',
+    title: 'Brío',
+    text: handle ? `Entrena conmigo en Brío. Búscame como @${handle}` : 'Entrena conmigo en Brío',
     url: window.location.origin,
   };
   try {

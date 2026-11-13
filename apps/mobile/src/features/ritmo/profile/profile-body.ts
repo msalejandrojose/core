@@ -40,7 +40,7 @@ function saveJson(data: unknown, name: string) {
 export async function downloadMyData(): Promise<void> {
   try {
     const data = await ritmoApi.exportMyData();
-    saveJson(data, `ritmo-mis-datos-${new Date().toISOString().slice(0, 10)}.json`);
+    saveJson(data, `brio-mis-datos-${new Date().toISOString().slice(0, 10)}.json`);
     toast.success('Datos descargados', 'Tienes una copia en JSON con todo lo guardado.');
   } catch (e) {
     toast.error('No se pudieron descargar tus datos', isApiError(e) ? e.message : undefined);

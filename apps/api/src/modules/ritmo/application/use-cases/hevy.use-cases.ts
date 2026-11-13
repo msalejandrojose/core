@@ -380,7 +380,7 @@ export class SendPlannedRoutineToHevyUseCase {
         throw new BadRequestException('RITMO_HEVY_NO_MATCHING_EXERCISES');
       const created = await this.client.createRoutine(apiKey, {
         title: planned.title,
-        notes: 'Enviada desde Ritmo',
+        notes: 'Enviada desde Brío',
         exercises,
       });
       await this.repo.savePlannedStructure(userId, day, {

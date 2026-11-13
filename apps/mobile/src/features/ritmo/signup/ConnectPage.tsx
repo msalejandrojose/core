@@ -134,7 +134,7 @@ export default function ConnectPage() {
           <header className="signup__head">
             <h1>Conecta tus datos</h1>
             <span>
-              Así Ritmo cuenta tus pasos, entrenos y sueño sin que apuntes nada
+              Así Brío cuenta tus pasos, entrenos y sueño sin que apuntes nada
               a mano.
             </span>
           </header>

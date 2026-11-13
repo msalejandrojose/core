@@ -68,7 +68,7 @@ export default function SharePage() {
                 </div>
               ) : null}
             </div>
-            <span className="share__foot">Hecho con Ritmo</span>
+            <span className="share__foot">Hecho con Brío</span>
           </div>
 
           <section className="rk-section">
