@@ -36,6 +36,11 @@ function fakes(initial: Partial<GarminConnection> | null = {}) {
   const health = new Map<string, DailyHealth>();
   let hevy = new Set<string>();
   let otherTypes = 0;
+  let prefs = {
+    importActivities: true,
+    importHealth: true,
+    exerciseKcalSharePct: 100,
+  };
 
   const repo: RitmoGarminRepositoryPort = {
     getConnection: async () => conn,
@@ -89,9 +94,11 @@ function fakes(initial: Partial<GarminConnection> | null = {}) {
     { latestWeightKg: async () => 80 } as never,
     profiles as never,
     refresh as never,
+    { get: async () => prefs } as never,
   );
   return {
     repo,
+    setPrefs: (p: Partial<typeof prefs>) => (prefs = { ...prefs, ...p }),
     client,
     sync,
     refresh,
@@ -223,6 +230,23 @@ describe('SyncGarminUseCase', () => {
       expect.objectContaining({ start: 100 }),
     );
     expect(r.imported).toBe(107);
+  });
+
+  it('no pide a Garmin lo que el usuario ha apagado', async () => {
+    const f = fakes();
+    f.setPrefs({ importActivities: false });
+    f.client.dailySummaries.mockResolvedValue([
+      { calendarDate: '2026-11-12', heartRate: { restingValue: 51 } },
+    ]);
+    const r = await f.sync.execute(USER, NOW);
+    expect(f.client.activities).not.toHaveBeenCalled();
+    expect(r).toEqual({ imported: 0, updated: 0, skipped: 0, healthDays: 1 });
+
+    f.setPrefs({ importActivities: true, importHealth: false });
+    f.client.dailySummaries.mockClear();
+    await f.sync.execute(USER, NOW);
+    expect(f.client.dailySummaries).not.toHaveBeenCalled();
+    expect(f.client.activities).toHaveBeenCalled();
   });
 
   it('una clave caducada se explica y queda apuntada', async () => {

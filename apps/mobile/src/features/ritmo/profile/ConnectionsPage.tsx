@@ -1,55 +1,61 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
-import { BackLink, ExampleTag, LargeTitle, NavRow, SectionHeader, Segmented, Switch } from '../ui/kit';
+import { toast } from '@/lib/toast';
+import { call, isApiError } from '../api';
+import { useRitmoStore } from '../ritmo.store';
+import { BackLink, LargeTitle, NavRow, SectionHeader, Segmented, Switch } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { useGarminStatus } from './garmin.api';
 import { useHevyStatus } from './hevy.api';
 import './profile.css';
 
-type Toggle = { id: string; label: string; desc: string };
+interface Prefs {
+  importActivities: boolean;
+  importHealth: boolean;
+  exerciseKcalSharePct: number;
+}
 
-const IMPORTS: Toggle[] = [
-  { id: 'act', label: 'Actividades y entrenos', desc: 'Tipo, duración, calorías activas' },
-  { id: 'steps', label: 'Pasos y movimiento', desc: 'Pasos, minutos intensos, pisos' },
-  { id: 'sleep', label: 'Sueño y frecuencia cardíaca', desc: 'Horas, puntuación, FC en reposo' },
-  { id: 'weight', label: 'Peso', desc: 'Si no lo tienes en Salud' },
-];
-const EXPORTS: Toggle[] = [
-  { id: 'plan', label: 'Sesiones planificadas', desc: 'Aparecen en el calendario del reloj' },
-  { id: 'food', label: 'Calorías ingeridas', desc: 'Balance visible en Garmin Connect' },
+const IMPORTS: { id: 'importActivities' | 'importHealth'; label: string; desc: string }[] = [
+  { id: 'importActivities', label: 'Actividades y entrenos', desc: 'Tipo, duración, pulso, distancia y calorías' },
+  { id: 'importHealth', label: 'Sueño, pulso y pasos', desc: 'Horas de sueño, FC en reposo, variabilidad y pasos' },
 ];
 const SHARES = ['100', '75', '50', '0'] as const;
 
 /**
- * Conexiones (lienzo "Conexiones"). Aún no hay integración con Garmin ni con
- * Salud: la pantalla es de ejemplo y sus interruptores solo cambian aquí.
+ * Conexiones (lienzo "Conexiones"): el reloj Garmin, Hevy y qué hace Ritmo con
+ * lo que traen. Las preferencias se guardan al tocarlas. Apple Salud y enviar
+ * datos al reloj aún no existen, y la pantalla lo dice en vez de simularlo.
  */
 export default function ConnectionsPage() {
-  const [on, setOn] = useState<Record<string, boolean>>({
-    health: true,
-    act: true,
-    steps: true,
-    sleep: true,
-    weight: false,
-    plan: true,
-    food: false,
-  });
-  const [share, setShare] = useState<(typeof SHARES)[number]>('100');
   const { status: hevy } = useHevyStatus();
   const { status: garmin } = useGarminStatus();
-  const flip = (id: string) => setOn((s) => ({ ...s, [id]: !s[id] }));
+  const refreshDay = useRitmoStore((s) => s.refreshDay);
+  const [prefs, setPrefs] = useState<Prefs | null>(null);
 
-  const rows = (items: Toggle[]) =>
-    items.map((t) => (
-      <button key={t.id} type="button" aria-pressed={on[t.id]} className="rk-row conn__toggle" onClick={() => flip(t.id)}>
-        <span className="rk-row__main">
-          <span className="rk-row__title">{t.label}</span>
-          <span className="rk-row__sub">{t.desc}</span>
-        </span>
-        <Switch on={!!on[t.id]} />
-      </button>
-    ));
+  useEffect(() => {
+    let alive = true;
+    call<Prefs>('GET', '/ritmo/connections/prefs')
+      .then((p) => alive && setPrefs(p))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function save(change: Partial<Prefs>) {
+    if (!prefs) return;
+    const before = prefs;
+    setPrefs({ ...prefs, ...change });
+    try {
+      setPrefs(await call<Prefs>('PUT', '/ritmo/connections/prefs', { body: change }));
+      // El porcentaje cambia las kcal restantes de Hoy.
+      if (change.exerciseKcalSharePct !== undefined) void refreshDay();
+    } catch (e) {
+      setPrefs(before);
+      toast.error('No se pudo guardar', isApiError(e) ? e.message : undefined);
+    }
+  }
 
   return (
     <IonPage>
@@ -81,27 +87,27 @@ export default function ConnectionsPage() {
             </Link>
           </section>
 
-          <section className="rk-section" aria-labelledby="salud">
-            <SectionHeader id="salud">
-              Salud del teléfono <ExampleTag />
-            </SectionHeader>
+          <section className="rk-section" aria-labelledby="imp">
+            <SectionHeader id="imp">Qué traer del reloj</SectionHeader>
             <div className="rk-list">
-              <button type="button" aria-pressed={on.health} className="rk-row conn__toggle" onClick={() => flip('health')}>
-                <span className="conn__badge conn__badge--health" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" fill="var(--ritmo-heart)" />
-                  </svg>
-                </span>
-                <span className="rk-row__main">
-                  <span className="rk-row__title">Apple Salud</span>
-                  <span className="rk-row__sub">{on.health ? 'Conectado · lectura y escritura' : 'Sin conectar'}</span>
-                </span>
-                <Switch on={on.health} />
-              </button>
+              {IMPORTS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-pressed={!!prefs?.[t.id]}
+                  disabled={!prefs}
+                  className="rk-row conn__toggle"
+                  onClick={() => void save({ [t.id]: !prefs?.[t.id] })}
+                >
+                  <span className="rk-row__main">
+                    <span className="rk-row__title">{t.label}</span>
+                    <span className="rk-row__sub">{t.desc}</span>
+                  </span>
+                  <Switch on={!!prefs?.[t.id]} />
+                </button>
+              ))}
             </div>
-            <p className="rk-note">
-              Lee peso, sueño, VFC y pasos, y guarda tus comidas en Salud. En Android esta misma conexión usa Health Connect.
-            </p>
+            <p className="rk-note">Lo que apagues deja de pedirse a Garmin; lo ya traído se queda. Enviar sesiones al reloj aún no es posible.</p>
           </section>
 
           <section className="rk-section" aria-labelledby="gym">
@@ -122,18 +128,21 @@ export default function ConnectionsPage() {
             </Link>
           </section>
 
-          <section className="rk-section" aria-labelledby="imp">
-            <SectionHeader id="imp">
-              Importar desde Garmin <ExampleTag />
-            </SectionHeader>
-            <div className="rk-list">{rows(IMPORTS)}</div>
-          </section>
-
-          <section className="rk-section" aria-labelledby="exp">
-            <SectionHeader id="exp">
-              Enviar a Garmin <ExampleTag />
-            </SectionHeader>
-            <div className="rk-list">{rows(EXPORTS)}</div>
+          <section className="rk-section" aria-labelledby="salud">
+            <SectionHeader id="salud">Salud del teléfono</SectionHeader>
+            <div className="rk-list">
+              <div className="rk-row">
+                <span className="conn__badge conn__badge--health" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" fill="var(--ritmo-heart)" />
+                  </svg>
+                </span>
+                <span className="rk-row__main">
+                  <span className="rk-row__title">Apple Salud y Health Connect</span>
+                  <span className="rk-row__sub">Próximamente, con la app para iPhone y Android</span>
+                </span>
+              </div>
+            </div>
           </section>
 
           <section className="rk-section" aria-labelledby="adj">
@@ -141,9 +150,12 @@ export default function ConnectionsPage() {
             <Segmented
               label="Porcentaje de calorías activas"
               options={SHARES.map((p) => ({ value: p, label: p === '0' ? 'No' : `${p} %` }))}
-              value={share}
-              onChange={setShare}
+              value={String(prefs?.exerciseKcalSharePct ?? 100) as (typeof SHARES)[number]}
+              onChange={(v) => void save({ exerciseKcalSharePct: Number(v) })}
             />
+            <p className="rk-note">
+              Qué parte de lo que gastas entrenando se suma a las calorías que puedes comer ese día. Baja el porcentaje si tu reloj tiende a contar de más.
+            </p>
           </section>
         </div>
       </IonContent>

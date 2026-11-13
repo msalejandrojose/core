@@ -72,6 +72,9 @@ import { RitmoPerformanceInputsController } from './infrastructure/http/ritmo-pe
 import { RitmoPlanController } from './infrastructure/http/ritmo-plan.controller';
 import { RitmoHevyController } from './infrastructure/http/ritmo-hevy.controller';
 import { RitmoGarminController } from './infrastructure/http/ritmo-garmin.controller';
+import { RitmoConnectionsController } from './infrastructure/http/ritmo-connections.controller';
+import { PrismaConnectionPrefsRepository } from './infrastructure/persistence/prisma-connection-prefs.repository';
+import { RITMO_CONNECTION_PREFS } from './application/ports/connection-prefs.port';
 import { RitmoRecoveryController } from './infrastructure/http/ritmo-recovery.controller';
 import {
   ApplyRecoveryOptionUseCase,
@@ -126,6 +129,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoPlanController,
     RitmoHevyController,
     RitmoGarminController,
+    RitmoConnectionsController,
     RitmoRecoveryController,
   ],
   providers: [
@@ -145,6 +149,10 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     { provide: HEVY_CLIENT, useClass: HttpHevyClient },
     { provide: RITMO_GARMIN_REPOSITORY, useClass: PrismaRitmoGarminRepository },
     { provide: GARMIN_CLIENT, useClass: HttpGarminClient },
+    {
+      provide: RITMO_CONNECTION_PREFS,
+      useClass: PrismaConnectionPrefsRepository,
+    },
     {
       // Cifrado de las claves de terceros (Hevy, Garmin). Usa `RITMO_ENC_KEY` o, si no
       // está, la de notificaciones. Sin ninguna (dev/CI) no cifra, y avisa.

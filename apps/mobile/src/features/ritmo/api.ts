@@ -137,6 +137,8 @@ export interface MealEntry {
 export interface DayTotals {
   kcalIn: number;
   kcalBurned: number;
+  /** Parte del gasto que cuenta para el día, según Conexiones. */
+  kcalBurnedCounted: number;
   kcalTarget: number | null;
   kcalRemaining: number | null;
   proteinG: number;
