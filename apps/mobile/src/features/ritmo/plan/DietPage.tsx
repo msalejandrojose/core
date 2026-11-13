@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
@@ -6,37 +6,15 @@ import { isApiError, type GoalType } from '../api';
 import { useRitmoStore } from '../ritmo.store';
 import { profileBody } from '../profile/profile-body';
 import { formatNumber } from '../format';
-import { BackLink, ExampleTag, NavRow, Segmented } from '../ui/kit';
+import { BackLink, NavRow, Segmented } from '../ui/kit';
+import { MEAL_LABEL, menuApi, type Meal, type MenuWeek } from './menu.api';
 import { usePlanWeekData, type PlanLoad } from './plan.api';
 import { LOAD_CLASS, LOAD_LABEL, dayFull, dayLetter, dayNumber, fmtMinutes } from './plan-labels';
 import { usePlanWeek } from './usePlanWeek';
 import './plan.css';
 
-type Opt = [string, number];
-type MealLoad = 'Alta' | 'Media' | 'Baja';
-const MENU_OF: Record<PlanLoad, MealLoad> = { HIGH: 'Alta', MEDIUM: 'Media', LOW: 'Baja', REST: 'Baja' };
 const kcal = (n: number) => formatNumber(n);
-const MENUS: Record<MealLoad, Opt[][]> = {
-  Media: [
-    [['Avena con plátano y café', 690], ['Tostadas con aguacate y huevos', 720], ['Yogur griego, granola y fruta', 650]],
-    [['Arroz con pollo y ensalada', 980], ['Lentejas de la abuela y pan', 1010], ['Pasta con atún y tomate', 960]],
-    [['Yogur griego y nueces', 330], ['Fruta y almendras', 260], ['Tostada con pavo', 280]],
-    [['Salmón con arroz y ensalada', 860], ['Merluza con patata y verduras', 780], ['Tortilla de patata y ensalada', 820]],
-  ],
-  Alta: [
-    [['Tostadas con tomate, huevos y fruta', 820], ['Avena con plátano, miel y café', 790], ['Tortitas de avena con yogur', 760]],
-    [['Pasta con pollo y verduras', 1100], ['Arroz a la cubana con huevo', 1150], ['Paella de pollo y ensalada', 1080]],
-    [['Plátano y yogur griego', 300], ['Bocadillo pequeño de pavo', 350], ['Batido de leche y avena', 330]],
-    [['Arroz con salmón y ensalada', 950], ['Patata asada con pollo', 920], ['Pasta con gambas', 990]],
-  ],
-  Baja: [
-    [['Yogur griego con frutos rojos y avena', 600], ['Huevos revueltos y tostada', 620], ['Café con leche y tostada', 560]],
-    [['Lentejas con verduras', 880], ['Pollo al horno con verduras', 900], ['Garbanzos con espinacas', 860]],
-    [['Fruta y almendras', 260], ['Queso fresco y nueces', 280], ['Yogur griego', 180]],
-    [['Merluza al horno con verduras', 700], ['Tortilla de patata y ensalada', 760], ['Crema de verduras y huevo', 650]],
-  ],
-};
-const MEALS = ['Desayuno', 'Comida', 'Merienda', 'Cena'];
+
 const BAR: Record<PlanLoad, string> = {
   HIGH: 'var(--ritmo-food)',
   MEDIUM: 'var(--ritmo-activity)',
@@ -53,7 +31,7 @@ const GOAL_API = { perder: 'LOSE_WEIGHT', mantener: 'MAINTAIN', ganar: 'GAIN_MUS
 /**
  * Dieta y menú (lienzo "Dieta y menú"). El objetivo (perder/mantener/ganar) es
  * el real de tu perfil y «Aplicar» lo guarda; las calorías de cada día salen de
- * la carga de tu plan. Los menús siguen siendo de ejemplo.
+ * la carga de tu plan y el menú se ajusta a ellas.
  */
 export default function DietPage() {
   const { profile } = usePlanWeek();
@@ -61,7 +39,18 @@ export default function DietPage() {
   const saveProfile = useRitmoStore((s) => s.saveProfile);
   const [selDay, setSelDay] = useState<string | null>(null);
   const [goal, setGoal] = useState<'perder' | 'mantener' | 'ganar'>(profile ? GOAL_OF[profile.goalType] : 'mantener');
-  const [pick, setPick] = useState<Record<string, number>>({});
+  const [menu, setMenu] = useState<MenuWeek | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    menuApi
+      .week()
+      .then((m) => alive && setMenu(m))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
   const [saving, setSaving] = useState(false);
 
   const savedGoal = profile ? GOAL_OF[profile.goalType] : 'mantener';
@@ -109,11 +98,17 @@ export default function DietPage() {
   const cur = days[sel];
   const max = Math.max(...days.map((d) => d.k));
   const min = Math.min(...days.map((d) => d.k)) - 400;
-  const meals = MENUS[MENU_OF[cur.load]].map((opts, m) => {
-    const idx = pick[`${sel}-${m}`] ?? 0;
-    return { meal: MEALS[m], dish: opts[idx][0], k: opts[idx][1], swap: () => setPick((p) => ({ ...p, [`${sel}-${m}`]: (idx + 1) % opts.length })) };
-  });
-  const total = meals.reduce((s, m) => s + m.k, 0);
+  // El menú viene ajustado al objetivo guardado; si previsualizas otro objetivo, la diferencia se ve en «de X kcal».
+  const meals = menu?.days?.find((d) => d.day === cur.date)?.meals ?? [];
+
+  async function swap(meal: Meal) {
+    try {
+      setMenu(await menuApi.swap(cur.date, meal));
+    } catch (e) {
+      toast.error('No se pudo cambiar', isApiError(e) ? e.message : undefined);
+    }
+  }
+  const total = meals.reduce((s, m) => s + m.kcal, 0);
   const t = cur.k;
   const diff = total - t;
   const fits = Math.abs(diff) <= t * 0.05;
@@ -236,19 +231,20 @@ export default function DietPage() {
           </section>
 
           <div className="rk-sechead">
-            <h2>
-              Menú sugerido <ExampleTag />
-            </h2>
+            <h2>Menú del día</h2>
           </div>
           <ul aria-label="Menú del día" className="rk-list">
             {meals.map((m) => (
               <li key={m.meal} className="rk-row diet__meal">
                 <span className="rk-row__main">
-                  <span className="diet__meal-name">{m.meal}</span>
-                  <span className="rk-row__title">{m.dish}</span>
-                  <span className="rk-row__sub">{kcal(m.k)} kcal</span>
+                  <span className="diet__meal-name">{MEAL_LABEL[m.meal]}</span>
+                  <span className="rk-row__title">{m.name}</span>
+                  <span className="rk-row__sub diet__ingredients">{m.ingredients.map((i) => `${i.name.toLowerCase()} ${i.amount}`).join(' · ')}</span>
+                  <span className="rk-row__sub">
+                    {kcal(m.kcal)} kcal · {m.proteinG} g de proteína
+                  </span>
                 </span>
-                <button type="button" className="diet__swap" aria-label={`Cambiar ${m.meal.toLowerCase()}`} onClick={m.swap}>
+                <button type="button" className="diet__swap" aria-label={`Cambiar ${MEAL_LABEL[m.meal].toLowerCase()}`} onClick={() => void swap(m.meal)}>
                   <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 7h13l-3-3M20 17H7l3 3" />
                   </svg>
@@ -256,9 +252,10 @@ export default function DietPage() {
               </li>
             ))}
           </ul>
+          <p className="rk-note">Las raciones están ajustadas a las calorías del día. Los valores son aproximados.</p>
 
           <Link to="/tabs/plan/compra" className="plan__btn">
-            Actualizar lista de la compra
+            Ver la lista de la compra
           </Link>
         </div>
       </IonContent>

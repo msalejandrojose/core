@@ -70,6 +70,15 @@ import { RitmoNutritionController } from './infrastructure/http/ritmo-nutrition.
 import { RitmoPerformanceController } from './infrastructure/http/ritmo-performance.controller';
 import { RitmoPerformanceInputsController } from './infrastructure/http/ritmo-performance-inputs.controller';
 import { RitmoPlanController } from './infrastructure/http/ritmo-plan.controller';
+import { RitmoMenuController } from './infrastructure/http/ritmo-menu.controller';
+import { PrismaRitmoMenuRepository } from './infrastructure/persistence/prisma-ritmo-menu.repository';
+import { RITMO_MENU_REPOSITORY } from './application/ports/menu.port';
+import {
+  CheckShoppingItemUseCase,
+  GetMenuWeekUseCase,
+  GetShoppingListUseCase,
+  SwapMenuDishUseCase,
+} from './application/use-cases/menu.use-cases';
 import { RitmoHevyController } from './infrastructure/http/ritmo-hevy.controller';
 import { RitmoGarminController } from './infrastructure/http/ritmo-garmin.controller';
 import { RitmoConnectionsController } from './infrastructure/http/ritmo-connections.controller';
@@ -127,6 +136,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoPerformanceInputsController,
     RitmoPerformanceController,
     RitmoPlanController,
+    RitmoMenuController,
     RitmoHevyController,
     RitmoGarminController,
     RitmoConnectionsController,
@@ -145,6 +155,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     { provide: RITMO_FOOD_REPOSITORY, useClass: PrismaRitmoFoodRepository },
     { provide: RITMO_DIARY_REPOSITORY, useClass: PrismaRitmoDiaryRepository },
     { provide: RITMO_PLAN_REPOSITORY, useClass: PrismaRitmoPlanRepository },
+    { provide: RITMO_MENU_REPOSITORY, useClass: PrismaRitmoMenuRepository },
     { provide: RITMO_HEVY_REPOSITORY, useClass: PrismaRitmoHevyRepository },
     { provide: HEVY_CLIENT, useClass: HttpHevyClient },
     { provide: RITMO_GARMIN_REPOSITORY, useClass: PrismaRitmoGarminRepository },
@@ -231,6 +242,11 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ClearPlannedDayUseCase,
     CompletePlannedDayUseCase,
     FillPlanWeekUseCase,
+    // Menús y lista de la compra.
+    GetMenuWeekUseCase,
+    SwapMenuDishUseCase,
+    GetShoppingListUseCase,
+    CheckShoppingItemUseCase,
     // Hevy.
     GetHevyStatusUseCase,
     SyncHevyUseCase,
