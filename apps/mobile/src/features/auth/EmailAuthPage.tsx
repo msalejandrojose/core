@@ -4,7 +4,7 @@ import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { apiClient } from '@/api/client';
 import { useLogin } from './use-login';
 import { rememberLoginMethod } from './login-method';
-import { BackLink, NavRow, Segmented } from '@/features/ritmo/ui/kit';
+import { BackLink, NavRow, Segmented } from '@/features/brio/ui/kit';
 import './auth.css';
 
 type Mode = 'login' | 'signup';

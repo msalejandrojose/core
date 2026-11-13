@@ -9,8 +9,8 @@ import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage';
 import VerifyEmailPage from '@/features/auth/VerifyEmailPage';
 import EmailAuthPage from '@/features/auth/EmailAuthPage';
-import SignupProfilePage from '@/features/ritmo/signup/SignupProfilePage';
-import ConnectPage from '@/features/ritmo/signup/ConnectPage';
+import SignupProfilePage from '@/features/brio/signup/SignupProfilePage';
+import ConnectPage from '@/features/brio/signup/ConnectPage';
 import TabsShell from '@/app/TabsShell';
 import { ErrorBoundary, OfflineBanner } from '@/components/ux';
 
@@ -85,7 +85,7 @@ export default function App() {
               }
             />
 
-            {/* Alta de Ritmo: con sesión pero fuera de las pestañas (sin tab bar). */}
+            {/* Alta de Brío: con sesión pero fuera de las pestañas (sin tab bar). */}
             <Route
               exact
               path="/alta/perfil"

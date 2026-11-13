@@ -1,4 +1,4 @@
-/* Acceso de Ritmo (lienzo "Acceso"). */
+/* Acceso de Brío (lienzo "Acceso"). */
 .login {
   min-height: 100%;
   box-sizing: border-box;
@@ -6,8 +6,8 @@
   flex-direction: column;
   gap: 28px;
   padding: calc(72px + env(safe-area-inset-top, 0px)) 24px calc(32px + env(safe-area-inset-bottom, 0px));
-  background: var(--ritmo-surface);
-  color: var(--ritmo-ink);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
 }
 .login__brand {
   display: flex;
@@ -28,7 +28,7 @@
   max-width: 300px;
   font-size: 17px;
   line-height: 1.4;
-  color: var(--ritmo-ink-2);
+  color: var(--brio-ink-2);
 }
 .login__perks {
   list-style: none;
@@ -66,10 +66,10 @@
   justify-content: center;
   gap: 10px;
   min-height: 52px;
-  border-radius: var(--ritmo-radius-xl);
-  border: 1px solid var(--ritmo-border-strong);
-  background: var(--ritmo-surface);
-  color: var(--ritmo-ink);
+  border-radius: var(--brio-radius-xl);
+  border: 1px solid var(--brio-border-strong);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
   font: inherit;
   font-size: 17px;
   font-weight: 600;
@@ -82,8 +82,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--ritmo-control);
-  color: var(--ritmo-tint);
+  min-height: var(--brio-control);
+  color: var(--brio-tint);
   font-size: 17px;
   text-decoration: none;
 }
@@ -91,13 +91,13 @@
   margin: 4px 0 0;
   font-size: 12px;
   line-height: 1.45;
-  color: var(--ritmo-ink-muted);
+  color: var(--brio-ink-muted);
   text-align: center;
 }
 .login__error {
   margin: 0;
   font-size: 14px;
-  color: var(--ritmo-danger);
+  color: var(--brio-danger);
   text-align: center;
 }
 
@@ -109,10 +109,10 @@
 .email-auth__form {
   display: flex;
   flex-direction: column;
-  gap: var(--ritmo-space-l);
+  gap: var(--brio-space-l);
 }
 .email-auth__field {
-  min-height: var(--ritmo-row);
+  min-height: var(--brio-row);
   gap: 12px;
 }
 .email-auth__field > span {
@@ -126,7 +126,7 @@
   border: 0;
   outline: none;
   background: transparent;
-  color: var(--ritmo-ink);
+  color: var(--brio-ink);
   font: inherit;
   font-size: 16px;
 }
@@ -140,9 +140,9 @@
   gap: 10px;
   font-size: 15px;
   line-height: 1.4;
-  color: var(--ritmo-ink-2);
+  color: var(--brio-ink-2);
 }
 .email-auth__sent strong {
   font-size: 17px;
-  color: var(--ritmo-ink);
+  color: var(--brio-ink);
 }

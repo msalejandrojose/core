@@ -2,8 +2,8 @@ import { useEffect, type ReactNode } from 'react';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { useThemeStore, type Theme } from '@/store/theme.store';
 
-/** Ritmo no tiene tema oscuro todavía (ver theme/tokens.css). */
-const RITMO_LIGHT_ONLY = true;
+/** Brío no tiene tema oscuro todavía (ver theme/tokens.css). */
+const BRIO_LIGHT_ONLY = true;
 
 function systemPrefersDark(): boolean {
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -29,9 +29,9 @@ function applyTheme(theme: Theme): void {
     root.setAttribute('data-theme', theme);
   }
 
-  // El Ritmo DS solo define tema claro: aunque quede guardada una preferencia
+  // El Brío DS solo define tema claro: aunque quede guardada una preferencia
   // oscura de antes, el chrome del sistema acompaña al fondo claro `bg`.
-  const dark = RITMO_LIGHT_ONLY ? false : resolveDark(theme);
+  const dark = BRIO_LIGHT_ONLY ? false : resolveDark(theme);
 
   const meta = document.querySelector('meta[name="theme-color"]');
   meta?.setAttribute('content', dark ? '#1c1c1e' : '#f2f2f7');

@@ -121,7 +121,7 @@ export default function NotificationsPage() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          {/* En Ritmo, se abre desde la campana de Hoy (ya no es pestaña). */}
+          {/* En Brío, se abre desde la campana de Hoy (ya no es pestaña). */}
           <IonButtons slot="start">
             <IonBackButton defaultHref="/tabs/today" text="Hoy" />
           </IonButtons>

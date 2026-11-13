@@ -19,7 +19,7 @@ interface SnackbarState {
 let nextId = 1;
 
 /**
- * Aviso breve tras una acción de un toque (Ritmo DS · Snackbar). Hay UNO a la
+ * Aviso breve tras una acción de un toque (Brío DS · Snackbar). Hay UNO a la
  * vez: mostrar otro sustituye al anterior en vez de apilarlos. Los errores que
  * exigen decidir algo no van aquí, sino en un toast o una alerta.
  */

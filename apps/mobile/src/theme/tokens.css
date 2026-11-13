@@ -1,7 +1,7 @@
 /* ============================================================================
- * Ritmo Design System → variables de la app mobile
+ * Brío Design System → variables de la app mobile
  * ----------------------------------------------------------------------------
- * Fuente de verdad: el artefacto "Ritmo Design System" (tokens.json). Lenguaje
+ * Fuente de verdad: el artefacto "Brío Design System" (tokens.json). Lenguaje
  * iOS nativo, claro y minimalista: fondo agrupado `bg`, tarjetas `surface` sin
  * borde ni sombra, un único color de acción `tint` y un color por dominio
  * (actividad, comida, sueño/peso, corazón, digestión) que nunca se usa para
@@ -11,7 +11,7 @@
  * `--core-*` del final apuntan a estos tokens para que las pantallas del shell
  * base (login, avisos, ajustes) adopten el mismo lenguaje sin reescribirlas.
  *
- * Solo hay tema claro: el DS de Ritmo no define oscuro. Si se diseña, irá en
+ * Solo hay tema claro: el DS de Brío no define oscuro. Si se diseña, irá en
  * un bloque `[data-theme='dark']` con los mismos nombres.
  * ========================================================================== */
 
@@ -19,109 +19,109 @@
   color-scheme: light;
 
   /* ---- Color: superficies y texto ---- */
-  --ritmo-bg: #f2f2f7;
-  --ritmo-surface: #ffffff;
-  --ritmo-surface-fill: #e3e3e8; /* pista del segmentado, campos de búsqueda */
-  --ritmo-surface-fill-2: #e9e9eb; /* interruptor apagado */
-  --ritmo-separator: #e5e5ea;
-  --ritmo-border: #d1d1d6;
-  --ritmo-border-strong: #c7c7cc; /* casillas vacías, asa de hojas */
-  --ritmo-chevron: #aeaeb2;
-  --ritmo-ink: #1c1c1e; /* 16:1 */
-  --ritmo-ink-2: #3a3a3c;
-  --ritmo-ink-muted: #6c6c70; /* 5,2:1 sobre surface, 4,7:1 sobre bg */
+  --brio-bg: #f2f2f7;
+  --brio-surface: #ffffff;
+  --brio-surface-fill: #e3e3e8; /* pista del segmentado, campos de búsqueda */
+  --brio-surface-fill-2: #e9e9eb; /* interruptor apagado */
+  --brio-separator: #e5e5ea;
+  --brio-border: #d1d1d6;
+  --brio-border-strong: #c7c7cc; /* casillas vacías, asa de hojas */
+  --brio-chevron: #aeaeb2;
+  --brio-ink: #1c1c1e; /* 16:1 */
+  --brio-ink-2: #3a3a3c;
+  --brio-ink-muted: #6c6c70; /* 5,2:1 sobre surface, 4,7:1 sobre bg */
 
   /* ---- Color: acción ---- */
-  --ritmo-tint: #0064d2;
-  --ritmo-tint-pressed: #004fa6;
-  --ritmo-tint-soft: #eaf2fd;
-  --ritmo-on-tint: #ffffff;
+  --brio-tint: #0064d2;
+  --brio-tint-pressed: #004fa6;
+  --brio-tint-soft: #eaf2fd;
+  --brio-on-tint: #ffffff;
 
   /* ---- Color: dominios. Rellenos solo en barras, anillos e iconos y siempre
    *      junto a su número (no llegan a 3:1); el texto va en su `-ink`. ---- */
-  --ritmo-activity: #34c759;
-  --ritmo-activity-ink: #1f7a35;
-  --ritmo-activity-soft: #e8f8ec;
-  --ritmo-food: #ff9500;
-  --ritmo-food-ink: #b85600;
-  --ritmo-food-soft: #fff1e0;
-  --ritmo-sleep: #5856d6; /* sueño y peso */
-  --ritmo-sleep-ink: #4b49b8;
-  --ritmo-sleep-soft: #f0effb;
-  --ritmo-heart: #ff2d55;
-  --ritmo-heart-ink: #c4123b;
-  --ritmo-heart-soft: #ffe9ee;
-  --ritmo-info: #0a84ff; /* carga baja, agua. Solo relleno */
-  --ritmo-danger: #d70015;
-  --ritmo-danger-soft: #ffe9e7;
-  --ritmo-earth: #8b5a2b; /* digestión */
-  --ritmo-earth-soft: #f5ebdd;
-  --ritmo-gold: #e0a800;
-  --ritmo-gold-deep: #b88400;
-  --ritmo-gold-soft: #fff6d6;
-  --ritmo-gold-ink: #8a6100;
-  --ritmo-silver: #9aa3ae;
-  --ritmo-silver-deep: #6f7782;
-  --ritmo-bronze: #c27c3a;
-  --ritmo-bronze-deep: #9e5f28;
-  --ritmo-snackbar: var(--ritmo-ink);
-  --ritmo-snackbar-link: #8ec5ff; /* 9,4:1 sobre snackbar */
-  --ritmo-tabbar-bg: rgba(249, 249, 249, 0.94);
+  --brio-activity: #34c759;
+  --brio-activity-ink: #1f7a35;
+  --brio-activity-soft: #e8f8ec;
+  --brio-food: #ff9500;
+  --brio-food-ink: #b85600;
+  --brio-food-soft: #fff1e0;
+  --brio-sleep: #5856d6; /* sueño y peso */
+  --brio-sleep-ink: #4b49b8;
+  --brio-sleep-soft: #f0effb;
+  --brio-heart: #ff2d55;
+  --brio-heart-ink: #c4123b;
+  --brio-heart-soft: #ffe9ee;
+  --brio-info: #0a84ff; /* carga baja, agua. Solo relleno */
+  --brio-danger: #d70015;
+  --brio-danger-soft: #ffe9e7;
+  --brio-earth: #8b5a2b; /* digestión */
+  --brio-earth-soft: #f5ebdd;
+  --brio-gold: #e0a800;
+  --brio-gold-deep: #b88400;
+  --brio-gold-soft: #fff6d6;
+  --brio-gold-ink: #8a6100;
+  --brio-silver: #9aa3ae;
+  --brio-silver-deep: #6f7782;
+  --brio-bronze: #c27c3a;
+  --brio-bronze-deep: #9e5f28;
+  --brio-snackbar: var(--brio-ink);
+  --brio-snackbar-link: #8ec5ff; /* 9,4:1 sobre snackbar */
+  --brio-tabbar-bg: rgba(249, 249, 249, 0.94);
 
   /* ---- Tipografía: una sola familia, la del sistema (SF Pro en Apple) ---- */
-  --ritmo-font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', Inter,
+  --brio-font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', Inter,
     system-ui, sans-serif;
 
   /* ---- Espaciado ---- */
-  --ritmo-space-2xs: 4px;
-  --ritmo-space-xs: 6px;
-  --ritmo-space-s: 8px;
-  --ritmo-space-m: 12px;
-  --ritmo-space-l: 14px;
-  --ritmo-space-xl: 16px; /* margen lateral de pantalla y relleno de tarjetas */
-  --ritmo-space-2xl: 20px; /* separación entre bloques en Hoy */
-  --ritmo-space-3xl: 24px;
-  --ritmo-space-4xl: 32px;
+  --brio-space-2xs: 4px;
+  --brio-space-xs: 6px;
+  --brio-space-s: 8px;
+  --brio-space-m: 12px;
+  --brio-space-l: 14px;
+  --brio-space-xl: 16px; /* margen lateral de pantalla y relleno de tarjetas */
+  --brio-space-2xl: 20px; /* separación entre bloques en Hoy */
+  --brio-space-3xl: 24px;
+  --brio-space-4xl: 32px;
 
   /* ---- Radios ---- */
-  --ritmo-radius-s: 8px;
-  --ritmo-radius-m: 10px;
-  --ritmo-radius-l: 12px;
-  --ritmo-radius-xl: 14px; /* botones principales, snackbar */
-  --ritmo-radius-2xl: 16px; /* tarjetas y listas agrupadas */
-  --ritmo-radius-3xl: 22px; /* héroe, widgets, hojas */
-  --ritmo-radius-pill: 999px;
+  --brio-radius-s: 8px;
+  --brio-radius-m: 10px;
+  --brio-radius-l: 12px;
+  --brio-radius-xl: 14px; /* botones principales, snackbar */
+  --brio-radius-2xl: 16px; /* tarjetas y listas agrupadas */
+  --brio-radius-3xl: 22px; /* héroe, widgets, hojas */
+  --brio-radius-pill: 999px;
 
   /* ---- Sombras: solo en lo que flota ---- */
-  --ritmo-shadow-thumb: 0 2px 6px rgba(0, 0, 0, 0.12);
-  --ritmo-shadow-knob: 0 2px 6px rgba(0, 0, 0, 0.18);
-  --ritmo-shadow-fab: 0 4px 12px rgba(0, 0, 0, 0.18);
-  --ritmo-shadow-float: 0 10px 30px rgba(0, 0, 0, 0.18);
+  --brio-shadow-thumb: 0 2px 6px rgba(0, 0, 0, 0.12);
+  --brio-shadow-knob: 0 2px 6px rgba(0, 0, 0, 0.18);
+  --brio-shadow-fab: 0 4px 12px rgba(0, 0, 0, 0.18);
+  --brio-shadow-float: 0 10px 30px rgba(0, 0, 0, 0.18);
 
   /* ---- Tamaños ---- */
-  --ritmo-control-s: 36px;
-  --ritmo-control: 44px; /* alto mínimo de cualquier pulsable */
-  --ritmo-control-l: 50px;
-  --ritmo-row: 52px;
-  --ritmo-row-l: 58px;
-  --ritmo-tabbar: 83px;
+  --brio-control-s: 36px;
+  --brio-control: 44px; /* alto mínimo de cualquier pulsable */
+  --brio-control-l: 50px;
+  --brio-row: 52px;
+  --brio-row-l: 58px;
+  --brio-tabbar: 83px;
 
   /* ==== Mapeo a Ionic ==== */
-  --ion-font-family: var(--ritmo-font-sans);
+  --ion-font-family: var(--brio-font-sans);
   --ion-background-color: #f2f2f7;
   --ion-background-color-rgb: 242, 242, 247;
   --ion-text-color: #1c1c1e;
   --ion-text-color-rgb: 28, 28, 30;
-  --ion-border-color: var(--ritmo-separator);
-  --ion-toolbar-background: var(--ritmo-bg);
+  --ion-border-color: var(--brio-separator);
+  --ion-toolbar-background: var(--brio-bg);
   --ion-toolbar-border-color: transparent;
-  --ion-item-background: var(--ritmo-surface);
-  --ion-item-border-color: var(--ritmo-separator);
-  --ion-card-background: var(--ritmo-surface);
-  --ion-tab-bar-background: var(--ritmo-tabbar-bg);
-  --ion-tab-bar-border-color: var(--ritmo-border);
-  --ion-tab-bar-color: var(--ritmo-ink-muted);
-  --ion-tab-bar-color-selected: var(--ritmo-tint);
+  --ion-item-background: var(--brio-surface);
+  --ion-item-border-color: var(--brio-separator);
+  --ion-card-background: var(--brio-surface);
+  --ion-tab-bar-background: var(--brio-tabbar-bg);
+  --ion-tab-bar-border-color: var(--brio-border);
+  --ion-tab-bar-color: var(--brio-ink-muted);
+  --ion-tab-bar-color-selected: var(--brio-tint);
 
   --ion-color-primary: #0064d2;
   --ion-color-primary-rgb: 0, 100, 210;
@@ -174,27 +174,27 @@
   --ion-color-medium-shade: #5f5f63;
   --ion-color-medium-tint: #7b7b7e;
 
-  /* ==== Alias del DS de Core → Ritmo (pantallas del shell base) ==== */
-  --core-surface: var(--ritmo-surface);
-  --core-surface-inset: var(--ritmo-surface-fill);
-  --core-surface-row: var(--ritmo-surface);
-  --core-surface-plain: var(--ritmo-surface);
-  --core-muted: var(--ritmo-ink-muted);
-  --core-border: var(--ritmo-separator);
-  --core-clay: var(--ritmo-tint);
-  --core-clay-pressed: var(--ritmo-tint-pressed);
-  --core-brick: var(--ritmo-danger);
-  --core-info: var(--ritmo-tint);
-  --core-purple: var(--ritmo-sleep);
-  --core-tint-clay: var(--ritmo-tint-soft);
-  --core-tint-purple: var(--ritmo-sleep-soft);
-  --core-radius-sm: var(--ritmo-radius-l);
-  --core-radius-md: var(--ritmo-radius-xl);
-  --core-radius: var(--ritmo-radius-2xl);
-  --core-radius-lg: var(--ritmo-radius-2xl);
-  --core-radius-xl: var(--ritmo-radius-3xl);
+  /* ==== Alias del DS de Core → Brío (pantallas del shell base) ==== */
+  --core-surface: var(--brio-surface);
+  --core-surface-inset: var(--brio-surface-fill);
+  --core-surface-row: var(--brio-surface);
+  --core-surface-plain: var(--brio-surface);
+  --core-muted: var(--brio-ink-muted);
+  --core-border: var(--brio-separator);
+  --core-clay: var(--brio-tint);
+  --core-clay-pressed: var(--brio-tint-pressed);
+  --core-brick: var(--brio-danger);
+  --core-info: var(--brio-tint);
+  --core-purple: var(--brio-sleep);
+  --core-tint-clay: var(--brio-tint-soft);
+  --core-tint-purple: var(--brio-sleep-soft);
+  --core-radius-sm: var(--brio-radius-l);
+  --core-radius-md: var(--brio-radius-xl);
+  --core-radius: var(--brio-radius-2xl);
+  --core-radius-lg: var(--brio-radius-2xl);
+  --core-radius-xl: var(--brio-radius-3xl);
   --core-elevation-1: none; /* tarjetas sin sombra: se separan por color */
-  --core-elevation-2: var(--ritmo-shadow-float);
-  --core-font-sans: var(--ritmo-font-sans);
-  --core-font-serif: var(--ritmo-font-sans); /* Ritmo no usa serif */
+  --core-elevation-2: var(--brio-shadow-float);
+  --core-font-sans: var(--brio-font-sans);
+  --core-font-serif: var(--brio-font-sans); /* Brío no usa serif */
 }

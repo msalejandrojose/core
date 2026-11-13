@@ -5,7 +5,7 @@
  */
 export type LoginMethod = 'google' | 'email';
 
-const KEY = 'ritmo-login-method';
+const KEY = 'brio-login-method';
 
 export function rememberLoginMethod(method: LoginMethod): void {
   try {

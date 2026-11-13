@@ -3,26 +3,26 @@ import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { useGoogleLogin } from './use-google-login';
 import { rememberLoginMethod } from './login-method';
 import { GoogleMark } from './GoogleMark';
-import { RitmoMark } from './RitmoMark';
+import { BrioMark } from './BrioMark';
 import './auth.css';
 
 const PERKS = [
   {
     text: 'Se sincroniza con Garmin y la app Salud',
-    bg: 'var(--ritmo-activity-soft)',
-    fg: 'var(--ritmo-activity-ink)',
+    bg: 'var(--brio-activity-soft)',
+    fg: 'var(--brio-activity-ink)',
     d: 'M6 6h12v12H6zM9 6l1-3h4l1 3M9 18l1 3h4l1-3M12 10v2l1.5 1',
   },
   {
     text: 'Una dieta que sigue a tu entrenamiento',
-    bg: 'var(--ritmo-food-soft)',
-    fg: 'var(--ritmo-food-ink)',
+    bg: 'var(--brio-food-soft)',
+    fg: 'var(--brio-food-ink)',
     d: 'M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2 0-3 2-3 6s1 4 3 4',
   },
   {
     text: 'Apunta lo que comes en segundos',
-    bg: 'var(--ritmo-tint-soft)',
-    fg: 'var(--ritmo-tint)',
+    bg: 'var(--brio-tint-soft)',
+    fg: 'var(--brio-tint)',
     d: 'M12 3a9 9 0 1 0 .01 0M12 7v5l3 2',
   },
 ];
@@ -32,7 +32,7 @@ const PERKS = [
  *
  * "Continuar con Apple" está en el diseño pero aún no hay endpoint en la API:
  * se añadirá con él (es obligatorio en iOS si se ofrece Google). Facebook, que
- * traía el shell base, no está en el diseño de Ritmo.
+ * traía el shell base, no está en el diseño de Brío.
  */
 export default function LoginPage() {
   const google = useGoogleLogin();
@@ -42,7 +42,7 @@ export default function LoginPage() {
       <IonContent>
         <div className="login">
           <div className="login__brand">
-            <RitmoMark />
+            <BrioMark />
             <h1>Brío</h1>
             <p>Entrena, come y descansa con un plan que se ajusta a ti.</p>
           </div>

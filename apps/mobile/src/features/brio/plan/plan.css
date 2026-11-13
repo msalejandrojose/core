@@ -1,0 +1,771 @@
+/* Plan (lienzo "Plan", "Editar sesión", "Sesión de fuerza", "Dieta y menú", "Lista de la compra", "Compartir lista"). */
+.plan {
+  gap: 14px;
+}
+.plan__navlink {
+  gap: 6px;
+}
+.plan__sub {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.plan-sheet {
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* Tira de días */
+.plan__strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
+  padding: 10px 6px;
+}
+.plan__strip-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.plan__strip-letter {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brio-ink-muted);
+}
+.plan__strip-n {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 500;
+}
+.plan__strip-n.is-today {
+  background: var(--brio-tint);
+  color: var(--brio-on-tint);
+  font-weight: 700;
+}
+.plan__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+.plan__dot.is-done {
+  background: var(--brio-activity);
+}
+.plan__dot.is-planned {
+  background: var(--brio-border-strong);
+}
+
+/* Filas de sesiones */
+.plan__rows {
+  padding-left: 14px;
+}
+.plan__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+}
+.plan__row + .plan__row .plan__row-cell {
+  border-top: 1px solid var(--brio-separator);
+}
+.plan__row-icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.plan__row-cell {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--brio-ink);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.plan__row-title {
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan__row-day {
+  flex: none;
+  font-size: 15px;
+  color: var(--brio-ink-muted);
+}
+.plan__row-day.is-today {
+  font-weight: 600;
+  color: var(--brio-tint);
+}
+
+/* Edición */
+.plan__edit {
+  padding-left: 12px;
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
+  overflow: hidden;
+}
+.plan__edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 54px;
+  box-sizing: border-box;
+  padding: 6px 14px 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--brio-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.plan__edit-row + .plan__edit-row {
+  border-top: 1px solid var(--brio-separator);
+}
+.plan__edit-row.is-sel {
+  background: var(--brio-tint-soft);
+}
+.plan__edit-day {
+  width: 54px;
+  flex: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.plan__edit-row.is-sel .plan__edit-day {
+  color: var(--brio-tint);
+}
+.plan__load {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: var(--brio-radius-pill);
+}
+.plan__load--high {
+  background: var(--brio-food-soft);
+  color: var(--brio-food-ink);
+}
+.plan__load--mid {
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
+}
+.plan__load--low {
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+}
+.plan__load--rest {
+  background: var(--brio-bg);
+  color: var(--brio-ink-muted);
+}
+.plan__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.plan__chip {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--brio-border);
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.plan__chip.is-on {
+  border-color: var(--brio-tint);
+  background: var(--brio-tint);
+  color: var(--brio-on-tint);
+}
+.plan__edit-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.plan__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 14px;
+  background: var(--brio-surface);
+  color: var(--brio-tint);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.plan__btn--primary {
+  background: var(--brio-tint);
+  color: var(--brio-on-tint);
+}
+
+/* Editar sesión */
+.plan__time {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--brio-bg);
+}
+.plan__struct {
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+  overflow: hidden;
+}
+.plan__step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 16px;
+}
+.plan__step + .plan__step {
+  border-top: 1px solid var(--brio-separator);
+}
+.plan__step-bar {
+  width: 6px;
+  align-self: stretch;
+  min-height: 40px;
+  border-radius: 3px;
+  flex: none;
+}
+.plan__pm {
+  display: flex;
+  border-radius: 10px;
+  background: var(--brio-surface-fill);
+}
+.plan__pm button {
+  width: 44px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--brio-ink);
+  font: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+.plan__toggle {
+  min-height: 58px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  cursor: pointer;
+}
+.plan__toggle .rk-row__sub {
+  white-space: normal;
+}
+.plan__diet-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+  font-size: 14px;
+  color: var(--brio-ink-2);
+}
+
+/* Sesión de fuerza */
+.strength__head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 4px;
+}
+.strength__head h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.strength__kicker {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brio-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+.strength__tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.strength__tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-surface);
+  color: var(--brio-ink-2);
+}
+.strength__tag--ok {
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
+}
+.strength__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.strength__stat {
+  background: var(--brio-surface);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.strength__stat-label {
+  font-size: 12px;
+  color: var(--brio-ink-muted);
+}
+.strength__stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.strength__stat-value.is-food {
+  color: var(--brio-food-ink);
+}
+.strength__stat-value.is-good {
+  color: var(--brio-activity-ink);
+}
+.strength__ex {
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.strength__ex-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.strength__ex-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.strength__sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.strength__set {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--brio-bg);
+  font-variant-numeric: tabular-nums;
+}
+.strength__set.is-best {
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
+}
+.strength__note {
+  font-size: 13px;
+  color: var(--brio-ink-muted);
+}
+.strength__note.is-pr {
+  font-weight: 600;
+  color: var(--brio-activity-ink);
+}
+.strength__compare {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+  font-size: 15px;
+  line-height: 1.35;
+}
+.strength__compare-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dieta */
+.diet__chart {
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
+  padding: 12px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.diet__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: end;
+}
+.diet__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 130px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.diet__day-k {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--brio-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.diet__bar {
+  display: block;
+  width: 26px;
+  border-radius: 7px;
+  opacity: 0.4;
+}
+.diet__day-letter {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brio-ink-muted);
+}
+.diet__day.is-sel .diet__day-k {
+  font-weight: 700;
+  color: var(--brio-ink);
+}
+.diet__day.is-sel .diet__bar {
+  opacity: 1;
+}
+.diet__day.is-sel .diet__day-letter {
+  background: var(--brio-tint);
+  color: var(--brio-on-tint);
+}
+.diet__legend {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--brio-ink-muted);
+}
+.diet__legend > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.diet__legend > span > span {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+.diet__card {
+  background: var(--brio-surface);
+  border-radius: var(--brio-radius-2xl);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.diet__card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.diet__card-day {
+  font-size: 17px;
+  font-weight: 600;
+}
+.diet__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.diet__total-n {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.diet__fit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brio-food-ink);
+}
+.diet__fit.is-ok {
+  color: var(--brio-activity-ink);
+}
+.diet__meal {
+  min-height: 74px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-right: 6px;
+}
+.diet__meal-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brio-ink-muted);
+  text-transform: uppercase;
+}
+.diet__swap {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--brio-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Compra */
+.plan__bar {
+  height: 6px;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-bg);
+  overflow: hidden;
+}
+.plan__bar > div {
+  height: 100%;
+}
+.shop__shared {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+  text-decoration: none;
+}
+.shop__shared-avatars {
+  display: flex;
+}
+.shop__shared-avatars > span {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--brio-surface);
+  box-sizing: border-box;
+}
+.shop__me {
+  background: var(--brio-border);
+}
+.shop__laura {
+  margin-left: -8px;
+  background: var(--brio-tint);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.shop__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+}
+.shop__progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.shop__list {
+  padding-left: 6px;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+  overflow: hidden;
+}
+.shop__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--brio-ink);
+  cursor: pointer;
+}
+.shop__item > .shop__check {
+  margin: 0 11px;
+}
+.shop__item + .shop__item .shop__cell {
+  border-top: 1px solid var(--brio-separator);
+}
+.shop__check {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 1.8px solid var(--brio-border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.shop__check.is-on {
+  border: 0;
+  background: var(--brio-activity);
+}
+.shop__cell {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 6px 4px;
+}
+.shop__name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: 16px;
+}
+.shop__name.is-on {
+  color: var(--brio-ink-muted);
+  text-decoration: line-through;
+}
+.shop__by {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+}
+
+/* Compartir lista */
+.share-list__card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+}
+.share-list__icon {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile__radio-cell.share-list__cell {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+}
+.share-list__go {
+  margin-top: auto;
+}
+.rk-list.plan__rows > li + li {
+  border-top: 0;
+}
+
+/* Semana real: navegación, objetivo y check diario */
+.plan__weeknav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--brio-space-s);
+}
+.plan__weeknav-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 44px;
+  justify-content: center;
+  border: 0;
+  background: none;
+  color: var(--brio-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+}
+.plan__weeknav-label:disabled {
+  opacity: 1;
+}
+.plan__weeknav-back {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--brio-tint);
+}
+.plan__goal {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.plan__chip--clear {
+  color: var(--brio-danger);
+}
+.plan__check {
+  display: flex;
+  gap: var(--brio-space-s);
+}
+.plan__check .plan__btn {
+  flex: 1;
+}
+
+.diet__ingredients {
+  white-space: normal;
+  line-height: 1.35;
+}

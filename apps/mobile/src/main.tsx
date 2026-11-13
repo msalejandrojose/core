@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { setupIonicReact } from '@ionic/react';
 import App from './App';
 import { ThemeProvider } from './theme/ThemeProvider';
-import { installSessionReset } from './features/ritmo/session-reset';
+import { installSessionReset } from './features/brio/session-reset';
 import './i18n';
 
 /* CSS base de Ionic (mínimo necesario para el layout y la tipografía). */
@@ -25,7 +25,7 @@ import 'sileo/styles.css';
 // norte estético de las capturas). Quitar para transiciones material en Android.
 setupIonicReact({ mode: 'ios' });
 
-// Vacía los datos de Ritmo en memoria al cerrar sesión (ver session-reset.ts).
+// Vacía los datos de Brío en memoria al cerrar sesión (ver session-reset.ts).
 installSessionReset();
 
 const container = document.getElementById('root');
