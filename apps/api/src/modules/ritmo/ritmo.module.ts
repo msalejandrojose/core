@@ -75,6 +75,11 @@ import { RitmoGarminController } from './infrastructure/http/ritmo-garmin.contro
 import { RitmoConnectionsController } from './infrastructure/http/ritmo-connections.controller';
 import { PrismaConnectionPrefsRepository } from './infrastructure/persistence/prisma-connection-prefs.repository';
 import { RITMO_CONNECTION_PREFS } from './application/ports/connection-prefs.port';
+import { RitmoRecoveryController } from './infrastructure/http/ritmo-recovery.controller';
+import {
+  ApplyRecoveryOptionUseCase,
+  GetRecoveryUseCase,
+} from './application/use-cases/recovery.use-cases';
 import { PrismaRitmoGarminRepository } from './infrastructure/persistence/prisma-ritmo-garmin.repository';
 import { HttpGarminClient } from './infrastructure/garmin/http-garmin.client';
 import {
@@ -125,6 +130,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoHevyController,
     RitmoGarminController,
     RitmoConnectionsController,
+    RitmoRecoveryController,
   ],
   providers: [
     {
@@ -237,6 +243,9 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ConnectGarminUseCase,
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,
+    // Recuperación.
+    GetRecoveryUseCase,
+    ApplyRecoveryOptionUseCase,
   ],
 })
 export class RitmoModule {}
