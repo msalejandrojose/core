@@ -4,6 +4,7 @@ import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
 import { BackLink, ExampleTag, LargeTitle, NavRow, SectionHeader, Segmented, Switch } from '../ui/kit';
 import { PATHS } from '../ui/paths';
+import { useHevyStatus } from './hevy.api';
 import './profile.css';
 
 type Toggle = { id: string; label: string; desc: string };
@@ -35,6 +36,7 @@ export default function ConnectionsPage() {
     food: false,
   });
   const [share, setShare] = useState<(typeof SHARES)[number]>('100');
+  const { status: hevy } = useHevyStatus();
   const flip = (id: string) => setOn((s) => ({ ...s, [id]: !s[id] }));
 
   const rows = (items: Toggle[]) =>
@@ -109,9 +111,11 @@ export default function ConnectionsPage() {
               </span>
               <span className="rk-row__main">
                 <span className="rk-row__title">Hevy</span>
-                <span className="rk-row__sub">Entrenos de fuerza con series y pesos</span>
+                <span className="rk-row__sub">
+                  {hevy?.connected ? `${hevy.importedSessions} entrenos importados` : 'Entrenos de fuerza con series y pesos'}
+                </span>
               </span>
-              <span className="conn__link">Conectar</span>
+              <span className="conn__link">{hevy?.connected ? 'Conectado' : 'Conectar'}</span>
             </Link>
           </section>
 
