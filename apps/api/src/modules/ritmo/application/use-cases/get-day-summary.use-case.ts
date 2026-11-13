@@ -13,12 +13,18 @@ import {
   type RitmoDiaryRepositoryPort,
 } from '../ports/ritmo-diary-repository.port';
 import {
+  RITMO_CONNECTION_PREFS,
+  type ConnectionPrefsPort,
+} from '../ports/connection-prefs.port';
+import {
   RITMO_PROFILE_REPOSITORY,
   type RitmoProfileRepositoryPort,
 } from '../ports/ritmo-profile-repository.port';
 
 export interface DaySummary {
   day: string;
+  /** Porcentaje del gasto de los entrenos que cuenta para las kcal del día. */
+  exerciseKcalSharePct: number;
   log: DailyLog;
   meals: MealEntry[];
   sessions: ActivitySession[];
@@ -42,6 +48,8 @@ export class GetDaySummaryUseCase {
     private readonly activity: RitmoActivityRepositoryPort,
     @Inject(RITMO_PROFILE_REPOSITORY)
     private readonly profiles: RitmoProfileRepositoryPort,
+    @Inject(RITMO_CONNECTION_PREFS)
+    private readonly prefs: ConnectionPrefsPort,
   ) {}
 
   async execute(userId: string, requestedDay?: string): Promise<DaySummary> {
@@ -50,14 +58,16 @@ export class GetDaySummaryUseCase {
       requestedDay ??
       dayInTimezone(new Date(), profile?.timezone ?? 'Europe/Madrid');
 
-    const [log, meals, sessions] = await Promise.all([
+    const [log, meals, sessions, prefs] = await Promise.all([
       this.diary.findDailyLog(userId, day),
       this.diary.listMealEntriesByDay(userId, day),
       this.activity.listSessionsByDay(userId, day),
+      this.prefs.get(userId),
     ]);
 
     return {
       day,
+      exerciseKcalSharePct: prefs.exerciseKcalSharePct,
       log: log ?? emptyLog(userId, day, profile?.dailyKcalTarget ?? null),
       meals,
       sessions,

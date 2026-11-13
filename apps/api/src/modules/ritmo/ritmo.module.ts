@@ -70,6 +70,15 @@ import { RitmoNutritionController } from './infrastructure/http/ritmo-nutrition.
 import { RitmoPerformanceController } from './infrastructure/http/ritmo-performance.controller';
 import { RitmoPerformanceInputsController } from './infrastructure/http/ritmo-performance-inputs.controller';
 import { RitmoPlanController } from './infrastructure/http/ritmo-plan.controller';
+import { RitmoMenuController } from './infrastructure/http/ritmo-menu.controller';
+import { PrismaRitmoMenuRepository } from './infrastructure/persistence/prisma-ritmo-menu.repository';
+import { RITMO_MENU_REPOSITORY } from './application/ports/menu.port';
+import {
+  CheckShoppingItemUseCase,
+  GetMenuWeekUseCase,
+  GetShoppingListUseCase,
+  SwapMenuDishUseCase,
+} from './application/use-cases/menu.use-cases';
 import { RitmoHevyController } from './infrastructure/http/ritmo-hevy.controller';
 import { RitmoGarminController } from './infrastructure/http/ritmo-garmin.controller';
 import { RitmoSocialController } from './infrastructure/http/ritmo-social.controller';
@@ -82,6 +91,14 @@ import {
   SocialPeopleUseCase,
   SocialProfileUseCase,
 } from './application/use-cases/social.use-cases';
+import { RitmoConnectionsController } from './infrastructure/http/ritmo-connections.controller';
+import { PrismaConnectionPrefsRepository } from './infrastructure/persistence/prisma-connection-prefs.repository';
+import { RITMO_CONNECTION_PREFS } from './application/ports/connection-prefs.port';
+import { RitmoRecoveryController } from './infrastructure/http/ritmo-recovery.controller';
+import {
+  ApplyRecoveryOptionUseCase,
+  GetRecoveryUseCase,
+} from './application/use-cases/recovery.use-cases';
 import { PrismaRitmoGarminRepository } from './infrastructure/persistence/prisma-ritmo-garmin.repository';
 import { HttpGarminClient } from './infrastructure/garmin/http-garmin.client';
 import {
@@ -129,9 +146,12 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoPerformanceInputsController,
     RitmoPerformanceController,
     RitmoPlanController,
+    RitmoMenuController,
     RitmoHevyController,
     RitmoGarminController,
     RitmoSocialController,
+    RitmoConnectionsController,
+    RitmoRecoveryController,
   ],
   providers: [
     {
@@ -146,11 +166,16 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     { provide: RITMO_FOOD_REPOSITORY, useClass: PrismaRitmoFoodRepository },
     { provide: RITMO_DIARY_REPOSITORY, useClass: PrismaRitmoDiaryRepository },
     { provide: RITMO_PLAN_REPOSITORY, useClass: PrismaRitmoPlanRepository },
+    { provide: RITMO_MENU_REPOSITORY, useClass: PrismaRitmoMenuRepository },
     { provide: RITMO_HEVY_REPOSITORY, useClass: PrismaRitmoHevyRepository },
     { provide: HEVY_CLIENT, useClass: HttpHevyClient },
     { provide: RITMO_GARMIN_REPOSITORY, useClass: PrismaRitmoGarminRepository },
     { provide: GARMIN_CLIENT, useClass: HttpGarminClient },
     { provide: RITMO_SOCIAL_REPOSITORY, useClass: PrismaRitmoSocialRepository },
+    {
+      provide: RITMO_CONNECTION_PREFS,
+      useClass: PrismaConnectionPrefsRepository,
+    },
     {
       // Cifrado de las claves de terceros (Hevy, Garmin). Usa `RITMO_ENC_KEY` o, si no
       // está, la de notificaciones. Sin ninguna (dev/CI) no cifra, y avisa.
@@ -229,6 +254,11 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ClearPlannedDayUseCase,
     CompletePlannedDayUseCase,
     FillPlanWeekUseCase,
+    // Menús y lista de la compra.
+    GetMenuWeekUseCase,
+    SwapMenuDishUseCase,
+    GetShoppingListUseCase,
+    CheckShoppingItemUseCase,
     // Hevy.
     GetHevyStatusUseCase,
     SyncHevyUseCase,
@@ -247,6 +277,9 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     SocialPeopleUseCase,
     SocialFeedUseCase,
     SocialChallengesUseCase,
+    // Recuperación.
+    GetRecoveryUseCase,
+    ApplyRecoveryOptionUseCase,
   ],
 })
 export class RitmoModule {}
