@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
-import { brioApi } from '../api';
+import { brioApi, type MealEntry } from '../api';
+import { EditMealSheet } from '../sheets/EditMealSheet';
 import { MEAL_ORDER, dayLabel, formatKcal, joinNames, mealLabel, ratio, todayIn } from '../format';
 import { useBrioStore } from '../brio.store';
 import { useRegisterStore } from '../register.store';
@@ -17,7 +18,8 @@ const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', '
 /**
  * Comida del día (lienzo "Comida del día"): las kcal contra lo disponible
  * (objetivo + lo gastado entrenando), los macros y cada comida con lo que
- * llevó. Tocar una comida despliega sus alimentos para poder borrar uno.
+ * llevó. Tocar una comida despliega sus alimentos; tocar uno abre la hoja para
+ * corregir la cantidad o el momento del día, o borrarlo.
  */
 export default function FoodDayPage() {
   const profile = useBrioStore((s) => s.profile);
@@ -32,6 +34,7 @@ export default function FoodDayPage() {
   const openRegister = useRegisterStore((s) => s.open);
   const invalidateHabits = useHabitsStore((s) => s.invalidate);
   const [open, setOpen] = useState<string | null>(null);
+  const [editing, setEditing] = useState<MealEntry | null>(null);
 
   // Se puede entrar directamente (enlace, recarga): el perfil trae los
   // objetivos de macros y la zona horaria, así que se carga si falta.
@@ -213,12 +216,18 @@ export default function FoodDayPage() {
                       {expanded
                         ? entries.map((e) => (
                             <div key={e.id} className="foodday__entry">
-                              <span className="rk-row__main">
+                              <button
+                                type="button"
+                                className="rk-row__main foodday__entry-edit"
+                                aria-label={`Editar ${e.name}`}
+                                onClick={() => setEditing(e)}
+                              >
                                 <span className="foodday__entry-name">{e.name}</span>
                                 <span className="rk-row__sub">
-                                  {Math.round(e.quantityG)} g · {formatKcal(e.kcal)} kcal
+                                  {e.foodId ? `${Math.round(e.quantityG)} g · ` : ''}
+                                  {formatKcal(e.kcal)} kcal
                                 </span>
-                              </span>
+                              </button>
                               <button
                                 type="button"
                                 className="rk-textbtn foodday__delete"
@@ -236,6 +245,14 @@ export default function FoodDayPage() {
             </>
           )}
         </div>
+        <EditMealSheet
+          entry={editing}
+          onClose={() => setEditing(null)}
+          onChanged={async () => {
+            await refreshDay();
+            invalidateHabits();
+          }}
+        />
       </IonContent>
     </IonPage>
   );
