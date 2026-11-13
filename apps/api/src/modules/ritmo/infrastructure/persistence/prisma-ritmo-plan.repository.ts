@@ -155,16 +155,25 @@ export class PrismaRitmoPlanRepository implements RitmoPlanRepositoryPort {
     data: PlannedSessionData,
   ): Promise<PlannedSession> {
     const values = { ...data, planId, structure: json(data.structure) };
+    const where = { userId_day: { userId, day: toDateOnly(day) } };
+    const current = await this.prisma.ritmoPlannedSession.findUnique({
+      where,
+      select: { kind: true },
+    });
+    // Cambiar el tipo de sesión borra su check (ya no es la misma); retocar
+    // la hora, la duración o el nombre lo conserva.
+    const reset =
+      current && current.kind !== data.kind
+        ? {
+            completedAt: null,
+            completedSessionId: null,
+            actualNotes: null,
+            skipped: false,
+          }
+        : {};
     const row = await this.prisma.ritmoPlannedSession.upsert({
-      where: { userId_day: { userId, day: toDateOnly(day) } },
-      // Sustituir la sesión de un día borra su check: ya no es la misma.
-      update: {
-        ...values,
-        completedAt: null,
-        completedSessionId: null,
-        actualNotes: null,
-        skipped: false,
-      },
+      where,
+      update: { ...values, ...reset },
       create: { userId, day: toDateOnly(day), ...values },
     });
     return toPlanned(row);

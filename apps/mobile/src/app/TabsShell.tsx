@@ -48,7 +48,6 @@ import { useRegisterStore } from '@/features/ritmo/register.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import PlanPage from '@/features/ritmo/plan/PlanPage';
 import EditSessionPage from '@/features/ritmo/plan/EditSessionPage';
-import StrengthPage from '@/features/ritmo/plan/StrengthPage';
 import DietPage from '@/features/ritmo/plan/DietPage';
 import ShoppingPage from '@/features/ritmo/plan/ShoppingPage';
 import ShareListPage from '@/features/ritmo/plan/ShareListPage';
@@ -144,7 +143,6 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/entreno/:id" component={SessionEditPage} />
           <Route exact path="/tabs/plan" component={PlanPage} />
           <Route exact path="/tabs/plan/sesion/:day" component={EditSessionPage} />
-          <Route exact path="/tabs/plan/fuerza" component={StrengthPage} />
           <Route exact path="/tabs/plan/dieta" component={DietPage} />
           <Route exact path="/tabs/plan/compra" component={ShoppingPage} />
           <Route exact path="/tabs/plan/compra/compartir" component={ShareListPage} />
