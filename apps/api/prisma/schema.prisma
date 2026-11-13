@@ -284,6 +284,8 @@ model User {
   ritmoMuscleOverrides  RitmoExerciseMuscleOverride[]
   ritmoPlans            RitmoPlan[]
   ritmoPlannedSessions  RitmoPlannedSession[]
+  ritmoMenuChoices      RitmoMenuChoice[]
+  ritmoShoppingChecks   RitmoShoppingCheck[]
   ritmoHevyConnection   RitmoHevyConnection?
   ritmoGarminConnection RitmoGarminConnection?
   ritmoDailyHealth      RitmoDailyHealth[]
@@ -3061,4 +3063,32 @@ model RitmoDailyHealth {
 
   @@id([userId, day])
   @@map("ritmo_daily_health")
+}
+
+/// Plato elegido por el usuario para una comida de un día, cuando cambia el
+/// que proponía el menú. Sin fila, vale el plato de la rotación.
+model RitmoMenuChoice {
+  userId   String   @map("user_id") @db.Char(36)
+  day      DateTime @db.Date
+  /// BREAKFAST, LUNCH, SNACK o DINNER.
+  meal     String   @db.VarChar(16)
+  dishCode String   @map("dish_code") @db.VarChar(64)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day, meal])
+  @@map("ritmo_menu_choice")
+}
+
+/// Producto de la lista de la compra de una semana ya marcado como comprado.
+model RitmoShoppingCheck {
+  userId    String   @map("user_id") @db.Char(36)
+  /// Lunes de la semana de la lista.
+  weekStart DateTime @map("week_start") @db.Date
+  itemCode  String   @map("item_code") @db.VarChar(64)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, weekStart, itemCode])
+  @@map("ritmo_shopping_check")
 }
