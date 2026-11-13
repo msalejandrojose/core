@@ -360,10 +360,10 @@ export default function TodayPage() {
               <Link to="/tabs/today/comida" className="today-row today-kcal">
                 <Ring
                   size={52}
-                  // Lo comido sobre lo disponible hoy (objetivo + lo gastado entrenando).
+                  // Lo comido sobre lo disponible hoy (objetivo + la parte del gasto que cuenta).
                   ratio={
                     totals.kcalTarget
-                      ? totals.kcalIn / (totals.kcalTarget + totals.kcalBurned)
+                      ? totals.kcalIn / (totals.kcalTarget + totals.kcalBurnedCounted)
                       : 0
                   }
                   color="var(--ritmo-food)"
