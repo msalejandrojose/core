@@ -446,3 +446,57 @@ button.perf__card-head,
   border-radius: var(--ritmo-radius-2xl);
   background: var(--ritmo-surface);
 }
+
+/* Mapa muscular 3D */
+.musclemap__modes,
+.musclemap3d__sides {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.musclemap__modes {
+  justify-content: flex-end;
+}
+.musclemap__modes button,
+.musclemap3d__sides button {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ritmo-bg);
+  color: var(--ritmo-ink-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.musclemap__modes button.is-on,
+.musclemap3d__sides button.is-on {
+  background: var(--ritmo-tint);
+  color: #ffffff;
+}
+.musclemap3d {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.musclemap3d__stage {
+  position: relative;
+  width: 100%;
+  height: 340px;
+}
+.musclemap3d__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+  cursor: grab;
+}
+.musclemap3d__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

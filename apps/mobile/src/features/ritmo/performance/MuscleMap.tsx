@@ -1,7 +1,8 @@
+import { Suspense, lazy, useState } from 'react';
 import { MUSCLE_NAME } from './labels';
 
 /**
- * Mapa muscular 2D: el cuerpo de frente y de espalda, con cada grupo coloreado
+ * Mapa muscular: aquí está el 2D, el cuerpo de frente y de espalda, con cada grupo coloreado
  * según su carga de entrenamiento relativa (0–1). Es una ilustración
  * anatómica simplificada: enseña DÓNDE has entrenado, no el estado del músculo.
  *
@@ -128,22 +129,75 @@ function View({ title, regions, values, describe, selected, onSelect }: MuscleMa
   );
 }
 
+function Legend() {
+  return (
+    <div className="musclemap__legend" aria-hidden="true">
+      <span>Menos</span>
+      <span className="musclemap__scale">
+        {[0, 0.25, 0.5, 0.75, 1].map((v) => (
+          <span key={v} style={{ background: heat(v) }} />
+        ))}
+      </span>
+      <span>Más carga</span>
+    </div>
+  );
+}
+
+const MuscleMap3D = lazy(() => import('./MuscleMap3D'));
+const MODE_KEY = 'ritmo.musclemap.mode';
+type Mode = '3d' | '2d';
+
+function savedMode(): Mode {
+  try {
+    return localStorage.getItem(MODE_KEY) === '2d' ? '2d' : '3d';
+  } catch {
+    return '3d';
+  }
+}
+
+function Flat(props: MuscleMapProps) {
+  return (
+    <div className="musclemap__views">
+      <View title="Frente" regions={FRONT} {...props} />
+      <View title="Espalda" regions={BACK} {...props} />
+    </div>
+  );
+}
+
+/** Mapa muscular: en 3D (giratorio) o en 2D (frente y espalda). */
 export function MuscleMap(props: MuscleMapProps) {
+  const [mode, setMode] = useState<Mode>(savedMode);
+  const [supported, setSupported] = useState(true);
+
+  function choose(next: Mode) {
+    setMode(next);
+    try {
+      localStorage.setItem(MODE_KEY, next);
+    } catch {
+      /* sin almacenamiento, la elección dura lo que la pantalla */
+    }
+  }
+
+  const show3d = mode === '3d' && supported;
   return (
     <div className="musclemap">
-      <div className="musclemap__views">
-        <View title="Frente" regions={FRONT} {...props} />
-        <View title="Espalda" regions={BACK} {...props} />
-      </div>
-      <div className="musclemap__legend" aria-hidden="true">
-        <span>Menos</span>
-        <span className="musclemap__scale">
-          {[0, 0.25, 0.5, 0.75, 1].map((v) => (
-            <span key={v} style={{ background: heat(v) }} />
+      {supported ? (
+        <div className="musclemap__modes" role="group" aria-label="Tipo de mapa">
+          {(['3d', '2d'] as const).map((m) => (
+            <button key={m} type="button" aria-pressed={mode === m} className={mode === m ? 'is-on' : ''} onClick={() => choose(m)}>
+              {m.toUpperCase()}
+            </button>
           ))}
-        </span>
-        <span>Más carga</span>
-      </div>
+        </div>
+      ) : null}
+      {show3d ? (
+        <Suspense fallback={<div className="musclemap3d__stage" aria-hidden="true" />}>
+          <MuscleMap3D {...props} onUnsupported={() => setSupported(false)} />
+        </Suspense>
+      ) : (
+        <Flat {...props} />
+      )}
+      <Legend />
     </div>
   );
 }
