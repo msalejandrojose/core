@@ -373,7 +373,9 @@ button.perf__card-head,
 }
 .musclemap__view svg {
   width: 100%;
-  max-width: 180px;
+  max-width: 220px;
+  /* Las cuatro láminas tienen encuadres distintos: una caja común las alinea. */
+  aspect-ratio: 1 / 2;
   height: auto;
 }
 .musclemap__view figcaption {
@@ -381,12 +383,23 @@ button.perf__card-head,
   font-weight: 600;
   color: var(--ritmo-ink-muted);
 }
-.musclemap__body {
+.musclemap__outline {
+  fill: none;
+  stroke: var(--ritmo-border-strong);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.musclemap__detail {
   fill: var(--ritmo-surface-fill-2);
+  stroke: var(--ritmo-surface);
+  stroke-width: 1.5;
+}
+.musclemap__detail--hair {
+  fill: var(--ritmo-ink-muted);
 }
 .musclemap__muscle {
   stroke: var(--ritmo-border-strong);
-  stroke-width: 0.8;
+  stroke-width: 2;
   stroke-linejoin: round;
   cursor: pointer;
   outline: none;
@@ -394,7 +407,11 @@ button.perf__card-head,
 .musclemap__muscle.is-selected,
 .musclemap__muscle:focus-visible {
   stroke: var(--ritmo-tint);
-  stroke-width: 2;
+  stroke-width: 6;
+}
+.musclemap__loading {
+  grid-column: 1 / -1;
+  aspect-ratio: 1 / 1;
 }
 .musclemap__legend {
   display: flex;
@@ -468,7 +485,4 @@ button.perf__card-head,
 .musclemap__modes button.is-on {
   background: var(--ritmo-tint);
   color: #ffffff;
-}
-.musclemap__hair {
-  fill: var(--ritmo-border-strong);
 }

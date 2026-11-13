@@ -1,29 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useRitmoStore } from '../ritmo.store';
+import type { AtlasPart, AtlasView, Figure, Side } from './body-atlas';
 import { MUSCLE_NAME } from './labels';
-import { FIGURES, type Figure, type FigureShapes, type Region } from './muscle-shapes';
 
 /**
- * Mapa muscular 2D: el cuerpo de frente y de espalda, en figura de hombre o de
- * mujer, con cada grupo coloreado según su carga de entrenamiento relativa
- * (0–1). Enseña DÓNDE has entrenado, no el estado del músculo.
+ * Mapa muscular: ilustración anatómica del cuerpo de frente y de espalda, en
+ * figura de hombre o de mujer, con cada grupo coloreado según su carga de
+ * entrenamiento relativa (0–1). Enseña DÓNDE has entrenado, no el estado del
+ * músculo. El dibujo (body-atlas) pesa, así que se carga aparte.
  */
 
-/** Refleja lo dibujado en la mitad izquierda sobre el eje x = 100. */
-const MIRROR = 'translate(200 0) scale(-1 1)';
-
-function Silhouette({ shapes, back }: { shapes: FigureShapes; back: boolean }) {
-  const hair = back ? shapes.hairBack : shapes.hairFront;
-  return (
-    <g className="musclemap__body">
-      {hair && !back ? <path d={hair} className="musclemap__hair" /> : null}
-      <ellipse {...shapes.head} />
-      {hair && back ? <path d={hair} className="musclemap__hair" /> : null}
-      <path d={shapes.body} />
-      <path d={shapes.body} transform={MIRROR} />
-    </g>
-  );
-}
+type Atlas = Record<Figure, Record<Side, AtlasView>>;
 
 /** Del blanco (sin trabajo) al color de actividad (lo más trabajado). */
 function heat(v: number): string {
@@ -41,40 +28,55 @@ export interface MuscleMapProps {
   onSelect: (muscle: string) => void;
 }
 
-function View({ title, shapes, back, values, describe, selected, onSelect }: MuscleMapProps & { title: string; shapes: FigureShapes; back: boolean }) {
-  const regions: Record<string, Region> = back ? shapes.back : shapes.front;
+/**
+ * Una zona puede representar varios músculos (el hombro de frente es deltoides
+ * anterior y lateral): se pinta con el más cargado y cada toque pasa al siguiente.
+ */
+function nextMuscle(muscles: string[], selected: string | null, values: Record<string, number>): string {
+  const i = selected ? muscles.indexOf(selected) : -1;
+  if (i >= 0) return muscles[(i + 1) % muscles.length];
+  return [...muscles].sort((a, b) => (values[b] ?? 0) - (values[a] ?? 0))[0];
+}
+
+function Zone({ part, values, describe, selected, onSelect }: MuscleMapProps & { part: AtlasPart }) {
+  const paths = part.d.map((d, i) => <path key={i} d={d} />);
+  if (!part.muscles.length) return <g className={`musclemap__detail musclemap__detail--${part.slug}`}>{paths}</g>;
+
+  const isSelected = !!selected && part.muscles.includes(selected);
+  const value = Math.max(...part.muscles.map((m) => values[m] ?? 0));
+  const pick = () => {
+    const next = nextMuscle(part.muscles, selected, values);
+    // Con un solo músculo, tocar de nuevo lo deselecciona (lo decide la pantalla).
+    onSelect(next);
+  };
+  return (
+    <g
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
+      aria-label={part.muscles.map((m) => `${MUSCLE_NAME[m]}: ${describe(m)}`).join('. ')}
+      className={`musclemap__muscle${isSelected ? ' is-selected' : ''}`}
+      style={{ fill: heat(value) }}
+      onClick={pick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          pick();
+        }
+      }}
+    >
+      {paths}
+    </g>
+  );
+}
+
+function View({ title, view, ...props }: MuscleMapProps & { title: string; view: AtlasView }) {
   return (
     <figure className="musclemap__view">
-      <svg viewBox="24 0 152 378" role="group" aria-label={`Cuerpo, ${title.toLowerCase()}`}>
-        <Silhouette shapes={shapes} back={back} />
-        {Object.entries(regions).map(([muscle, region]) => (
-          <g
-            key={muscle}
-            role="button"
-            tabIndex={0}
-            aria-pressed={selected === muscle}
-            aria-label={`${MUSCLE_NAME[muscle]}: ${describe(muscle)}`}
-            className={`musclemap__muscle${selected === muscle ? ' is-selected' : ''}`}
-            style={{ fill: heat(values[muscle] ?? 0) }}
-            onClick={() => onSelect(muscle)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onSelect(muscle);
-              }
-            }}
-          >
-            {region.d.map((d, i) => (
-              <path key={i} d={d} />
-            ))}
-            {region.whole ? null : (
-              <g transform={MIRROR}>
-                {region.d.map((d, i) => (
-                  <path key={i} d={d} />
-                ))}
-              </g>
-            )}
-          </g>
+      <svg viewBox={view.viewBox} role="group" aria-label={`Cuerpo, ${title.toLowerCase()}`}>
+        <path d={view.outline} className="musclemap__outline" />
+        {view.parts.map((part) => (
+          <Zone key={part.slug} part={part} {...props} />
         ))}
       </svg>
       <figcaption>{title}</figcaption>
@@ -114,13 +116,21 @@ export function MuscleMap(props: MuscleMapProps) {
   const profileStatus = useRitmoStore((s) => s.profileStatus);
   const loadProfile = useRitmoStore((s) => s.loadProfile);
   const [chosen, setChosen] = useState<Figure | null>(savedFigure);
+  const [atlas, setAtlas] = useState<Atlas | null>(null);
 
   useEffect(() => {
     if (profileStatus === 'idle') void loadProfile();
   }, [profileStatus, loadProfile]);
 
+  useEffect(() => {
+    let alive = true;
+    void import('./body-atlas').then((m) => alive && setAtlas(m.ATLAS));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const figure: Figure = chosen ?? (profile?.sex === 'FEMALE' ? 'female' : 'male');
-  const shapes = FIGURES[figure];
 
   function choose(next: Figure) {
     setChosen(next);
@@ -141,8 +151,14 @@ export function MuscleMap(props: MuscleMapProps) {
         ))}
       </div>
       <div className="musclemap__views">
-        <View title="Frente" shapes={shapes} back={false} {...props} />
-        <View title="Espalda" shapes={shapes} back {...props} />
+        {atlas ? (
+          <>
+            <View title="Frente" view={atlas[figure].front} {...props} />
+            <View title="Espalda" view={atlas[figure].back} {...props} />
+          </>
+        ) : (
+          <div className="musclemap__loading" aria-hidden="true" />
+        )}
       </div>
       <Legend />
     </div>
