@@ -46,6 +46,7 @@ import RecoveryPage from '@/features/ritmo/pages/RecoveryPage';
 import AlertsPage from '@/features/ritmo/pages/AlertsPage';
 import { useRegisterStore } from '@/features/ritmo/register.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
+import { useHevyAutoSync } from '@/features/ritmo/profile/hevy.api';
 import PlanPage from '@/features/ritmo/plan/PlanPage';
 import EditSessionPage from '@/features/ritmo/plan/EditSessionPage';
 import DietPage from '@/features/ritmo/plan/DietPage';
@@ -107,6 +108,7 @@ const TABS = [
  * se puedan abrir desde cualquier pestaña.
  */
 export default function TabsShell() {
+  useHevyAutoSync();
   const { pathname } = useLocation();
   const refreshUnread = useUnreadStore((s) => s.refresh);
   const openRegister = useRegisterStore((s) => s.open);

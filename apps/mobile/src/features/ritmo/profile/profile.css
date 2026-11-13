@@ -488,3 +488,14 @@
 .conn__toggle .rk-row__sub {
   white-space: normal;
 }
+
+.hevy__disconnect {
+  min-height: 50px;
+  border: 0;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-danger);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}

@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { IamModule } from '../iam/iam.module';
 import { RITMO_ACCOUNT_REPOSITORY } from './application/ports/ritmo-account-repository.port';
 import { RITMO_ACTIVITY_REPOSITORY } from './application/ports/ritmo-activity-repository.port';
@@ -69,6 +70,23 @@ import { RitmoNutritionController } from './infrastructure/http/ritmo-nutrition.
 import { RitmoPerformanceController } from './infrastructure/http/ritmo-performance.controller';
 import { RitmoPerformanceInputsController } from './infrastructure/http/ritmo-performance-inputs.controller';
 import { RitmoPlanController } from './infrastructure/http/ritmo-plan.controller';
+import { RitmoHevyController } from './infrastructure/http/ritmo-hevy.controller';
+import { PrismaRitmoHevyRepository } from './infrastructure/persistence/prisma-ritmo-hevy.repository';
+import { HttpHevyClient } from './infrastructure/hevy/http-hevy.client';
+import {
+  HEVY_CLIENT,
+  RITMO_HEVY_REPOSITORY,
+  RITMO_SECRET_CIPHER,
+} from './application/ports/hevy.port';
+import {
+  ConnectHevyUseCase,
+  DisconnectHevyUseCase,
+  GetHevyStatusUseCase,
+  SendPlannedRoutineToHevyUseCase,
+  SyncHevyUseCase,
+} from './application/use-cases/hevy.use-cases';
+import { AesSecretCipher } from '../notifications/infrastructure/crypto/aes-secret-cipher';
+import { NullSecretCipher } from '../notifications/infrastructure/crypto/null-secret-cipher';
 import { RitmoProfileController } from './infrastructure/http/ritmo-profile.controller';
 
 // Ritmo — actividad física y calorías (proyecto de la rama `ritmo-dev`).
@@ -87,6 +105,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoPerformanceInputsController,
     RitmoPerformanceController,
     RitmoPlanController,
+    RitmoHevyController,
   ],
   providers: [
     {
@@ -101,6 +120,24 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     { provide: RITMO_FOOD_REPOSITORY, useClass: PrismaRitmoFoodRepository },
     { provide: RITMO_DIARY_REPOSITORY, useClass: PrismaRitmoDiaryRepository },
     { provide: RITMO_PLAN_REPOSITORY, useClass: PrismaRitmoPlanRepository },
+    { provide: RITMO_HEVY_REPOSITORY, useClass: PrismaRitmoHevyRepository },
+    { provide: HEVY_CLIENT, useClass: HttpHevyClient },
+    {
+      // Cifrado de las claves de terceros (Hevy). Usa `RITMO_ENC_KEY` o, si no
+      // está, la de notificaciones. Sin ninguna (dev/CI) no cifra, y avisa.
+      provide: RITMO_SECRET_CIPHER,
+      useFactory: (config: ConfigService) => {
+        const key =
+          config.get<string>('RITMO_ENC_KEY') ??
+          config.get<string>('NOTIFICATIONS_ENC_KEY');
+        if (key) return new AesSecretCipher(key);
+        new Logger('RitmoModule').warn(
+          'RITMO_ENC_KEY no definida — las claves de Hevy NO se cifran en BBDD.',
+        );
+        return new NullSecretCipher();
+      },
+      inject: [ConfigService],
+    },
     {
       provide: RITMO_PERFORMANCE_REPOSITORY,
       useClass: PrismaRitmoPerformanceRepository,
@@ -163,6 +200,12 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ClearPlannedDayUseCase,
     CompletePlannedDayUseCase,
     FillPlanWeekUseCase,
+    // Hevy.
+    GetHevyStatusUseCase,
+    SyncHevyUseCase,
+    ConnectHevyUseCase,
+    DisconnectHevyUseCase,
+    SendPlannedRoutineToHevyUseCase,
   ],
 })
 export class RitmoModule {}

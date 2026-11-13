@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { hevyApi, hevyErrorText, syncSummary, useHevyStatus } from './hevy.api';
 import { useHistory } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
@@ -13,17 +14,21 @@ const MODES: { id: Mode; title: string; badge: string; desc: string }[] = [
   { id: 'basic', title: 'Básico, vía Salud', badge: 'Gratis', desc: 'Solo duración, kcal y frecuencia cardíaca' },
 ];
 
+const when = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'nunca';
+
 /**
- * Conectar Hevy (lienzo "Conectar Hevy"). La integración aún no existe en el
- * servidor: el formulario funciona, pero «Conectar» avisa en lugar de fingir
- * una importación. La clave nunca sale del dispositivo.
+ * Conectar Hevy (lienzo "Conectar Hevy"). Con la clave de tu cuenta Pro, el
+ * servidor importa tus entrenos y puede crear rutinas. La clave se guarda
+ * cifrada y no vuelve a salir. El modo básico (vía Salud) aún no existe.
  */
 export default function HevyConnectPage() {
   const history = useHistory();
   const [mode, setMode] = useState<Mode>('full');
   const [key, setKey] = useState('');
   const [imp, setImp] = useState(true);
-  const [routines, setRoutines] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const { status, setStatus } = useHevyStatus();
 
   const full = mode === 'full';
   const can = !full || key.trim().length >= 12;
@@ -37,9 +42,96 @@ export default function HevyConnectPage() {
     }
   }
 
-  function connect() {
-    if (!can) return;
-    toast.info('La conexión con Hevy llegará pronto', 'Aún no guardamos tu clave ni importamos entrenos.');
+  async function connect() {
+    if (!can || busy) return;
+    if (!full) {
+      toast.info('Llegará con la conexión con Salud', 'De momento solo funciona el modo completo.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await hevyApi.connect(key.trim(), imp);
+      setKey('');
+      setStatus(r.status);
+      toast.success('Hevy conectado', r.sync ? syncSummary(r.sync) : undefined);
+    } catch (e) {
+      toast.error('No se pudo conectar', hevyErrorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sync() {
+    setBusy(true);
+    try {
+      const r = await hevyApi.sync();
+      setStatus(r.status);
+      toast.success('Hevy sincronizado', syncSummary(r.sync));
+    } catch (e) {
+      toast.error('No se pudo sincronizar', hevyErrorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disconnect() {
+    setBusy(true);
+    try {
+      await hevyApi.disconnect();
+      setStatus(status ? { ...status, connected: false, username: null, lastSyncAt: null, lastError: null } : status);
+      toast.success('Hevy desconectado', 'Tus entrenos importados se quedan en Ritmo.');
+    } catch (e) {
+      toast.error('No se pudo desconectar', hevyErrorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (status?.connected) {
+    return (
+      <IonPage>
+        <IonContent>
+          <div className="rk-sheet hevy">
+            <span className="rk-grab" aria-hidden="true" />
+            <div className="rk-sheetbar">
+              <button type="button" className="rk-textbtn" onClick={cancel}>
+                Cerrar
+              </button>
+              <span className="rk-sheetbar__title">Hevy</span>
+              <span />
+            </div>
+            <div className="rk-list">
+              <div className="rk-row">
+                <span className="rk-row__main rk-row__title">Cuenta</span>
+                <span className="rk-row__value">{status.username ?? 'Conectada'}</span>
+              </div>
+              <div className="rk-row">
+                <span className="rk-row__main rk-row__title">Entrenos importados</span>
+                <span className="rk-row__value">{status.importedSessions}</span>
+              </div>
+              <div className="rk-row">
+                <span className="rk-row__main rk-row__title">Última sincronización</span>
+                <span className="rk-row__value">{when(status.lastSyncAt)}</span>
+              </div>
+            </div>
+            {status.lastError ? (
+              <p className="rk-note">
+                La última sincronización falló{status.lastError === 'HEVY_401' ? ': Hevy ya no acepta tu clave. Desconecta y vuelve a conectar con una nueva.' : '. Prueba otra vez.'}
+              </p>
+            ) : null}
+            <button type="button" className="rk-btn hevy__connect" disabled={busy} onClick={() => void sync()}>
+              {busy ? 'Sincronizando…' : 'Sincronizar ahora'}
+            </button>
+            <p className="rk-note">
+              Ritmo trae lo nuevo de Hevy al abrir la app. Para mandar una rutina, abre una sesión de fuerza de tu plan y pulsa «Enviar rutina a Hevy».
+            </p>
+            <button type="button" className="hevy__disconnect" disabled={busy} onClick={() => void disconnect()}>
+              Desconectar Hevy
+            </button>
+          </div>
+        </IonContent>
+      </IonPage>
+    );
   }
 
   return (
@@ -105,7 +197,7 @@ export default function HevyConnectPage() {
                     <label className="hevy__input">
                       <span className="rk-visually-hidden">Clave de API de Hevy</span>
                       <input
-                        type="text"
+                        type="password"
                         value={key}
                         onChange={(e) => setKey(e.target.value)}
                         placeholder="xxxxxxxx-xxxx-xxxx-xxxx"
@@ -124,21 +216,9 @@ export default function HevyConnectPage() {
                 <button type="button" aria-pressed={imp} className="rk-row conn__toggle" onClick={() => setImp((v) => !v)}>
                   <span className="rk-row__main">
                     <span className="rk-row__title">Importar entrenos</span>
-                    <span className="rk-row__sub">Últimos 90 días y los nuevos al terminar</span>
+                    <span className="rk-row__sub">Tu historial (hasta 300 entrenos) y los nuevos después</span>
                   </span>
                   <Switch on={imp} />
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={routines}
-                  className="rk-row conn__toggle"
-                  onClick={() => setRoutines((v) => !v)}
-                >
-                  <span className="rk-row__main">
-                    <span className="rk-row__title">Enviar rutinas del plan</span>
-                    <span className="rk-row__sub">Tus sesiones de fuerza aparecen en Hevy</span>
-                  </span>
-                  <Switch on={routines} />
                 </button>
               </div>
             </>
@@ -149,8 +229,8 @@ export default function HevyConnectPage() {
             </p>
           )}
 
-          <button type="button" className="rk-btn hevy__connect" disabled={!can} onClick={connect}>
-            Conectar
+          <button type="button" className="rk-btn hevy__connect" disabled={!can || busy} onClick={() => void connect()}>
+            {busy ? 'Conectando…' : 'Conectar'}
           </button>
         </div>
       </IonContent>

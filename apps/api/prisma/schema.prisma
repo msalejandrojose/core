@@ -284,6 +284,8 @@ model User {
   ritmoMuscleOverrides  RitmoExerciseMuscleOverride[]
   ritmoPlans            RitmoPlan[]
   ritmoPlannedSessions  RitmoPlannedSession[]
+  ritmoHevyConnection   RitmoHevyConnection?
+  ritmoHevyLinks        RitmoHevyExerciseLink[]
 
   @@map("user")
 }
@@ -2370,6 +2372,7 @@ enum RitmoActivitySource {
   GOOGLE_FIT
   STRAVA
   GARMIN
+  HEVY
 }
 
 /// Esfuerzo percibido (RPE simplificado). Se usa como fallback para estimar
@@ -2723,6 +2726,7 @@ model RitmoExercise {
   muscles   RitmoExerciseMuscle[]
   overrides RitmoExerciseMuscleOverride[]
   sets      RitmoStrengthSet[]
+  hevyLinks RitmoHevyExerciseLink[]
 
   @@index([ownerUserId])
   @@map("ritmo_exercise")
@@ -2974,4 +2978,38 @@ model RitmoPlannedSession {
   @@index([planId])
   @@index([completedSessionId])
   @@map("ritmo_planned_session")
+}
+
+/// Conexión del usuario con Hevy (app de gimnasio). La clave de su API se
+/// guarda cifrada y nunca se devuelve al cliente.
+model RitmoHevyConnection {
+  userId        String    @id @map("user_id") @db.Char(36)
+  apiKeyEnc     String    @map("api_key_enc") @db.Text
+  username      String?   @db.VarChar(120)
+  lastSyncAt    DateTime? @map("last_sync_at")
+  /// Entrenos traídos o actualizados en la última sincronización.
+  lastSyncCount Int?      @map("last_sync_count")
+  lastError     String?   @map("last_error") @db.VarChar(300)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ritmo_hevy_connection")
+}
+
+/// A qué ejercicio de Ritmo corresponde cada ejercicio de Hevy, por usuario
+/// (los ejercicios propios de Hevy tienen ids distintos en cada cuenta).
+model RitmoHevyExerciseLink {
+  userId     String @map("user_id") @db.Char(36)
+  templateId String @map("template_id") @db.VarChar(64)
+  exerciseId String @map("exercise_id") @db.Char(36)
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise RitmoExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@id([userId, templateId])
+  @@index([userId, exerciseId])
+  @@map("ritmo_hevy_exercise_link")
 }

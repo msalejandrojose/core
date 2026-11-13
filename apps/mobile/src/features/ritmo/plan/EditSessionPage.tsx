@@ -5,6 +5,7 @@ import { toast } from '@/lib/toast';
 import { isApiError } from '../api';
 import { formatNumber } from '../format';
 import { Chevron, Segmented } from '../ui/kit';
+import { hevyApi, hevyErrorText, useHevyStatus } from '../profile/hevy.api';
 import { planApi, usePlanWeekData, type PlanLoad } from './plan.api';
 import { LOAD_CLASS, LOAD_LABEL, STATUS_TEXT, dayFull, dayNumber, fmtMinutes } from './plan-labels';
 import { usePlanTemplates } from './usePlanTemplates';
@@ -37,6 +38,7 @@ export default function EditSessionPage() {
   const day = DAY_RE.test(params.day) ? params.day : undefined;
   const { data, error, reload } = usePlanWeekData(day);
   const templates = usePlanTemplates();
+  const { status: hevy } = useHevyStatus();
   const entry = data?.days.find((d) => d.day === (day ?? data.today));
   const planned = entry?.planned ?? null;
 
@@ -81,6 +83,24 @@ export default function EditSessionPage() {
       else reload();
     } catch (e) {
       toast.error('No se pudo guardar', isApiError(e) ? e.message : undefined);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function sendToHevy() {
+    if (!entry) return;
+    setSaving(true);
+    try {
+      const r = await hevyApi.sendRoutine(entry.day);
+      const from = `Copiada de tu entreno del ${dayNumber(r.basedOnDay)}/${r.basedOnDay.slice(5, 7)}`;
+      toast.success(
+        `Rutina en Hevy · ${r.exercises} ${r.exercises === 1 ? 'ejercicio' : 'ejercicios'}`,
+        r.skipped.length ? `${from}. Sin equivalente en Hevy: ${r.skipped.join(', ')}.` : `${from}.`,
+      );
+      reload();
+    } catch (e) {
+      toast.error('No se pudo enviar', hevyErrorText(e));
     } finally {
       setSaving(false);
     }
@@ -293,6 +313,19 @@ export default function EditSessionPage() {
                 Dieta del {full}: {formatNumber(diet.kcalTarget)} kcal
               </span>
             </div>
+          ) : null}
+
+          {planned?.kind === 'STRENGTH' && hevy?.connected ? (
+            <>
+              <button type="button" className="plan__btn" disabled={saving} onClick={() => void sendToHevy()}>
+                {planned.structure?.hevyRoutineId ? 'Volver a enviar a Hevy' : 'Enviar rutina a Hevy'}
+              </button>
+              <p className="rk-note">
+                {planned.structure?.hevyRoutineId
+                  ? 'Ya está en tus rutinas de Hevy. Si la vuelves a enviar se crea otra.'
+                  : 'Se crea en Hevy con los ejercicios y pesos de tu último entreno parecido.'}
+              </p>
+            </>
           ) : null}
 
           {planned ? (
