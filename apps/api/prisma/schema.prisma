@@ -285,6 +285,8 @@ model User {
   ritmoPlans            RitmoPlan[]
   ritmoPlannedSessions  RitmoPlannedSession[]
   ritmoHevyConnection   RitmoHevyConnection?
+  ritmoGarminConnection RitmoGarminConnection?
+  ritmoDailyHealth      RitmoDailyHealth[]
   ritmoHevyLinks        RitmoHevyExerciseLink[]
 
   @@map("user")
@@ -3012,4 +3014,51 @@ model RitmoHevyExerciseLink {
   @@id([userId, templateId])
   @@index([userId, exerciseId])
   @@map("ritmo_hevy_exercise_link")
+}
+
+/// Conexión del usuario con Garmin por su clave personal (Garmin Connect
+/// Personal API). La clave se guarda cifrada y nunca se devuelve al cliente.
+model RitmoGarminConnection {
+  userId        String    @id @map("user_id") @db.Char(36)
+  apiKeyEnc     String    @map("api_key_enc") @db.Text
+  lastSyncAt    DateTime? @map("last_sync_at")
+  /// Entrenos traídos o actualizados en la última sincronización.
+  lastSyncCount Int?      @map("last_sync_count")
+  lastError     String?   @map("last_error") @db.VarChar(300)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ritmo_garmin_connection")
+}
+
+/// Datos de salud de un día medidos por el reloj: pulso, sueño y variabilidad.
+/// Todo es opcional: cada reloj mide cosas distintas.
+model RitmoDailyHealth {
+  userId String   @map("user_id") @db.Char(36)
+  day    DateTime @db.Date
+
+  restingHr      Int? @map("resting_hr") @db.SmallInt
+  steps          Int?
+  /// Sueño de la noche que termina ese día, en segundos.
+  sleepSec       Int? @map("sleep_sec")
+  deepSleepSec   Int? @map("deep_sleep_sec")
+  remSleepSec    Int? @map("rem_sleep_sec")
+  awakeSec       Int? @map("awake_sec")
+  /// Puntuación de sueño del reloj (0–100).
+  sleepScore     Int? @map("sleep_score") @db.SmallInt
+  /// Variabilidad cardíaca media de la noche, en ms.
+  hrvMs          Int? @map("hrv_ms") @db.SmallInt
+  stressAvg      Int? @map("stress_avg") @db.SmallInt
+  bodyBatteryMax Int? @map("body_battery_max") @db.SmallInt
+
+  source    RitmoActivitySource @default(GARMIN)
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@map("ritmo_daily_health")
 }

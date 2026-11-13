@@ -58,6 +58,8 @@ import ChallengesPage from '@/features/ritmo/social/ChallengesPage';
 import RitmoProfilePage from '@/features/ritmo/profile/ProfilePage';
 import ConnectionsPage from '@/features/ritmo/profile/ConnectionsPage';
 import HevyConnectPage from '@/features/ritmo/profile/HevyConnectPage';
+import GarminConnectPage from '@/features/ritmo/profile/GarminConnectPage';
+import { useGarminAutoSync } from '@/features/ritmo/profile/garmin.api';
 import DeleteAccountPage from '@/features/ritmo/profile/DeleteAccountPage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
@@ -109,6 +111,7 @@ const TABS = [
  */
 export default function TabsShell() {
   useHevyAutoSync();
+  useGarminAutoSync();
   const { pathname } = useLocation();
   const refreshUnread = useUnreadStore((s) => s.refresh);
   const openRegister = useRegisterStore((s) => s.open);
@@ -173,6 +176,7 @@ export default function TabsShell() {
           <Route exact path="/tabs/settings" component={RitmoProfilePage} />
           <Route exact path="/tabs/settings/conexiones" component={ConnectionsPage} />
           <Route exact path="/tabs/settings/hevy" component={HevyConnectPage} />
+          <Route exact path="/tabs/settings/garmin" component={GarminConnectPage} />
           <Route exact path="/tabs/settings/eliminar" component={DeleteAccountPage} />
           <Route exact path="/tabs/settings/profile" component={ProfilePage} />
           <Route
