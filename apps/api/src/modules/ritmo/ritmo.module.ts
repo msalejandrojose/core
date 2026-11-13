@@ -72,6 +72,16 @@ import { RitmoPerformanceInputsController } from './infrastructure/http/ritmo-pe
 import { RitmoPlanController } from './infrastructure/http/ritmo-plan.controller';
 import { RitmoHevyController } from './infrastructure/http/ritmo-hevy.controller';
 import { RitmoGarminController } from './infrastructure/http/ritmo-garmin.controller';
+import { RitmoSocialController } from './infrastructure/http/ritmo-social.controller';
+import { PrismaRitmoSocialRepository } from './infrastructure/persistence/prisma-ritmo-social.repository';
+import { RITMO_SOCIAL_REPOSITORY } from './application/ports/social.port';
+import {
+  SocialChallengesUseCase,
+  SocialContext,
+  SocialFeedUseCase,
+  SocialPeopleUseCase,
+  SocialProfileUseCase,
+} from './application/use-cases/social.use-cases';
 import { PrismaRitmoGarminRepository } from './infrastructure/persistence/prisma-ritmo-garmin.repository';
 import { HttpGarminClient } from './infrastructure/garmin/http-garmin.client';
 import {
@@ -121,6 +131,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoPlanController,
     RitmoHevyController,
     RitmoGarminController,
+    RitmoSocialController,
   ],
   providers: [
     {
@@ -139,6 +150,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     { provide: HEVY_CLIENT, useClass: HttpHevyClient },
     { provide: RITMO_GARMIN_REPOSITORY, useClass: PrismaRitmoGarminRepository },
     { provide: GARMIN_CLIENT, useClass: HttpGarminClient },
+    { provide: RITMO_SOCIAL_REPOSITORY, useClass: PrismaRitmoSocialRepository },
     {
       // Cifrado de las claves de terceros (Hevy, Garmin). Usa `RITMO_ENC_KEY` o, si no
       // está, la de notificaciones. Sin ninguna (dev/CI) no cifra, y avisa.
@@ -229,6 +241,12 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     ConnectGarminUseCase,
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,
+    // Social.
+    SocialContext,
+    SocialProfileUseCase,
+    SocialPeopleUseCase,
+    SocialFeedUseCase,
+    SocialChallengesUseCase,
   ],
 })
 export class RitmoModule {}
