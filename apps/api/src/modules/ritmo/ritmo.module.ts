@@ -6,6 +6,7 @@ import { RITMO_BODY_REPOSITORY } from './application/ports/ritmo-body-repository
 import { RITMO_DIARY_REPOSITORY } from './application/ports/ritmo-diary-repository.port';
 import { RITMO_FOOD_REPOSITORY } from './application/ports/ritmo-food-repository.port';
 import { RITMO_PERFORMANCE_REPOSITORY } from './application/ports/ritmo-performance-repository.port';
+import { RITMO_PLAN_REPOSITORY } from './application/ports/ritmo-plan-repository.port';
 import { RITMO_PROFILE_REPOSITORY } from './application/ports/ritmo-profile-repository.port';
 import { AddPerformanceMeasurementUseCase } from './application/use-cases/add-performance-measurement.use-case';
 import { CreateExerciseUseCase } from './application/use-cases/create-exercise.use-case';
@@ -22,6 +23,15 @@ import { GetStrengthAnalysisUseCase } from './application/use-cases/get-strength
 import { GetActivitySessionUseCase } from './application/use-cases/get-activity-session.use-case';
 import { ListActivitySessionsUseCase } from './application/use-cases/list-activity-sessions.use-case';
 import { UpdateActivitySessionUseCase } from './application/use-cases/update-activity-session.use-case';
+import {
+  ArchivePlanUseCase,
+  ClearPlannedDayUseCase,
+  CompletePlannedDayUseCase,
+  FillPlanWeekUseCase,
+  GetPlanWeekUseCase,
+  SavePlanUseCase,
+  SetPlannedDayUseCase,
+} from './application/use-cases/plan.use-cases';
 import { GetHeartConfigUseCase } from './application/use-cases/get-heart-config.use-case';
 import { ListExercisesUseCase } from './application/use-cases/list-exercises.use-case';
 import { ListPerformanceMeasurementsUseCase } from './application/use-cases/list-performance-measurements.use-case';
@@ -50,6 +60,7 @@ import { PrismaRitmoBodyRepository } from './infrastructure/persistence/prisma-r
 import { PrismaRitmoDiaryRepository } from './infrastructure/persistence/prisma-ritmo-diary.repository';
 import { PrismaRitmoFoodRepository } from './infrastructure/persistence/prisma-ritmo-food.repository';
 import { PrismaRitmoPerformanceRepository } from './infrastructure/persistence/prisma-ritmo-performance.repository';
+import { PrismaRitmoPlanRepository } from './infrastructure/persistence/prisma-ritmo-plan.repository';
 import { PrismaRitmoProfileRepository } from './infrastructure/persistence/prisma-ritmo-profile.repository';
 import { RitmoAccountController } from './infrastructure/http/ritmo-account.controller';
 import { RitmoActivityController } from './infrastructure/http/ritmo-activity.controller';
@@ -57,6 +68,7 @@ import { RitmoDiaryController } from './infrastructure/http/ritmo-diary.controll
 import { RitmoNutritionController } from './infrastructure/http/ritmo-nutrition.controller';
 import { RitmoPerformanceController } from './infrastructure/http/ritmo-performance.controller';
 import { RitmoPerformanceInputsController } from './infrastructure/http/ritmo-performance-inputs.controller';
+import { RitmoPlanController } from './infrastructure/http/ritmo-plan.controller';
 import { RitmoProfileController } from './infrastructure/http/ritmo-profile.controller';
 
 // Ritmo — actividad física y calorías (proyecto de la rama `ritmo-dev`).
@@ -74,6 +86,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoAccountController,
     RitmoPerformanceInputsController,
     RitmoPerformanceController,
+    RitmoPlanController,
   ],
   providers: [
     {
@@ -87,6 +100,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     },
     { provide: RITMO_FOOD_REPOSITORY, useClass: PrismaRitmoFoodRepository },
     { provide: RITMO_DIARY_REPOSITORY, useClass: PrismaRitmoDiaryRepository },
+    { provide: RITMO_PLAN_REPOSITORY, useClass: PrismaRitmoPlanRepository },
     {
       provide: RITMO_PERFORMANCE_REPOSITORY,
       useClass: PrismaRitmoPerformanceRepository,
@@ -140,6 +154,15 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     GetPerformanceSummaryUseCase,
     GetRecommendationsUseCase,
     SetRecommendationStatusUseCase,
+
+    // Plan de entrenamiento.
+    GetPlanWeekUseCase,
+    SavePlanUseCase,
+    ArchivePlanUseCase,
+    SetPlannedDayUseCase,
+    ClearPlannedDayUseCase,
+    CompletePlannedDayUseCase,
+    FillPlanWeekUseCase,
   ],
 })
 export class RitmoModule {}

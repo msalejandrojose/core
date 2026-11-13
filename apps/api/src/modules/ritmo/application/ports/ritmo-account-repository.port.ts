@@ -18,6 +18,8 @@ export interface RitmoAccountExport {
   exercises: unknown[];
   heartConfig: unknown;
   performanceMeasurements: unknown[];
+  plans: unknown[];
+  plannedSessions: unknown[];
 }
 
 export interface RitmoAccountRepositoryPort {
