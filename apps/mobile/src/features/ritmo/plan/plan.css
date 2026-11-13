@@ -764,3 +764,8 @@
 .plan__check .plan__btn {
   flex: 1;
 }
+
+.diet__ingredients {
+  white-space: normal;
+  line-height: 1.35;
+}

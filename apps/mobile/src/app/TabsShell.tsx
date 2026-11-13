@@ -51,7 +51,6 @@ import PlanPage from '@/features/ritmo/plan/PlanPage';
 import EditSessionPage from '@/features/ritmo/plan/EditSessionPage';
 import DietPage from '@/features/ritmo/plan/DietPage';
 import ShoppingPage from '@/features/ritmo/plan/ShoppingPage';
-import ShareListPage from '@/features/ritmo/plan/ShareListPage';
 import FriendsPage from '@/features/ritmo/social/FriendsPage';
 import FriendPage from '@/features/ritmo/social/FriendPage';
 import ChallengesPage from '@/features/ritmo/social/ChallengesPage';
@@ -150,7 +149,6 @@ export default function TabsShell() {
           <Route exact path="/tabs/plan/sesion/:day" component={EditSessionPage} />
           <Route exact path="/tabs/plan/dieta" component={DietPage} />
           <Route exact path="/tabs/plan/compra" component={ShoppingPage} />
-          <Route exact path="/tabs/plan/compra/compartir" component={ShareListPage} />
           <Route exact path="/tabs/progress" component={ProgressPage} />
           <Route exact path="/tabs/progress/objetivos" component={GoalsPage} />
           <Route exact path="/tabs/progress/objetivos/nuevo" component={NewGoalPage} />
