@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
-import { toast } from '@/lib/toast';
 import { BackLink, ExampleTag, LargeTitle, NavRow, SectionHeader, Segmented, Switch } from '../ui/kit';
 import { PATHS } from '../ui/paths';
+import { useGarminStatus } from './garmin.api';
 import { useHevyStatus } from './hevy.api';
 import './profile.css';
 
@@ -37,6 +37,7 @@ export default function ConnectionsPage() {
   });
   const [share, setShare] = useState<(typeof SHARES)[number]>('100');
   const { status: hevy } = useHevyStatus();
+  const { status: garmin } = useGarminStatus();
   const flip = (id: string) => setOn((s) => ({ ...s, [id]: !s[id] }));
 
   const rows = (items: Toggle[]) =>
@@ -55,7 +56,7 @@ export default function ConnectionsPage() {
       <IonContent>
         <div className="rk-screen">
           <NavRow back={<BackLink label="Perfil" fallback="/tabs/settings" />} />
-          <LargeTitle sub={<ExampleTag />}>Conexiones</LargeTitle>
+          <LargeTitle>Conexiones</LargeTitle>
 
           <section aria-label="Reloj Garmin" className="conn__device">
             <span className="conn__icon" aria-hidden="true">
@@ -65,23 +66,25 @@ export default function ConnectionsPage() {
               </svg>
             </span>
             <div className="rk-row__main">
-              <span className="conn__device-name">Garmin · Venu 3</span>
+              <span className="conn__device-name">Garmin</span>
               <span className="conn__status">
-                <span className="conn__dot is-on" aria-hidden="true" />
-                Conectado · hace 4 min
+                <span className={`conn__dot${garmin?.connected ? ' is-on' : ''}`} aria-hidden="true" />
+                {garmin?.connected
+                  ? garmin.lastError
+                    ? 'Conectado · revisa la clave'
+                    : `Conectado · ${garmin.importedSessions} entrenos`
+                  : 'Sin conectar'}
               </span>
             </div>
-            <button
-              type="button"
-              className="rk-textbtn"
-              onClick={() => toast.info('La sincronización con Garmin llegará pronto')}
-            >
-              Sincronizar
-            </button>
+            <Link to="/tabs/settings/garmin" className="rk-textbtn">
+              {garmin?.connected ? 'Abrir' : 'Conectar'}
+            </Link>
           </section>
 
           <section className="rk-section" aria-labelledby="salud">
-            <SectionHeader id="salud">Salud del teléfono</SectionHeader>
+            <SectionHeader id="salud">
+              Salud del teléfono <ExampleTag />
+            </SectionHeader>
             <div className="rk-list">
               <button type="button" aria-pressed={on.health} className="rk-row conn__toggle" onClick={() => flip('health')}>
                 <span className="conn__badge conn__badge--health" aria-hidden="true">
@@ -120,12 +123,16 @@ export default function ConnectionsPage() {
           </section>
 
           <section className="rk-section" aria-labelledby="imp">
-            <SectionHeader id="imp">Importar desde Garmin</SectionHeader>
+            <SectionHeader id="imp">
+              Importar desde Garmin <ExampleTag />
+            </SectionHeader>
             <div className="rk-list">{rows(IMPORTS)}</div>
           </section>
 
           <section className="rk-section" aria-labelledby="exp">
-            <SectionHeader id="exp">Enviar a Garmin</SectionHeader>
+            <SectionHeader id="exp">
+              Enviar a Garmin <ExampleTag />
+            </SectionHeader>
             <div className="rk-list">{rows(EXPORTS)}</div>
           </section>
 
