@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   Query,
@@ -24,12 +25,14 @@ import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current
 import { SearchFoodsUseCase } from '../../application/use-cases/search-foods.use-case';
 import { CreateFoodUseCase } from '../../application/use-cases/create-food.use-case';
 import { LogMealEntryUseCase } from '../../application/use-cases/log-meal-entry.use-case';
+import { UpdateMealEntryUseCase } from '../../application/use-cases/update-meal-entry.use-case';
 import { DeleteMealEntryUseCase } from '../../application/use-cases/delete-meal-entry.use-case';
 import { GetMealHabitsUseCase } from '../../application/use-cases/get-meal-habits.use-case';
 import { MealHabitsResponseDto } from './dto/meal-habits.response.dto';
 import { CreateFoodDto } from './dto/create-food.dto';
 import { FoodResponseDto } from './dto/food.response.dto';
 import { LogMealDto } from './dto/log-meal.dto';
+import { UpdateMealDto } from './dto/update-meal.dto';
 import { MealEntryResponseDto } from './dto/meal-entry.response.dto';
 import { MealHabitsQueryDto, SearchFoodsQueryDto } from './dto/queries.dto';
 
@@ -41,6 +44,7 @@ export class BrioNutritionController {
     private readonly searchFoods: SearchFoodsUseCase,
     private readonly createFood: CreateFoodUseCase,
     private readonly logMeal: LogMealEntryUseCase,
+    private readonly updateMeal: UpdateMealEntryUseCase,
     private readonly deleteMeal: DeleteMealEntryUseCase,
     private readonly mealHabits: GetMealHabitsUseCase,
   ) {}
@@ -126,6 +130,22 @@ export class BrioNutritionController {
       carbsG: body.carbsG,
       fatG: body.fatG,
     });
+    return MealEntryResponseDto.from(entry);
+  }
+
+  @Patch('meals/:id')
+  @ApiOperation({
+    summary:
+      'Corregir una entrada: cantidad y momento del día (y nombre/kcal si es un registro rápido).',
+  })
+  @ApiOkResponse({ type: MealEntryResponseDto })
+  @ApiNotFoundResponse({ description: 'BRIO_MEAL_ENTRY_NOT_FOUND.' })
+  async editMeal(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: UpdateMealDto,
+  ): Promise<MealEntryResponseDto> {
+    const entry = await this.updateMeal.execute(id, current.sub, body);
     return MealEntryResponseDto.from(entry);
   }
 

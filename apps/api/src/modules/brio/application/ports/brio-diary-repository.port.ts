@@ -26,6 +26,11 @@ export interface CreateMealEntryData {
   fatG: number;
 }
 
+export type MealEntryUpdateData = Pick<
+  CreateMealEntryData,
+  'mealType' | 'name' | 'quantityG' | 'kcal' | 'proteinG' | 'carbsG' | 'fatG'
+>;
+
 /** Totales de ingesta de un día, calculados en BBDD. */
 export interface DayIntakeTotals {
   kcal: number;
@@ -48,6 +53,12 @@ export interface BrioDiaryRepositoryPort {
   createMealEntry(data: CreateMealEntryData): Promise<MealEntry>;
   /** Una entrada, solo si es del usuario. */
   findMealEntry(id: string, userId: string): Promise<MealEntry | null>;
+  /** Cambia una entrada del usuario; null si no existía o no era suya. */
+  updateMealEntry(
+    id: string,
+    userId: string,
+    data: MealEntryUpdateData,
+  ): Promise<MealEntry | null>;
   /** `false` si la entrada no existía o no era del usuario. */
   deleteMealEntry(id: string, userId: string): Promise<boolean>;
   listMealEntriesByDay(userId: string, day: string): Promise<MealEntry[]>;

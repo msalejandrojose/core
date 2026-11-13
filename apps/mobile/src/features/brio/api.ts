@@ -120,6 +120,26 @@ export interface Food {
   servings: FoodServing[];
 }
 
+/** Corrección de una entrada (PATCH /brio/meals/:id). */
+export interface UpdateMealBody {
+  mealType?: MealType;
+  quantityG?: number;
+  name?: string;
+  kcal?: number;
+}
+
+/** Alimento propio (POST /brio/foods). Valores por 100 g/ml. */
+export interface CreateFoodBody {
+  name: string;
+  brand?: string;
+  isLiquid?: boolean;
+  kcalPer100: number;
+  proteinPer100G: number;
+  carbsPer100G: number;
+  fatPer100G: number;
+  servings?: { label: string; grams: number; isDefault?: boolean }[];
+}
+
 export interface MealEntry {
   id: string;
   loggedOn: string;
@@ -314,7 +334,11 @@ export const brioApi = {
     call<Food[]>('GET', '/brio/foods', { params: { query: { q } } }),
   logMeal: (body: LogMealBody) =>
     call<MealEntry>('POST', '/brio/meals', { body }),
+  updateMeal: (id: string, body: UpdateMealBody) =>
+    call<MealEntry>('PATCH', `/brio/meals/${id}`, { body }),
   deleteMeal: (id: string) => call<void>('DELETE', `/brio/meals/${id}`),
+  createFood: (body: CreateFoodBody) =>
+    call<Food>('POST', '/brio/foods', { body }),
   /** Volcado de todo lo guardado en Brío (Perfil › Descargar mis datos). */
   exportMyData: () => call<unknown>('GET', '/brio/account/export'),
   /** Borrado definitivo de la cuenta y de todos sus datos. */
