@@ -12,6 +12,9 @@ name: Deploy web (reusable)
 # pisa: publica en uno propio derivado de la rama (`plazza-dev` → `plazza-dev-web`),
 # que se crea solo la primera vez. Si quieres otro nombre, cámbialo en el
 # `apps/web/.env.local` de esa rama.
+#
+# forja:per-branch-target — marca que lee Forja para saber que esta rama ya no
+# publica encima de main. No la quites si cambias esta lógica sin sustituirla.
 on:
   workflow_call:
 
