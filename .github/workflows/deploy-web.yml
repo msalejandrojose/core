@@ -1,10 +1,20 @@
 name: Deploy web (reusable)
 
 # Build + deploy real de apps/web (Astro SSG) a Cloudflare Pages. Workflow
-# reutilizable: lo llaman tanto `deploy.yml` (push/merge a main) como
-# `blog-deploy.yml` (rebuild automático al publicar/editar/retirar un post
-# del blog desde el backoffice). Única fuente de verdad para no duplicar los
-# pasos de build+deploy en dos sitios.
+# reutilizable: lo llaman tanto `deploy.yml` (push/merge a main o lanzado a
+# mano en cualquier rama) como `blog-deploy.yml` (rebuild automático al
+# publicar/editar/retirar un post del blog desde el backoffice). Única fuente
+# de verdad para no duplicar los pasos de build+deploy en dos sitios.
+#
+# Un proyecto de Cloudflare Pages POR RAMA. `main` publica en el proyecto de
+# `apps/web/.env.local` (core-web). Una rama de proyecto ({proyecto}-{entorno},
+# ver core-architecture §10) que todavía herede ese mismo nombre de main NO lo
+# pisa: publica en uno propio derivado de la rama (`plazza-dev` → `plazza-dev-web`),
+# que se crea solo la primera vez. Si quieres otro nombre, cámbialo en el
+# `apps/web/.env.local` de esa rama.
+#
+# forja:per-branch-target — marca que lee Forja para saber que esta rama ya no
+# publica encima de main. No la quites si cambias esta lógica sin sustituirla.
 on:
   workflow_call:
 
@@ -14,6 +24,13 @@ permissions:
 jobs:
   web:
     runs-on: ubuntu-latest
+    # Un entorno de GitHub por rama (main, plazza-dev…): cada proyecto puede tener
+    # sus propias Variables (PUBLIC_SITE_URL, PUBLIC_API_URL) y, si se quiere,
+    # reglas de aprobación. GitHub crea el entorno la primera vez que se usa; si
+    # no tiene Variables propias, se usan las del repo.
+    environment:
+      name: ${{ github.ref_name }}
+      url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,28 +47,61 @@ jobs:
       - name: Build web (astro check + build)
         run: pnpm build:web
         env:
-          # Opcionales: si no defines estas Variables en el repo, Astro usa sus
-          # fallbacks (site → https://aj.es). Recomendado fijarlas para el sitemap/OG.
+          # Opcionales: si no defines estas Variables (en el entorno de la rama o
+          # en el repo), Astro usa sus fallbacks (site → https://aj.es).
+          # Recomendado fijarlas para el sitemap/OG de cada proyecto.
           PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
           PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
 
-      - name: Read Cloudflare project name
+      - name: Resolve Cloudflare project name
         id: cloudflare
-        # Fuente única del nombre de proyecto: apps/web/.env.local (committed).
-        # Evita tenerlo hardcodeado en el workflow.
+        # Fuente del nombre: apps/web/.env.local de la rama (committed).
+        # Una rama que no sea main nunca publica en el mismo proyecto que main.
         run: |
-          project_name=$(grep -m1 '^CLOUDFLARE_PROJECT_NAME=' apps/web/.env.local | cut -d '=' -f2-)
+          read_name() {
+            grep -m1 '^CLOUDFLARE_PROJECT_NAME=' | cut -d '=' -f2- | tr -d "\"' \r"
+          }
+          project_name=$(read_name < apps/web/.env.local || true)
+
+          if [ "$GITHUB_REF_NAME" != "main" ]; then
+            git fetch --quiet --depth 1 origin main
+            main_name=$(git show FETCH_HEAD:apps/web/.env.local 2>/dev/null | read_name || true)
+            if [ -z "$project_name" ] || [ "$project_name" = "$main_name" ]; then
+              project_name=$(printf '%s-web' "$GITHUB_REF_NAME" \
+                | tr '[:upper:]' '[:lower:]' \
+                | sed -E 's/[^a-z0-9-]+/-/g; s/-+/-/g; s/^-//; s/-$//' \
+                | cut -c1-58)
+              echo "::notice::$GITHUB_REF_NAME heredaba '$main_name' de main: se publica en su propio proyecto '$project_name'."
+            fi
+          fi
+
           if [ -z "$project_name" ]; then
             echo "::error::CLOUDFLARE_PROJECT_NAME no está definido en apps/web/.env.local"
             exit 1
           fi
           echo "project_name=$project_name" >> "$GITHUB_OUTPUT"
+          echo "Cloudflare Pages: \`$project_name\` (rama \`$GITHUB_REF_NAME\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ensure Cloudflare Pages project exists
+        # La primera vez que se despliega una rama de proyecto, su proyecto de
+        # Pages aún no existe: se crea con `main` como rama de producción.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT_NAME: ${{ steps.cloudflare.outputs.project_name }}
+        run: |
+          if npx --yes wrangler@3 pages project list 2>/dev/null | grep -qw -- "$PROJECT_NAME"; then
+            echo "El proyecto $PROJECT_NAME ya existe."
+          else
+            npx --yes wrangler@3 pages project create "$PROJECT_NAME" --production-branch=main
+          fi
 
       - name: Deploy to Cloudflare Pages
+        id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # El proyecto de Pages debe existir en Cloudflare (ver README/setup).
-          # --branch=main marca el deploy como PRODUCCIÓN (rama de producción del proyecto).
+          # --branch=main marca el deploy como PRODUCCIÓN del proyecto de Pages
+          # de ESTA rama (cada rama tiene el suyo, ver arriba).
           command: pages deploy apps/web/dist --project-name=${{ steps.cloudflare.outputs.project_name }} --branch=main

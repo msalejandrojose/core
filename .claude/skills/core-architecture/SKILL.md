@@ -312,7 +312,7 @@ Solo las variables con prefijo `PUBLIC_` se exponen al browser:
 
 `run.sh` inyecta `PUBLIC_API_URL` derivado de `stack.config.json` cuando se levanta con `./run.sh web`.
 
-⚠️ Vite carga `.env` y luego `.env.local`, sobrescribiendo claves repetidas — al revés que `ConfigModule` en `apps/api`. Por eso `apps/web/.env.local` **nunca** lleva `PUBLIC_*` (pisaría tu override local); solo lleva config de despliegue que no cambia entre desarrolladores, como el nombre del proyecto de Cloudflare Pages que usa `deploy-web.yml`:
+⚠️ Vite carga `.env` y luego `.env.local`, sobrescribiendo claves repetidas — al revés que `ConfigModule` en `apps/api`. Por eso `apps/web/.env.local` **nunca** lleva `PUBLIC_*` (pisaría tu override local); solo lleva config de despliegue que no cambia entre desarrolladores, como el nombre del proyecto de Cloudflare Pages que usa `deploy-web.yml` (en `main`; las ramas de proyecto que hereden el mismo nombre publican en `{rama}-web`, ver §10):
 
 ```bash
 # apps/web/.env.local (committed)
@@ -519,6 +519,10 @@ Conviene hacerlo con cierta cadencia (no dejar que `main` se aleje demasiado) pa
 ### Despliegue
 
 Cada rama de proyecto se despliega de forma independiente (su propio entorno/stack), aunque todas comparten la misma imagen Docker de la API (`apps/api/Dockerfile`); lo que cambia por entorno son las piezas habilitadas en `stack.config.json` y las variables de entorno.
+
+- **`deploy.yml`** se dispara solo en push a `main`, pero se puede lanzar a mano (`workflow_dispatch`) en cualquier rama de proyecto. Un job `plan` decide qué piezas se despliegan: las habilitadas en el `stack.config.json` **de esa rama** y, si se lanza a mano, solo las del input `parts` (`api,web`…; por defecto `all`). El `concurrency` es por rama, así que varios proyectos pueden desplegarse a la vez.
+- **Web (Cloudflare Pages): un proyecto de Pages por rama.** `main` publica en el de `apps/web/.env.local` (`core-web`). Una rama de proyecto que siga heredando ese nombre **no lo pisa**: `deploy-web.yml` publica en uno propio derivado de la rama (`plazza-dev` → `plazza-dev-web`) y lo crea la primera vez. Para usar otro nombre, cámbialo en el `apps/web/.env.local` de esa rama.
+- **Un entorno de GitHub por rama** (`main`, `plazza-dev`…), creado solo la primera vez: ahí van las Variables propias de cada proyecto (`PUBLIC_SITE_URL`, `PUBLIC_API_URL`) y, si se quiere, reglas de aprobación. Sin Variables propias se usan las del repo.
 
 ### Estado actual
 

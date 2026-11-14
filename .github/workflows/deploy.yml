@@ -2,7 +2,12 @@ name: Deploy
 
 # Pipeline de despliegue del monorepo. Se dispara en cada push/merge a `main`
 # (un merge a main es, a efectos de GitHub, un push a main) y también a mano
-# desde la pestaña Actions (workflow_dispatch).
+# desde la pestaña Actions (workflow_dispatch), en main o en cualquier rama de
+# proyecto ({proyecto}-{entorno}, ver core-architecture §10).
+#
+# Qué piezas se despliegan lo decide el job `plan`: solo las que estén
+# habilitadas en el stack.config.json de la rama y, si se lanza a mano, solo
+# las pedidas en el input `parts` (p. ej. `api,web`; por defecto `all`).
 #
 # De momento sólo la WEB (Astro SSG) tiene despliegue REAL: se construye y se
 # publica en Cloudflare Pages (Direct Upload vía wrangler). El resto de piezas
@@ -13,6 +18,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      parts:
+        description: 'Piezas a desplegar, separadas por comas (api,backoffice,web,mobile) o "all"'
+        required: false
+        default: all
+        type: string
 
 # No cancelamos despliegues en curso; un push nuevo encola otro deploy.
 concurrency:
@@ -23,8 +34,48 @@ permissions:
   contents: read
 
 jobs:
+  # --- Plan: qué piezas toca desplegar en esta rama y en esta ejecución ---
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.plan.outputs.api }}
+      backoffice: ${{ steps.plan.outputs.backoffice }}
+      web: ${{ steps.plan.outputs.web }}
+      mobile: ${{ steps.plan.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: stack.config.json
+          sparse-checkout-cone-mode: false
+
+      - name: Decide parts
+        id: plan
+        env:
+          # Vacío en los push (→ all).
+          PARTS: ${{ inputs.parts }}
+        run: |
+          requested=$(printf '%s' "${PARTS:-all}" | tr -d ' ' | tr '[:upper:]' '[:lower:]')
+          [ -z "$requested" ] && requested=all
+          {
+            echo "### Piezas en \`$GITHUB_REF_NAME\` (pedidas: \`$requested\`)"
+            echo ""
+            echo "| Pieza | Habilitada en stack.config.json | Pedida | Se despliega |"
+            echo "|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for part in api backoffice web mobile; do
+            enabled=$(jq -r --arg p "$part" '.parts[$p].enabled // false' stack.config.json)
+            wanted=false
+            if [ "$requested" = "all" ] || [[ ",$requested," == *",$part,"* ]]; then wanted=true; fi
+            run=false
+            if [ "$enabled" = "true" ] && [ "$wanted" = "true" ]; then run=true; fi
+            echo "$part=$run" >> "$GITHUB_OUTPUT"
+            echo "| $part | $enabled | $wanted | $run |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
   # --- API (placeholder): tests unitarios (jest). Deploy real: TODO ---
   api:
+    needs: plan
+    if: needs.plan.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +102,8 @@ jobs:
 
   # --- Backoffice (placeholder): aún sin tests. Deploy real: TODO ---
   backoffice:
+    needs: plan
+    if: needs.plan.outputs.backoffice == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,6 +128,8 @@ jobs:
 
   # --- Mobile (placeholder): tests unitarios (vitest). Deploy real: TODO ---
   mobile:
+    needs: plan
+    if: needs.plan.outputs.mobile == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +152,9 @@ jobs:
 
   # --- Web (REAL): build Astro estático + deploy a Cloudflare Pages ---
   # Lógica real en deploy-web.yml (reusable), compartida con blog-deploy.yml.
+  # Cada rama publica en su propio proyecto de Pages (ver deploy-web.yml).
   web:
+    needs: plan
+    if: needs.plan.outputs.web == 'true'
     uses: ./.github/workflows/deploy-web.yml
     secrets: inherit

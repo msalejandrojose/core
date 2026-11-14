@@ -44,6 +44,8 @@ PUBLIC_SITE_URL=http://www.aj-local.es  # URL del propio sitio (sitemap + OG tag
 CLOUDFLARE_PROJECT_NAME=core-web   # proyecto de Cloudflare Pages donde se publica dist/
 ```
 
+Ese nombre es el de `main`. Una rama de proyecto (`plazza-dev`…) que lo siga heredando **no publica encima de core**: `deploy-web.yml` usa uno propio, `{rama}-web` (p. ej. `plazza-dev-web`), y lo crea en Cloudflare la primera vez. Si quieres otro nombre para un proyecto, cámbialo en el `.env.local` de su rama.
+
 ## Stack local con run.sh
 
 ```bash
