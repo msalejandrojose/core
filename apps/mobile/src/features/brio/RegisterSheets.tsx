@@ -16,6 +16,7 @@ import { AddFoodSheet } from './sheets/AddFoodSheet';
 import { WorkoutSheet } from './sheets/WorkoutSheet';
 import { WeightSheet } from './sheets/WeightSheet';
 import { CopyMealsSheet } from './sheets/CopyMealsSheet';
+import { DigestionSheet } from './sheets/DigestionSheet';
 import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
 import './sheets/sheets.css';
@@ -105,10 +106,7 @@ export function RegisterSheets() {
       label: 'Digestión',
       icon: PATHS.leaf,
       domain: 'food',
-      run: () => {
-        close();
-        history.push('/tabs/progress/digestion');
-      },
+      run: () => open('digestion'),
     },
   ];
 
@@ -190,6 +188,7 @@ export function RegisterSheets() {
       <WorkoutSheet isOpen={sheet === 'activity'} onClose={close} />
       <WeightSheet isOpen={sheet === 'weight'} onClose={close} />
       <CopyMealsSheet isOpen={sheet === 'copy'} onClose={close} />
+      <DigestionSheet isOpen={sheet === 'digestion'} onClose={close} />
     </>
   );
 }

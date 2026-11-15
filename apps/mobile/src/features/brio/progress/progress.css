@@ -535,37 +535,6 @@
 }
 
 /* Digestión. */
-.digest__types {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
-}
-.digest__type {
-  min-height: 64px;
-  padding: 6px 2px;
-  border: 2px solid transparent;
-  border-radius: var(--brio-radius-l);
-  background: var(--brio-surface);
-  color: var(--brio-ink);
-  font: inherit;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
-.digest__type strong {
-  font-size: 17px;
-}
-.digest__type small {
-  font-size: 10px;
-  color: var(--brio-ink-muted);
-}
-.digest__type[aria-pressed='true'] {
-  border-color: var(--brio-tint);
-  background: var(--brio-tint-soft);
-}
 
 /* Compartir. */
 .share__card {
@@ -686,32 +655,62 @@
   color: #ffffff;
 }
 
-/* Digestión: veces por tipo de Bristol (1–7). */
-.digest__bars {
+/* Digestión: calendario con el dibujo de cada día y ×N si fueron varias. */
+.digcal {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-  height: 84px;
+  gap: 6px 4px;
   margin-top: var(--brio-space-m);
-  padding: 12px 14px 8px;
+  padding: 12px 10px;
   border-radius: var(--brio-radius-2xl);
   background: var(--brio-surface);
 }
-.digest__bar {
+.digcal--week,
+.digcal--month {
+  grid-template-columns: repeat(7, 1fr);
+}
+.digcal--year {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px 4px;
+}
+.digcal__cell {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   align-items: center;
-  gap: 4px;
-  min-height: 0;
+  gap: 2px;
+  min-width: 0;
 }
-.digest__bar-fill {
-  width: 100%;
-  min-height: 2px;
-  border-radius: 4px;
-  background: var(--brio-earth);
-}
-.digest__bar small {
+.digcal__cell small {
   font-size: 11px;
   color: var(--brio-ink-muted);
+  white-space: nowrap;
+}
+.digcal__cell--today small {
+  color: var(--brio-earth);
+  font-weight: 600;
+}
+.digcal__icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.digcal__empty {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brio-separator);
+}
+.digcal__badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 9px;
+  background: var(--brio-earth);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
 }

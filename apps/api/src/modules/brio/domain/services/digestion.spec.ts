@@ -1,5 +1,6 @@
 import {
   bristolCategory,
+  digestionDays,
   digestionSummary,
   isBristolType,
   periodStart,
@@ -75,5 +76,33 @@ describe('digestión', () => {
       perDay: 0,
       normalPct: null,
     });
+  });
+});
+
+describe('digestionDays', () => {
+  it('agrupa por día con el tipo que más se repite', () => {
+    const late = {
+      ...at('2026-11-10', 6, 'c'),
+      occurredAt: new Date('2026-11-10T20:00:00Z'),
+    };
+    expect(
+      digestionDays([
+        at('2026-11-10', 4),
+        at('2026-11-10', 4, 'b'),
+        late,
+        at('2026-11-09', 2),
+      ]),
+    ).toEqual([
+      { day: '2026-11-09', count: 1, mainType: 2 },
+      { day: '2026-11-10', count: 3, mainType: 4 },
+    ]);
+  });
+
+  it('si empatan, gana el de la última vez', () => {
+    const late = {
+      ...at('2026-11-10', 6, 'c'),
+      occurredAt: new Date('2026-11-10T20:00:00Z'),
+    };
+    expect(digestionDays([at('2026-11-10', 4), late])[0].mainType).toBe(6);
   });
 });

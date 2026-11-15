@@ -1,11 +1,13 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { dayInTimezone } from '../../domain/services/calendar';
 import {
+  digestionDays,
   digestionSummary,
   periodStart,
   type BowelAmount,
   type BowelMovement,
   type BristolType,
+  type DigestionDay,
   type DigestionPeriod,
   type DigestionSummary,
 } from '../../domain/services/digestion';
@@ -21,6 +23,8 @@ import {
 export interface DigestionView {
   period: DigestionPeriod;
   summary: DigestionSummary;
+  /** Días del periodo con alguna, para el calendario. */
+  days: DigestionDay[];
   /** Las últimas del periodo, la más reciente primero. */
   recent: BowelMovement[];
 }
@@ -64,6 +68,7 @@ export class DigestionUseCases {
     return {
       period,
       summary: digestionSummary(entries, period, today, firstDay),
+      days: digestionDays(entries),
       recent: entries.slice(0, RECENT),
     };
   }

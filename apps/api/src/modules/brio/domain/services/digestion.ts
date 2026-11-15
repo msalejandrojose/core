@@ -90,3 +90,33 @@ function daysBetween(a: string, b: string): number {
     (Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000,
   );
 }
+
+/** Un día del calendario de Digestión: cuántas veces y qué tipo dominó. */
+export interface DigestionDay {
+  day: string;
+  count: number;
+  /** El tipo más repetido ese día; si empatan, el de la última vez. */
+  mainType: BristolType;
+}
+
+/** Días con alguna deposición, del más antiguo al más reciente. */
+export function digestionDays(entries: BowelMovement[]): DigestionDay[] {
+  const byDay = new Map<string, BowelMovement[]>();
+  for (const e of entries)
+    byDay.set(e.loggedOn, [...(byDay.get(e.loggedOn) ?? []), e]);
+  return [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, list]) => {
+      const latestFirst = [...list].sort(
+        (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
+      );
+      const counts = new Map<BristolType, number>();
+      for (const e of list)
+        counts.set(e.bristolType, (counts.get(e.bristolType) ?? 0) + 1);
+      const top = Math.max(...counts.values());
+      const mainType = latestFirst.find(
+        (e) => counts.get(e.bristolType) === top,
+      )!.bristolType;
+      return { day, count: list.length, mainType };
+    });
+}

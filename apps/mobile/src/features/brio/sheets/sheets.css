@@ -770,3 +770,43 @@ button.workout__set-n.is-warmup {
   text-align: left;
   cursor: pointer;
 }
+
+/* Digestión: los 7 tipos de Bristol con su dibujo, 4 + 3. */
+.bristol__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: var(--brio-space-m);
+}
+.bristol__opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 96px;
+  padding: 8px 4px;
+  border: 2px solid transparent;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.bristol__opt[aria-pressed='true'] {
+  border-color: var(--brio-earth);
+}
+.bristol__opt:active {
+  transform: scale(0.96);
+}
+.bristol__n {
+  font-size: 15px;
+  font-weight: 600;
+}
+.bristol__label {
+  font-size: 11px;
+  color: var(--brio-ink-muted);
+}
+.bristol__more {
+  display: block;
+  margin: var(--brio-space-m) auto 0;
+}

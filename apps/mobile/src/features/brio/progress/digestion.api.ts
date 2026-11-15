@@ -23,6 +23,8 @@ export interface DigestionView {
     byType: number[];
     daysWithout: number;
   };
+  /** Días del periodo con alguna: veces y tipo que dominó. */
+  days: { day: string; count: number; mainType: number }[];
   recent: BowelMovement[];
 }
 
@@ -33,3 +35,7 @@ export const digestionApi = {
     call<BowelMovement>('POST', '/brio/digestion', { body }),
   remove: (id: string) => call<void>('DELETE', `/brio/digestion/${id}`),
 };
+
+/** Aviso de que cambió algo (p. ej. se apuntó desde el +), para refrescar la pantalla. */
+export const DIGESTION_CHANGED = 'brio:digestion-changed';
+export const notifyDigestionChanged = () => window.dispatchEvent(new Event(DIGESTION_CHANGED));
