@@ -19,12 +19,12 @@ const config: CapacitorConfig = {
   ...(httpApi ? { server: { androidScheme: 'http', cleartext: true } } : {}),
   plugins: {
     // Splash de arranque. El color de fondo casa con `--ion-background-color`
-    // (greige cálido). La variante oscura la generan los assets (splash-dark).
+    // (gris claro del DS de Brío). La variante oscura la generan los assets (splash-dark).
     // Se auto-oculta al cargar la web; sin spinner (norte estético minimalista).
     SplashScreen: {
       launchAutoHide: true,
       launchShowDuration: 600,
-      backgroundColor: '#f0efec',
+      backgroundColor: '#f2f2f7',
       showSpinner: false,
       androidScaleType: 'CENTER_CROP',
       splashFullScreen: true,

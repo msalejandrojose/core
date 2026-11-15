@@ -14,7 +14,7 @@
     "cap:sync": "cap sync",
     "cap:add:ios": "cap add ios",
     "cap:add:android": "cap add android",
-    "assets:generate": "capacitor-assets generate --iconBackgroundColor '#f0efec' --iconBackgroundColorDark '#1c1b19' --splashBackgroundColor '#f0efec' --splashBackgroundColorDark '#1c1b19'"
+    "assets:generate": "capacitor-assets generate --iconBackgroundColor '#1c1c1e' --iconBackgroundColorDark '#1c1c1e' --splashBackgroundColor '#f2f2f7' --splashBackgroundColorDark '#1c1c1e'"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.2",
