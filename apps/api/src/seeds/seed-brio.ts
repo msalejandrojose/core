@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { PrismaService } from '../infrastructure/database/prisma/prisma.service';
 import { ACTIVITY_KINDS, EXERCISES, type Muscle } from './brio-exercises.data';
+import { TYPICAL_FOODS } from './brio-foods.data';
 
 // Seed idempotente del catálogo global de Brío: tipos de actividad con su MET
 // y un puñado de alimentos básicos verificados. Ambos con `ownerUserId` null =
@@ -193,7 +194,8 @@ async function main(): Promise<void> {
   }
   console.log(`✔ ${ACTIVITY_TYPES.length} tipos de actividad`);
 
-  for (const food of FOODS) {
+  const allFoods = [...FOODS, ...TYPICAL_FOODS];
+  for (const food of allFoods) {
     // Los alimentos globales no tienen clave natural única en el schema (el
     // único índice único es el barcode, y estos no lo traen), así que se busca
     // por nombre dentro del catálogo global antes de crear.
@@ -235,7 +237,7 @@ async function main(): Promise<void> {
       },
     });
   }
-  console.log(`✔ ${FOODS.length} alimentos del catálogo`);
+  console.log(`✔ ${allFoods.length} alimentos del catálogo`);
 
   for (const ex of EXERCISES) {
     const values = {
