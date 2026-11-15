@@ -60,6 +60,44 @@ pnpm exec cap open android   # abre Android Studio
 
 Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
 
+## iOS: ajustes tras `cap add ios` (probado con Xcode 26)
+
+`ios/` no se versiona, así que estos ajustes hay que repetirlos al regenerarla:
+
+1. **Versión mínima iOS 15.** El Xcode actual no compila para simulador por
+   debajo de 15 y el plugin de login social pide 14. En `ios/App/Podfile`:
+
+   ```ruby
+   platform :ios, '15.0'
+   ...
+   post_install do |installer|
+     assertDeploymentTarget(installer)
+     installer.pods_project.targets.each do |target|
+       target.build_configurations.each do |config|
+         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+       end
+     end
+   end
+   ```
+
+   y `IPHONEOS_DEPLOYMENT_TARGET = 15.0` en `ios/App/App.xcodeproj/project.pbxproj`.
+2. **CocoaPods necesita UTF-8**: `export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`
+   antes de `cap sync ios` / `pod install`.
+3. **Backend de pruebas por `http`** (IP de ZeroTier o red local): iOS bloquea
+   `http` salvo excepción. Solo para pruebas, en `ios/App/App/Info.plist`:
+   `NSAppTransportSecurity` → `NSAllowsArbitraryLoads` = `YES`. Quitarlo antes
+   de publicar en la App Store (la API de producción irá por `https`).
+4. Usar el pnpm del repo (`packageManager`, 10.x): con otra versión mayor,
+   `pnpm add` falla por la ubicación del store. `npx pnpm@10.11.0 …` sirve.
+
+Compilar y lanzar en un simulador sin abrir Xcode:
+
+```bash
+cd apps/mobile/ios/App
+xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 16' build
+```
+
 ## Push notifications (MOB-13)
 
 El código de push vive en `src/features/notifications/` (registro, permisos,
