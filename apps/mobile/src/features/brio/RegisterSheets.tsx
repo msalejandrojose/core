@@ -16,6 +16,7 @@ import { AddFoodSheet } from './sheets/AddFoodSheet';
 import { WorkoutSheet } from './sheets/WorkoutSheet';
 import { WeightSheet } from './sheets/WeightSheet';
 import { CopyMealsSheet } from './sheets/CopyMealsSheet';
+import { DigestionSheet } from './sheets/DigestionSheet';
 import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
 import './sheets/sheets.css';
@@ -35,7 +36,7 @@ type Domain = 'food' | 'activity' | 'sleep';
  * más probable a esta hora listo para un toque, el agua y el resto de cosas
  * que se pueden apuntar.
  *
- * Del diseño se omiten Escanear, Foto del plato y Digestión: aún no existen, y
+ * Del diseño se omiten Escanear y Foto del plato: aún no existen, y
  * una tesela que no hace lo que dice es peor que no tenerla.
  */
 export function RegisterSheets() {
@@ -101,6 +102,12 @@ export function RegisterSheets() {
     },
     { label: 'Entreno', icon: PATHS.run, domain: 'activity', run: () => open('activity') },
     { label: 'Peso', icon: PATHS.scale, domain: 'sleep', run: () => open('weight') },
+    {
+      label: 'Digestión',
+      icon: PATHS.leaf,
+      domain: 'food',
+      run: () => open('digestion'),
+    },
   ];
 
   return (
@@ -181,6 +188,7 @@ export function RegisterSheets() {
       <WorkoutSheet isOpen={sheet === 'activity'} onClose={close} />
       <WeightSheet isOpen={sheet === 'weight'} onClose={close} />
       <CopyMealsSheet isOpen={sheet === 'copy'} onClose={close} />
+      <DigestionSheet isOpen={sheet === 'digestion'} onClose={close} />
     </>
   );
 }

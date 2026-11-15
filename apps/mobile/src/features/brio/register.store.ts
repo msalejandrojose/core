@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { MealType } from './api';
 import { mealForHour } from './format';
 
-export type RegisterSheet = 'menu' | 'meal' | 'activity' | 'weight' | 'copy';
+export type RegisterSheet = 'menu' | 'meal' | 'activity' | 'weight' | 'copy' | 'digestion';
 
 interface RegisterState {
   /** Hoja abierta, o null si no hay ninguna. Solo una a la vez. */
