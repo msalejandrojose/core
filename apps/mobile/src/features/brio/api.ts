@@ -140,6 +140,15 @@ export interface CreateFoodBody {
   servings?: { label: string; grams: number; isDefault?: boolean }[];
 }
 
+/** Sección de lo típico de un momento del día (café, tostadas…), con su dibujo. */
+export interface FoodSection {
+  code: string;
+  label: string;
+  /** Clave de la ilustración (ui/food-icons.data.ts). */
+  icon: string;
+  foods: Food[];
+}
+
 export interface MealEntry {
   id: string;
   loggedOn: string;
@@ -343,6 +352,9 @@ export const brioApi = {
   exportMyData: () => call<unknown>('GET', '/brio/account/export'),
   /** Borrado definitivo de la cuenta y de todos sus datos. */
   deleteAccount: () => call<void>('DELETE', '/brio/account'),
+  /** Comidas típicas de un momento del día, para apuntar sin buscar. */
+  typicalFoods: (mealType: MealType) =>
+    call<FoodSection[]>('GET', '/brio/foods/typical', { params: { query: { mealType } } }),
   mealHabits: (mealType: MealType) =>
     call<MealHabits>('GET', '/brio/meals/habits', {
       params: { query: { mealType } },

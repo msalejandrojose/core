@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IonContent, IonModal } from '@ionic/react';
-import { brioApi, type Food, type HabitItem, type MealType } from '../api';
+import { brioApi, type Food, type FoodSection, type HabitItem, type MealType } from '../api';
 import { MEAL_ORDER, formatKcal, joinNames, mealLabel } from '../format';
 import { useBrioStore } from '../brio.store';
 import { useHabitsStore } from '../habits.store';
 import { deleteEntries, logItems, type RelogItem } from '../relog';
 import { tapSuccess } from '../haptics';
 import { FoodIcon } from '../ui/food-icons';
+import { FOOD_ICONS, type FoodIconKey } from '../ui/food-icons.data';
 import { CreateFoodSheet } from './CreateFoodSheet';
 import { Icon, SearchField, Segmented, SectionHeader, SheetBar } from '../ui/kit';
 import { PATHS } from '../ui/paths';
@@ -60,6 +61,11 @@ function fromFood(food: Food): Picked {
   };
 }
 
+/** Clave de dibujo que manda la API; si la app no la conoce, un plato. */
+function sectionIcon(icon: string): FoodIconKey {
+  return icon in FOOD_ICONS ? (icon as FoodIconKey) : 'plate';
+}
+
 function portion(grams: number, isLiquid = false): string {
   return `${formatKcal(grams)} ${isLiquid ? 'ml' : 'g'}`;
 }
@@ -102,6 +108,8 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const [quickKcal, setQuickKcal] = useState('');
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [typical, setTypical] = useState<Partial<Record<MealType, FoodSection[]>>>({});
+  const [section, setSection] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -110,11 +118,23 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
     setQuery('');
     setResults(null);
     setQuickKcal('');
+    setSection(null);
   }, [isOpen, initialMealType]);
+
+  useEffect(() => setSection(null), [mealType]);
 
   useEffect(() => {
     if (isOpen) void loadHabits(mealType);
   }, [isOpen, mealType, loadHabits]);
+
+  // Lo típico de cada momento del día (no cambia: se pide una vez por momento).
+  useEffect(() => {
+    if (!isOpen || typical[mealType]) return;
+    brioApi
+      .typicalFoods(mealType)
+      .then((foods) => setTypical((t) => ({ ...t, [mealType]: foods })))
+      .catch(() => undefined);
+  }, [isOpen, mealType, typical]);
 
   useEffect(() => {
     const q = query.trim();
@@ -211,6 +231,8 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
       : '';
 
   const combos = useMemo(() => habits?.combos ?? [], [habits]);
+  const sections = typical[mealType] ?? [];
+  const openSection = sections.find((sec) => sec.code === section) ?? null;
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full">
@@ -293,8 +315,69 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
                 </li>
               </ul>
             </section>
+          ) : openSection ? (
+            <section className="rk-section" aria-labelledby="seccion">
+              <div className="addfood__sec-head">
+                <button type="button" className="rk-textbtn addfood__sec-back" onClick={() => setSection(null)}>
+                  <Icon d={PATHS.back} size={16} stroke={2.4} />
+                  Todo
+                </button>
+                <FoodIcon icon={sectionIcon(openSection.icon)} size={30} />
+                <span id="seccion" className="addfood__sec-title">
+                  {openSection.label}
+                </span>
+              </div>
+              <ul className="rk-list addfood__list">
+                {openSection.foods.map((food) => {
+                  const item = fromFood(food);
+                  const on = !!picked[item.key];
+                  const serving = food.servings.find((sv) => sv.isDefault) ?? food.servings[0];
+                  return (
+                    <li key={food.id} className="addfood__item">
+                      <FoodIcon name={food.name} size={38} />
+                      <div className="addfood__cell">
+                        <div className="rk-row__main">
+                          <span className="rk-row__title">{food.name}</span>
+                          <span className="rk-row__sub">
+                            {serving ? serving.label : portion(item.quantityG, food.isLiquid)}
+                          </span>
+                        </div>
+                        <span className="rk-row__value">{formatKcal(item.kcal)} kcal</span>
+                        <AddToggle on={on} name={food.name} onClick={() => toggle(item)} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           ) : (
             <>
+              {sections.length > 0 ? (
+                <section className="rk-section" aria-labelledby="secciones">
+                  <SectionHeader id="secciones">¿Qué has tomado?</SectionHeader>
+                  <div className="addfood__secs">
+                    {sections.map((sec) => {
+                      const count = sec.foods.filter((f) => picked[f.id]).length;
+                      return (
+                        <button
+                          key={sec.code}
+                          type="button"
+                          className="addfood__sec"
+                          aria-label={`${sec.label}${count ? `, ${count} elegidos` : ''}`}
+                          onClick={() => setSection(sec.code)}
+                        >
+                          <span className="addfood__freq-bubble">
+                            <FoodIcon icon={sectionIcon(sec.icon)} size={56} />
+                            {count ? <span className="addfood__sec-count">{count}</span> : null}
+                          </span>
+                          <span className="addfood__sec-label">{sec.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ) : null}
+
               {combos.length > 0 ? (
                 <section className="rk-section" aria-labelledby="siempre">
                   <SectionHeader id="siempre">Lo de siempre en {MEAL_ARTICLE[mealType]}</SectionHeader>
@@ -397,8 +480,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
 
               {habits && habits.frequent.length === 0 ? (
                 <p className="rk-note">
-                  Aún no hay nada guardado para {MEAL_ARTICLE[mealType]}. Busca lo que has comido y la próxima vez
-                  aparecerá aquí.
+                  Lo que apuntes para {MEAL_ARTICLE[mealType]} irá apareciendo arriba, en tus frecuentes.
                 </p>
               ) : null}
             </>

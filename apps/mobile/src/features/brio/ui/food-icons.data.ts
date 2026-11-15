@@ -8,6 +8,14 @@ interface FoodIllustration {
 }
 
 export const FOOD_ICONS = {
+  toast: { bg: '#FFF1E0', paths: [['M10 14a6 6 0 0 1 6-6h8a6 6 0 0 1 6 6v18H10z', '#E0A050', 'none'], ['M13 15a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v14H13z', '#F8D9A8', 'none'], ['M15 20c3-2 7-2 10 0-1 3-9 3-10 0z', '#FF6B4A', 'none']] },
+  croissant: { bg: '#FFF1E0', paths: [['M6 25c2-8 9-13 14-13s12 5 14 13c-3 2-6 1-8-1-2 3-10 3-12 0-2 2-5 3-8 1z', '#E0A050', 'none'], ['M14 16l3 8M20 14v9M26 16l-3 8', 'none', '#B9772E']] },
+  sandwich: { bg: '#FFF1E0', paths: [['M5 25c0-3 6-5 15-5s15 2 15 5-6 4-15 4-15-1-15-4z', '#D9913F', 'none'], ['M6 22c3 1 5-1 8 0s5-1 8 0 5-1 8 0 4-1 5 0', 'none', '#5BAE4A'], ['M7 20h26', 'none', '#E35D5B'], ['M6 18c0-3 6-5 14-5s14 2 14 5c-3 1-25 1-28 0z', '#E8A94F', 'none'], ['M12 15l2 2M19 14l2 2M26 15l2 2', 'none', '#F8D9A8']] },
+  steak: { bg: '#FFE9E7', paths: [['M8 21c0-6 6-10 13-10 7 0 11 4 11 9 0 6-6 10-13 10-7 0-11-3-11-9z', '#C0392B', 'none'], ['M12 21c0-4 4-7 9-7', 'none', '#F5C6B8'], ['M22 20a3 3 0 1 0 6 0a3 3 0 1 0-6 0z', '#FFFFFF', 'none']] },
+  soup: { bg: '#FFF4D6', paths: [['M15 7c-2 2 2 4 0 6M20 6c-2 2 2 4 0 6M25 7c-2 2 2 4 0 6', 'none', '#C8B89A'], ['M6 19h28a14 12 0 0 1-28 0z', '#FF9500', 'none'], ['M9 19c3-2 19-2 22 0', 'none', '#FFC266']] },
+  burger: { bg: '#FFF1E0', paths: [['M8 18c0-6 5-9 12-9s12 3 12 9z', '#E8A94F', 'none'], ['M8 21c3 2 5-1 8 1s5-1 8 1 5-1 8-1', 'none', '#5BAE4A'], ['M8 23h24v4H8z', '#7A3E1D', 'none'], ['M8 28h24a3 3 0 0 1-3 4H11a3 3 0 0 1-3-4z', '#D9913F', 'none']] },
+  flan: { bg: '#FFF4D6', paths: [['M12 16h16l3 12H9z', '#F7C948', 'none'], ['M12 13h16l.8 3H11.2z', '#A0522D', 'none'], ['M5 31h30', 'none', '#D9C6AE']] },
+  drink: { bg: '#FFF8D6', paths: [['M12 10h16l-2 21a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2z', '#FFD23F', '#E3B21C'], ['M12 10c1-3 4-3 5-1 1-2 5-2 6 0 1-2 4-2 5 1z', '#FFFFFF', '#EFE6C8']] },
   egg: { bg: '#FFF4D6', paths: [['M20 7c6.5 0 11.5 8 11.5 15 0 6.5-5 11-11.5 11S8.5 28.5 8.5 22C8.5 15 13.5 7 20 7z', '#FFFFFF', '#E8D9B0'], ['M15 22.5a5 5 0 1 0 10 0a5 5 0 1 0-10 0z', '#FFC21A', 'none']] },
   omelette: { bg: '#FFF4D6', paths: [['M6 22c0-7 6-12 14-12s14 5 14 12z', '#F7C948', 'none'], ['M6 22h28a14 6 0 0 1-28 0z', '#E8A93A', 'none'], ['M14 16a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0zM22 14a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0z', '#5BAE4A', 'none']] },
   salad: { bg: '#E8F8EC', paths: [['M10 19c0-5 4-8 9-8-1 5-4 8-9 8z', '#34C759', 'none'], ['M18 19c1-6 6-9 12-8-1 5-6 8-12 8z', '#5BAE4A', 'none'], ['M15 15a3 3 0 1 0 6 0a3 3 0 1 0-6 0z', '#FF3B30', 'none'], ['M6 19h28a14 13 0 0 1-28 0z', '#FFFFFF', '#BFE3CA']] },
@@ -39,6 +47,14 @@ export type FoodIconKey = keyof typeof FOOD_ICONS;
 
 /** Palabras del nombre → dibujo. El orden importa: lo más específico arriba. */
 const KEYWORDS: [RegExp, FoodIconKey][] = [
+  [/arroz con leche|flan|natillas|postre/i, 'flan'],
+  [/cerveza|vino|refresco|zumo/i, 'drink'],
+  [/croissant|napolitana|magdalena|bizcocho|churro|porra|galleta|boller/i, 'croissant'],
+  [/tostada/i, 'toast'],
+  [/bocadillo|s[aá]ndwich|bocata|empanad/i, 'sandwich'],
+  [/hamburguesa|pizza/i, 'burger'],
+  [/sopa|crema de|gazpacho|salmorejo/i, 'soup'],
+  [/filete de ternera|lomo|alb[oó]ndiga|carne\b/i, 'steak'],
   [/tortilla/i, 'omelette'],
   [/huevo/i, 'egg'],
   [/ensalada|lechuga/i, 'salad'],

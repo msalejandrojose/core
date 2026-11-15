@@ -24,4 +24,6 @@ export interface BrioFoodRepositoryPort {
   findByBarcode(userId: string, barcode: string): Promise<Food | null>;
   findVisibleTo(id: string, userId: string): Promise<Food | null>;
   create(data: CreateFoodData): Promise<Food>;
+  /** Del catálogo compartido, por nombre exacto, en el orden pedido. */
+  findGlobalByNames(names: readonly string[]): Promise<Food[]>;
 }

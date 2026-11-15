@@ -23,6 +23,10 @@ import { type AccessTokenPayload } from '../../../iam/application/ports/token-is
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import { SearchFoodsUseCase } from '../../application/use-cases/search-foods.use-case';
+import {
+  TypicalFoodsUseCase,
+  type FoodSectionView,
+} from '../../application/use-cases/typical-foods.use-case';
 import { CreateFoodUseCase } from '../../application/use-cases/create-food.use-case';
 import { LogMealEntryUseCase } from '../../application/use-cases/log-meal-entry.use-case';
 import { UpdateMealEntryUseCase } from '../../application/use-cases/update-meal-entry.use-case';
@@ -43,6 +47,7 @@ export class BrioNutritionController {
   constructor(
     private readonly searchFoods: SearchFoodsUseCase,
     private readonly createFood: CreateFoodUseCase,
+    private readonly typicalFoods: TypicalFoodsUseCase,
     private readonly logMeal: LogMealEntryUseCase,
     private readonly updateMeal: UpdateMealEntryUseCase,
     private readonly deleteMeal: DeleteMealEntryUseCase,
@@ -61,6 +66,25 @@ export class BrioNutritionController {
   ): Promise<MealHabitsResponseDto> {
     const habits = await this.mealHabits.execute(current.sub, query.mealType);
     return MealHabitsResponseDto.from(habits);
+  }
+
+  @Get('foods/typical')
+  @ApiOperation({
+    summary:
+      'Secciones de lo típico de un momento del día (café, tostadas, bollería…) con sus platos.',
+  })
+  async typical(
+    @Query() query: MealHabitsQueryDto,
+  ): Promise<
+    { code: string; label: string; icon: string; foods: FoodResponseDto[] }[]
+  > {
+    const sections: FoodSectionView[] = await this.typicalFoods.execute(
+      query.mealType,
+    );
+    return sections.map((s) => ({
+      ...s,
+      foods: s.foods.map((f) => FoodResponseDto.from(f)),
+    }));
   }
 
   @Get('foods')

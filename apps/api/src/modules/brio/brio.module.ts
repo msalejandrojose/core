@@ -85,6 +85,7 @@ import { BrioGarminController } from './infrastructure/http/brio-garmin.controll
 import { BrioDigestionController } from './infrastructure/http/brio-digestion.controller';
 import { PrismaBrioDigestionRepository } from './infrastructure/persistence/prisma-brio-digestion.repository';
 import { BRIO_DIGESTION_REPOSITORY } from './application/ports/digestion.port';
+import { TypicalFoodsUseCase } from './application/use-cases/typical-foods.use-case';
 import { DigestionUseCases } from './application/use-cases/digestion.use-cases';
 import { BrioSocialController } from './infrastructure/http/brio-social.controller';
 import { PrismaBrioSocialRepository } from './infrastructure/persistence/prisma-brio-social.repository';
@@ -282,6 +283,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     ConnectGarminUseCase,
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,
+    TypicalFoodsUseCase,
     // Digestión.
     DigestionUseCases,
     // Social.
