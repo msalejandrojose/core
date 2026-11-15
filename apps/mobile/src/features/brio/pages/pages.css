@@ -414,3 +414,15 @@
   border-radius: var(--brio-radius-2xl);
   background: var(--brio-surface);
 }
+.foodday__entry-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}

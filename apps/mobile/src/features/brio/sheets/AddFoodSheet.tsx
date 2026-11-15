@@ -7,6 +7,7 @@ import { useHabitsStore } from '../habits.store';
 import { deleteEntries, logItems, type RelogItem } from '../relog';
 import { tapSuccess } from '../haptics';
 import { FoodIcon } from '../ui/food-icons';
+import { CreateFoodSheet } from './CreateFoodSheet';
 import { Icon, SearchField, Segmented, SectionHeader, SheetBar } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { snackbar } from '@/lib/snackbar';
@@ -100,6 +101,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const [results, setResults] = useState<Food[] | null>(null);
   const [quickKcal, setQuickKcal] = useState('');
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -280,6 +282,15 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
                     <AddToggle on={false} name={query.trim()} disabled={!canQuick} onClick={addQuick} />
                   </div>
                 </li>
+                <li className="addfood__item">
+                  <button type="button" className="addfood__create" onClick={() => setCreating(true)}>
+                    <Icon d={PATHS.plusCircle} size={22} stroke={1.8} />
+                    <span className="rk-row__main">
+                      <span className="rk-row__title">Crear «{query.trim()}» como alimento</span>
+                      <span className="rk-row__sub">Con sus valores de la etiqueta, para usarlo siempre</span>
+                    </span>
+                  </button>
+                </li>
               </ul>
             </section>
           ) : (
@@ -404,6 +415,17 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
           Añadir
         </button>
       </div>
+      <CreateFoodSheet
+        isOpen={creating}
+        initialName={query.trim()}
+        onClose={() => setCreating(false)}
+        onCreated={(food) => {
+          setCreating(false);
+          setResults((r) => [food, ...(r ?? [])]);
+          const item = fromFood(food);
+          setPicked((p) => ({ ...p, [item.key]: item }));
+        }}
+      />
     </IonModal>
   );
 }

@@ -43,6 +43,7 @@ import { CreateFoodUseCase } from './application/use-cases/create-food.use-case'
 import { DeleteMyAccountUseCase } from './application/use-cases/delete-my-account.use-case';
 import { ExportMyDataUseCase } from './application/use-cases/export-my-data.use-case';
 import { DeleteActivitySessionUseCase } from './application/use-cases/delete-activity-session.use-case';
+import { UpdateMealEntryUseCase } from './application/use-cases/update-meal-entry.use-case';
 import { DeleteMealEntryUseCase } from './application/use-cases/delete-meal-entry.use-case';
 import { GetDaySummaryUseCase } from './application/use-cases/get-day-summary.use-case';
 import { GetMealHabitsUseCase } from './application/use-cases/get-meal-habits.use-case';
@@ -218,6 +219,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     SearchFoodsUseCase,
     CreateFoodUseCase,
     LogMealEntryUseCase,
+    UpdateMealEntryUseCase,
     DeleteMealEntryUseCase,
     GetDaySummaryUseCase,
     GetProgressUseCase,

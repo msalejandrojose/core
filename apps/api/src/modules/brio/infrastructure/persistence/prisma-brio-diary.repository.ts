@@ -7,6 +7,7 @@ import type {
 } from '../../domain/entities/meal-entry.entity';
 import type {
   CreateMealEntryData,
+  MealEntryUpdateData,
   DailyLogPatch,
   DayIntakeTotals,
   BrioDiaryRepositoryPort,
@@ -50,6 +51,33 @@ export class PrismaBrioDiaryRepository implements BrioDiaryRepositoryPort {
       include: FOOD_NAME,
     });
     return row ? toMealEntry(row) : null;
+  }
+
+  async updateMealEntry(
+    id: string,
+    userId: string,
+    data: MealEntryUpdateData,
+  ): Promise<MealEntry | null> {
+    const current = await this.prisma.brioMealEntry.findFirst({
+      where: { id, userId },
+      select: { foodId: true },
+    });
+    if (!current) return null;
+    const row = await this.prisma.brioMealEntry.update({
+      where: { id },
+      data: {
+        mealType: data.mealType,
+        // Con alimento de catálogo el nombre sale del join (ver createMealEntry).
+        customName: current.foodId ? null : data.name,
+        quantityG: data.quantityG,
+        kcal: data.kcal,
+        proteinG: data.proteinG,
+        carbsG: data.carbsG,
+        fatG: data.fatG,
+      },
+      include: FOOD_NAME,
+    });
+    return toMealEntry(row);
   }
 
   async deleteMealEntry(id: string, userId: string): Promise<boolean> {
