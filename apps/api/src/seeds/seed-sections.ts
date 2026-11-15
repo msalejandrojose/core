@@ -186,6 +186,42 @@ const BACKOFFICE_TREE: SeedNode[] = [
     ],
   },
   {
+    code: 'ai',
+    name: 'Agentes de IA',
+    icon: 'Bot',
+    order: 10,
+    children: [
+      {
+        code: 'ai.agents',
+        name: 'Agentes',
+        icon: 'Bot',
+        route: '/ai/agents',
+        order: 0,
+      },
+      {
+        code: 'ai.skills',
+        name: 'Skills',
+        icon: 'BookOpen',
+        route: '/ai/skills',
+        order: 1,
+      },
+      {
+        code: 'ai.models',
+        name: 'Modelos',
+        icon: 'Cpu',
+        route: '/ai/models',
+        order: 2,
+      },
+      {
+        code: 'ai.usage',
+        name: 'Consumo',
+        icon: 'Receipt',
+        route: '/ai/usage',
+        order: 3,
+      },
+    ],
+  },
+  {
     code: 'racing',
     name: 'Racing',
     icon: 'Flag',

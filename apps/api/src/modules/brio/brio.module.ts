@@ -82,6 +82,8 @@ import {
 } from './application/use-cases/menu.use-cases';
 import { BrioHevyController } from './infrastructure/http/brio-hevy.controller';
 import { BrioGarminController } from './infrastructure/http/brio-garmin.controller';
+import { AgentsModule } from '../agents/agents.module';
+import { BrioAgentTools } from './infrastructure/agents/brio-agent-tools';
 import { BrioDigestionController } from './infrastructure/http/brio-digestion.controller';
 import { PrismaBrioDigestionRepository } from './infrastructure/persistence/prisma-brio-digestion.repository';
 import { BRIO_DIGESTION_REPOSITORY } from './application/ports/digestion.port';
@@ -142,7 +144,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
 // endpoints están scopeados al usuario autenticado, no hay administración de
 // datos de otros usuarios desde aquí.
 @Module({
-  imports: [IamModule],
+  imports: [IamModule, AgentsModule],
   controllers: [
     BrioProfileController,
     BrioActivityController,
@@ -284,6 +286,8 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,
     TypicalFoodsUseCase,
+    // Herramientas para los agentes de IA.
+    BrioAgentTools,
     // Digestión.
     DigestionUseCases,
     // Social.

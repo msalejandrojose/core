@@ -158,6 +158,21 @@ const TerrainPage = lazy(() =>
     default: m.TerrainPage,
   })),
 );
+const AiAgentsPage = lazy(() =>
+  import('@/features/ai/AiAgentsPage').then((m) => ({ default: m.AiAgentsPage })),
+);
+const AiAgentEditorPage = lazy(() =>
+  import('@/features/ai/AiAgentEditorPage').then((m) => ({ default: m.AiAgentEditorPage })),
+);
+const AiSkillsPage = lazy(() =>
+  import('@/features/ai/AiSkillsPage').then((m) => ({ default: m.AiSkillsPage })),
+);
+const AiModelsPage = lazy(() =>
+  import('@/features/ai/AiModelsPage').then((m) => ({ default: m.AiModelsPage })),
+);
+const AiUsagePage = lazy(() =>
+  import('@/features/ai/AiUsagePage').then((m) => ({ default: m.AiUsagePage })),
+);
 const CoinRewardsPage = lazy(() =>
   import('@/features/racing/coin-rewards/CoinRewardsPage').then((m) => ({
     default: m.CoinRewardsPage,
@@ -336,6 +351,11 @@ export default function App() {
                 path="/notifications/message-types/:id/editor"
                 element={<MessageTypeEditorPage />}
               />
+              <Route path="/ai/agents" element={<AiAgentsPage />} />
+              <Route path="/ai/agents/:id" element={<AiAgentEditorPage />} />
+              <Route path="/ai/skills" element={<AiSkillsPage />} />
+              <Route path="/ai/models" element={<AiModelsPage />} />
+              <Route path="/ai/usage" element={<AiUsagePage />} />
               <Route path="/racing/circuits" element={<CircuitsPage />} />
               <Route path="/racing/circuits/:id" element={<CircuitEditorPage />} />
               <Route path="/racing/tracks" element={<TracksPage />} />

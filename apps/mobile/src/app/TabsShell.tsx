@@ -27,6 +27,7 @@ import ReportPage from '@/features/brio/progress/ReportPage';
 import WeeklySummaryPage from '@/features/brio/progress/WeeklySummaryPage';
 import MedalsPage from '@/features/brio/progress/MedalsPage';
 import DigestionPage from '@/features/brio/progress/DigestionPage';
+import CoachPage from '@/features/brio/coach/CoachPage';
 import SharePage from '@/features/brio/progress/SharePage';
 import YearPage from '@/features/brio/progress/YearPage';
 import SessionEditPage from '@/features/brio/performance/SessionEditPage';
@@ -140,6 +141,7 @@ export default function TabsShell() {
         <IonRouterOutlet>
           <Route exact path="/tabs/today" component={TodayPage} />
           <Route exact path="/tabs/today/comida" component={FoodDayPage} />
+          <Route exact path="/tabs/today/coach" component={CoachPage} />
           <Route exact path="/tabs/today/recetas" component={RecipesPage} />
           <Route exact path="/tabs/today/recetas/nueva" component={NewRecipePage} />
           <Route exact path="/tabs/today/recuperacion" component={RecoveryPage} />
