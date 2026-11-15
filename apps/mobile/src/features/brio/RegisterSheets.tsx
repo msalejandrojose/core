@@ -35,7 +35,7 @@ type Domain = 'food' | 'activity' | 'sleep';
  * más probable a esta hora listo para un toque, el agua y el resto de cosas
  * que se pueden apuntar.
  *
- * Del diseño se omiten Escanear, Foto del plato y Digestión: aún no existen, y
+ * Del diseño se omiten Escanear y Foto del plato: aún no existen, y
  * una tesela que no hace lo que dice es peor que no tenerla.
  */
 export function RegisterSheets() {
@@ -101,6 +101,15 @@ export function RegisterSheets() {
     },
     { label: 'Entreno', icon: PATHS.run, domain: 'activity', run: () => open('activity') },
     { label: 'Peso', icon: PATHS.scale, domain: 'sleep', run: () => open('weight') },
+    {
+      label: 'Digestión',
+      icon: PATHS.leaf,
+      domain: 'food',
+      run: () => {
+        close();
+        history.push('/tabs/progress/digestion');
+      },
+    },
   ];
 
   return (

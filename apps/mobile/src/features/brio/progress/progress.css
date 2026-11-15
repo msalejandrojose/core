@@ -685,3 +685,33 @@
 .year__close {
   color: #ffffff;
 }
+
+/* Digestión: veces por tipo de Bristol (1–7). */
+.digest__bars {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  height: 84px;
+  margin-top: var(--brio-space-m);
+  padding: 12px 14px 8px;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+}
+.digest__bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  min-height: 0;
+}
+.digest__bar-fill {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px;
+  background: var(--brio-earth);
+}
+.digest__bar small {
+  font-size: 11px;
+  color: var(--brio-ink-muted);
+}

@@ -297,6 +297,7 @@ model User {
   brioDailyHealth      BrioDailyHealth[]
   brioConnectionPrefs  BrioConnectionPrefs?
   brioHevyLinks        BrioHevyExerciseLink[]
+  brioBowelMovements   BrioBowelMovement[]
 
   @@map("user")
 }
@@ -3190,4 +3191,24 @@ model BrioChallengeMember {
   @@id([challengeId, userId])
   @@index([userId])
   @@map("brio_challenge_member")
+}
+
+/// Deposición registrada en Digestión, con la escala de Bristol (1 bolitas
+/// duras … 7 líquida). `loggedOn` es el día en la zona horaria del perfil.
+model BrioBowelMovement {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String   @map("user_id") @db.Char(36)
+  occurredAt  DateTime @map("occurred_at")
+  loggedOn    DateTime @map("logged_on") @db.Date
+  /// Tipo de Bristol, de 1 a 7.
+  bristolType Int      @map("bristol_type") @db.TinyInt
+  /// SMALL, NORMAL o LARGE.
+  amount      String   @db.VarChar(8)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loggedOn])
+  @@map("brio_bowel_movement")
 }

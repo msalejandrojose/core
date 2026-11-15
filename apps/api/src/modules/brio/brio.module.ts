@@ -82,6 +82,10 @@ import {
 } from './application/use-cases/menu.use-cases';
 import { BrioHevyController } from './infrastructure/http/brio-hevy.controller';
 import { BrioGarminController } from './infrastructure/http/brio-garmin.controller';
+import { BrioDigestionController } from './infrastructure/http/brio-digestion.controller';
+import { PrismaBrioDigestionRepository } from './infrastructure/persistence/prisma-brio-digestion.repository';
+import { BRIO_DIGESTION_REPOSITORY } from './application/ports/digestion.port';
+import { DigestionUseCases } from './application/use-cases/digestion.use-cases';
 import { BrioSocialController } from './infrastructure/http/brio-social.controller';
 import { PrismaBrioSocialRepository } from './infrastructure/persistence/prisma-brio-social.repository';
 import { BRIO_SOCIAL_REPOSITORY } from './application/ports/social.port';
@@ -151,6 +155,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     BrioHevyController,
     BrioGarminController,
     BrioSocialController,
+    BrioDigestionController,
     BrioConnectionsController,
     BrioRecoveryController,
   ],
@@ -173,6 +178,10 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     { provide: BRIO_GARMIN_REPOSITORY, useClass: PrismaBrioGarminRepository },
     { provide: GARMIN_CLIENT, useClass: HttpGarminClient },
     { provide: BRIO_SOCIAL_REPOSITORY, useClass: PrismaBrioSocialRepository },
+    {
+      provide: BRIO_DIGESTION_REPOSITORY,
+      useClass: PrismaBrioDigestionRepository,
+    },
     {
       provide: BRIO_CONNECTION_PREFS,
       useClass: PrismaConnectionPrefsRepository,
@@ -273,6 +282,8 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     ConnectGarminUseCase,
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,
+    // Digestión.
+    DigestionUseCases,
     // Social.
     SocialContext,
     SocialProfileUseCase,

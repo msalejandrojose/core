@@ -29,6 +29,7 @@ export class PrismaBrioAccountRepository implements BrioAccountRepositoryPort {
       performanceMeasurements,
       plans,
       plannedSessions,
+      bowelMovements,
     ] = await Promise.all([
       this.prisma.brioProfile.findUnique(byUser),
       this.prisma.brioBodyMeasurement.findMany(byUser),
@@ -53,6 +54,7 @@ export class PrismaBrioAccountRepository implements BrioAccountRepositoryPort {
       this.prisma.brioPerformanceMeasurement.findMany(byUser),
       this.prisma.brioPlan.findMany(byUser),
       this.prisma.brioPlannedSession.findMany(byUser),
+      this.prisma.brioBowelMovement.findMany(byUser),
     ]);
     return {
       exportedAt: new Date().toISOString(),
@@ -69,6 +71,7 @@ export class PrismaBrioAccountRepository implements BrioAccountRepositoryPort {
       performanceMeasurements,
       plans,
       plannedSessions,
+      bowelMovements,
     };
   }
 

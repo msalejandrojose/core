@@ -20,6 +20,7 @@ export interface BrioAccountExport {
   performanceMeasurements: unknown[];
   plans: unknown[];
   plannedSessions: unknown[];
+  bowelMovements: unknown[];
 }
 
 export interface BrioAccountRepositoryPort {
