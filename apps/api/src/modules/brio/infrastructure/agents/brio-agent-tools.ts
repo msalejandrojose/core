@@ -11,7 +11,16 @@ import { LogMealEntryUseCase } from '../../application/use-cases/log-meal-entry.
 import { SearchFoodsUseCase } from '../../application/use-cases/search-foods.use-case';
 import { GetPlanWeekUseCase } from '../../application/use-cases/plan.use-cases';
 import { GetRecoveryUseCase } from '../../application/use-cases/recovery.use-cases';
+import { GetRecentHealthUseCase } from '../../application/use-cases/garmin.use-cases';
+import { GetProgressUseCase } from '../../application/use-cases/get-progress.use-case';
+import { GetPerformanceSummaryUseCase } from '../../application/use-cases/get-performance-summary.use-case';
+import { DigestionUseCases } from '../../application/use-cases/digestion.use-cases';
 import type { MealType } from '../../domain/entities/meal-entry.entity';
+import {
+  PERFORMANCE_PERIODS,
+  type PerformancePeriod,
+} from '../../domain/services/performance/periods';
+import { summarizeHealth, summarizeProgress } from './agent-summaries';
 import { dayInTimezone } from '../../domain/services/calendar';
 
 const MEALS: MealType[] = ['BREAKFAST', 'LUNCH', 'SNACK', 'DINNER'];
@@ -39,6 +48,10 @@ export class BrioAgentTools implements OnModuleInit {
     private readonly logActivity: LogActivitySessionUseCase,
     private readonly planWeek: GetPlanWeekUseCase,
     private readonly recovery: GetRecoveryUseCase,
+    private readonly health: GetRecentHealthUseCase,
+    private readonly progress: GetProgressUseCase,
+    private readonly performance: GetPerformanceSummaryUseCase,
+    private readonly digestion: DigestionUseCases,
   ) {}
 
   onModuleInit(): void {
@@ -287,6 +300,87 @@ export class BrioAgentTools implements OnModuleInit {
           additionalProperties: false,
         },
         run: async (_args, ctx) => this.recovery.execute(ctx.userId),
+      },
+      {
+        code: 'brio_get_health',
+        label: 'Ver la salud del reloj (sueño, pulso, VFC)',
+        description:
+          'Datos de salud del reloj de las últimas 2 semanas: horas de sueño y sueño profundo, puntuación de sueño, pulso en reposo, variabilidad (HRV), pasos, estrés y body battery; y sueño, HRV y pulso frente a su media. connected=false si no tiene reloj conectado.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
+        run: async (_args, ctx) =>
+          summarizeHealth(await this.health.execute(ctx.userId)),
+      },
+      {
+        code: 'brio_get_progress',
+        label: 'Ver el progreso (peso, comida y entrenos)',
+        description:
+          'Resumen de los últimos N días (7-90): evolución del peso, media de kcal comidas frente al objetivo, proteína media, días pasados de kcal y entrenos hechos.',
+        parameters: {
+          type: 'object',
+          properties: {
+            days: {
+              type: 'number',
+              description: 'Días hacia atrás, de 7 a 90. Por defecto 30.',
+            },
+          },
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const days = Math.min(
+            90,
+            Math.max(7, Math.round(numOr(args.days, 30))),
+          );
+          return summarizeProgress(
+            await this.progress.execute({ userId: ctx.userId, days }),
+          );
+        },
+      },
+      {
+        code: 'brio_get_performance',
+        label: 'Ver el rendimiento (fuerza, cardio, fatiga)',
+        description:
+          'Resumen de rendimiento del periodo: progresión de fuerza, cardio, fatiga, músculos trabajados y recomendaciones del motor de Brío. period: 7d, 30d, 90d, 6m o all.',
+        parameters: {
+          type: 'object',
+          properties: {
+            period: { type: 'string', enum: [...PERFORMANCE_PERIODS] },
+          },
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const period = PERFORMANCE_PERIODS.includes(
+            args.period as PerformancePeriod,
+          )
+            ? (args.period as PerformancePeriod)
+            : '30d';
+          return this.performance.execute(ctx.userId, period);
+        },
+      },
+      {
+        code: 'brio_get_digestion',
+        label: 'Ver la digestión',
+        description:
+          'Deposiciones registradas (escala de Bristol 1-7): veces al día, % de tipo normal (3-5), días sin y días con su tipo. period: WEEK, MONTH o YEAR.',
+        parameters: {
+          type: 'object',
+          properties: {
+            period: { type: 'string', enum: ['WEEK', 'MONTH', 'YEAR'] },
+          },
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const period = ['WEEK', 'MONTH', 'YEAR'].includes(
+            args.period as string,
+          )
+            ? (args.period as 'WEEK' | 'MONTH' | 'YEAR')
+            : 'WEEK';
+          const view = await this.digestion.view(ctx.userId, period);
+          return { summary: view.summary, days: view.days };
+        },
       },
     ];
   }

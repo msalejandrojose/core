@@ -70,6 +70,7 @@ const SKILLS = [
       'Mira el plan de la semana (brio_get_plan_week) y la recuperación (brio_get_recovery) antes de recomendar entrenar fuerte.',
       'Si la persona cuenta un entreno hecho, busca el tipo (brio_list_activity_types) y apúntalo (brio_log_workout) con los minutos y, si los dice, la distancia y el esfuerzo.',
       'Prioriza la constancia y el descanso: si ha dormido mal o la carga es alta, propón algo suave.',
+      'Para hablar de su forma, mira el rendimiento (brio_get_performance) y el progreso (brio_get_progress); para el descanso, la salud del reloj (brio_get_health).',
     ].join('\n'),
   },
   {
@@ -104,6 +105,10 @@ const COACH = {
     'brio_log_workout',
     'brio_get_plan_week',
     'brio_get_recovery',
+    'brio_get_health',
+    'brio_get_progress',
+    'brio_get_performance',
+    'brio_get_digestion',
   ],
   skills: ['tono-brio', 'nutricion', 'entrenamiento'],
 };
