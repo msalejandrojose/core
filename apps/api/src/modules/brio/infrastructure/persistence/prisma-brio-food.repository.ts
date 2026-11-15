@@ -55,6 +55,17 @@ export class PrismaBrioFoodRepository implements BrioFoodRepositoryPort {
     return row ? toFood(row) : null;
   }
 
+  async findGlobalByNames(names: readonly string[]): Promise<Food[]> {
+    const rows = await this.prisma.brioFood.findMany({
+      where: { ownerUserId: null, name: { in: [...names] } },
+      include: SERVINGS,
+    });
+    const order = new Map(names.map((n, i) => [n, i]));
+    return rows
+      .sort((a, b) => (order.get(a.name) ?? 0) - (order.get(b.name) ?? 0))
+      .map(toFood);
+  }
+
   async create(data: CreateFoodData): Promise<Food> {
     const row = await this.prisma.brioFood.create({
       data: {

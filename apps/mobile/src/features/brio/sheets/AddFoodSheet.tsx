@@ -102,6 +102,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const [quickKcal, setQuickKcal] = useState('');
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [typical, setTypical] = useState<Partial<Record<MealType, Food[]>>>({});
 
   useEffect(() => {
     if (!isOpen) return;
@@ -115,6 +116,15 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   useEffect(() => {
     if (isOpen) void loadHabits(mealType);
   }, [isOpen, mealType, loadHabits]);
+
+  // Lo típico de cada momento del día (no cambia: se pide una vez por momento).
+  useEffect(() => {
+    if (!isOpen || typical[mealType]) return;
+    brioApi
+      .typicalFoods(mealType)
+      .then((foods) => setTypical((t) => ({ ...t, [mealType]: foods })))
+      .catch(() => undefined);
+  }, [isOpen, mealType, typical]);
 
   useEffect(() => {
     const q = query.trim();
@@ -395,10 +405,37 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
                 </section>
               ) : null}
 
+              {typical[mealType]?.length ? (
+                <section className="rk-section" aria-labelledby="tipico">
+                  <SectionHeader id="tipico">Típico en {MEAL_ARTICLE[mealType]}</SectionHeader>
+                  <ul className="rk-list addfood__list">
+                    {typical[mealType]!.map((food) => {
+                      const item = fromFood(food);
+                      const on = !!picked[item.key];
+                      const serving = food.servings.find((sv) => sv.isDefault) ?? food.servings[0];
+                      return (
+                        <li key={food.id} className="addfood__item">
+                          <FoodIcon name={food.name} size={38} />
+                          <div className="addfood__cell">
+                            <div className="rk-row__main">
+                              <span className="rk-row__title">{food.name}</span>
+                              <span className="rk-row__sub">
+                                {serving ? serving.label : portion(item.quantityG, food.isLiquid)}
+                              </span>
+                            </div>
+                            <span className="rk-row__value">{formatKcal(item.kcal)} kcal</span>
+                            <AddToggle on={on} name={food.name} onClick={() => toggle(item)} />
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ) : null}
+
               {habits && habits.frequent.length === 0 ? (
                 <p className="rk-note">
-                  Aún no hay nada guardado para {MEAL_ARTICLE[mealType]}. Busca lo que has comido y la próxima vez
-                  aparecerá aquí.
+                  Lo que apuntes para {MEAL_ARTICLE[mealType]} irá apareciendo arriba, en tus frecuentes.
                 </p>
               ) : null}
             </>
