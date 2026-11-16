@@ -16,6 +16,7 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { GeoModule } from './modules/geo/geo.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { BrioModule } from './modules/brio/brio.module';
+import { AgentsModule } from './modules/agents/agents.module';
 import { RacingModule } from './modules/racing/racing.module';
 import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
 import { DevicesModule } from './modules/devices/devices.module';
@@ -72,6 +73,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     DevicesModule,
     RacingModule,
     BrioModule,
+    AgentsModule,
     WhatsappModule,
     ErrorLogModule,
     HealthModule,

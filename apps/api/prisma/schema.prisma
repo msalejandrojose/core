@@ -299,6 +299,10 @@ model User {
   brioHevyLinks        BrioHevyExerciseLink[]
   brioBowelMovements   BrioBowelMovement[]
 
+  // Agentes de IA
+  aiConversations AiConversation[]
+  aiRequests      AiRequest[]
+
   @@map("user")
 }
 
@@ -3211,4 +3215,156 @@ model BrioBowelMovement {
 
   @@index([userId, loggedOn])
   @@map("brio_bowel_movement")
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Agentes de IA: modelos con su precio, skills reutilizables, agentes
+// configurables desde el backoffice, conversaciones y el registro de cada
+// petición al proveedor (tokens y coste).
+// ───────────────────────────────────────────────────────────────────────────
+
+/// Modelo de un proveedor con su precio en USD por millón de tokens.
+model AiModel {
+  id                   String  @id @default(uuid()) @db.Char(36)
+  /// OPENAI (de momento el único).
+  provider             String  @db.VarChar(16)
+  /// Id del modelo en la API del proveedor, p. ej. `gpt-6-luna`.
+  modelId              String  @unique @map("model_id") @db.VarChar(64)
+  label                String  @db.VarChar(80)
+  inputPricePerM       Decimal @map("input_price_per_m") @db.Decimal(10, 4)
+  cachedInputPricePerM Decimal @map("cached_input_price_per_m") @db.Decimal(10, 4)
+  outputPricePerM      Decimal @map("output_price_per_m") @db.Decimal(10, 4)
+  /// Niveles de esfuerzo de razonamiento que admite, separados por coma.
+  efforts              String  @db.VarChar(80)
+  enabled              Boolean @default(true)
+  sortOrder            Int     @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  agents AiAgent[]
+
+  @@map("ai_model")
+}
+
+/// Bloque de instrucciones reutilizable que se añade a los agentes.
+model AiSkill {
+  id           String  @id @default(uuid()) @db.Char(36)
+  code         String  @unique @db.VarChar(64)
+  name         String  @db.VarChar(120)
+  description  String? @db.VarChar(500)
+  instructions String  @db.Text
+  enabled      Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  agents AiAgentSkill[]
+
+  @@map("ai_skill")
+}
+
+model AiAgent {
+  id              String  @id @default(uuid()) @db.Char(36)
+  /// Con este código lo pide la app, p. ej. `brio-coach`.
+  code            String  @unique @db.VarChar(64)
+  name            String  @db.VarChar(120)
+  description     String? @db.VarChar(500)
+  instructions    String  @db.Text
+  modelId         String  @map("model_id") @db.Char(36)
+  /// none, low, medium, high, xhigh o max (según el modelo).
+  reasoningEffort String  @default("low") @map("reasoning_effort") @db.VarChar(16)
+  maxOutputTokens Int     @default(1200) @map("max_output_tokens")
+  /// Herramientas que puede usar, separadas por coma (códigos del registro).
+  tools           String  @default("") @db.VarChar(1000)
+  enabled         Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  model         AiModel          @relation(fields: [modelId], references: [id])
+  skills        AiAgentSkill[]
+  conversations AiConversation[]
+  requests      AiRequest[]
+
+  @@map("ai_agent")
+}
+
+model AiAgentSkill {
+  agentId String @map("agent_id") @db.Char(36)
+  skillId String @map("skill_id") @db.Char(36)
+
+  agent AiAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  skill AiSkill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([agentId, skillId])
+  @@map("ai_agent_skill")
+}
+
+model AiConversation {
+  id      String @id @default(uuid()) @db.Char(36)
+  agentId String @map("agent_id") @db.Char(36)
+  userId  String @map("user_id") @db.Char(36)
+  title   String @db.VarChar(160)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  agent    AiAgent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+  requests AiRequest[]
+
+  @@index([userId, agentId, updatedAt])
+  @@map("ai_conversation")
+}
+
+/// Mensaje visible de la conversación (lo que escribe la persona y lo que
+/// responde el agente). Las llamadas a herramientas no se guardan aquí.
+model AiMessage {
+  id             String   @id @default(uuid()) @db.Char(36)
+  conversationId String   @map("conversation_id") @db.Char(36)
+  /// USER o ASSISTANT.
+  role           String   @db.VarChar(16)
+  content        String   @db.Text
+  /// Herramientas que usó el agente para esta respuesta, separadas por coma.
+  toolsUsed      String?  @map("tools_used") @db.VarChar(500)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("ai_message")
+}
+
+/// Cada llamada al proveedor, con tokens y coste en USD al precio del modelo
+/// en ese momento.
+model AiRequest {
+  id                String   @id @default(uuid()) @db.Char(36)
+  agentId           String?  @map("agent_id") @db.Char(36)
+  userId            String?  @map("user_id") @db.Char(36)
+  conversationId    String?  @map("conversation_id") @db.Char(36)
+  provider          String   @db.VarChar(16)
+  modelId           String   @map("model_id") @db.VarChar(64)
+  reasoningEffort   String?  @map("reasoning_effort") @db.VarChar(16)
+  inputTokens       Int      @default(0) @map("input_tokens")
+  cachedInputTokens Int      @default(0) @map("cached_input_tokens")
+  outputTokens      Int      @default(0) @map("output_tokens")
+  reasoningTokens   Int      @default(0) @map("reasoning_tokens")
+  costUsd           Decimal  @default(0) @map("cost_usd") @db.Decimal(12, 6)
+  durationMs        Int      @default(0) @map("duration_ms")
+  /// OK o ERROR.
+  status            String   @db.VarChar(8)
+  error             String?  @db.VarChar(1000)
+  /// Herramientas que pidió el modelo en esta llamada, separadas por coma.
+  toolCalls         String?  @map("tool_calls") @db.VarChar(500)
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  agent        AiAgent?        @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  user         User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  conversation AiConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([agentId, createdAt])
+  @@map("ai_request")
 }

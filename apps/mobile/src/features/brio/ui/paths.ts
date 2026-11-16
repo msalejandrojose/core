@@ -5,6 +5,8 @@ export const PATHS = {
   plus: 'M12 5v14M5 12h14',
   plusCircle: 'M12 3a9 9 0 1 0 .01 0M12 8v8M8 12h8',
   bell: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4',
+  chat: 'M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM8 11h.01M12 11h.01M16 11h.01',
+  send: 'M4 12l16-8-6 16-2-6zM12 14l8-10',
   search: 'M11 4a7 7 0 1 0 .01 0M20 20l-4-4',
   barcode: 'M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 9v6M12 9v6M16 9v6',
   mic: 'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3',

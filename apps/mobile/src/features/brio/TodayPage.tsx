@@ -252,6 +252,9 @@ export default function TodayPage() {
                     ) : null}
                   </Link>
                 )}
+                <Link to="/tabs/today/coach" className="rk-iconbtn" aria-label="Coach">
+                  <Icon d={PATHS.chat} />
+                </Link>
                 <Link
                   to="/tabs/settings"
                   className="rk-iconbtn"

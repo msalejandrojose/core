@@ -1,5 +1,9 @@
 import {
   BarChart3,
+  BookOpen,
+  Bot,
+  Cpu,
+  Receipt,
   Bell,
   Circle,
   ClipboardList,
@@ -28,6 +32,10 @@ import {
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, LucideIcon> = {
+  Bot,
+  BookOpen,
+  Cpu,
+  Receipt,
   LayoutDashboard,
   Users,
   Shield,
