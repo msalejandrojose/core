@@ -52,6 +52,14 @@ import { GetProgressUseCase } from './application/use-cases/get-progress.use-cas
 import { ListActivityTypesUseCase } from './application/use-cases/list-activity-types.use-case';
 import { LogActivitySessionUseCase } from './application/use-cases/log-activity-session.use-case';
 import { LogMealEntryUseCase } from './application/use-cases/log-meal-entry.use-case';
+import { BrioHealthDeviceController } from './infrastructure/http/brio-health-device.controller';
+import { PrismaBrioDeviceHealthRepository } from './infrastructure/persistence/prisma-brio-device-health.repository';
+import { BRIO_DEVICE_HEALTH_REPOSITORY } from './application/ports/device-health.port';
+import {
+  DisconnectHealthDeviceUseCase,
+  GetHealthDeviceStatusUseCase,
+  ImportDeviceHealthUseCase,
+} from './application/use-cases/device-health.use-cases';
 import { LogWeightUseCase } from './application/use-cases/log-weight.use-case';
 import { RefreshDailyLogUseCase } from './application/use-cases/refresh-daily-log.use-case';
 import { SaveMyProfileUseCase } from './application/use-cases/save-my-profile.use-case';
@@ -157,6 +165,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     BrioMenuController,
     BrioHevyController,
     BrioGarminController,
+    BrioHealthDeviceController,
     BrioSocialController,
     BrioDigestionController,
     BrioConnectionsController,
@@ -179,6 +188,10 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     { provide: BRIO_HEVY_REPOSITORY, useClass: PrismaBrioHevyRepository },
     { provide: HEVY_CLIENT, useClass: HttpHevyClient },
     { provide: BRIO_GARMIN_REPOSITORY, useClass: PrismaBrioGarminRepository },
+    {
+      provide: BRIO_DEVICE_HEALTH_REPOSITORY,
+      useClass: PrismaBrioDeviceHealthRepository,
+    },
     { provide: GARMIN_CLIENT, useClass: HttpGarminClient },
     { provide: BRIO_SOCIAL_REPOSITORY, useClass: PrismaBrioSocialRepository },
     {
@@ -282,6 +295,9 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     // Garmin y salud diaria.
     GetGarminStatusUseCase,
     SyncGarminUseCase,
+    GetHealthDeviceStatusUseCase,
+    ImportDeviceHealthUseCase,
+    DisconnectHealthDeviceUseCase,
     ConnectGarminUseCase,
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,

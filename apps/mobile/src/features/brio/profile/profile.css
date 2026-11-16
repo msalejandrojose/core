@@ -499,3 +499,13 @@
   font-size: 16px;
   cursor: pointer;
 }
+
+/* Salud del teléfono (Apple Salud / Health Connect) */
+.conn__toggle .is-danger {
+  color: var(--brio-danger);
+}
+.rk-row__sub .conn__dot {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 2px;
+}

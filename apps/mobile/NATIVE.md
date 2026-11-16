@@ -90,6 +90,27 @@ Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
 4. Usar el pnpm del repo (`packageManager`, 10.x): con otra versión mayor,
    `pnpm add` falla por la ubicación del store. `npx pnpm@10.11.0 …` sirve.
 
+5. **Apple Salud (HealthKit).** En `ios/App/App/Info.plist`:
+
+   ```xml
+   <key>NSHealthShareUsageDescription</key>
+   <string>Brío lee tu sueño, pulso en reposo, variabilidad, pasos, peso y entrenos para ajustar tu plan y tus calorías.</string>
+   <key>NSHealthUpdateUsageDescription</key>
+   <string>Brío no escribe en Salud; el sistema pide este texto igualmente.</string>
+   ```
+
+   y el permiso de HealthKit: crea `ios/App/App/App.entitlements` con
+   `com.apple.developer.healthkit` = `true` y
+   `com.apple.developer.healthkit.access` = array vacío, y en
+   `project.pbxproj` añade `CODE_SIGN_ENTITLEMENTS = App/App.entitlements;` a
+   las dos configuraciones del target `App` (junto a `PRODUCT_BUNDLE_IDENTIFIER`).
+   Al firmar con `-allowProvisioningUpdates` (Xcode o Forja) el perfil se
+   regenera con HealthKit.
+
+Desde Capacitor 8, `cap sync ios` sigue usando CocoaPods si `ios/` ya existía
+con Podfile. Si regeneras la carpeta, usa `npx cap add ios --packagemanager CocoaPods`
+para mantener `App.xcworkspace` (lo que compila Forja).
+
 Compilar y lanzar en un simulador sin abrir Xcode:
 
 ```bash
@@ -97,6 +118,29 @@ cd apps/mobile/ios/App
 xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug \
   -destination 'platform=iOS Simulator,name=iPhone 16' build
 ```
+
+## Android: Health Connect
+
+Tras `cap add android` (necesita Android Studio / SDK, `minSdk` 26):
+
+1. El plugin `@capgo/capacitor-health` ya declara los permisos de lectura
+   (pasos, sueño, pulso en reposo, variabilidad, peso, entrenos) y la pantalla
+   de explicación de permisos. Añade en `android/app/src/main/AndroidManifest.xml`
+   el permiso de historial (sin él Health Connect solo deja leer ~30 días):
+
+   ```xml
+   <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+   ```
+
+2. Health Connect exige una política de privacidad. En
+   `android/app/src/main/res/values/strings.xml`:
+
+   ```xml
+   <string name="health_connect_privacy_policy_url">https://URL-DE-LA-POLITICA</string>
+   ```
+
+3. En Android 13 o anterior hay que instalar «Health Connect» desde Play
+   Store; la app lo detecta y lo dice en Conexiones.
 
 ## Push notifications (MOB-13)
 

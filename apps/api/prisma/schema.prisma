@@ -294,6 +294,7 @@ model User {
   brioChallengeMembers BrioChallengeMember[]
   brioHevyConnection   BrioHevyConnection?
   brioGarminConnection BrioGarminConnection?
+  brioHealthDevice     BrioHealthDevice?
   brioDailyHealth      BrioDailyHealth[]
   brioConnectionPrefs  BrioConnectionPrefs?
   brioHevyLinks        BrioHevyExerciseLink[]
@@ -2389,6 +2390,8 @@ enum BrioActivitySource {
   STRAVA
   GARMIN
   HEVY
+  /// Health Connect (Android). GOOGLE_FIT queda por compatibilidad.
+  HEALTH_CONNECT
 }
 
 /// Esfuerzo percibido (RPE simplificado). Se usa como fallback para estimar
@@ -3046,6 +3049,25 @@ model BrioGarminConnection {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("brio_garmin_connection")
+}
+
+/// Lectura de Apple Salud (iOS) o Health Connect (Android) desde la app del
+/// móvil: los permisos viven en el teléfono, aquí solo el estado para Conexiones.
+model BrioHealthDevice {
+  userId           String             @id @map("user_id") @db.Char(36)
+  /// HEALTHKIT o HEALTH_CONNECT.
+  source           BrioActivitySource
+  lastSyncAt       DateTime?          @map("last_sync_at")
+  /// Días de salud y entrenos que llegaron en la última sincronización.
+  lastSyncDays     Int?               @map("last_sync_days")
+  lastSyncWorkouts Int?               @map("last_sync_workouts")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("brio_health_device")
 }
 
 /// Datos de salud de un día medidos por el reloj: pulso, sueño y variabilidad.
