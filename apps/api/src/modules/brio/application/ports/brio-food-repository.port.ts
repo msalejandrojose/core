@@ -26,6 +26,11 @@ export interface BrioFoodRepositoryPort {
   findVisibleTo(id: string, userId: string): Promise<Food | null>;
   create(data: CreateFoodData): Promise<Food>;
   /**
+   * Recetas del usuario: sus alimentos propios cuya ración por defecto lleva
+   * la etiqueta de receta. Las más nuevas primero.
+   */
+  findOwnRecipes(userId: string, servingLabel: string): Promise<Food[]>;
+  /**
    * Alimento del catálogo compartido importado de Open Food Facts. Si otro ya
    * reclamó ese código (carrera o alimento propio de alguien), devuelve null.
    */

@@ -120,6 +120,13 @@ export interface Food {
   servings: FoodServing[];
 }
 
+/** Nueva receta (POST /brio/recipes): se guarda como alimento propio. */
+export interface CreateRecipeBody {
+  name: string;
+  servings: number;
+  ingredients: { foodId: string; grams: number }[];
+}
+
 /** Corrección de una entrada (PATCH /brio/meals/:id). */
 export interface UpdateMealBody {
   mealType?: MealType;
@@ -355,6 +362,10 @@ export const brioApi = {
   deleteMeal: (id: string) => call<void>('DELETE', `/brio/meals/${id}`),
   createFood: (body: CreateFoodBody) =>
     call<Food>('POST', '/brio/foods', { body }),
+  /** Mis recetas (alimentos propios con su «1 ración»), las más nuevas primero. */
+  recipes: () => call<Food[]>('GET', '/brio/recipes'),
+  createRecipe: (body: CreateRecipeBody) =>
+    call<Food>('POST', '/brio/recipes', { body }),
   /** Volcado de todo lo guardado en Brío (Perfil › Descargar mis datos). */
   exportMyData: () => call<unknown>('GET', '/brio/account/export'),
   /** Borrado definitivo de la cuenta y de todos sus datos. */

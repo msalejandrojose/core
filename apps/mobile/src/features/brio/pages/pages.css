@@ -278,6 +278,84 @@
   cursor: pointer;
 }
 
+.recipe__grams {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  color: var(--brio-ink-muted);
+  font-size: 15px;
+}
+.recipe__grams input {
+  width: 64px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--brio-separator);
+  border-radius: 10px;
+  background: var(--brio-bg, transparent);
+  color: var(--brio-ink);
+  font: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.recipe__remove {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--brio-ink-muted);
+  cursor: pointer;
+}
+.recipe__search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px 10px 0;
+  border-top: 1px solid var(--brio-separator);
+}
+.recipe__results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recipe__result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--brio-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.recipe__result > svg {
+  color: var(--brio-tint);
+}
+.recipe__results > li + li .recipe__result {
+  border-top: 1px solid var(--brio-separator);
+}
+.recipe__none {
+  margin: 4px 0;
+  font-size: 14px;
+  color: var(--brio-ink-muted);
+}
+.recipes__state {
+  padding: 18px 4px;
+  font-size: 14px;
+  color: var(--brio-ink-muted);
+  text-align: center;
+}
+
 /* ---- Recuperación ---- */
 .recovery__score {
   display: flex;

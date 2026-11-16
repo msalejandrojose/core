@@ -10,6 +10,9 @@ import {
   type BrioFoodRepositoryPort,
 } from '../ports/brio-food-repository.port';
 
+/** Etiqueta de la ración por defecto de una receta: así se reconocen. */
+export const RECIPE_SERVING_LABEL = '1 ración';
+
 export interface CreateRecipeInput {
   userId: string;
   name: string;
@@ -51,7 +54,11 @@ export class CreateRecipeUseCase {
       carbsPer100G: nutrition.carbsPer100G,
       fatPer100G: nutrition.fatPer100G,
       servings: [
-        { label: '1 ración', grams: nutrition.servingGrams, isDefault: true },
+        {
+          label: RECIPE_SERVING_LABEL,
+          grams: nutrition.servingGrams,
+          isDefault: true,
+        },
       ],
     });
     return { food, nutrition };
