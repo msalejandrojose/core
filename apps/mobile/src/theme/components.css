@@ -94,57 +94,121 @@ ion-modal::part(handle) {
 }
 
 /* ============================== TabBar ==================================== */
-/* Alto tabbar, fondo translúcido con desenfoque y borde superior en border.
- * Cinco columnas: Hoy · Plan · + · Progreso · Social. */
-ion-tab-bar {
-  --background: var(--brio-tabbar-bg);
-  --border: 1px solid var(--brio-border);
-  --color: var(--brio-ink-muted);
+/* Barra flotante de cristal (estilo Liquid Glass): una cápsula separada de los
+ * bordes con Hoy · Plan · orbe del coach · Progreso · Social. El contenido pasa
+ * por debajo y se ve difuminado. */
+.brio-glass {
+  background: var(--brio-glass);
+  -webkit-backdrop-filter: var(--brio-glass-blur);
+  backdrop-filter: var(--brio-glass-blur);
+  box-shadow: var(--brio-glass-shadow);
+}
+ion-tab-bar.brio-tabbar {
+  --background: transparent;
+  --border: 0;
+  --color: var(--brio-ink);
   --color-selected: var(--brio-tint);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(12px + var(--ion-safe-area-bottom, 0px));
+  height: 64px;
+  padding: 0 6px;
+  border-radius: 999px;
+  contain: none;
+  overflow: visible;
+  background: var(--brio-glass);
+  -webkit-backdrop-filter: var(--brio-glass-blur);
+  backdrop-filter: var(--brio-glass-blur);
+  box-shadow: var(--brio-glass-shadow);
+  transition: transform 0.45s var(--brio-spring), opacity 0.25s;
+}
+ion-tab-bar.brio-tabbar.is-hidden {
+  transform: translateY(140%);
+  opacity: 0;
+  pointer-events: none;
+}
+ion-tab-bar.brio-tabbar.is-under {
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+}
+ion-tab-bar.brio-tabbar.is-quiet {
+  transform: translateY(6px) scale(0.96);
+  opacity: 0.55;
 }
 ion-tab-button {
-  --color: var(--brio-ink-muted);
+  --color: var(--brio-ink);
   --color-selected: var(--brio-tint);
+  --background: transparent;
+  --background-focused: transparent;
+  --ripple-color: transparent;
+  margin: 6px 2px;
+  border-radius: 999px;
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
+  opacity: 0.78;
+  transition: background 0.35s var(--brio-spring), opacity 0.2s;
 }
 ion-tab-button.tab-selected {
-  font-weight: 600;
+  opacity: 1;
+  background: var(--brio-glass-strong);
+  box-shadow: inset 0 1px 0.5px var(--brio-glass-edge), 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 ion-tab-button ion-label {
   font-size: 10px;
   margin-top: 2px;
 }
 ion-tab-button ion-icon {
-  font-size: 24px;
+  font-size: 23px;
 }
-/* Botón + central: 48px en tint con shadow-fab. */
-.brio-tab-register {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--brio-control);
+/* El contenido de las pestañas llega hasta abajo, pero deja sitio a la barra. */
+ion-tabs ion-content {
+  --padding-bottom: var(--brio-dock-space);
+}
+
+/* Orbe del coach (centro de la barra): cristal discreto con una chispa. */
+.brio-orb {
+  flex: 0 0 72px;
+  display: grid;
+  place-items: center;
   padding: 0;
   border: 0;
   background: transparent;
-  cursor: pointer;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  z-index: 2;
 }
-.brio-tab-register__fab {
-  width: 48px;
-  height: 48px;
+.brio-orb__glass {
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  background: var(--brio-tint);
-  color: var(--brio-on-tint);
   display: grid;
   place-items: center;
-  box-shadow: var(--brio-shadow-fab);
+  color: var(--brio-tint);
+  background: var(--brio-glass-strong);
+  box-shadow: inset 0 1px 0.5px var(--brio-glass-edge), inset 0 0 0 1px color-mix(in srgb, var(--brio-tint) 18%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.55s var(--brio-spring), background 0.3s, color 0.3s;
 }
-.brio-tab-register__fab ion-icon {
-  font-size: 26px;
-  color: var(--brio-on-tint);
+.brio-orb:active .brio-orb__glass {
+  transform: scale(0.92);
+}
+/* Mantener: el orbe sale de la barra hacia arriba (lo recoge la burbuja de voz,
+ * que pinta su propio orbe por encima del cristal). */
+.brio-orb--listening .brio-orb__glass,
+.brio-orb--sending .brio-orb__glass {
+  transform: translateY(-60px) scale(0.6);
+  opacity: 0;
+  transition: transform 0.3s ease-in, opacity 0.2s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brio-orb__glass,
+  ion-tab-bar.brio-tabbar {
+    transition-duration: 0.01s;
+  }
 }
 
 /* ============================ Tipografía ================================== */

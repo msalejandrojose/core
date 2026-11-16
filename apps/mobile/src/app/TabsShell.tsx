@@ -9,7 +9,6 @@ import {
 } from '@ionic/react';
 import { Redirect, Route, useLocation } from 'react-router-dom';
 import {
-  add,
   barChart,
   barChartOutline,
   calendar,
@@ -45,7 +44,9 @@ import RecipesPage from '@/features/brio/pages/RecipesPage';
 import NewRecipePage from '@/features/brio/pages/NewRecipePage';
 import RecoveryPage from '@/features/brio/pages/RecoveryPage';
 import AlertsPage from '@/features/brio/pages/AlertsPage';
-import { useRegisterStore } from '@/features/brio/register.store';
+import { CoachOrb } from '@/features/brio/dock/CoachOrb';
+import { DockOverlay } from '@/features/brio/dock/DockOverlay';
+import { useDockStore } from '@/features/brio/dock/dock.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import { useHevyAutoSync } from '@/features/brio/profile/hevy.api';
 import PlanPage from '@/features/brio/plan/PlanPage';
@@ -72,28 +73,6 @@ import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { usePushNotifications } from '@/features/notifications/use-push-notifications';
 import { Snackbar } from '@/components/ux';
 
-/**
- * El + central. `IonTabBar` solo pinta hijos que sean pestañas (y descarta el
- * resto), así que se marca con `isTabButton` para ocupar su hueco en la barra.
- * A diferencia de una `IonTabButton`, NO llama al `onClick` que le inyecta la
- * barra: ese cambiaría a la pestaña "register", que no existe, y IonTabs avisa
- * con un error. Aquí solo abre la hoja Registrar.
- */
-function RegisterTabButton({ onOpen }: { tab: string; onOpen: () => void }) {
-  return (
-    <button
-      type="button"
-      className="brio-tab-register"
-      aria-label="Registrar"
-      onClick={onOpen}
-    >
-      <span className="brio-tab-register__fab" aria-hidden="true">
-        <IonIcon icon={add} />
-      </span>
-    </button>
-  );
-}
-RegisterTabButton.isTabButton = true;
 
 /** Pestañas en el orden fijo del DS (TabBar): el + va en el centro. */
 const TABS = [
@@ -104,9 +83,10 @@ const TABS = [
 ] as const;
 
 /**
- * Shell del área autenticada de Brío con la barra de pestañas del diseño:
- * Hoy · Plan · + · Progreso · Social. El + central no es una pestaña: abre la
- * hoja "Registrar" encima de la pantalla en la que estés.
+ * Shell del área autenticada de Brío con la barra flotante de cristal:
+ * Hoy · Plan · orbe del coach · Progreso · Social. El orbe no es una pestaña:
+ * un toque abre el campo del coach (con + para registrar a mano y cámara) y
+ * mantenerlo pulsado escucha lo que dices. Encima flota la píldora del momento.
  *
  * Notificaciones y Ajustes dejan de ser pestañas (el DS fija cinco): se entra
  * desde la campana y el avatar de la cabecera de Hoy, y sus rutas no cambian.
@@ -121,7 +101,10 @@ export default function TabsShell() {
   useReminders();
   const { pathname } = useLocation();
   const refreshUnread = useUnreadStore((s) => s.refresh);
-  const openRegister = useRegisterStore((s) => s.open);
+  const dockMode = useDockStore((s) => s.mode);
+  // La barra se esconde donde la pantalla tiene su propio campo abajo (chat del
+  // coach) o en el entreno en directo.
+  const barHidden = /^\/tabs\/today\/(coach|entreno)$/.test(pathname);
 
   // Push nativas: registra el dispositivo y engancha recepción/tap (no-op en
   // web/PWA). Vive aquí para arrancar una vez al entrar al área autenticada.
@@ -200,15 +183,19 @@ export default function TabsShell() {
           <Route render={() => <Redirect to="/tabs/today" />} />
         </IonRouterOutlet>
 
-        <IonTabBar slot="bottom">
+        <IonTabBar
+          slot="bottom"
+          className={`brio-tabbar${barHidden ? ' is-hidden' : ''}${dockMode === 'listening' || dockMode === 'sending' ? ' is-quiet' : ''}${dockMode === 'typing' ? ' is-under' : ''}`}
+        >
           {tabButton(TABS[0])}
           {tabButton(TABS[1])}
-          <RegisterTabButton tab="register" onOpen={() => openRegister('menu')} />
+          <CoachOrb tab="coach" />
           {tabButton(TABS[2])}
           {tabButton(TABS[3])}
         </IonTabBar>
       </IonTabs>
 
+      <DockOverlay hidden={barHidden} />
       <RegisterSheets />
       <Snackbar />
     </>

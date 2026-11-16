@@ -1,0 +1,120 @@
+import { create } from 'zustand';
+import { useBrioStore } from '../brio.store';
+import { coachApi, TOOL_NOTES } from '../coach/coach.api';
+import { tapSuccess } from '../haptics';
+import { startSpeech, type SpeechSession } from './speech';
+
+export type DockMode = 'idle' | 'typing' | 'listening' | 'sending';
+
+export interface CoachReply {
+  text: string;
+  notes: string[];
+  error?: boolean;
+}
+
+interface DockState {
+  mode: DockMode;
+  /** Lo que se va entendiendo mientras hablas. */
+  heard: string;
+  /** Deslizando hacia abajo: al soltar se cancela. */
+  cancelArmed: boolean;
+  reply: CoachReply | null;
+  openComposer: () => void;
+  close: () => void;
+  startListening: () => Promise<void>;
+  armCancel: (armed: boolean) => void;
+  finishListening: () => Promise<void>;
+  send: (text: string, images?: string[]) => Promise<void>;
+  dismissReply: () => void;
+}
+
+/** Conversación que se sigue desde la barra: la última si es de las últimas 6 h. */
+const RECENT_MS = 6 * 60 * 60 * 1000;
+async function currentConversation(): Promise<string | undefined> {
+  const list = await coachApi.conversations().catch(() => []);
+  const last = list[0];
+  return last && Date.now() - new Date(last.updatedAt).getTime() < RECENT_MS ? last.id : undefined;
+}
+
+let session: SpeechSession | null = null;
+
+/**
+ * Estado del dock de la barra: el orbe central abre el campo del coach (toque)
+ * o escucha (mantener). Lo que se dice o escribe va al coach (`brio-coach`), y
+ * su respuesta sale en una tarjeta arriba.
+ */
+export const useDockStore = create<DockState>((set, get) => ({
+  mode: 'idle',
+  heard: '',
+  cancelArmed: false,
+  reply: null,
+
+  openComposer: () => set({ mode: 'typing', reply: null }),
+  close: () => {
+    session?.cancel();
+    session = null;
+    set({ mode: 'idle', heard: '', cancelArmed: false });
+  },
+
+  startListening: async () => {
+    set({ mode: 'listening', heard: '', cancelArmed: false, reply: null });
+    void tapSuccess();
+    try {
+      session = await startSpeech((heard) => set({ heard }));
+      // Si se soltó mientras se pedían permisos, no seguimos escuchando.
+      if (get().mode !== 'listening') get().close();
+    } catch (e) {
+      session = null;
+      const denied = e instanceof Error && e.message === 'SPEECH_DENIED';
+      set({
+        mode: 'typing',
+        reply: {
+          error: true,
+          notes: [],
+          text: denied
+            ? 'Brío no tiene permiso para el micro. Actívalo en Ajustes, o escríbelo aquí.'
+            : 'Aquí no puedo escucharte. Escríbelo y lo apunto.',
+        },
+      });
+    }
+  },
+
+  armCancel: (armed) => {
+    if (get().cancelArmed !== armed) set({ cancelArmed: armed });
+  },
+
+  finishListening: async () => {
+    const s = session;
+    session = null;
+    if (get().cancelArmed || !s) {
+      s?.cancel();
+      set({ mode: 'idle', heard: '', cancelArmed: false });
+      return;
+    }
+    const text = (await s.stop()) || get().heard.trim();
+    if (!text) {
+      set({ mode: 'idle', heard: '' });
+      return;
+    }
+    await get().send(text);
+  },
+
+  send: async (text, images = []) => {
+    set({ mode: 'sending', heard: text, reply: null });
+    try {
+      const out = await coachApi.send(text, await currentConversation(), images);
+      const notes = out.message.toolsUsed.filter((t) => t in TOOL_NOTES).map((t) => TOOL_NOTES[t]);
+      if (notes.length) void useBrioStore.getState().refreshDay();
+      void tapSuccess();
+      set({ mode: 'idle', heard: '', reply: { text: out.message.content, notes } });
+    } catch {
+      set({
+        mode: 'idle',
+        heard: '',
+        reply: { error: true, notes: [], text: 'El coach no ha podido responder. Prueba otra vez en un momento.' },
+      });
+    }
+  },
+
+  dismissReply: () => set({ reply: null }),
+}));

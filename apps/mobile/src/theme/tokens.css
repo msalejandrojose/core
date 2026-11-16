@@ -67,6 +67,16 @@
   --brio-snackbar: var(--brio-ink);
   --brio-snackbar-link: #8ec5ff; /* 9,4:1 sobre snackbar */
   --brio-tabbar-bg: rgba(249, 249, 249, 0.94);
+  /* Cristal (barra flotante, orbe, píldoras): translúcido con brillo en el borde. */
+  --brio-glass: rgba(255, 255, 255, 0.3);
+  --brio-glass-strong: rgba(255, 255, 255, 0.66);
+  --brio-glass-edge: rgba(255, 255, 255, 0.8);
+  --brio-glass-blur: blur(14px) saturate(200%) brightness(1.08);
+  --brio-glass-shadow: inset 0 1px 0.5px var(--brio-glass-edge), inset 0 -1px 1px rgba(0, 0, 0, 0.06),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.35), 0 10px 30px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  /* Altura que ocupa la barra flotante, para que el contenido no quede debajo. */
+  --brio-dock-space: calc(96px + var(--ion-safe-area-bottom, 0px));
+  --brio-spring: cubic-bezier(0.34, 1.45, 0.55, 1);
 
   /* ---- Tipografía: una sola familia, la del sistema (SF Pro en Apple) ---- */
   --brio-font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', Inter,
