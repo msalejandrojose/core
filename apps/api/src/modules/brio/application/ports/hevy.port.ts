@@ -43,6 +43,12 @@ export interface HevyClientPort {
     apiKey: string,
     routine: { title: string; notes: string; exercises: RoutineExercise[] },
   ): Promise<{ id: string | null }>;
+  /** Sustituye la rutina; lanza HevyApiError(404) si ya no existe en Hevy. */
+  updateRoutine(
+    apiKey: string,
+    routineId: string,
+    routine: { title: string; notes: string; exercises: RoutineExercise[] },
+  ): Promise<void>;
 }
 
 export interface SecretCipher {

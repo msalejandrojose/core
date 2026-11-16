@@ -284,6 +284,7 @@ model User {
   brioMuscleOverrides  BrioExerciseMuscleOverride[]
   brioPlans            BrioPlan[]
   brioPlannedSessions  BrioPlannedSession[]
+  brioRoutines         BrioRoutine[]
   brioMenuChoices      BrioMenuChoice[]
   brioShoppingChecks   BrioShoppingCheck[]
   brioSocialProfile    BrioSocialProfile?
@@ -2547,6 +2548,8 @@ model BrioActivitySession {
   /// Id de la sesión en el proveedor externo. Junto con `source` evita
   /// duplicar entrenos al re-sincronizar.
   externalId String?            @map("external_id") @db.VarChar(191)
+  /// Rutina guardada con la que se hizo, si se eligió una (o se enlazó al importar).
+  routineId  String?            @map("routine_id") @db.Char(36)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2555,8 +2558,10 @@ model BrioActivitySession {
   activityType    BrioActivityType     @relation(fields: [activityTypeId], references: [id])
   strengthSets    BrioStrengthSet[]
   plannedSessions BrioPlannedSession[]
+  routine         BrioRoutine?         @relation(fields: [routineId], references: [id], onDelete: SetNull)
 
   @@unique([source, externalId])
+  @@index([routineId])
   @@index([userId, loggedOn])
   @@index([activityTypeId])
   @@map("brio_activity_session")
@@ -2746,6 +2751,7 @@ model BrioExercise {
   overrides BrioExerciseMuscleOverride[]
   sets      BrioStrengthSet[]
   hevyLinks BrioHevyExerciseLink[]
+  routines  BrioRoutineExercise[]
 
   @@index([ownerUserId])
   @@map("brio_exercise")
@@ -2997,6 +3003,57 @@ model BrioPlannedSession {
   @@index([planId])
   @@index([completedSessionId])
   @@map("brio_planned_session")
+}
+
+/// Rutina guardada del usuario: un entreno que repite («Torso A», «Series
+/// 6×800»). Las de gimnasio llevan ejercicios y se pueden mandar a Hevy; las
+/// de cardio se hacen con el reloj y vuelven al sincronizar Garmin.
+model BrioRoutine {
+  id     String           @id @default(uuid()) @db.Char(36)
+  userId String           @map("user_id") @db.Char(36)
+  name   String           @db.VarChar(80)
+  kind   BrioActivityKind
+  notes  String?          @db.VarChar(500)
+
+  /// Cardio: duración, distancia y ritmo objetivo (todo opcional).
+  plannedDurationMin Int? @map("planned_duration_min") @db.SmallInt
+  plannedDistanceM   Int? @map("planned_distance_m")
+  targetPaceSecPerKm Int? @map("target_pace_sec_per_km") @db.SmallInt
+
+  /// Rutina creada en Hevy a partir de esta (se actualiza al reenviar).
+  hevyRoutineId String?   @map("hevy_routine_id") @db.VarChar(64)
+  hevySentAt    DateTime? @map("hevy_sent_at")
+  isArchived    Boolean   @default(false) @map("is_archived")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises BrioRoutineExercise[]
+  sessions  BrioActivitySession[]
+
+  @@index([userId, isArchived])
+  @@map("brio_routine")
+}
+
+/// Ejercicio de una rutina de gimnasio, con las series y repeticiones previstas.
+model BrioRoutineExercise {
+  id         String   @id @default(uuid()) @db.Char(36)
+  routineId  String   @map("routine_id") @db.Char(36)
+  exerciseId String   @map("exercise_id") @db.Char(36)
+  position   Int      @db.SmallInt
+  sets       Int      @db.TinyInt
+  reps       Int      @db.SmallInt
+  /// Peso previsto en kg; nulo = el que toque ese día.
+  weightKg   Decimal? @map("weight_kg") @db.Decimal(6, 2)
+  restSec    Int?     @map("rest_sec") @db.SmallInt
+
+  routine  BrioRoutine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise BrioExercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([routineId, position])
+  @@index([exerciseId])
+  @@map("brio_routine_exercise")
 }
 
 /// Conexión del usuario con Hevy (app de gimnasio). La clave de su API se

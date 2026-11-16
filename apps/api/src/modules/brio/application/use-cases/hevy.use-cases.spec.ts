@@ -141,6 +141,7 @@ function fakes(initial: Partial<HevyConnection> | null = {}) {
       .fn()
       .mockResolvedValue({ pageCount: 1, items: TEMPLATES }),
     createRoutine: jest.fn().mockResolvedValue({ id: 'R1' }),
+    updateRoutine: jest.fn().mockResolvedValue(undefined),
   };
   const refresh = { execute: jest.fn() };
   const sync = new SyncHevyUseCase(
@@ -150,6 +151,7 @@ function fakes(initial: Partial<HevyConnection> | null = {}) {
     { latestWeightKg: async () => 80 } as never,
     { findByUserId: async () => ({ timezone: 'Europe/Madrid' }) } as never,
     refresh as never,
+    { list: async () => [], linkImported: async () => undefined } as never,
   );
   return {
     repo,

@@ -124,6 +124,14 @@ export class LogActivityDto {
   @IsIn(EFFORTS)
   effort?: Effort;
 
+  @ApiPropertyOptional({
+    description:
+      'Rutina guardada con la que se ha hecho (se enlaza el entreno).',
+  })
+  @IsOptional()
+  @IsUUID()
+  routineId?: string;
+
   @ApiPropertyOptional({ maxLength: 500 })
   @IsOptional()
   @IsString()

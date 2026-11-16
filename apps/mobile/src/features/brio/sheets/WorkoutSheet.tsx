@@ -16,6 +16,9 @@ import {
   type DraftCardio,
   type DraftExercise,
 } from './workout-draft';
+import { RoutinePick } from '../routines/RoutinePick';
+import { ROUTINE_KINDS, workoutDraftFrom } from '../routines/routine-draft';
+import type { Routine } from '../routines/routines.api';
 import './sheets.css';
 
 /** Las seis teselas del diseño y el tipo de actividad del catálogo que usan. */
@@ -64,6 +67,8 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
   const [exercises, setExercises] = useState<DraftExercise[]>([]);
   const [cardio, setCardio] = useState<DraftCardio>(EMPTY_CARDIO);
   const [saving, setSaving] = useState(false);
+  /** Rutina elegida en «Tus rutinas» (se enlaza al guardar). */
+  const [routineId, setRoutineId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && types === null) {
@@ -80,6 +85,7 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
       setRpe(null);
       setExercises([]);
       setCardio(EMPTY_CARDIO);
+      setRoutineId(null);
     }
   }, [isOpen]);
 
@@ -102,12 +108,27 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
   const timezone = profile?.timezone ?? 'Europe/Madrid';
   const isToday = day === todayIn(timezone);
 
+  /** Rellena el registro con la rutina: tipo, duración y, en gimnasio, sus series. */
+  function logHere(r: Routine) {
+    setRoutineId(r.id);
+    const code = ROUTINE_KINDS.find((k) => k.value === r.kind)?.activityCode ?? null;
+    const t = TILES.find((x) => x.code === code);
+    if (t) setTile(t.id);
+    else {
+      setTile('otro');
+      setOtherId((types ?? []).find((x) => x.kind === r.kind)?.id ?? null);
+    }
+    if (r.plannedDurationMin) setMinutes(Math.min(300, Math.max(5, Math.round(r.plannedDurationMin / 5) * 5)));
+    setExercises(r.kind === 'STRENGTH' ? workoutDraftFrom(r) : []);
+  }
+
   async function save() {
     if (!selected) return;
     setSaving(true);
     try {
       const session = await brioApi.logActivity({
         activityTypeId: selected.id,
+        ...(routineId ? { routineId } : {}),
         // Hoy: ahora. Otro día: mediodía de ese día, para que el huso no lo mueva.
         startedAt: isToday ? new Date().toISOString() : new Date(`${day}T12:00:00.000Z`).toISOString(),
         durationSec: minutes * 60,
@@ -149,6 +170,13 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
             <Icon d={PATHS.info} size={20} />
             <span>Si entrenaste con el reloj o con Hevy, no hace falta: se importará solo cuando los conectes.</span>
           </div>
+
+          <RoutinePick
+            selectedId={routineId}
+            onSelect={(r) => setRoutineId(r?.id ?? null)}
+            onLogHere={logHere}
+            onDone={onClose}
+          />
 
           <section className="rk-section" aria-labelledby="tipo">
             <SectionHeader id="tipo">Tipo</SectionHeader>

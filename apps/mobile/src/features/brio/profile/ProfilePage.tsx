@@ -140,6 +140,11 @@ export default function ProfilePage() {
           <section className="rk-section" aria-labelledby="app">
             <SectionHeader id="app">Ajustes</SectionHeader>
             <div className="rk-list">
+              <Link to="/tabs/settings/rutinas" className="rk-row">
+                <span className="rk-row__main rk-row__title">Rutinas</span>
+                <span className="rk-row__value">Gimnasio y cardio</span>
+                <Chevron />
+              </Link>
               <Link to="/tabs/settings/conexiones" className="rk-row">
                 <span className="rk-row__main rk-row__title">Conexiones</span>
                 <span className="rk-row__value">Garmin, Salud</span>
