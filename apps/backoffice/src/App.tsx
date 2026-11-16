@@ -170,6 +170,15 @@ const AiSkillsPage = lazy(() =>
 const AiModelsPage = lazy(() =>
   import('@/features/ai/AiModelsPage').then((m) => ({ default: m.AiModelsPage })),
 );
+const BrioFoodsPage = lazy(() =>
+  import('@/features/brio/BrioFoodsPage').then((m) => ({ default: m.BrioFoodsPage })),
+);
+const BrioExercisesPage = lazy(() =>
+  import('@/features/brio/BrioExercisesPage').then((m) => ({ default: m.BrioExercisesPage })),
+);
+const BrioActivityTypesPage = lazy(() =>
+  import('@/features/brio/BrioActivityTypesPage').then((m) => ({ default: m.BrioActivityTypesPage })),
+);
 const AiUsagePage = lazy(() =>
   import('@/features/ai/AiUsagePage').then((m) => ({ default: m.AiUsagePage })),
 );
@@ -356,6 +365,9 @@ export default function App() {
               <Route path="/ai/skills" element={<AiSkillsPage />} />
               <Route path="/ai/models" element={<AiModelsPage />} />
               <Route path="/ai/usage" element={<AiUsagePage />} />
+              <Route path="/brio/foods" element={<BrioFoodsPage />} />
+              <Route path="/brio/exercises" element={<BrioExercisesPage />} />
+              <Route path="/brio/activity-types" element={<BrioActivityTypesPage />} />
               <Route path="/racing/circuits" element={<CircuitsPage />} />
               <Route path="/racing/circuits/:id" element={<CircuitEditorPage />} />
               <Route path="/racing/tracks" element={<TracksPage />} />
