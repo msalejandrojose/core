@@ -222,26 +222,63 @@ export default function RoutineEditorPage() {
                       onPlus={() => patch(i, { sets: Math.min(20, e.sets + 1) })}
                     />
                   </div>
-                  <div className="rk-row routine__line">
-                    <span className="rk-row__main rk-row__title">Repeticiones</span>
-                    <Stepper
-                      value={e.reps}
-                      minusLabel="Una repetición menos"
-                      plusLabel="Una repetición más"
-                      onMinus={() => patch(i, { reps: Math.max(1, e.reps - 1) })}
-                      onPlus={() => patch(i, { reps: Math.min(100, e.reps + 1) })}
-                    />
-                  </div>
-                  <label className="rk-row routine__line routine__field">
-                    <span className="rk-row__main rk-row__title">{e.bodyweight ? 'Lastre (kg)' : 'Peso (kg)'}</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={e.weight}
-                      placeholder="—"
-                      onChange={(ev) => patch(i, { weight: ev.target.value.replace(/[^0-9.,]/g, '') })}
-                    />
-                  </label>
+                  {e.measure === 'REPS' ? (
+                    <div className="rk-row routine__line">
+                      <span className="rk-row__main rk-row__title">Repeticiones</span>
+                      <Stepper
+                        value={e.reps}
+                        minusLabel="Una repetición menos"
+                        plusLabel="Una repetición más"
+                        onMinus={() => patch(i, { reps: Math.max(1, e.reps - 1) })}
+                        onPlus={() => patch(i, { reps: Math.min(100, e.reps + 1) })}
+                      />
+                    </div>
+                  ) : e.measure === 'DISTANCE' ? (
+                    <label className="rk-row routine__line routine__field">
+                      <span className="rk-row__main rk-row__title">Metros por serie</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={e.distance}
+                        placeholder="1000"
+                        onChange={(ev) => patch(i, { distance: ev.target.value.replace(/[^0-9]/g, '') })}
+                      />
+                    </label>
+                  ) : e.measure === 'TIME' ? (
+                    <label className="rk-row routine__line routine__field">
+                      <span className="rk-row__main rk-row__title">Tiempo por serie</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={e.time}
+                        placeholder="1:00"
+                        onChange={(ev) => patch(i, { time: ev.target.value.replace(/[^0-9:]/g, '') })}
+                      />
+                    </label>
+                  ) : (
+                    <label className="rk-row routine__line routine__field">
+                      <span className="rk-row__main rk-row__title">Calorías por serie</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={e.calories}
+                        placeholder="15"
+                        onChange={(ev) => patch(i, { calories: ev.target.value.replace(/[^0-9]/g, '') })}
+                      />
+                    </label>
+                  )}
+                  {e.measure === 'REPS' || !e.bodyweight ? (
+                    <label className="rk-row routine__line routine__field">
+                      <span className="rk-row__main rk-row__title">{e.bodyweight ? 'Lastre (kg)' : 'Peso (kg)'}</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={e.weight}
+                        placeholder="—"
+                        onChange={(ev) => patch(i, { weight: ev.target.value.replace(/[^0-9.,]/g, '') })}
+                      />
+                    </label>
+                  ) : null}
                   {linkedWithNext(groups, i) ? (
                     <p className="routine__rest-note">Sin descanso: pasas al siguiente ejercicio de la superserie.</p>
                   ) : (
@@ -294,11 +331,15 @@ export default function RoutineEditorPage() {
                           name: ex.name,
                           bodyweight: ex.isBodyweight,
                           muscles: ex.muscles,
-                          sets: 3,
+                          sets: (ex.measure ?? 'REPS') === 'REPS' ? 3 : 1,
                           reps: 10,
                           weight: '',
-                          rest: '90',
+                          rest: (ex.measure ?? 'REPS') === 'REPS' ? '90' : '',
                           group: null,
+                          measure: ex.measure ?? 'REPS',
+                          distance: ex.measure === 'DISTANCE' ? '1000' : '',
+                          time: ex.measure === 'TIME' ? '1:00' : '',
+                          calories: ex.measure === 'CALORIES' ? '15' : '',
                         },
                       ],
                     });

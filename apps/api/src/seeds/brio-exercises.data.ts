@@ -20,11 +20,15 @@ export type Muscle =
   | 'ABS'
   | 'LOWER_BACK';
 
+export type Measure = 'REPS' | 'DISTANCE' | 'TIME' | 'CALORIES';
+
 export interface SeedExercise {
   code: string;
   name: string;
   compound?: boolean;
   bodyweight?: boolean;
+  /** Cómo se mide; por defecto, repeticiones. */
+  measure?: Measure;
   /** Principales (1.0). */
   p: Muscle[];
   /** Secundarios (0.5). */
@@ -234,6 +238,7 @@ export const EXERCISES: readonly SeedExercise[] = [
   // Core
   {
     code: 'plank',
+    measure: 'TIME',
     name: 'Plancha',
     bodyweight: true,
     p: ['ABS'],
@@ -723,6 +728,7 @@ export const EXERCISES: readonly SeedExercise[] = [
   },
   {
     code: 'side_plank',
+    measure: 'TIME',
     name: 'Plancha lateral',
     bodyweight: true,
     p: ['ABS'],
@@ -786,6 +792,7 @@ export const EXERCISES: readonly SeedExercise[] = [
   },
   {
     code: 'farmers_walk',
+    measure: 'DISTANCE',
     name: 'Paseo del granjero',
     compound: true,
     p: ['FOREARMS', 'TRAPS'],
@@ -823,6 +830,113 @@ export const EXERCISES: readonly SeedExercise[] = [
     s: ['QUADS', 'LOWER_BACK'],
     i: ['FOREARMS'],
   },
+  // HYROX y cardio de gimnasio: van por distancia, tiempo o calorías.
+  {
+    code: 'running',
+    name: 'Carrera',
+    measure: 'DISTANCE',
+    compound: true,
+    bodyweight: true,
+    p: ['QUADS', 'CALVES'],
+    s: ['HAMSTRINGS', 'GLUTES'],
+  },
+  {
+    code: 'ski_erg',
+    name: 'SkiErg',
+    measure: 'DISTANCE',
+    compound: true,
+    bodyweight: true,
+    p: ['LATS', 'TRICEPS'],
+    s: ['ABS', 'FRONT_DELT'],
+    i: ['GLUTES'],
+  },
+  {
+    code: 'rowing_machine',
+    name: 'Remo ergómetro',
+    measure: 'DISTANCE',
+    compound: true,
+    bodyweight: true,
+    p: ['LATS', 'QUADS'],
+    s: ['HAMSTRINGS', 'GLUTES', 'BICEPS'],
+  },
+  {
+    code: 'bike_erg',
+    name: 'BikeErg',
+    measure: 'DISTANCE',
+    compound: true,
+    bodyweight: true,
+    p: ['QUADS'],
+    s: ['GLUTES', 'CALVES'],
+  },
+  {
+    code: 'assault_bike',
+    name: 'Assault bike',
+    measure: 'CALORIES',
+    compound: true,
+    bodyweight: true,
+    p: ['QUADS'],
+    s: ['GLUTES', 'FRONT_DELT'],
+    i: ['LATS'],
+  },
+  {
+    code: 'sled_push',
+    name: 'Empuje de trineo',
+    measure: 'DISTANCE',
+    compound: true,
+    p: ['QUADS', 'GLUTES'],
+    s: ['CALVES', 'FRONT_DELT'],
+    i: ['ABS', 'TRICEPS'],
+  },
+  {
+    code: 'sled_pull',
+    name: 'Arrastre de trineo',
+    measure: 'DISTANCE',
+    compound: true,
+    p: ['HAMSTRINGS', 'LATS'],
+    s: ['BICEPS', 'GLUTES', 'FOREARMS'],
+  },
+  {
+    code: 'burpee_broad_jump',
+    name: 'Burpee con salto largo',
+    measure: 'DISTANCE',
+    compound: true,
+    bodyweight: true,
+    p: ['QUADS', 'GLUTES'],
+    s: ['CHEST', 'TRICEPS'],
+    i: ['ABS'],
+  },
+  {
+    code: 'sandbag_lunges',
+    name: 'Zancadas con saco',
+    measure: 'DISTANCE',
+    compound: true,
+    p: ['QUADS', 'GLUTES'],
+    s: ['HAMSTRINGS', 'ABS'],
+  },
+  {
+    code: 'wall_ball',
+    name: 'Wall balls',
+    compound: true,
+    p: ['QUADS', 'FRONT_DELT'],
+    s: ['GLUTES', 'TRICEPS'],
+  },
+  {
+    code: 'jump_rope',
+    name: 'Comba',
+    measure: 'TIME',
+    bodyweight: true,
+    p: ['CALVES'],
+    i: ['QUADS'],
+  },
+  {
+    code: 'treadmill_incline_walk',
+    name: 'Caminar en cinta inclinada',
+    measure: 'TIME',
+    compound: true,
+    bodyweight: true,
+    p: ['GLUTES', 'CALVES'],
+    s: ['HAMSTRINGS'],
+  },
 ];
 
 /** Disciplina de cada tipo de actividad del catálogo (por `code`). */
@@ -842,4 +956,5 @@ export const ACTIVITY_KINDS: Record<string, string> = {
   elliptical: 'ELLIPTICAL',
   dancing: 'OTHER_CARDIO',
   climbing: 'OTHER',
+  hybrid: 'STRENGTH',
 };

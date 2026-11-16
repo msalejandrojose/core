@@ -39,7 +39,9 @@ import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import {
   ArchiveRoutineUseCase,
+  CreateRoutineFromTemplateUseCase,
   GetPreviousSetsUseCase,
+  ListRoutineTemplatesUseCase,
   GetRoutineUseCase,
   ListRoutinesUseCase,
   SaveRoutineUseCase,
@@ -49,6 +51,7 @@ import {
   type Routine,
   type RoutineGarminSync,
   type RoutineSentToHevy,
+  type RoutineTemplateSummary,
 } from '../../application/use-cases/routine.use-cases';
 import {
   MAX_ROUTINE_EXERCISES,
@@ -90,6 +93,27 @@ export class RoutineExerciseDto {
   @IsOptional()
   @IsInt()
   supersetGroup?: number | null;
+  @ApiPropertyOptional({
+    example: 1000,
+    description: 'Metros por serie (carrera, remo, trineo…).',
+  })
+  @IsOptional()
+  @IsInt()
+  distanceM?: number | null;
+  @ApiPropertyOptional({
+    example: 60,
+    description: 'Segundos por serie (plancha…).',
+  })
+  @IsOptional()
+  @IsInt()
+  durationSec?: number | null;
+  @ApiPropertyOptional({
+    example: 20,
+    description: 'Calorías por serie (assault bike…).',
+  })
+  @IsOptional()
+  @IsInt()
+  calories?: number | null;
 }
 
 export class SaveRoutineDto {
@@ -142,6 +166,8 @@ export class BrioRoutineController {
     private readonly sendToHevy: SendRoutineToHevyUseCase,
     private readonly syncGarmin: SyncRoutineWithGarminUseCase,
     private readonly previousSets: GetPreviousSetsUseCase,
+    private readonly listTemplates: ListRoutineTemplatesUseCase,
+    private readonly fromTemplateUseCase: CreateRoutineFromTemplateUseCase,
   ) {}
 
   @Get()
@@ -151,6 +177,23 @@ export class BrioRoutineController {
   @ApiOkResponse({ description: 'Rutinas, la última editada primero.' })
   list(@CurrentUser() current: AccessTokenPayload): Promise<Routine[]> {
     return this.listRoutines.execute(current.sub);
+  }
+
+  @Get('templates')
+  @ApiOperation({ summary: 'Plantillas de rutina (HYROX, híbridas).' })
+  @ApiOkResponse({ description: 'Plantillas disponibles.' })
+  templates(): RoutineTemplateSummary[] {
+    return this.listTemplates.execute();
+  }
+
+  @Post('templates/:code')
+  @ApiOperation({ summary: 'Crear una rutina mía a partir de una plantilla.' })
+  @ApiCreatedResponse({ description: 'Rutina creada.' })
+  fromTemplate(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('code') code: string,
+  ): Promise<Routine> {
+    return this.fromTemplateUseCase.execute(current.sub, code);
   }
 
   @Get('previous-sets')

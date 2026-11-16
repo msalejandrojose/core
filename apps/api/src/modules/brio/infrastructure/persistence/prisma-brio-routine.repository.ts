@@ -17,6 +17,8 @@ const INCLUDE = {
         select: {
           code: true,
           name: true,
+          measure: true,
+          isBodyweight: true,
           muscles: { select: { muscle: true, weight: true } },
         },
       },
@@ -51,6 +53,11 @@ const toView = (r: Row): RoutineView => ({
     weightKg: e.weightKg == null ? null : Number(e.weightKg),
     restSec: e.restSec,
     supersetGroup: e.supersetGroup,
+    measure: e.exercise.measure,
+    isBodyweight: e.exercise.isBodyweight,
+    distanceM: e.distanceM,
+    durationSec: e.durationSec,
+    calories: e.calories,
     muscles: e.exercise.muscles.map((m) => ({
       muscle: m.muscle,
       weight: Number(m.weight),
@@ -69,7 +76,24 @@ const exerciseRows = (data: CleanRoutine) =>
     weightKg: e.weightKg,
     restSec: e.restSec,
     supersetGroup: e.supersetGroup,
+    distanceM: e.distanceM,
+    durationSec: e.durationSec,
+    calories: e.calories,
   }));
+
+const setOf = (r: {
+  weightKg: unknown;
+  reps: number;
+  distanceM: number | null;
+  durationSec: number | null;
+  calories: number | null;
+}) => ({
+  weightKg: Number(r.weightKg),
+  reps: r.reps,
+  distanceM: r.distanceM,
+  durationSec: r.durationSec,
+  calories: r.calories,
+});
 
 const fields = (data: CleanRoutine) => ({
   name: data.name,
@@ -234,6 +258,9 @@ export class PrismaBrioRoutineRepository implements BrioRoutineRepositoryPort {
         sessionId: true,
         weightKg: true,
         reps: true,
+        distanceM: true,
+        durationSec: true,
+        calories: true,
         session: { select: { startedAt: true } },
       },
     });
@@ -246,15 +273,22 @@ export class PrismaBrioRoutineRepository implements BrioRoutineRepositoryPort {
           exerciseId: r.exerciseId,
           sessionId: r.sessionId,
           startedAt: r.session.startedAt,
-          sets: [{ weightKg: Number(r.weightKg), reps: r.reps }],
+          sets: [setOf(r)],
         });
-      else if (cur.sessionId === r.sessionId)
-        cur.sets.push({ weightKg: Number(r.weightKg), reps: r.reps });
+      else if (cur.sessionId === r.sessionId) cur.sets.push(setOf(r));
     }
     return [...out.values()].map((p) => ({
       exerciseId: p.exerciseId,
       startedAt: p.startedAt,
       sets: p.sets,
     }));
+  }
+
+  async exerciseIdsByCode(codes: string[]): Promise<Map<string, string>> {
+    const rows = await this.prisma.brioExercise.findMany({
+      where: { code: { in: [...new Set(codes)] }, ownerUserId: null },
+      select: { id: true, code: true },
+    });
+    return new Map(rows.map((r) => [r.code!, r.id]));
   }
 }

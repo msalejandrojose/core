@@ -20,6 +20,11 @@ const bench = {
   weightKg: 62.5,
   restSec: 120,
   supersetGroup: null,
+  measure: 'REPS' as const,
+  isBodyweight: false,
+  distanceM: null,
+  durationSec: null,
+  calories: null,
   muscles: [
     { muscle: 'CHEST', weight: 1 },
     { muscle: 'TRICEPS', weight: 0.5 },
@@ -89,5 +94,20 @@ describe('routine-draft', () => {
     expect(w[0].sets).toHaveLength(4);
     expect(w[0].sets[0]).toEqual({ weight: '62,5', reps: '8', rir: '', warmup: false });
     expect(w[0].rest).toBe('120');
+  });
+
+  it('ejercicios por distancia o tiempo: objetivo en metros o segundos', () => {
+    const run = { ...bench, exerciseId: 'run', name: 'Carrera', measure: 'DISTANCE' as const, isBodyweight: true, reps: 1, weightKg: null, distanceM: 1000 };
+    const plank = { ...bench, exerciseId: 'plank', name: 'Plancha', measure: 'TIME' as const, isBodyweight: true, reps: 1, weightKg: null, durationSec: 75 };
+    const d = draftFrom({ ...torso, exercises: [run, plank] });
+    expect(d.exercises.map((e) => [e.distance, e.time])).toEqual([
+      ['1000', ''],
+      ['', '1:15'],
+    ]);
+    const body = routineBody(d);
+    expect(body.exercises?.[0]).toMatchObject({ distanceM: 1000 });
+    expect(body.exercises?.[1]).toMatchObject({ durationSec: 75 });
+    // El registro rápido solo trae los de repeticiones.
+    expect(workoutDraftFrom({ ...torso, exercises: [bench, run] })).toHaveLength(1);
   });
 });

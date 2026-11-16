@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Capacitor } from '@capacitor/core';
 import { call, isApiError } from '../api';
+import type { Measure } from '../performance/perf.api';
 
 /** Contrato de `/brio/routines`: rutinas guardadas del usuario. */
 
@@ -16,6 +17,11 @@ export interface RoutineExercise {
   weightKg: number | null;
   restSec: number | null;
   supersetGroup: number | null;
+  measure: Measure;
+  isBodyweight: boolean;
+  distanceM: number | null;
+  durationSec: number | null;
+  calories: number | null;
   muscles: { muscle: string; weight: number }[];
 }
 
@@ -55,6 +61,9 @@ export interface SaveRoutineBody {
     weightKg?: number | null;
     restSec?: number | null;
     supersetGroup?: number | null;
+    distanceM?: number | null;
+    durationSec?: number | null;
+    calories?: number | null;
   }[];
 }
 
@@ -70,7 +79,17 @@ export interface RoutineGarminSync {
   linkedSessionId: string | null;
 }
 
+export interface RoutineTemplate {
+  code: string;
+  name: string;
+  description: string;
+  plannedDurationMin: number;
+  exercises: number;
+}
+
 export const routinesApi = {
+  templates: () => call<RoutineTemplate[]>('GET', '/brio/routines/templates'),
+  fromTemplate: (code: string) => call<Routine>('POST', `/brio/routines/templates/${encodeURIComponent(code)}`),
   list: () => call<Routine[]>('GET', '/brio/routines'),
   get: (id: string) => call<Routine>('GET', `/brio/routines/${id}`),
   create: (body: SaveRoutineBody) => call<Routine>('POST', '/brio/routines', { body }),

@@ -1,11 +1,13 @@
 import { MUSCLE_NAME } from '../performance/labels';
 import type { DraftExercise } from '../sheets/workout-draft';
+import type { Measure } from '../performance/perf.api';
+import { formatTime, parseTime } from './measures';
 import type { MuscleShare, Routine, RoutineKind, SaveRoutineBody } from './routines.api';
 
 /** Pantallas de rutinas: tipos, formatos y conversiones puras (probadas). */
 
 export const ROUTINE_KINDS: { value: RoutineKind; label: string; activityCode: string | null }[] = [
-  { value: 'STRENGTH', label: 'Gimnasio', activityCode: 'strength' },
+  { value: 'STRENGTH', label: 'Gimnasio / híbrido', activityCode: 'strength' },
   { value: 'RUN', label: 'Carrera', activityCode: 'running' },
   { value: 'CYCLE', label: 'Bici', activityCode: 'cycling' },
   { value: 'SWIM', label: 'Natación', activityCode: 'swimming' },
@@ -29,6 +31,11 @@ export interface RoutineDraftExercise {
   rest: string;
   /** Superserie (mismo número que el de al lado). */
   group: number | null;
+  /** Cómo se mide y el objetivo por serie si no son repeticiones. */
+  measure: Measure;
+  distance: string;
+  time: string;
+  calories: string;
 }
 
 export interface RoutineDraft {
@@ -76,13 +83,17 @@ export function draftFrom(r: Routine, bodyweightOf: (id: string) => boolean = ()
     exercises: r.exercises.map((e) => ({
       exerciseId: e.exerciseId,
       name: e.name,
-      bodyweight: bodyweightOf(e.exerciseId),
+      bodyweight: e.isBodyweight ?? bodyweightOf(e.exerciseId),
       muscles: e.muscles,
       sets: e.sets,
       reps: e.reps,
       weight: e.weightKg ? String(e.weightKg).replace('.', ',') : '',
       rest: e.restSec ? String(e.restSec) : '',
       group: e.supersetGroup,
+      measure: e.measure ?? 'REPS',
+      distance: e.distanceM ? String(e.distanceM) : '',
+      time: formatTime(e.durationSec),
+      calories: e.calories ? String(e.calories) : '',
     })),
   };
 }
@@ -108,6 +119,9 @@ export function routineBody(d: RoutineDraft): SaveRoutineBody {
               weightKg: w && w > 0 ? w : null,
               restSec: rest !== null && rest >= 0 ? Math.round(rest) : null,
               supersetGroup: e.group,
+              ...(e.measure === 'DISTANCE' ? { distanceM: num(e.distance) ? Math.round(num(e.distance)!) : null } : {}),
+              ...(e.measure === 'TIME' ? { durationSec: parseTime(e.time) } : {}),
+              ...(e.measure === 'CALORIES' ? { calories: num(e.calories) ? Math.round(num(e.calories)!) : null } : {}),
             };
           }),
         }
@@ -159,7 +173,9 @@ export function routineSummary(r: Pick<Routine, 'kind' | 'exercises' | 'plannedD
 
 /** Ejercicios de la rutina como borrador del registro: una fila por serie prevista. */
 export function workoutDraftFrom(r: Routine, bodyweightOf: (id: string) => boolean = () => false): DraftExercise[] {
-  return r.exercises.map((e) => ({
+  // El registro rápido va por series × repeticiones; carrera, remo o trineo se
+  // apuntan entrenando en Brío (metros y tiempo).
+  return r.exercises.filter((e) => (e.measure ?? 'REPS') === 'REPS').map((e) => ({
     exerciseId: e.exerciseId,
     name: e.name,
     bodyweight: bodyweightOf(e.exerciseId),

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
 import { MUSCLE_NAME } from '../performance/labels';
 import { BackLink, Chevron, LargeTitle, NavRow, SectionHeader } from '../ui/kit';
+import { RoutineTemplates } from './RoutineTemplates';
 import { kindLabel, routineSummary } from './routine-draft';
 import { useRoutines } from './routines.api';
 import '../sheets/sheets.css';
@@ -37,7 +38,7 @@ export default function RoutinesPage() {
           ) : !routines.length ? (
             <div className="routine__empty">
               <p>
-                Crea tu primera rutina: por ejemplo «Torso A» con press banca, press inclinado y remo, o «Rodaje Z2» de 45 minutos.
+                Crea tu primera rutina —«Torso A» con press banca y remo, o «Rodaje Z2» de 45 minutos— o empieza con una plantilla de HYROX o híbrida.
               </p>
               <Link to="/tabs/settings/rutinas/nueva" className="rk-btn">
                 Crear rutina
@@ -46,7 +47,7 @@ export default function RoutinesPage() {
           ) : (
             <>
               {[
-                { id: 'gym', title: 'Gimnasio · con Hevy', items: gym },
+                { id: 'gym', title: 'Gimnasio e híbrido', items: gym },
                 { id: 'cardio', title: 'Cardio · con el reloj', items: cardio },
               ]
                 .filter((g) => g.items.length)
@@ -83,6 +84,8 @@ export default function RoutinesPage() {
                 ))}
             </>
           )}
+
+          <RoutineTemplates />
         </div>
       </IonContent>
     </IonPage>

@@ -286,3 +286,10 @@
   color: var(--brio-ink-muted);
   font-size: 14px;
 }
+
+.routine__use {
+  flex: none;
+  align-self: center;
+  color: var(--brio-tint);
+  font-weight: 600;
+}

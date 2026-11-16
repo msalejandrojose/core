@@ -25,11 +25,46 @@ export class StrengthSetDto {
   @Max(1000)
   weightKg!: number;
 
-  @ApiProperty({ example: 8, minimum: 1, maximum: 200 })
+  @ApiProperty({
+    example: 8,
+    minimum: 0,
+    maximum: 200,
+    description: '0 en ejercicios por distancia, tiempo o calorías.',
+  })
   @IsInt()
-  @Min(1)
+  @Min(0)
   @Max(200)
   reps!: number;
+
+  @ApiPropertyOptional({
+    example: 1000,
+    description: 'Metros (correr, remo, trineo…).',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  distanceM?: number;
+
+  @ApiPropertyOptional({
+    example: 245,
+    description: 'Tiempo de la serie, en segundos.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(36000)
+  durationSec?: number;
+
+  @ApiPropertyOptional({
+    example: 20,
+    description: 'Calorías (assault bike…).',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(2000)
+  calories?: number;
 
   @ApiPropertyOptional({
     example: 2,
@@ -99,6 +134,9 @@ export function flattenSets(
       rir: s.rir ?? null,
       restSec: s.restSec ?? null,
       isWarmup: s.isWarmup ?? false,
+      distanceM: s.distanceM ?? null,
+      durationSec: s.durationSec ?? null,
+      calories: s.calories ?? null,
     })),
   );
 }

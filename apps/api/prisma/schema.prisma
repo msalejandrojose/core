@@ -2728,20 +2728,31 @@ enum BrioMuscle {
   LOWER_BACK
 }
 
+/// Cómo se mide un ejercicio: repeticiones (pesas), distancia (correr, remo,
+/// trineo, granjero), tiempo (plancha) o calorías (assault bike).
+enum BrioExerciseMeasure {
+  REPS
+  DISTANCE
+  TIME
+  CALORIES
+}
+
 /// Ejercicio de fuerza. `ownerUserId` nulo = catálogo global; no nulo = lo ha
 /// creado un usuario y solo lo ve él (mismo patrón que `BrioActivityType`).
 model BrioExercise {
-  id           String  @id @default(uuid()) @db.Char(36)
+  id           String              @id @default(uuid()) @db.Char(36)
   /// Slug estable (`bench_press`). Único entre los globales.
-  code         String? @unique @db.VarChar(64)
-  name         String  @db.VarChar(120)
+  code         String?             @unique @db.VarChar(64)
+  name         String              @db.VarChar(120)
   /// Multiarticular (true) o analítico (false).
-  isCompound   Boolean @default(false) @map("is_compound")
+  isCompound   Boolean             @default(false) @map("is_compound")
   /// Sin carga externa por defecto (dominadas, fondos): el volumen usa el
   /// peso corporal más el lastre.
-  isBodyweight Boolean @default(false) @map("is_bodyweight")
-  ownerUserId  String? @map("owner_user_id") @db.Char(36)
-  isArchived   Boolean @default(false) @map("is_archived")
+  isBodyweight Boolean             @default(false) @map("is_bodyweight")
+  /// Cómo se mide (reps, metros, tiempo o calorías).
+  measure      BrioExerciseMeasure @default(REPS)
+  ownerUserId  String?             @map("owner_user_id") @db.Char(36)
+  isArchived   Boolean             @default(false) @map("is_archived")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -2783,14 +2794,19 @@ model BrioStrengthSet {
   setOrder      Int @map("set_order") @db.SmallInt
 
   /// Carga externa en kg (0 en peso corporal sin lastre).
-  weightKg Decimal @map("weight_kg") @db.Decimal(6, 2)
-  reps     Int     @db.SmallInt
+  weightKg    Decimal @map("weight_kg") @db.Decimal(6, 2)
+  reps        Int     @db.SmallInt
   /// Repeticiones en reserva. Nulo = no se apuntó (no se asume ninguna).
-  rir      Int?    @db.TinyInt
+  rir         Int?    @db.TinyInt
   /// Descanso antes de la serie, en segundos.
-  restSec  Int?    @map("rest_sec") @db.SmallInt
+  restSec     Int?    @map("rest_sec") @db.SmallInt
   /// Las series de calentamiento no cuentan para volumen ni marcas.
-  isWarmup Boolean @default(false) @map("is_warmup")
+  isWarmup    Boolean @default(false) @map("is_warmup")
+  /// Ejercicios por distancia, tiempo o calorías (HYROX, cardio de gimnasio):
+  /// lo hecho en la serie. `reps` es 0 en esos casos.
+  distanceM   Int?    @map("distance_m")
+  durationSec Int?    @map("duration_sec")
+  calories    Int?    @db.SmallInt
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -3050,6 +3066,10 @@ model BrioRoutineExercise {
   /// Ejercicios seguidos con el mismo número van en superserie (se alternan
   /// sus series y se descansa al acabar la vuelta). Nulo = ejercicio suelto.
   supersetGroup Int?     @map("superset_group") @db.TinyInt
+  /// Objetivo por serie en ejercicios que no van por repeticiones.
+  distanceM     Int?     @map("distance_m")
+  durationSec   Int?     @map("duration_sec") @db.SmallInt
+  calories      Int?     @db.SmallInt
 
   routine  BrioRoutine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
   exercise BrioExercise @relation(fields: [exerciseId], references: [id])

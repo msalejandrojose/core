@@ -23,6 +23,10 @@ export interface RoutineExerciseInput {
   restSec?: number | null;
   /** Mismo número que el ejercicio de al lado = superserie. */
   supersetGroup?: number | null;
+  /** Objetivo por serie de los ejercicios que no van por repeticiones. */
+  distanceM?: number | null;
+  durationSec?: number | null;
+  calories?: number | null;
 }
 
 export interface RoutineInput {
@@ -113,6 +117,9 @@ export function cleanRoutine(input: RoutineInput): CleanRoutine {
           ? null
           : Math.round(Math.min(e.weightKg, 500) * 4) / 4,
       restSec: intIn(e.restSec, 0, 900),
+      distanceM: intIn(e.distanceM, 1, 100_000),
+      durationSec: intIn(e.durationSec, 1, 7200),
+      calories: intIn(e.calories, 1, 2000),
     })),
   };
 }
@@ -155,7 +162,13 @@ export interface HevyRoutineExercise {
   superset_id: number | null;
   rest_seconds: number | null;
   notes: null;
-  sets: { type: 'normal'; weight_kg: number | null; reps: number }[];
+  sets: {
+    type: 'normal';
+    weight_kg: number | null;
+    reps: number | null;
+    distance_meters?: number | null;
+    duration_seconds?: number | null;
+  }[];
 }
 
 /** Ejercicios de la rutina en el formato de Hevy; los que no tienen equivalente quedan fuera. */
@@ -168,6 +181,9 @@ export function hevyRoutineFrom(
     weightKg: number | null;
     restSec: number | null;
     supersetGroup?: number | null;
+    measure?: string;
+    distanceM?: number | null;
+    durationSec?: number | null;
   }[],
   templateIdOf: (exerciseId: string) => string | undefined,
 ): { exercises: HevyRoutineExercise[]; skipped: string[] } {
@@ -185,11 +201,20 @@ export function hevyRoutineFrom(
       superset_id: e.supersetGroup ? e.supersetGroup - 1 : null,
       rest_seconds: e.restSec,
       notes: null,
-      sets: Array.from({ length: e.sets }, () => ({
-        type: 'normal' as const,
-        weight_kg: e.weightKg,
-        reps: e.reps,
-      })),
+      sets: Array.from({ length: e.sets }, () => {
+        const measure = e.measure ?? 'REPS';
+        return {
+          type: 'normal' as const,
+          weight_kg: e.weightKg,
+          reps: measure === 'REPS' ? e.reps : null,
+          ...(measure === 'DISTANCE'
+            ? { distance_meters: e.distanceM ?? null }
+            : {}),
+          ...(measure === 'TIME'
+            ? { duration_seconds: e.durationSec ?? null }
+            : {}),
+        };
+      }),
     });
   }
   return { exercises: out, skipped };

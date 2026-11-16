@@ -119,6 +119,8 @@ describe('hevy: series', () => {
         rir: null,
         restSec: null,
         isWarmup: true,
+        distanceM: null,
+        durationSec: null,
       },
       {
         exerciseId: 'E1',
@@ -129,6 +131,8 @@ describe('hevy: series', () => {
         rir: 2,
         restSec: null,
         isWarmup: false,
+        distanceM: null,
+        durationSec: null,
       },
       {
         exerciseId: 'E2',
@@ -139,6 +143,8 @@ describe('hevy: series', () => {
         rir: 0,
         restSec: null,
         isWarmup: false,
+        distanceM: null,
+        durationSec: null,
       },
     ]);
   });
@@ -220,5 +226,43 @@ describe('hevy: rutina a partir de un entreno', () => {
     ).toBeCloseTo(2 / 3);
     expect(lowerShare([{ primaryMuscle: 'CHEST' }])).toBe(0);
     expect(lowerShare([{ primaryMuscle: null }])).toBe(0.5);
+  });
+
+  it('importa series sin repeticiones si traen distancia o tiempo (carrera, remo)', () => {
+    const w = {
+      id: 'w',
+      title: 'HYROX',
+      description: null,
+      start_time: '2026-11-16T08:00:00Z',
+      end_time: '2026-11-16T09:00:00Z',
+      exercises: [
+        {
+          index: 0,
+          title: 'Running',
+          exercise_template_id: 'T-RUN',
+          sets: [
+            {
+              index: 0,
+              type: 'normal',
+              weight_kg: null,
+              reps: null,
+              rpe: null,
+              distance_meters: 1000,
+              duration_seconds: 245,
+            },
+            {
+              index: 1,
+              type: 'normal',
+              weight_kg: null,
+              reps: null,
+              rpe: null,
+            },
+          ],
+        },
+      ],
+    };
+    expect(setsFrom(w, () => 'run')).toEqual([
+      expect.objectContaining({ reps: 0, distanceM: 1000, durationSec: 245 }),
+    ]);
   });
 });

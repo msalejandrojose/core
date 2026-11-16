@@ -57,12 +57,16 @@ export interface MuscleWeight {
   weight: number;
 }
 
+export type ExerciseMeasure = 'REPS' | 'DISTANCE' | 'TIME' | 'CALORIES';
+
 export interface Exercise {
   id: string;
   code: string | null;
   name: string;
   isCompound: boolean;
   isBodyweight: boolean;
+  /** Cómo se mide: repeticiones, metros, tiempo o calorías. */
+  measure?: ExerciseMeasure;
   ownerUserId: string | null;
   muscles: MuscleWeight[];
   /** true si el usuario ha cambiado los pesos por músculo de un ejercicio del catálogo. */
@@ -80,6 +84,10 @@ export interface StrengthSet {
   rir: number | null;
   restSec: number | null;
   isWarmup: boolean;
+  /** Ejercicios por distancia, tiempo o calorías: lo hecho (reps = 0). */
+  distanceM?: number | null;
+  durationSec?: number | null;
+  calories?: number | null;
 }
 
 export type ZoneMethod = 'MAX_HR' | 'HR_RESERVE' | 'CUSTOM';

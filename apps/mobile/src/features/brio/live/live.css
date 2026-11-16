@@ -31,6 +31,7 @@
 .live__set {
   display: grid;
   grid-template-columns: 44px 1fr 1fr 52px;
+  column-gap: 8px;
   align-items: center;
   gap: 8px;
   padding: 0 14px;
@@ -42,8 +43,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.live__sets-head span:nth-child(2),
-.live__sets-head span:nth-child(3) {
+.live__sets-head span:not(:first-child) {
   text-align: center;
 }
 .live__set {

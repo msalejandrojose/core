@@ -55,7 +55,10 @@ export class GetStrengthAnalysisUseCase {
       profile?.timezone ?? 'Europe/Madrid',
     );
     const days = periodDays(period);
-    const analysis = analyzeStrength(sessions, exercises, {
+    // Marcas y e1RM solo tienen sentido en ejercicios por repeticiones: correr
+    // 1 km o empujar el trineo no son «fuerza» que se pueda comparar así.
+    const byReps = exercises.filter((e) => (e.measure ?? 'REPS') === 'REPS');
+    const analysis = analyzeStrength(sessions, byReps, {
       today,
       bodyWeightKg,
       periodDays: days,
