@@ -426,3 +426,7 @@
   text-align: left;
   cursor: pointer;
 }
+
+.alerts__permission {
+  margin-bottom: var(--brio-space-l);
+}

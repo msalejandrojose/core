@@ -30,6 +30,7 @@ import {
 } from './live-workout';
 import { REST_OPTIONS, closesRound, linkedWithNext, restLabel, supersetLetter } from '../routines/supersets';
 import type { Measure } from '../performance/perf.api';
+import { cancelRestEnd, scheduleRestEnd } from '../reminders/reminders.native';
 import { previousSetsApi } from './live.api';
 import { useLiveStore } from './live.store';
 import { useNow } from './useNow';
@@ -72,6 +73,11 @@ function Num({
   );
 }
 
+/** Ejercicio con la siguiente serie sin hacer, para el aviso de fin de descanso. */
+function nextExerciseName(w: { exercises: { name: string; sets: { done: boolean }[] }[] }): string | null {
+  return w.exercises.find((e) => e.sets.some((s) => !s.done))?.name ?? null;
+}
+
 type Column = 'weight' | 'reps' | 'distance' | 'time' | 'cal';
 const COLUMN_LABEL: Record<Column, string> = { weight: 'kg', reps: 'Reps', distance: 'Metros', time: 'Tiempo', cal: 'Cal' };
 
@@ -110,6 +116,14 @@ export default function LiveWorkoutPage() {
   /** Ejercicio con el selector de descanso abierto. */
   const [restOpen, setRestOpen] = useState<number | null>(null);
   const restWasRunning = useRef(false);
+
+  // Notificación al acabar el descanso, para cuando la app esté en segundo plano.
+  const restUntil = workout?.restUntil ?? null;
+  const nextName = workout ? nextExerciseName(workout) : null;
+  useEffect(() => {
+    if (restUntil) void scheduleRestEnd(new Date(restUntil), nextName);
+    else void cancelRestEnd();
+  }, [restUntil, nextName]);
 
   // Vibración al acabar el descanso (si la pantalla está delante).
   const resting = !!workout?.restUntil && workout.restUntil > now;
@@ -154,6 +168,7 @@ export default function LiveWorkoutPage() {
         }
       }
       setWorkout(null);
+      void cancelRestEnd();
       await refreshDay();
       void tapSuccess();
       toast.success('Entreno guardado', `${p.done} series · ${formatKcal(session.kcalBurned)} kcal`);
@@ -171,6 +186,7 @@ export default function LiveWorkoutPage() {
 
   function discard() {
     setWorkout(null);
+    void cancelRestEnd();
     toast.info('Entreno descartado');
     history.replace('/tabs/today');
   }
