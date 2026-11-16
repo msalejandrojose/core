@@ -8,6 +8,8 @@ import { BackLink, LargeTitle, NavRow, SectionHeader, Segmented, Switch } from '
 import { PATHS } from '../ui/paths';
 import { useGarminStatus } from './garmin.api';
 import { useHevyStatus } from './hevy.api';
+import { DeviceHealthRow } from '../health/DeviceHealthRow';
+import { deviceHealthName } from '../health/device-health';
 import './profile.css';
 
 interface Prefs {
@@ -24,8 +26,8 @@ const SHARES = ['100', '75', '50', '0'] as const;
 
 /**
  * Conexiones (lienzo "Conexiones"): el reloj Garmin, Hevy y qué hace Brío con
- * lo que traen. Las preferencias se guardan al tocarlas. Apple Salud y enviar
- * datos al reloj aún no existen, y la pantalla lo dice en vez de simularlo.
+ * lo que traen, y Apple Salud / Health Connect. Las preferencias se guardan al
+ * tocarlas. Enviar datos al reloj aún no existe, y la pantalla lo dice.
  */
 export default function ConnectionsPage() {
   const { status: hevy } = useHevyStatus();
@@ -107,7 +109,7 @@ export default function ConnectionsPage() {
                 </button>
               ))}
             </div>
-            <p className="rk-note">Lo que apagues deja de pedirse a Garmin; lo ya traído se queda. Enviar sesiones al reloj aún no es posible.</p>
+            <p className="rk-note">Vale para Garmin y para la salud del teléfono. Lo que apagues deja de traerse; lo ya traído se queda. Enviar sesiones al reloj aún no es posible.</p>
           </section>
 
           <section className="rk-section" aria-labelledby="gym">
@@ -130,19 +132,8 @@ export default function ConnectionsPage() {
 
           <section className="rk-section" aria-labelledby="salud">
             <SectionHeader id="salud">Salud del teléfono</SectionHeader>
-            <div className="rk-list">
-              <div className="rk-row">
-                <span className="conn__badge conn__badge--health" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24">
-                    <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" fill="var(--brio-heart)" />
-                  </svg>
-                </span>
-                <span className="rk-row__main">
-                  <span className="rk-row__title">Apple Salud y Health Connect</span>
-                  <span className="rk-row__sub">Próximamente, con la app para iPhone y Android</span>
-                </span>
-              </div>
-            </div>
+            <DeviceHealthRow />
+            <p className="rk-note">Sirve para cualquier reloj que guarde en {deviceHealthName()} (Apple Watch, Garmin, Fitbit…). Si también tienes Garmin conectado, sus datos mandan y los entrenos no se duplican.</p>
           </section>
 
           <section className="rk-section" aria-labelledby="adj">
