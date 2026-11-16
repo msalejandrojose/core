@@ -64,6 +64,7 @@ import RoutineEditorPage from '@/features/brio/routines/RoutineEditorPage';
 import GarminConnectPage from '@/features/brio/profile/GarminConnectPage';
 import { useGarminAutoSync } from '@/features/brio/profile/garmin.api';
 import { useDeviceHealthAutoSync } from '@/features/brio/health/device-health';
+import { useReminders } from '@/features/brio/reminders/useReminders';
 import DeleteAccountPage from '@/features/brio/profile/DeleteAccountPage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
@@ -117,6 +118,7 @@ export default function TabsShell() {
   useHevyAutoSync();
   useGarminAutoSync();
   useDeviceHealthAutoSync();
+  useReminders();
   const { pathname } = useLocation();
   const refreshUnread = useUnreadStore((s) => s.refresh);
   const openRegister = useRegisterStore((s) => s.open);

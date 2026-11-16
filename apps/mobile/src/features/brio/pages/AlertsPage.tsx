@@ -1,6 +1,12 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
-import { BackLink, Chevron, ExampleTag, LargeTitle, NavRow, SectionHeader, Switch } from '../ui/kit';
+import { BackLink, Chevron, LargeTitle, NavRow, SectionHeader, Switch } from '../ui/kit';
+import {
+  notificationPermission,
+  requestNotificationPermission,
+  type NotifPermission,
+} from '../reminders/reminders.native';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { KINDS, useAlertPrefs } from './alert-prefs';
 import './pages.css';
@@ -23,6 +29,11 @@ export default function AlertsPage() {
   const on = useAlertPrefs((s) => s.on);
   const toggle = useAlertPrefs((s) => s.toggle);
   const unread = useUnreadStore((s) => s.unread);
+  const [permission, setPermission] = useState<NotifPermission | null>(null);
+
+  useEffect(() => {
+    void notificationPermission().then(setPermission);
+  }, []);
 
   return (
     <IonPage>
@@ -51,10 +62,36 @@ export default function AlertsPage() {
             ))}
           </section>
 
+          {permission && permission !== 'granted' ? (
+            <div className="rk-list alerts__permission">
+              <div className="rk-row">
+                <span className="rk-row__main">
+                  <span className="rk-row__title">
+                    {permission === 'unavailable' ? 'Solo en la app del móvil' : 'Notificaciones desactivadas'}
+                  </span>
+                  <span className="rk-row__sub">
+                    {permission === 'unavailable'
+                      ? 'Los recordatorios los programa tu teléfono.'
+                      : permission === 'denied'
+                        ? 'Actívalas en Ajustes del iPhone › Brío › Notificaciones.'
+                        : 'Brío necesita permiso para recordarte comidas y entrenos.'}
+                  </span>
+                </span>
+                {permission === 'prompt' ? (
+                  <button
+                    type="button"
+                    className="rk-textbtn rk-textbtn--strong"
+                    onClick={() => void requestNotificationPermission().then(setPermission)}
+                  >
+                    Activar
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           <section className="rk-section" aria-labelledby="tipos">
-            <SectionHeader id="tipos" action={<ExampleTag />}>
-              Qué quieres que te avise
-            </SectionHeader>
+            <SectionHeader id="tipos">Qué quieres que te avise</SectionHeader>
             <div className="rk-list">
               {KINDS.map((k) => (
                 <button
