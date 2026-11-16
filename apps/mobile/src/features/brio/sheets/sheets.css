@@ -867,3 +867,9 @@ button.workout__set-n.is-warmup {
   font-size: 17px;
   font-weight: 600;
 }
+
+/* Escanear código de barras junto al buscador. */
+.addfood__scan {
+  flex: none;
+  color: var(--brio-tint);
+}
