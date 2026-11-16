@@ -10,6 +10,7 @@ import { FoodIcon } from '../ui/food-icons';
 import { FOOD_ICONS, type FoodIconKey } from '../ui/food-icons.data';
 import { CreateFoodSheet } from './CreateFoodSheet';
 import { scanFoodBarcode } from '../food/barcode';
+import { QUICK_FACTORS, clampFactor, factorLabel, scaleItem, stepFactor } from '../food/portion';
 import { Icon, SearchField, Segmented, SectionHeader, SheetBar } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { snackbar } from '@/lib/snackbar';
@@ -104,6 +105,8 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
 
   const [mealType, setMealType] = useState<MealType>(initialMealType);
   const [picked, setPicked] = useState<Record<string, Picked>>({});
+  /** Multiplicador de ración de cada alimento elegido (×1 si no se ha tocado). */
+  const [factors, setFactors] = useState<Record<string, number>>({});
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Food[] | null>(null);
   const [quickKcal, setQuickKcal] = useState('');
@@ -119,6 +122,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
     if (!isOpen) return;
     setMealType(initialMealType);
     setPicked({});
+    setFactors({});
     setQuery('');
     setResults(null);
     setQuickKcal('');
@@ -156,8 +160,9 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   }, [query]);
 
   const habits = habitsByMeal[mealType];
-  const items = Object.values(picked);
+  const items = Object.values(picked).map((i) => scaleItem(i, factors[i.key] ?? 1));
   const total = items.reduce((s, i) => s + i.kcal, 0);
+  const setFactor = (key: string, f: number) => setFactors((x) => ({ ...x, [key]: clampFactor(f) }));
   const remaining = summary?.totals.kcalRemaining ?? null;
 
   const toggle = (item: Picked) =>
@@ -527,6 +532,48 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
           )}
         </div>
       </IonContent>
+
+      {items.length ? (
+        <section className="addfood__picked" aria-label="Lo que añades">
+          {Object.values(picked).map((p) => {
+            const f = factors[p.key] ?? 1;
+            const scaled = scaleItem(p, f);
+            return (
+              <div key={p.key} className="addfood__picked-row">
+                <span className="rk-row__main">
+                  <span className="addfood__picked-name">{p.name}</span>
+                  <span className="rk-row__sub">
+                    {formatKcal(scaled.kcal)} kcal
+                    {p.foodId ? ` · ${formatKcal(scaled.quantityG)} g` : ''}
+                  </span>
+                </span>
+                <div className="addfood__factor" role="group" aria-label={`Ración de ${p.name}`}>
+                  {QUICK_FACTORS.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      className="addfood__factor-chip"
+                      aria-pressed={f === q}
+                      onClick={() => setFactor(p.key, q)}
+                    >
+                      {q === 1 ? '1' : factorLabel(q)}
+                    </button>
+                  ))}
+                  <span className="addfood__factor-step">
+                    <button type="button" aria-label="Un poco menos" onClick={() => setFactor(p.key, stepFactor(f, -1))}>
+                      −
+                    </button>
+                    <span aria-live="polite">{factorLabel(f)}</span>
+                    <button type="button" aria-label="Un poco más" onClick={() => setFactor(p.key, stepFactor(f, 1))}>
+                      +
+                    </button>
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
 
       <div className="addfood__bar">
         <div className="rk-row__main">

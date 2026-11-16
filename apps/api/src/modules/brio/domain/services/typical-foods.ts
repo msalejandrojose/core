@@ -148,6 +148,9 @@ const PESCADO: FoodSection = {
   foods: [
     'Salmón a la plancha',
     'Salmón al horno',
+    'Salmón al horno con patatas y cebolla',
+    'Merluza al horno con patatas',
+    'Dorada al horno con patatas',
     'Merluza a la plancha',
     'Dorada al horno',
     'Lubina al horno',

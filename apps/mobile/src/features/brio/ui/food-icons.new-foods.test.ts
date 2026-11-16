@@ -3,6 +3,9 @@ import { iconForFood } from './food-icons.data';
 
 /** Platos añadidos al catálogo el 16/11/2026: ninguno debe salir con el plato genérico. */
 const NEW_FOODS = [
+  "Salmón al horno con patatas y cebolla",
+  "Merluza al horno con patatas",
+  "Dorada al horno con patatas",
   "Tostada de atún con tomate",
   "Tostada con tomate y queso fresco",
   "Tostada con pavo y queso",
