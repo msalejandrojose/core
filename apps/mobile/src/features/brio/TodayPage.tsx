@@ -18,7 +18,6 @@ import {
   longDate,
   mealForHour,
   mealLabel,
-  nowIn,
   timeIn,
   todayIn,
 } from './format';
@@ -28,7 +27,7 @@ import { useHabitsStore } from './habits.store';
 import { deleteEntries, logItems } from './relog';
 import { tapSuccess } from './haptics';
 import { FoodIcon } from './ui/food-icons';
-import { CheckCircle, Chevron, Icon, Ring } from './ui/kit';
+import { CheckCircle, Chevron, Icon } from './ui/kit';
 import { PATHS } from './ui/paths';
 import { FirstDay } from './FirstDay';
 import { isFirstDay } from './first-day';
@@ -39,6 +38,11 @@ import { toast } from '@/lib/toast';
 import './brio.css';
 import { RecoveryRow } from './pages/RecoveryRow';
 import { TomorrowRow } from './plan/TomorrowRow';
+import { usePlanWeekData } from './plan/plan.api';
+import { useRecentHealth } from './profile/garmin.api';
+import { DayRingsCard, TodayWorkoutCard, WeekStrip } from './today/TodayVisuals';
+import { dayRings, greeting } from './today/today-visuals';
+import { useAuthStore } from '@/store/auth.store';
 import './today.css';
 
 /** Mensaje en pasado tras registrar una comida, con su género. */
@@ -101,9 +105,10 @@ function pendingMeals(summary: DaySummary, hour: number): MealType[] {
 }
 
 /**
- * Hoy (lienzo "Hoy"). La pantalla responde a "¿qué hago ahora?": arriba lo
- * que toca con lo de siempre listo para registrar de un toque, luego las kcal
- * que quedan, la recuperación, tu día y lo de mañana.
+ * Hoy (lienzo "Hoy"). Arriba, de un vistazo: la semana del plan, los anillos
+ * del día (comida, entreno, pasos) con los macros y el entreno de hoy en
+ * grande. Luego lo que toca comer con lo de siempre listo para registrar de un
+ * toque, la recuperación, tu día y lo de mañana.
  *
  * Recuperación es una estimación con tu reloj y tu carga; "Mañana" sale de tu plan.
  */
@@ -128,6 +133,9 @@ export default function TodayPage() {
 
   const timezone = profile?.timezone ?? 'Europe/Madrid';
   const today = todayIn(timezone);
+  const firstName = useAuthStore((s) => s.user?.firstName ?? null);
+  const { data: week } = usePlanWeekData(today);
+  const health = useRecentHealth();
 
   useEffect(() => {
     if (profileStatus === 'idle') void loadProfile();
@@ -169,6 +177,25 @@ export default function TodayPage() {
   const firstDay = isFirstDay(profile, today, timezone);
   const totals = summary?.totals;
   const remaining = totals?.kcalRemaining ?? null;
+
+  // Cabecera visual: semana, anillos del día y el entreno de hoy.
+  const todayPlan = week?.days.find((d) => d.day === today) ?? null;
+  const todayDiet = week?.diet?.find((d) => d.day === today) ?? null;
+  const activeMinutes = Math.round((summary?.sessions ?? []).reduce((m, x) => m + x.durationSec, 0) / 60);
+  const steps = health?.days.find((d) => d.day === today)?.steps ?? null;
+  const rings = totals
+    ? dayRings({
+        totals,
+        activeMinutes,
+        plannedMinutes: todayPlan?.planned?.load === 'REST' ? null : (todayPlan?.planned?.plannedDurationMin ?? null),
+        steps,
+      })
+    : [];
+  const macroTargets = {
+    proteinG: todayDiet?.proteinG ?? profile?.proteinTargetG ?? null,
+    carbsG: todayDiet?.carbsG ?? profile?.carbsTargetG ?? null,
+    fatG: todayDiet?.fatG ?? profile?.fatTargetG ?? null,
+  };
 
   async function logSuggestion(s: Suggestion) {
     setLogging(true);
@@ -231,13 +258,10 @@ export default function TodayPage() {
 
         <div className="rk-screen today">
           <header className="today-head">
-            <span className="today-head__kicker">
-              {firstDay
-                ? longDate(today)
-                : `${longDate(today)} · ${nowIn(timezone)}`}
-            </span>
             <div className="today-head__row">
-              <h1>Hoy</h1>
+              <span className="today-head__kicker">
+              {longDate(today)}
+            </span>
               <div className="today-head__actions">
                 {firstDay ? null : (
                   <Link
@@ -275,6 +299,7 @@ export default function TodayPage() {
                 </Link>
               </div>
             </div>
+            <h1 className={firstDay ? undefined : 'is-greeting'}>{firstDay ? 'Hoy' : greeting(hourIn(timezone), firstName)}</h1>
           </header>
 
           <LiveWorkoutBanner />
@@ -290,6 +315,12 @@ export default function TodayPage() {
             <FirstDay profile={profile} summary={summary} />
           ) : (
             <>
+              {week ? <WeekStrip days={week.days} today={today} /> : null}
+
+              <DayRingsCard rings={rings} totals={totals} targets={macroTargets} />
+
+              <TodayWorkoutCard day={todayPlan} doneMinutes={activeMinutes} onStart={() => openRegister('activity')} />
+
               <section aria-labelledby="ahora" className="rk-hero today-now">
                 <span id="ahora" className="rk-kicker">
                   {next ? 'Ahora toca' : 'Hoy'}
@@ -362,34 +393,6 @@ export default function TodayPage() {
                   </div>
                 )}
               </section>
-
-              <Link to="/tabs/today/comida" className="today-row today-kcal">
-                <Ring
-                  size={52}
-                  // Lo comido sobre lo disponible hoy (objetivo + la parte del gasto que cuenta).
-                  ratio={
-                    totals.kcalTarget
-                      ? totals.kcalIn / (totals.kcalTarget + totals.kcalBurnedCounted)
-                      : 0
-                  }
-                  color="var(--brio-food)"
-                />
-                <span className="rk-row__main">
-                  <span className="today-kcal__value">
-                    {remaining === null
-                      ? `${formatKcal(totals.kcalIn)} kcal hoy`
-                      : remaining >= 0
-                        ? `${formatKcal(remaining)} kcal restantes`
-                        : `${formatKcal(-remaining)} kcal de más`}
-                  </span>
-                  <span className="rk-row__sub">
-                    Comido {formatKcal(totals.kcalIn)} · entreno{' '}
-                    {formatKcal(totals.kcalBurned)} kcal
-                  </span>
-                </span>
-                <Chevron />
-              </Link>
-
               <RecoveryRow />
 
               <section aria-label="Tu día" className="today-day">
