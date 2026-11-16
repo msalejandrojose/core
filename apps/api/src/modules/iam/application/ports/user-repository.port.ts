@@ -42,6 +42,7 @@ export interface LinkSocialAccountPatch {
   facebookId?: string;
   playGamesId?: string;
   gameCenterId?: string;
+  appleId?: string;
   avatarUrl?: string | null;
   firstName?: string | null;
   lastName?: string | null;
@@ -57,6 +58,7 @@ export interface UserRepositoryPort {
   findByFacebookId(facebookId: string): Promise<User | null>;
   findByPlayGamesId(playGamesId: string): Promise<User | null>;
   findByGameCenterId(gameCenterId: string): Promise<User | null>;
+  findByAppleId(appleId: string): Promise<User | null>;
 
   // ── Mutaciones ─────────────────────────────────────────────────────────
   create(user: User): Promise<User>;

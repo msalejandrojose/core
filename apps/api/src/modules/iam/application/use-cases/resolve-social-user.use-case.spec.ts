@@ -49,6 +49,10 @@ class FakeUserRepository implements Partial<UserRepositoryPort> {
     return Promise.resolve(this.byProvider.get(`game_center:${id}`) ?? null);
   }
 
+  findByAppleId(id: string): Promise<User | null> {
+    return Promise.resolve(this.byProvider.get(`apple:${id}`) ?? null);
+  }
+
   create(user: User): Promise<User> {
     this.created.push(user);
     return Promise.resolve(user);

@@ -5,6 +5,7 @@ const PROVIDER_LABEL = {
   facebook: 'Facebook',
   play_games: 'Google Play Games',
   game_center: 'Game Center',
+  apple: 'Apple',
 } as const;
 
 // El token/código/firma del proveedor no es válido, ha expirado, o no

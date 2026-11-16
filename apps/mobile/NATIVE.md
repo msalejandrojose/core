@@ -111,6 +111,15 @@ Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
    `LSApplicationQueriesSchemes` (array) con `hevy`: sin él iOS no deja
    comprobar si Hevy está instalada y Brío abre hevy.com en su lugar.
 
+7. **Login con Apple** (obligatorio en la App Store si se ofrece Google).
+   Necesita cuenta de desarrollador **de pago**: con la gratuita la app no
+   firma si lleva la capacidad. Cuando la tengas:
+   - en `ios/App/App/App.entitlements`, `com.apple.developer.applesignin` =
+     array con `Default`;
+   - en el App ID (developer.apple.com) activa «Sign in with Apple»;
+   - en `apps/mobile/.env.production.local`, `VITE_APPLE_SIGN_IN=true`.
+   La API acepta tokens con `aud` = `APPLE_CLIENT_ID` (por defecto `es.aj.brio`).
+
 Desde Capacitor 8, `cap sync ios` sigue usando CocoaPods si `ios/` ya existía
 con Podfile. Si regeneras la carpeta, usa `npx cap add ios --packagemanager CocoaPods`
 para mantener `App.xcworkspace` (lo que compila Forja).

@@ -7,6 +7,9 @@ import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
 import { GetCurrentUserUseCase } from './application/use-cases/get-current-user.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
 import { LoginWithGoogleUseCase } from './application/use-cases/login-with-google.use-case';
+import { LoginWithAppleUseCase } from './application/use-cases/login-with-apple.use-case';
+import { APPLE_TOKEN_VERIFIER } from './application/ports/apple-token-verifier.port';
+import { AppleTokenVerifier } from './infrastructure/social/apple-token-verifier';
 import { LoginWithFacebookUseCase } from './application/use-cases/login-with-facebook.use-case';
 import { LoginWithPlayGamesUseCase } from './application/use-cases/login-with-play-games.use-case';
 import { LoginWithGameCenterUseCase } from './application/use-cases/login-with-game-center.use-case';
@@ -121,6 +124,7 @@ import { MailerModule } from '../mailer/mailer.module';
     RegisterUserUseCase,
     LoginUseCase,
     LoginWithGoogleUseCase,
+    LoginWithAppleUseCase,
     LoginWithFacebookUseCase,
     LoginWithPlayGamesUseCase,
     LoginWithGameCenterUseCase,
@@ -176,6 +180,7 @@ import { MailerModule } from '../mailer/mailer.module';
     { provide: PASSWORD_HASHER, useClass: Argon2PasswordHasher },
     { provide: TOKEN_ISSUER, useClass: JwtTokenIssuer },
     { provide: GOOGLE_TOKEN_VERIFIER, useClass: GoogleTokenVerifier },
+    { provide: APPLE_TOKEN_VERIFIER, useClass: AppleTokenVerifier },
     { provide: FACEBOOK_TOKEN_VERIFIER, useClass: FacebookTokenVerifier },
     { provide: PLAY_GAMES_AUTH_VERIFIER, useClass: PlayGamesAuthVerifier },
     {

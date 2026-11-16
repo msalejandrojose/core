@@ -103,7 +103,7 @@ export default function ProfilePage() {
             {user ? (
               <span className="profile__mail">
                 {user.email}
-                {method === 'google' ? ' · con Google' : ''}
+                {method === 'google' ? ' · con Google' : method === 'apple' ? ' · con Apple' : ''}
               </span>
             ) : null}
           </header>

@@ -30,6 +30,8 @@ export class User {
     // Login nativo de plataforma (Play Games Services / Game Center)
     public readonly playGamesId: string | null = null,
     public readonly gameCenterId: string | null = null,
+    // Sign in with Apple
+    public readonly appleId: string | null = null,
   ) {}
 
   isDeactivated(): boolean {

@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
 
 let initialized: Promise<void> | null = null;
@@ -15,6 +16,9 @@ export function ensureSocialLoginInitialized(): Promise<void> {
         webClientId: import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID,
         iOSClientId: import.meta.env.VITE_GOOGLE_IOS_CLIENT_ID,
       },
+      // Sign in with Apple: en iOS es nativo y no necesita más configuración.
+      // Solo se inicializa si está activado, para no romper Android ni la web.
+      ...(Capacitor.getPlatform() === 'ios' && import.meta.env.VITE_APPLE_SIGN_IN === 'true' ? { apple: {} } : {}),
       facebook: {
         appId: import.meta.env.VITE_FACEBOOK_APP_ID ?? '',
         clientToken: import.meta.env.VITE_FACEBOOK_CLIENT_TOKEN ?? '',
