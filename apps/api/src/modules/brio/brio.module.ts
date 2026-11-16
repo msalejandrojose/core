@@ -41,6 +41,7 @@ import { SetExerciseMusclesUseCase } from './application/use-cases/set-exercise-
 import { SaveHeartConfigUseCase } from './application/use-cases/save-heart-config.use-case';
 import { CreateFoodUseCase } from './application/use-cases/create-food.use-case';
 import { CreateRecipeUseCase } from './application/use-cases/create-recipe.use-case';
+import { ListRecipesUseCase } from './application/use-cases/list-recipes.use-case';
 import { DeleteMyAccountUseCase } from './application/use-cases/delete-my-account.use-case';
 import { ExportMyDataUseCase } from './application/use-cases/export-my-data.use-case';
 import { DeleteActivitySessionUseCase } from './application/use-cases/delete-activity-session.use-case';
@@ -102,6 +103,7 @@ import { BrioAccountController } from './infrastructure/http/brio-account.contro
 import { BrioActivityController } from './infrastructure/http/brio-activity.controller';
 import { BrioDiaryController } from './infrastructure/http/brio-diary.controller';
 import { BrioNutritionController } from './infrastructure/http/brio-nutrition.controller';
+import { BrioRecipesController } from './infrastructure/http/brio-recipes.controller';
 import { BrioPerformanceController } from './infrastructure/http/brio-performance.controller';
 import { BrioPerformanceInputsController } from './infrastructure/http/brio-performance-inputs.controller';
 import { BrioPlanController } from './infrastructure/http/brio-plan.controller';
@@ -183,6 +185,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     BrioProfileController,
     BrioActivityController,
     BrioNutritionController,
+    BrioRecipesController,
     BrioDiaryController,
     BrioAccountController,
     BrioPerformanceInputsController,
@@ -278,6 +281,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     SearchFoodsUseCase,
     CreateFoodUseCase,
     CreateRecipeUseCase,
+    ListRecipesUseCase,
     LogMealEntryUseCase,
     UpdateMealEntryUseCase,
     DeleteMealEntryUseCase,

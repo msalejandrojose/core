@@ -68,6 +68,20 @@ export class PrismaBrioFoodRepository implements BrioFoodRepositoryPort {
       .map(toFood);
   }
 
+  async findOwnRecipes(userId: string, servingLabel: string): Promise<Food[]> {
+    const rows = await this.prisma.brioFood.findMany({
+      where: {
+        ownerUserId: userId,
+        source: 'USER',
+        servings: { some: { label: servingLabel, isDefault: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      include: SERVINGS,
+    });
+    return rows.map(toFood);
+  }
+
   async create(data: CreateFoodData): Promise<Food> {
     const row = await this.prisma.brioFood.create({
       data: {
