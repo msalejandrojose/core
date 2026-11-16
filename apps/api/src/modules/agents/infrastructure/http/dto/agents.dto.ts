@@ -306,6 +306,21 @@ export class ChatRequestDto {
   @MinLength(1)
   @MaxLength(4000)
   message!: string;
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'Fotos como data URL JPEG/PNG/WebP (máx. 4, ~2 MB cada una). No se guardan.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(4)
+  @IsString({ each: true })
+  @MaxLength(3_000_000, { each: true })
+  @Matches(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/, {
+    each: true,
+    message: 'images: data URL de imagen JPEG, PNG o WebP.',
+  })
+  images?: string[];
   @ApiPropertyOptional() @IsOptional() @IsUUID() conversationId?: string;
   @ApiPropertyOptional({ example: 'Europe/Madrid' })
   @IsOptional()
@@ -319,6 +334,7 @@ export class AiMessageDto {
   @ApiProperty({ enum: ['USER', 'ASSISTANT'] }) role!: 'USER' | 'ASSISTANT';
   @ApiProperty() content!: string;
   @ApiProperty({ type: [String] }) toolsUsed!: string[];
+  @ApiProperty() imageCount!: number;
   @ApiProperty() createdAt!: string;
 
   static from(m: MessageRow): AiMessageDto {

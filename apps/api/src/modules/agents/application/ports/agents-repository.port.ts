@@ -50,6 +50,7 @@ export interface MessageRow {
   role: 'USER' | 'ASSISTANT';
   content: string;
   toolsUsed: string[];
+  imageCount: number;
   createdAt: Date;
 }
 
@@ -120,6 +121,7 @@ export interface AgentsRepositoryPort {
     role: 'USER' | 'ASSISTANT',
     content: string,
     toolsUsed?: string[],
+    imageCount?: number,
   ): Promise<MessageRow>;
   deleteConversation(id: string, userId: string): Promise<boolean>;
 

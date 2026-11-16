@@ -40,6 +40,7 @@ import { ReplaceSessionSetsUseCase } from './application/use-cases/replace-sessi
 import { SetExerciseMusclesUseCase } from './application/use-cases/set-exercise-muscles.use-case';
 import { SaveHeartConfigUseCase } from './application/use-cases/save-heart-config.use-case';
 import { CreateFoodUseCase } from './application/use-cases/create-food.use-case';
+import { CreateRecipeUseCase } from './application/use-cases/create-recipe.use-case';
 import { DeleteMyAccountUseCase } from './application/use-cases/delete-my-account.use-case';
 import { ExportMyDataUseCase } from './application/use-cases/export-my-data.use-case';
 import { DeleteActivitySessionUseCase } from './application/use-cases/delete-activity-session.use-case';
@@ -276,6 +277,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     UpdateActivitySessionUseCase,
     SearchFoodsUseCase,
     CreateFoodUseCase,
+    CreateRecipeUseCase,
     LogMealEntryUseCase,
     UpdateMealEntryUseCase,
     DeleteMealEntryUseCase,

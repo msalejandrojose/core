@@ -102,12 +102,14 @@ const toMessage = (r: {
   role: string;
   content: string;
   toolsUsed: string | null;
+  imageCount: number;
   createdAt: Date;
 }): MessageRow => ({
   id: r.id,
   role: r.role as MessageRow['role'],
   content: r.content,
   toolsUsed: list(r.toolsUsed),
+  imageCount: r.imageCount,
   createdAt: r.createdAt,
 });
 
@@ -286,6 +288,7 @@ export class PrismaAgentsRepository implements AgentsRepositoryPort {
     role: 'USER' | 'ASSISTANT',
     content: string,
     toolsUsed: string[] = [],
+    imageCount = 0,
   ): Promise<MessageRow> {
     const row = await this.prisma.aiMessage.create({
       data: {
@@ -293,6 +296,7 @@ export class PrismaAgentsRepository implements AgentsRepositoryPort {
         role,
         content,
         toolsUsed: toolsUsed.length ? toolsUsed.join(',') : null,
+        imageCount,
       },
     });
     return toMessage(row);

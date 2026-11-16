@@ -15,6 +15,9 @@ import { GetRecentHealthUseCase } from '../../application/use-cases/garmin.use-c
 import { GetProgressUseCase } from '../../application/use-cases/get-progress.use-case';
 import { GetPerformanceSummaryUseCase } from '../../application/use-cases/get-performance-summary.use-case';
 import { DigestionUseCases } from '../../application/use-cases/digestion.use-cases';
+import { LogWeightUseCase } from '../../application/use-cases/log-weight.use-case';
+import { DeleteMealEntryUseCase } from '../../application/use-cases/delete-meal-entry.use-case';
+import { CreateRecipeUseCase } from '../../application/use-cases/create-recipe.use-case';
 import type { MealType } from '../../domain/entities/meal-entry.entity';
 import {
   PERFORMANCE_PERIODS,
@@ -52,6 +55,9 @@ export class BrioAgentTools implements OnModuleInit {
     private readonly progress: GetProgressUseCase,
     private readonly performance: GetPerformanceSummaryUseCase,
     private readonly digestion: DigestionUseCases,
+    private readonly logWeight: LogWeightUseCase,
+    private readonly deleteMeal: DeleteMealEntryUseCase,
+    private readonly createRecipe: CreateRecipeUseCase,
   ) {}
 
   onModuleInit(): void {
@@ -82,6 +88,7 @@ export class BrioAgentTools implements OnModuleInit {
             fatG: s.log.fatG,
             weightKg: s.log.weightKg,
             meals: s.meals.map((m) => ({
+              entryId: m.id,
               meal: m.mealType,
               name: m.name,
               grams: m.quantityG,
@@ -199,6 +206,7 @@ export class BrioAgentTools implements OnModuleInit {
           return {
             ok: true,
             logged: {
+              entryId: entry.id,
               name: entry.name,
               kcal: entry.kcal,
               meal: entry.mealType,
@@ -380,6 +388,138 @@ export class BrioAgentTools implements OnModuleInit {
             : 'WEEK';
           const view = await this.digestion.view(ctx.userId, period);
           return { summary: view.summary, days: view.days };
+        },
+      },
+      {
+        code: 'brio_log_weight',
+        label: 'Apuntar el peso',
+        description:
+          'Apunta una pesada de la persona (kg). Úsala cuando te diga su peso o mande la foto de la báscula. Recalcula sus objetivos de kcal. Una pesada por día: si ya había una ese día, la sustituye.',
+        parameters: {
+          type: 'object',
+          properties: {
+            weightKg: {
+              type: 'number',
+              description: 'Peso en kg, p. ej. 78.4.',
+            },
+            day: DAY,
+            bodyFatPct: {
+              type: 'number',
+              description: '% de grasa si la báscula lo da.',
+            },
+            waistCm: { type: 'number' },
+          },
+          required: ['weightKg'],
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const kg = numOr(args.weightKg, 0);
+          if (kg < 25 || kg > 350)
+            return { error: 'Peso fuera de rango (25–350 kg).' };
+          const fat =
+            typeof args.bodyFatPct === 'number' ? args.bodyFatPct : null;
+          const waist = typeof args.waistCm === 'number' ? args.waistCm : null;
+          const m = await this.logWeight.execute({
+            userId: ctx.userId,
+            measuredOn:
+              str(args.day) ?? dayInTimezone(new Date(), ctx.timeZone),
+            weightKg: Math.round(kg * 10) / 10,
+            bodyFatPct: fat,
+            waistCm: waist,
+            notes: null,
+          });
+          return {
+            ok: true,
+            logged: { weightKg: m.weightKg, day: m.measuredOn },
+          };
+        },
+      },
+      {
+        code: 'brio_delete_meal',
+        label: 'Borrar una comida apuntada',
+        description:
+          'Borra una comida que estaba apuntada (entryId de brio_get_day o de brio_log_meal). Úsala para corregir: si la persona dice que algo está mal, bórralo y apunta lo correcto.',
+        parameters: {
+          type: 'object',
+          properties: { entryId: { type: 'string' } },
+          required: ['entryId'],
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const id = str(args.entryId);
+          if (!id) return { error: 'Falta entryId.' };
+          await this.deleteMeal.execute(id, ctx.userId);
+          return { ok: true };
+        },
+      },
+      {
+        code: 'brio_create_recipe',
+        label: 'Crear una receta',
+        description:
+          'Guarda una receta de la persona como alimento propio, con sus ingredientes (foodId de brio_search_foods y gramos de cada uno) y cuántas raciones salen. Calcula kcal y macros por ración. Después se puede apuntar con brio_log_meal (foodId de la receta). Si falta algún ingrediente en el catálogo, usa el más parecido y dilo.',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description:
+                'Nombre de la receta, p. ej. «Lentejas de mi madre».',
+            },
+            servings: {
+              type: 'number',
+              description: 'Raciones que salen. Por defecto 1.',
+            },
+            ingredients: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  foodId: { type: 'string' },
+                  grams: { type: 'number' },
+                },
+                required: ['foodId', 'grams'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['name', 'ingredients'],
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const name = str(args.name);
+          const list = Array.isArray(args.ingredients) ? args.ingredients : [];
+          const ingredients = list
+            .map((i) => i as { foodId?: unknown; grams?: unknown })
+            .filter(
+              (i) =>
+                typeof i.foodId === 'string' && typeof i.grams === 'number',
+            )
+            .map((i) => ({
+              foodId: i.foodId as string,
+              grams: i.grams as number,
+            }))
+            .slice(0, 30);
+          if (!name || ingredients.length === 0)
+            return {
+              error:
+                'Hace falta un nombre y al menos un ingrediente con gramos.',
+            };
+          const { food, nutrition } = await this.createRecipe.execute({
+            userId: ctx.userId,
+            name,
+            servings: numOr(args.servings, 1),
+            ingredients,
+          });
+          return {
+            ok: true,
+            recipe: {
+              foodId: food.id,
+              servingId: food.servings[0]?.id,
+              name: food.name,
+              servingGrams: nutrition.servingGrams,
+              perServing: nutrition.perServing,
+            },
+          };
         },
       },
     ];

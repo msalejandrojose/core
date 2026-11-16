@@ -9,7 +9,11 @@ export interface CoachMessage {
   role: 'USER' | 'ASSISTANT';
   content: string;
   toolsUsed: string[];
+  /** Fotos que se adjuntaron (no se guardan en el servidor). */
+  imageCount: number;
   createdAt: string;
+  /** Solo en el móvil: las fotos recién mandadas, para verlas en la burbuja. */
+  localImages?: string[];
 }
 
 export interface CoachConversation {
@@ -21,10 +25,11 @@ export interface CoachConversation {
 const base = `/ai/agents/${COACH_AGENT}`;
 
 export const coachApi = {
-  send: (message: string, conversationId?: string) =>
+  send: (message: string, conversationId?: string, images: string[] = []) =>
     call<{ conversationId: string; message: CoachMessage }>('POST', `${base}/chat`, {
       body: {
         message,
+        ...(images.length ? { images } : {}),
         conversationId,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
@@ -38,4 +43,7 @@ export const coachApi = {
 export const TOOL_NOTES: Record<string, string> = {
   brio_log_meal: 'Ha apuntado una comida',
   brio_log_workout: 'Ha apuntado un entreno',
+  brio_log_weight: 'Ha apuntado tu peso',
+  brio_delete_meal: 'Ha borrado una comida',
+  brio_create_recipe: 'Ha guardado una receta',
 };

@@ -155,3 +155,69 @@
   text-align: center;
   color: var(--brio-ink-muted);
 }
+
+.coach__attach {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brio-surface);
+  color: var(--brio-ink-muted);
+}
+.coach__attach:disabled {
+  opacity: 0.4;
+}
+.coach__attachments {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 8px;
+  overflow-x: auto;
+}
+.coach__attachment {
+  position: relative;
+  flex: none;
+}
+.coach__attachment img {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.coach__attachment button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--brio-bg);
+  border-radius: 50%;
+  background: var(--brio-ink);
+  color: var(--brio-bg);
+  font-size: 15px;
+  line-height: 1;
+}
+.coach__photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 4px;
+  margin: -4px -8px 8px;
+}
+.coach__photos img {
+  width: 100%;
+  max-height: 220px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.coach__photo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  opacity: 0.8;
+}

@@ -3433,6 +3433,9 @@ model AiMessage {
   content        String   @db.Text
   /// Herramientas que usó el agente para esta respuesta, separadas por coma.
   toolsUsed      String?  @map("tools_used") @db.VarChar(500)
+  /// Fotos que adjuntó la persona. Las fotos no se guardan: solo se mandan al
+  /// modelo en ese mensaje.
+  imageCount     Int      @default(0) @map("image_count")
   createdAt      DateTime @default(now()) @map("created_at")
 
   conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
