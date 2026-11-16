@@ -1,4 +1,7 @@
 import {
+  Activity,
+  Apple,
+  Dumbbell,
   BarChart3,
   BookOpen,
   Bot,
@@ -32,6 +35,9 @@ import {
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, LucideIcon> = {
+  Activity,
+  Apple,
+  Dumbbell,
   Bot,
   BookOpen,
   Cpu,

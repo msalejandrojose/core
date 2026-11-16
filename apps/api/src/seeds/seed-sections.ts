@@ -186,6 +186,35 @@ const BACKOFFICE_TREE: SeedNode[] = [
     ],
   },
   {
+    code: 'brio',
+    name: 'Brío',
+    icon: 'Dumbbell',
+    order: 11,
+    children: [
+      {
+        code: 'brio.foods',
+        name: 'Alimentos',
+        icon: 'Apple',
+        route: '/brio/foods',
+        order: 0,
+      },
+      {
+        code: 'brio.exercises',
+        name: 'Ejercicios',
+        icon: 'Dumbbell',
+        route: '/brio/exercises',
+        order: 1,
+      },
+      {
+        code: 'brio.activity-types',
+        name: 'Tipos de actividad',
+        icon: 'Activity',
+        route: '/brio/activity-types',
+        order: 2,
+      },
+    ],
+  },
+  {
     code: 'ai',
     name: 'Agentes de IA',
     icon: 'Bot',
