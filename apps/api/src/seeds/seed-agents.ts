@@ -74,6 +74,21 @@ const SKILLS = [
     ].join('\n'),
   },
   {
+    code: 'fotos-y-registro',
+    name: 'Fotos y registro',
+    description:
+      'Qué hacer con las fotos y cómo apuntar, corregir y crear recetas.',
+    instructions: [
+      'Foto de comida: reconoce cada plato o alimento, estima los gramos por el tamaño (plato llano ≈ 26 cm) y apúntalo con brio_search_foods + brio_log_meal en la comida que toque por la hora. Di en una frase lo que has supuesto (p. ej. «unos 200 g de arroz») para que la persona lo corrija.',
+      'Foto de una etiqueta nutricional: usa las kcal y macros de la etiqueta y la cantidad que diga la persona.',
+      'Foto de la báscula: lee el peso (y la grasa si sale) y apúntalo con brio_log_weight.',
+      'Captura de un entreno (Garmin, Strava, Hevy, la cinta del gimnasio…): saca tipo, duración, distancia y kcal si salen, y apúntalo con brio_log_workout.',
+      'Si la foto no se ve bien o no sabes qué es, pregunta antes de apuntar nada.',
+      'Para corregir algo apuntado, bórralo con brio_delete_meal (entryId de brio_get_day) y apunta lo correcto.',
+      'Si la persona te da una receta, busca cada ingrediente (brio_search_foods), créala con brio_create_recipe con sus gramos y raciones, y dile las kcal por ración. Si además dice que se la ha comido, apúntala.',
+    ].join('\n'),
+  },
+  {
     code: 'tono-brio',
     name: 'Tono de Brío',
     description: 'Cómo habla el coach.',
@@ -109,8 +124,11 @@ const COACH = {
     'brio_get_progress',
     'brio_get_performance',
     'brio_get_digestion',
+    'brio_log_weight',
+    'brio_delete_meal',
+    'brio_create_recipe',
   ],
-  skills: ['tono-brio', 'nutricion', 'entrenamiento'],
+  skills: ['tono-brio', 'nutricion', 'entrenamiento', 'fotos-y-registro'],
 };
 
 async function bootstrap() {
@@ -171,7 +189,34 @@ async function bootstrap() {
     });
     console.log('✔ agente brio-coach creado');
   } else {
-    console.log('· agente brio-coach ya existe (no se toca)');
+    // Lo editado en el backoffice se respeta: solo se añaden las herramientas y
+    // skills nuevas de este seed que el agente aún no tenga.
+    const current = (existing.tools ?? '').split(',').filter(Boolean);
+    const missing = COACH.tools.filter((t) => !current.includes(t));
+    if (missing.length) {
+      await prisma.aiAgent.update({
+        where: { id: existing.id },
+        data: { tools: [...current, ...missing].join(',') },
+      });
+    }
+    const linked = await prisma.aiAgentSkill.findMany({
+      where: { agentId: existing.id },
+      select: { skillId: true },
+    });
+    const skills = await prisma.aiSkill.findMany({
+      where: {
+        code: { in: COACH.skills },
+        id: { notIn: linked.map((l) => l.skillId) },
+      },
+    });
+    if (skills.length) {
+      await prisma.aiAgentSkill.createMany({
+        data: skills.map((sk) => ({ agentId: existing.id, skillId: sk.id })),
+      });
+    }
+    console.log(
+      `· agente brio-coach ya existe: +${missing.length} herramientas, +${skills.length} skills`,
+    );
   }
 
   await app.close();

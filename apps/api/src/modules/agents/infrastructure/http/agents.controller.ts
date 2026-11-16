@@ -53,6 +53,7 @@ export class AgentsController {
       userId: current.sub,
       conversationId: body.conversationId,
       message: body.message,
+      images: body.images,
       timeZone: body.timeZone,
     });
     return {

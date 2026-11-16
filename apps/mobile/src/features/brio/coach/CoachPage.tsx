@@ -6,6 +6,7 @@ import { BackLink, Icon, NavRow } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { toast } from '@/lib/toast';
 import { coachApi, TOOL_NOTES, type CoachConversation, type CoachMessage } from './coach.api';
+import { MAX_PHOTOS, photoToDataUrl } from './photos';
 import './coach.css';
 
 const SUGGESTIONS = [
@@ -13,6 +14,8 @@ const SUGGESTIONS = [
   'He desayunado un café con leche y una tostada con tomate',
   '¿Qué ceno para llegar a mi proteína?',
   'Hoy he corrido 30 minutos',
+  'Hoy peso 78,4 kg',
+  'Guárdame la receta de mis lentejas: 300 g de lentejas, 80 g de chorizo y 2 patatas, para 4',
   '¿Entreno fuerte mañana o descanso?',
 ];
 
@@ -28,6 +31,8 @@ export default function CoachPage() {
   const [history, setHistory] = useState<CoachConversation[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [text, setText] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const content = useRef<HTMLIonContentElement>(null);
@@ -53,22 +58,37 @@ export default function CoachPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function addPhotos(files: FileList | null) {
+    const list = Array.from(files ?? []).slice(0, MAX_PHOTOS - photos.length);
+    if (fileInput.current) fileInput.current.value = '';
+    try {
+      const urls = await Promise.all(list.map((f) => photoToDataUrl(f)));
+      setPhotos((p) => [...p, ...urls].slice(0, MAX_PHOTOS));
+    } catch {
+      toast.error('No se ha podido leer la foto', 'Prueba con otra.');
+    }
+  }
+
   async function send(message: string) {
-    const clean = message.trim();
+    const images = photos;
+    const clean = message.trim() || (images.length ? 'Mira esta foto' : '');
     if (!clean || sending) return;
     setText('');
+    setPhotos([]);
     setSending(true);
     const pending: CoachMessage = {
       id: `tmp-${++tmpId.current}`,
       role: 'USER',
       content: clean,
       toolsUsed: [],
+      imageCount: images.length,
+      localImages: images,
       createdAt: new Date().toISOString(),
     };
     setMessages((m) => [...m, pending]);
     scrollDown();
     try {
-      const out = await coachApi.send(clean, conversationId);
+      const out = await coachApi.send(clean, conversationId, images);
       if (!conversationId) {
         setConversationId(out.conversationId);
         void coachApi.conversations().then(setHistory).catch(() => undefined);
@@ -79,7 +99,8 @@ export default function CoachPage() {
       scrollDown();
     } catch (e) {
       setMessages((m) => m.filter((x) => x.id !== pending.id));
-      setText(clean);
+      setText(message);
+      setPhotos(images);
       toast.error(
         'El coach no ha podido responder',
         isApiError(e) && e.status === 404 ? 'El coach no está activado.' : 'Prueba otra vez en un momento.',
@@ -151,6 +172,17 @@ export default function CoachPage() {
             <div className="coach__messages" aria-live="polite">
               {messages.map((m) => (
                 <div key={m.id} className={`coach__msg coach__msg--${m.role === 'USER' ? 'me' : 'coach'}`}>
+                  {m.localImages?.length ? (
+                    <div className="coach__photos">
+                      {m.localImages.map((src, i) => (
+                        <img key={i} src={src} alt="" />
+                      ))}
+                    </div>
+                  ) : m.imageCount ? (
+                    <span className="coach__photo-tag">
+                      <Icon d={PATHS.camera} size={14} /> {m.imageCount === 1 ? '1 foto' : `${m.imageCount} fotos`}
+                    </span>
+                  ) : null}
                   <p>{m.content}</p>
                   {m.toolsUsed
                     .filter((t) => t in TOOL_NOTES)
@@ -173,6 +205,22 @@ export default function CoachPage() {
         </div>
       </IonContent>
       <IonFooter className="coach__footer">
+        {photos.length ? (
+          <div className="coach__attachments">
+            {photos.map((src, i) => (
+              <div key={i} className="coach__attachment">
+                <img src={src} alt={`Foto ${i + 1}`} />
+                <button
+                  type="button"
+                  aria-label={`Quitar la foto ${i + 1}`}
+                  onClick={() => setPhotos((p) => p.filter((_, j) => j !== i))}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <form
           className="coach__input"
           onSubmit={(e) => {
@@ -180,11 +228,28 @@ export default function CoachPage() {
             void send(text);
           }}
         >
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => void addPhotos(e.target.files)}
+          />
+          <button
+            type="button"
+            className="coach__attach"
+            aria-label="Adjuntar foto"
+            disabled={sending || photos.length >= MAX_PHOTOS}
+            onClick={() => fileInput.current?.click()}
+          >
+            <Icon d={PATHS.camera} size={22} />
+          </button>
           <textarea
             rows={1}
             value={text}
             maxLength={4000}
-            placeholder="Escribe al coach"
+            placeholder={photos.length ? 'Cuéntale qué es (opcional)' : 'Escribe o manda una foto'}
             aria-label="Mensaje para el coach"
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -194,7 +259,7 @@ export default function CoachPage() {
               }
             }}
           />
-          <button type="submit" className="coach__send" aria-label="Enviar" disabled={sending || !text.trim()}>
+          <button type="submit" className="coach__send" aria-label="Enviar" disabled={sending || (!text.trim() && !photos.length)}>
             <Icon d={PATHS.send} size={20} stroke={2.2} />
           </button>
         </form>

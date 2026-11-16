@@ -11,7 +11,12 @@ export interface LlmToolDef {
 
 /** Elemento de entrada: un mensaje o la respuesta a una llamada a herramienta. */
 export type LlmInputItem =
-  | { role: 'user' | 'assistant'; content: string }
+  | {
+      role: 'user' | 'assistant';
+      content: string;
+      /** Fotos como data URL (`data:image/jpeg;base64,…`), solo en `user`. */
+      images?: string[];
+    }
   | { type: 'function_call_output'; callId: string; output: string };
 
 export interface LlmRequest {

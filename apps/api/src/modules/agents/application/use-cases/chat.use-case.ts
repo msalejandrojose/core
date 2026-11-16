@@ -37,6 +37,8 @@ export interface ChatInput {
   userId: string;
   conversationId?: string;
   message: string;
+  /** Fotos como data URL. Se mandan al modelo, pero no se guardan. */
+  images?: string[];
   timeZone?: string;
 }
 
@@ -83,7 +85,14 @@ export class ChatWithAgentUseCase {
     }
 
     const history = await this.repo.listMessages(conversation.id, HISTORY);
-    await this.repo.addMessage(conversation.id, 'USER', input.message);
+    const images = input.images ?? [];
+    await this.repo.addMessage(
+      conversation.id,
+      'USER',
+      input.message,
+      [],
+      images.length,
+    );
 
     const ctx: AgentToolContext = {
       userId: input.userId,
@@ -101,9 +110,11 @@ export class ChatWithAgentUseCase {
     let next: LlmInputItem[] = [
       ...history.map((m) => ({
         role: m.role === 'USER' ? ('user' as const) : ('assistant' as const),
-        content: m.content,
+        content: m.imageCount
+          ? `${m.content}\n(Con ${m.imageCount} foto${m.imageCount > 1 ? 's' : ''} que ya no está${m.imageCount > 1 ? 'n' : ''} disponible${m.imageCount > 1 ? 's' : ''}.)`
+          : m.content,
       })),
-      { role: 'user', content: input.message },
+      { role: 'user', content: input.message, images },
     ];
     let previousResponseId: string | undefined;
     let usage: TokenUsage = {

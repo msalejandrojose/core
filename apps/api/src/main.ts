@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import type { Application, NextFunction, Request, Response } from 'express';
@@ -12,7 +13,7 @@ async function bootstrap() {
   // webhook de SendGrid necesita para verificar la firma sobre los bytes exactos.
   // `bufferLogs: true` retiene los logs de arranque hasta que el logger global
   // (`AppLoggerService`) esté listo, para que también salgan como JSON.
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
     bufferLogs: true,
   });
@@ -25,6 +26,10 @@ async function bootstrap() {
   // para que `req.ip` sea la IP real del cliente (la usa el rate limiter).
   const expressApp = app.getHttpAdapter().getInstance() as Application;
   expressApp.set('trust proxy', 1);
+
+  // El chat con los agentes admite fotos en base64 (hasta 4 de ~2 MB): el
+  // límite por defecto de Express (100 kB) se queda corto.
+  app.useBodyParser('json', { limit: '12mb' });
 
   // Security headers. `contentSecurityPolicy` desactivada para no romper la UI
   // de Swagger en `/docs` (la API es API-first: sirve JSON, no HTML de negocio).

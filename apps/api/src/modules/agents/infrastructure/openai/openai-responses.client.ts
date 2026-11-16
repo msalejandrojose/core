@@ -32,7 +32,7 @@ export class OpenAiResponsesClient implements LlmClientPort {
       instructions: request.instructions,
       input: request.input.map((item) =>
         'role' in item
-          ? { role: item.role, content: item.content }
+          ? { role: item.role, content: messageContent(item) }
           : {
               type: 'function_call_output',
               call_id: item.callId,
@@ -72,6 +72,22 @@ export class OpenAiResponsesClient implements LlmClientPort {
     }
     return parseResponse(json);
   }
+}
+
+/** Texto solo, o texto + fotos (`input_image`) si la persona adjuntó alguna. */
+export function messageContent(item: {
+  content: string;
+  images?: string[];
+}): string | Record<string, unknown>[] {
+  if (!item.images?.length) return item.content;
+  return [
+    { type: 'input_text', text: item.content },
+    ...item.images.map((url) => ({
+      type: 'input_image',
+      image_url: url,
+      detail: 'auto',
+    })),
+  ];
 }
 
 interface OpenAiResponse {
