@@ -62,6 +62,11 @@ export class PrismaUserRepository implements UserRepositoryPort {
     return row ? UserMapper.toDomain(row) : null;
   }
 
+  async findByAppleId(appleId: string): Promise<User | null> {
+    const row = await this.prisma.user.findUnique({ where: { appleId } });
+    return row ? UserMapper.toDomain(row) : null;
+  }
+
   async findByGameCenterId(gameCenterId: string): Promise<User | null> {
     const row = await this.prisma.user.findUnique({
       where: { gameCenterId },
@@ -213,6 +218,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
         facebookId: patch.facebookId,
         playGamesId: patch.playGamesId,
         gameCenterId: patch.gameCenterId,
+        appleId: patch.appleId,
         avatarUrl: patch.avatarUrl,
         firstName: patch.firstName,
         lastName: patch.lastName,

@@ -3,7 +3,7 @@
  * alta enseñe la cuenta con su etiqueta ("Google"), como en el diseño; la API
  * no lo devuelve en el usuario.
  */
-export type LoginMethod = 'google' | 'email';
+export type LoginMethod = 'google' | 'apple' | 'email';
 
 const KEY = 'brio-login-method';
 

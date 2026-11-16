@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { useGoogleLogin } from './use-google-login';
+import { appleSignInAvailable, useAppleLogin } from './use-apple-login';
+import { AppleMark } from './AppleMark';
 import { rememberLoginMethod } from './login-method';
 import { GoogleMark } from './GoogleMark';
 import { BrioMark } from './BrioMark';
@@ -30,12 +32,16 @@ const PERKS = [
 /**
  * Acceso (lienzo "Acceso"): marca, tres razones y las formas de entrar.
  *
- * "Continuar con Apple" está en el diseño pero aún no hay endpoint en la API:
- * se añadirá con él (es obligatorio en iOS si se ofrece Google). Facebook, que
- * traía el shell base, no está en el diseño de Brío.
+ * "Continuar con Apple" sale en el iPhone cuando la app tiene la capacidad
+ * Sign in with Apple (cuenta de desarrollador de pago); es obligatorio en la
+ * App Store si se ofrece Google. Facebook, que traía el shell base, no está en
+ * el diseño de Brío.
  */
 export default function LoginPage() {
   const google = useGoogleLogin();
+  const apple = useAppleLogin();
+  const showApple = appleSignInAvailable();
+  const error = apple.error ?? google.error;
 
   return (
     <IonPage>
@@ -74,15 +80,29 @@ export default function LoginPage() {
           </ul>
 
           <div className="login__actions">
-            {google.error ? (
+            {error ? (
               <p className="login__error" role="alert">
-                {google.error}
+                {error}
               </p>
+            ) : null}
+            {showApple ? (
+              <button
+                type="button"
+                className="login__apple"
+                disabled={apple.loading || google.loading}
+                onClick={() => {
+                  rememberLoginMethod('apple');
+                  void apple.submit();
+                }}
+              >
+                {apple.loading ? <IonSpinner name="crescent" /> : <AppleMark />}
+                Continuar con Apple
+              </button>
             ) : null}
             <button
               type="button"
               className="login__google"
-              disabled={google.loading}
+              disabled={google.loading || apple.loading}
               onClick={() => {
                 rememberLoginMethod('google');
                 void google.submit();

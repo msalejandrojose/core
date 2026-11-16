@@ -11,14 +11,24 @@ import {
   type UserRepositoryPort,
 } from '../ports/user-repository.port';
 
-export type SocialProvider = 'google' | 'facebook' | 'play_games' | 'game_center';
+export type SocialProvider =
+  | 'google'
+  | 'facebook'
+  | 'play_games'
+  | 'game_center'
+  | 'apple';
 
 export interface ResolveSocialUserResult {
   accessToken: string;
   user: User;
 }
 
-type ProviderIdField = 'googleId' | 'facebookId' | 'playGamesId' | 'gameCenterId';
+type ProviderIdField =
+  | 'googleId'
+  | 'facebookId'
+  | 'playGamesId'
+  | 'gameCenterId'
+  | 'appleId';
 
 // Qué campo de `User`/`LinkSocialAccountPatch` guarda el id de cada
 // proveedor — mecánico, mismo valor para los cuatro.
@@ -27,6 +37,7 @@ const PROVIDER_ID_FIELD: Record<SocialProvider, ProviderIdField> = {
   facebook: 'facebookId',
   play_games: 'playGamesId',
   game_center: 'gameCenterId',
+  apple: 'appleId',
 };
 
 // Lógica compartida por `LoginWithGoogleUseCase` y `LoginWithFacebookUseCase`
@@ -91,6 +102,7 @@ export class ResolveSocialUserUseCase {
           profile.avatarUrl,
           providerFields.playGamesId ?? null,
           providerFields.gameCenterId ?? null,
+          providerFields.appleId ?? null,
         ),
       );
     }
@@ -121,6 +133,8 @@ export class ResolveSocialUserUseCase {
         return this.users.findByPlayGamesId(providerId);
       case 'game_center':
         return this.users.findByGameCenterId(providerId);
+      case 'apple':
+        return this.users.findByAppleId(providerId);
     }
   }
 }

@@ -181,7 +181,7 @@ export default function SignupProfilePage() {
             </div>
             {method ? (
               <span className="signup__chip">
-                {method === 'google' ? 'Google' : 'Correo'}
+                {method === 'google' ? 'Google' : method === 'apple' ? 'Apple' : 'Correo'}
               </span>
             ) : null}
           </div>

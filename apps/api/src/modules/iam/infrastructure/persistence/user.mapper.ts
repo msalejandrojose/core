@@ -27,6 +27,7 @@ export class UserMapper {
       row.avatarUrl ?? null,
       row.playGamesId ?? null,
       row.gameCenterId ?? null,
+      row.appleId ?? null,
     );
   }
 
@@ -49,6 +50,7 @@ export class UserMapper {
       avatarUrl: user.avatarUrl,
       playGamesId: user.playGamesId,
       gameCenterId: user.gameCenterId,
+      appleId: user.appleId,
       // createdAt / updatedAt los gestiona Prisma (@default / @updatedAt).
     };
   }

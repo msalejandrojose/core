@@ -21,6 +21,8 @@ import { ChangePasswordUseCase } from '../../application/use-cases/change-passwo
 import { GetCurrentUserUseCase } from '../../application/use-cases/get-current-user.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { LoginWithGoogleUseCase } from '../../application/use-cases/login-with-google.use-case';
+import { LoginWithAppleUseCase } from '../../application/use-cases/login-with-apple.use-case';
+import { AppleLoginDto } from './dto/apple-login.dto';
 import { LoginWithFacebookUseCase } from '../../application/use-cases/login-with-facebook.use-case';
 import { LoginWithPlayGamesUseCase } from '../../application/use-cases/login-with-play-games.use-case';
 import { LoginWithGameCenterUseCase } from '../../application/use-cases/login-with-game-center.use-case';
@@ -64,6 +66,7 @@ export class AuthController {
     private readonly registerUser: RegisterUserUseCase,
     private readonly login: LoginUseCase,
     private readonly loginWithGoogle: LoginWithGoogleUseCase,
+    private readonly loginWithApple: LoginWithAppleUseCase,
     private readonly loginWithFacebook: LoginWithFacebookUseCase,
     private readonly loginWithPlayGames: LoginWithPlayGamesUseCase,
     private readonly loginWithGameCenter: LoginWithGameCenterUseCase,
@@ -116,6 +119,25 @@ export class AuthController {
   ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.loginWithGoogle.execute(
       dto.idToken,
+    );
+    return { accessToken, user: UserResponseDto.fromUser(user) };
+  }
+
+  @Post('apple')
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Login/registro con Apple. Verifica el identity token de Sign in with Apple y devuelve un access token.',
+  })
+  @ApiOkResponse({ type: LoginResponseDto })
+  async loginWithAppleAction(
+    @Body() dto: AppleLoginDto,
+  ): Promise<LoginResponseDto> {
+    const { accessToken, user } = await this.loginWithApple.execute(
+      dto.identityToken,
+      { firstName: dto.firstName, lastName: dto.lastName },
     );
     return { accessToken, user: UserResponseDto.fromUser(user) };
   }
