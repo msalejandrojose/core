@@ -123,6 +123,33 @@ export class ArchiveRoutineUseCase {
   }
 }
 
+export interface PreviousExercise {
+  exerciseId: string;
+  day: string;
+  sets: { weightKg: number; reps: number }[];
+}
+
+/** Qué hiciste la última vez en cada ejercicio, para tenerlo delante al entrenar. */
+@Injectable()
+export class GetPreviousSetsUseCase {
+  constructor(
+    @Inject(BRIO_ROUTINE_REPOSITORY)
+    private readonly repo: BrioRoutineRepositoryPort,
+  ) {}
+
+  async execute(
+    userId: string,
+    exerciseIds: string[],
+  ): Promise<PreviousExercise[]> {
+    const rows = await this.repo.previousSets(userId, exerciseIds.slice(0, 40));
+    return rows.map((r) => ({
+      exerciseId: r.exerciseId,
+      day: r.startedAt.toISOString(),
+      sets: r.sets,
+    }));
+  }
+}
+
 /** Enlaza un entreno apuntado en Brío con la rutina que se eligió al apuntarlo. */
 @Injectable()
 export class LinkSessionToRoutineUseCase {

@@ -65,6 +65,7 @@ import { PrismaBrioRoutineRepository } from './infrastructure/persistence/prisma
 import { BRIO_ROUTINE_REPOSITORY } from './application/ports/routine.port';
 import {
   ArchiveRoutineUseCase,
+  GetPreviousSetsUseCase,
   GetRoutineUseCase,
   LinkSessionToRoutineUseCase,
   ListRoutinesUseCase,
@@ -319,6 +320,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     LinkSessionToRoutineUseCase,
     SendRoutineToHevyUseCase,
     SyncRoutineWithGarminUseCase,
+    GetPreviousSetsUseCase,
     ConnectGarminUseCase,
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,

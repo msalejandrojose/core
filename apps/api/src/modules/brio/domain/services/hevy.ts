@@ -288,7 +288,7 @@ export interface RoutineSet {
 
 export interface RoutineExercise {
   exercise_template_id: string;
-  superset_id: null;
+  superset_id: number | null;
   rest_seconds: number | null;
   notes: null;
   sets: RoutineSet[];

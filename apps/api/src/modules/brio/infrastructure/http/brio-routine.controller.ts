@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
@@ -38,11 +39,13 @@ import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import {
   ArchiveRoutineUseCase,
+  GetPreviousSetsUseCase,
   GetRoutineUseCase,
   ListRoutinesUseCase,
   SaveRoutineUseCase,
   SendRoutineToHevyUseCase,
   SyncRoutineWithGarminUseCase,
+  type PreviousExercise,
   type Routine,
   type RoutineGarminSync,
   type RoutineSentToHevy,
@@ -79,6 +82,14 @@ export class RoutineExerciseDto {
   @IsOptional()
   @IsInt()
   restSec?: number | null;
+  @ApiPropertyOptional({
+    example: 1,
+    description:
+      'Ejercicios seguidos con el mismo número van en superserie. Nulo = suelto.',
+  })
+  @IsOptional()
+  @IsInt()
+  supersetGroup?: number | null;
 }
 
 export class SaveRoutineDto {
@@ -130,6 +141,7 @@ export class BrioRoutineController {
     private readonly archiveRoutine: ArchiveRoutineUseCase,
     private readonly sendToHevy: SendRoutineToHevyUseCase,
     private readonly syncGarmin: SyncRoutineWithGarminUseCase,
+    private readonly previousSets: GetPreviousSetsUseCase,
   ) {}
 
   @Get()
@@ -139,6 +151,22 @@ export class BrioRoutineController {
   @ApiOkResponse({ description: 'Rutinas, la última editada primero.' })
   list(@CurrentUser() current: AccessTokenPayload): Promise<Routine[]> {
     return this.listRoutines.execute(current.sub);
+  }
+
+  @Get('previous-sets')
+  @ApiOperation({
+    summary: 'Lo que hice la última vez en cada ejercicio (series de trabajo).',
+  })
+  @ApiOkResponse({ description: 'Por ejercicio: fecha y series.' })
+  previous(
+    @CurrentUser() current: AccessTokenPayload,
+    @Query('exerciseIds') exerciseIds = '',
+  ): Promise<PreviousExercise[]> {
+    const ids = exerciseIds
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => /^[0-9a-f-]{36}$/i.test(s));
+    return this.previousSets.execute(current.sub, ids);
   }
 
   @Get(':id')

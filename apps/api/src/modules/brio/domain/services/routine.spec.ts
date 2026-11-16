@@ -1,5 +1,6 @@
 import {
   InvalidRoutineError,
+  normalizeSupersets,
   cleanRoutine,
   hevyRoutineFrom,
   kindMatches,
@@ -21,8 +22,22 @@ describe('routine', () => {
     expect(r.name).toBe('Torso A');
     expect(r.plannedDistanceM).toBeNull();
     expect(r.exercises).toEqual([
-      { exerciseId: 'e1', sets: 20, reps: 1, weightKg: 61.25, restSec: 900 },
-      { exerciseId: 'e2', sets: 3, reps: 12, weightKg: null, restSec: null },
+      {
+        exerciseId: 'e1',
+        supersetGroup: null,
+        sets: 20,
+        reps: 1,
+        weightKg: 61.25,
+        restSec: 900,
+      },
+      {
+        exerciseId: 'e2',
+        supersetGroup: null,
+        sets: 3,
+        reps: 12,
+        weightKg: null,
+        restSec: null,
+      },
     ]);
   });
 
@@ -125,5 +140,55 @@ describe('routine', () => {
     expect(kindMatches('RUN', 'CYCLE')).toBe(false);
     expect(kindMatches('OTHER_CARDIO', 'SWIM')).toBe(true);
     expect(kindMatches('OTHER_CARDIO', 'STRENGTH')).toBe(false);
+  });
+
+  it('superseries: solo seguidas, de dos o más, numeradas desde 1', () => {
+    expect(normalizeSupersets([7, 7, null, 3, 3, 3, 5, 7])).toEqual([
+      1,
+      1,
+      null,
+      2,
+      2,
+      2,
+      null,
+      null,
+    ]);
+    expect(normalizeSupersets([4, null, 4])).toEqual([null, null, null]);
+  });
+
+  it('manda las superseries a Hevy numeradas desde 0', () => {
+    const r = hevyRoutineFrom(
+      [
+        {
+          exerciseId: 'a',
+          name: 'A',
+          sets: 1,
+          reps: 8,
+          weightKg: null,
+          restSec: null,
+          supersetGroup: 1,
+        },
+        {
+          exerciseId: 'b',
+          name: 'B',
+          sets: 1,
+          reps: 8,
+          weightKg: null,
+          restSec: 90,
+          supersetGroup: 1,
+        },
+        {
+          exerciseId: 'c',
+          name: 'C',
+          sets: 1,
+          reps: 8,
+          weightKg: null,
+          restSec: 60,
+          supersetGroup: null,
+        },
+      ],
+      (id) => `T-${id}`,
+    );
+    expect(r.exercises.map((e) => e.superset_id)).toEqual([0, 0, null]);
   });
 });

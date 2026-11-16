@@ -25,7 +25,10 @@ export interface RoutineDraftExercise {
   reps: number;
   /** Texto libre para poder teclear decimales con coma. */
   weight: string;
+  /** Descanso en segundos ('' = sin descanso). */
   rest: string;
+  /** Superserie (mismo número que el de al lado). */
+  group: number | null;
 }
 
 export interface RoutineDraft {
@@ -79,6 +82,7 @@ export function draftFrom(r: Routine, bodyweightOf: (id: string) => boolean = ()
       reps: e.reps,
       weight: e.weightKg ? String(e.weightKg).replace('.', ',') : '',
       rest: e.restSec ? String(e.restSec) : '',
+      group: e.supersetGroup,
     })),
   };
 }
@@ -103,6 +107,7 @@ export function routineBody(d: RoutineDraft): SaveRoutineBody {
               reps: e.reps,
               weightKg: w && w > 0 ? w : null,
               restSec: rest !== null && rest >= 0 ? Math.round(rest) : null,
+              supersetGroup: e.group,
             };
           }),
         }

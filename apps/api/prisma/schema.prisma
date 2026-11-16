@@ -3038,15 +3038,18 @@ model BrioRoutine {
 
 /// Ejercicio de una rutina de gimnasio, con las series y repeticiones previstas.
 model BrioRoutineExercise {
-  id         String   @id @default(uuid()) @db.Char(36)
-  routineId  String   @map("routine_id") @db.Char(36)
-  exerciseId String   @map("exercise_id") @db.Char(36)
-  position   Int      @db.SmallInt
-  sets       Int      @db.TinyInt
-  reps       Int      @db.SmallInt
+  id            String   @id @default(uuid()) @db.Char(36)
+  routineId     String   @map("routine_id") @db.Char(36)
+  exerciseId    String   @map("exercise_id") @db.Char(36)
+  position      Int      @db.SmallInt
+  sets          Int      @db.TinyInt
+  reps          Int      @db.SmallInt
   /// Peso previsto en kg; nulo = el que toque ese día.
-  weightKg   Decimal? @map("weight_kg") @db.Decimal(6, 2)
-  restSec    Int?     @map("rest_sec") @db.SmallInt
+  weightKg      Decimal? @map("weight_kg") @db.Decimal(6, 2)
+  restSec       Int?     @map("rest_sec") @db.SmallInt
+  /// Ejercicios seguidos con el mismo número van en superserie (se alternan
+  /// sus series y se descansa al acabar la vuelta). Nulo = ejercicio suelto.
+  supersetGroup Int?     @map("superset_group") @db.TinyInt
 
   routine  BrioRoutine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
   exercise BrioExercise @relation(fields: [exerciseId], references: [id])

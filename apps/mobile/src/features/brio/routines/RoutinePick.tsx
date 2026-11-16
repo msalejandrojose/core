@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { useBrioStore } from '../brio.store';
 import { MUSCLE_NAME } from '../performance/labels';
 import { SectionHeader } from '../ui/kit';
+import { startFromRoutine } from '../live/live-workout';
+import { previousSetsApi } from '../live/live.api';
+import { useLiveStore } from '../live/live.store';
 import { kindLabel, routineSummary } from './routine-draft';
 import { openHevy, routineErrorText, routinesApi, useRoutines, type Routine } from './routines.api';
 import './routines.css';
@@ -12,7 +15,8 @@ const kg = (n: number) => `${String(n).replace('.', ',')} kg`;
 
 /**
  * «Tus rutinas» dentro de Registrar entreno. Elegida una:
- * - gimnasio → se manda a Hevy y se abre la app (el entreno vuelve solo), o se apunta aquí;
+ * - gimnasio → se entrena en Brío serie a serie, o se manda a Hevy y se abre la app
+ *   (el entreno vuelve solo), o se apunta de una vez si ya se hizo;
  * - cardio → se hace con el reloj y al acabar se trae de Garmin, o se apunta a mano.
  */
 export function RoutinePick({
@@ -27,11 +31,32 @@ export function RoutinePick({
   onDone: () => void;
 }) {
   const { routines } = useRoutines();
+  const history = useHistory();
+  const live = useLiveStore((s) => s.workout);
+  const startLive = useLiveStore((s) => s.set);
   const refreshDay = useBrioStore((s) => s.refreshDay);
   const [busy, setBusy] = useState(false);
   const selected = routines?.find((r) => r.id === selectedId) ?? null;
 
   if (routines === null) return null;
+
+  async function trainInBrio(r: Routine) {
+    if (live) {
+      toast.info('Ya tienes un entreno en curso', `Termínalo o descártalo antes de empezar «${r.name}».`);
+      onDone();
+      history.push('/tabs/today/entreno');
+      return;
+    }
+    setBusy(true);
+    try {
+      const previous = await previousSetsApi.get(r.exercises.map((e) => e.exerciseId)).catch(() => []);
+      startLive(startFromRoutine(r, previous, (m) => MUSCLE_NAME[m] ?? m));
+      onDone();
+      history.push('/tabs/today/entreno');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function trainInHevy(r: Routine) {
     setBusy(true);
@@ -139,16 +164,21 @@ export function RoutinePick({
 
               <div className="routine-pick__actions">
                 {selected.kind === 'STRENGTH' ? (
-                  <button type="button" className="rk-btn routine-pick__primary" disabled={busy} onClick={() => void trainInHevy(selected)}>
-                    {busy ? 'Mandando a Hevy…' : 'Entrenar en Hevy'}
-                  </button>
+                  <>
+                    <button type="button" className="rk-btn routine-pick__primary" disabled={busy} onClick={() => void trainInBrio(selected)}>
+                      Entrenar en Brío
+                    </button>
+                    <button type="button" className="routine-pick__btn" disabled={busy} onClick={() => void trainInHevy(selected)}>
+                      {busy ? 'Un momento…' : 'Entrenar en Hevy'}
+                    </button>
+                  </>
                 ) : (
                   <button type="button" className="rk-btn routine-pick__primary" disabled={busy} onClick={() => void bringFromGarmin(selected)}>
                     {busy ? 'Trayendo de Garmin…' : 'Ya lo he hecho: traer de Garmin'}
                   </button>
                 )}
-                <button type="button" className="routine-pick__btn" disabled={busy} onClick={() => onLogHere(selected)}>
-                  {selected.kind === 'STRENGTH' ? 'Apuntarlo aquí' : 'Apuntarlo a mano'}
+                <button type="button" className="rk-textbtn routine-pick__later" disabled={busy} onClick={() => onLogHere(selected)}>
+                  {selected.kind === 'STRENGTH' ? 'Ya lo hice: apuntarlo de una vez' : 'Apuntarlo a mano'}
                 </button>
               </div>
             </div>

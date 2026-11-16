@@ -59,6 +59,7 @@ import BrioProfilePage from '@/features/brio/profile/ProfilePage';
 import ConnectionsPage from '@/features/brio/profile/ConnectionsPage';
 import HevyConnectPage from '@/features/brio/profile/HevyConnectPage';
 import RoutinesPage from '@/features/brio/routines/RoutinesPage';
+import LiveWorkoutPage from '@/features/brio/live/LiveWorkoutPage';
 import RoutineEditorPage from '@/features/brio/routines/RoutineEditorPage';
 import GarminConnectPage from '@/features/brio/profile/GarminConnectPage';
 import { useGarminAutoSync } from '@/features/brio/profile/garmin.api';
@@ -146,6 +147,7 @@ export default function TabsShell() {
           <Route exact path="/tabs/today" component={TodayPage} />
           <Route exact path="/tabs/today/comida" component={FoodDayPage} />
           <Route exact path="/tabs/today/coach" component={CoachPage} />
+          <Route exact path="/tabs/today/entreno" component={LiveWorkoutPage} />
           <Route exact path="/tabs/today/recetas" component={RecipesPage} />
           <Route exact path="/tabs/today/recetas/nueva" component={NewRecipePage} />
           <Route exact path="/tabs/today/recuperacion" component={RecoveryPage} />
