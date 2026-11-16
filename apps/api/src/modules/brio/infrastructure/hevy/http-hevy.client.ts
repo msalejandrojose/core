@@ -103,4 +103,19 @@ export class HttpHevyClient implements HevyClientPort {
     const created = Array.isArray(r.routine) ? r.routine[0] : r.routine;
     return { id: created?.id ?? null };
   }
+
+  async updateRoutine(
+    apiKey: string,
+    routineId: string,
+    routine: { title: string; notes: string; exercises: RoutineExercise[] },
+  ): Promise<void> {
+    await this.call<unknown>(
+      apiKey,
+      `/v1/routines/${encodeURIComponent(routineId)}`,
+      {
+        method: 'PUT',
+        body: { routine },
+      },
+    );
+  }
 }

@@ -29,6 +29,7 @@ import { GetActivitySessionUseCase } from '../../application/use-cases/get-activ
 import { ListActivitySessionsUseCase } from '../../application/use-cases/list-activity-sessions.use-case';
 import { UpdateActivitySessionUseCase } from '../../application/use-cases/update-activity-session.use-case';
 import { ReplaceSessionSetsUseCase } from '../../application/use-cases/replace-session-sets.use-case';
+import { LinkSessionToRoutineUseCase } from '../../application/use-cases/routine.use-cases';
 import { DeleteActivitySessionUseCase } from '../../application/use-cases/delete-activity-session.use-case';
 import { ActivitySessionResponseDto } from './dto/activity-session.response.dto';
 import { ActivityTypeResponseDto } from './dto/activity-type.response.dto';
@@ -51,6 +52,7 @@ export class BrioActivityController {
     private readonly listSessions: ListActivitySessionsUseCase,
     private readonly getSession: GetActivitySessionUseCase,
     private readonly updateSession: UpdateActivitySessionUseCase,
+    private readonly linkRoutine: LinkSessionToRoutineUseCase,
   ) {}
 
   @Get('activity-types')
@@ -91,6 +93,8 @@ export class BrioActivityController {
       effort: body.effort ?? null,
       notes: body.notes ?? null,
     });
+    if (body.routineId)
+      await this.linkRoutine.execute(current.sub, session.id, body.routineId);
     return ActivitySessionResponseDto.from(session);
   }
 

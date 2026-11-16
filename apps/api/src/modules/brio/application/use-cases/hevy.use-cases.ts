@@ -35,6 +35,11 @@ import {
   BRIO_PROFILE_REPOSITORY,
   type BrioProfileRepositoryPort,
 } from '../ports/brio-profile-repository.port';
+import {
+  BRIO_ROUTINE_REPOSITORY,
+  type BrioRoutineRepositoryPort,
+} from '../ports/routine.port';
+import { routineForHevyWorkout } from '../../domain/services/routine';
 import { RefreshDailyLogUseCase } from './refresh-daily-log.use-case';
 
 /** Primera importación: como mucho estos entrenos (10 por página en Hevy). */
@@ -62,7 +67,7 @@ export interface HevySyncResult {
 }
 
 /** Traduce un fallo de Hevy a un error que la app pueda explicar. */
-function asHttpError(e: unknown): Error {
+export function hevyHttpError(e: unknown): Error {
   if (!(e instanceof HevyApiError)) return e as Error;
   if (e.status === 401 || e.status === 403)
     return new BadRequestException('BRIO_HEVY_KEY_INVALID');
@@ -126,6 +131,8 @@ export class SyncHevyUseCase {
     @Inject(BRIO_PROFILE_REPOSITORY)
     private readonly profiles: BrioProfileRepositoryPort,
     private readonly refreshDailyLog: RefreshDailyLogUseCase,
+    @Inject(BRIO_ROUTINE_REPOSITORY)
+    private readonly routines: BrioRoutineRepositoryPort,
   ) {}
 
   async execute(userId: string): Promise<HevySyncResult> {
@@ -143,7 +150,7 @@ export class SyncHevyUseCase {
       return result;
     } catch (e) {
       await this.repo.markSync(userId, { lastError: errorCode(e) });
-      throw asHttpError(e);
+      throw hevyHttpError(e);
     }
   }
 
@@ -199,6 +206,9 @@ export class SyncHevyUseCase {
         apiKey,
         workouts,
       );
+      const myRoutines = (await this.routines.list(userId)).filter(
+        (r) => r.kind === 'STRENGTH',
+      );
 
       for (const w of workouts) {
         const startedAt = new Date(w.start_time);
@@ -223,6 +233,12 @@ export class SyncHevyUseCase {
               .slice(0, 500) || null,
           sets: setsFrom(w, (id) => exerciseIdOf.get(id)),
         });
+        const routine = routineForHevyWorkout(myRoutines, {
+          routineId: w.routine_id ?? null,
+          title: w.title,
+        });
+        if (routine)
+          await this.routines.linkImported(userId, 'HEVY', w.id, routine.id);
         days.add(loggedOn);
         if (r.previousDay) days.add(r.previousDay);
         if (r.created) imported += 1;
@@ -299,7 +315,7 @@ export class ConnectHevyUseCase {
     try {
       username = (await this.client.userInfo(key)).username;
     } catch (e) {
-      throw asHttpError(e);
+      throw hevyHttpError(e);
     }
     await this.repo.saveConnection(userId, {
       apiKeyEnc: this.cipher.encrypt(key),
@@ -371,7 +387,13 @@ export class SendPlannedRoutineToHevyUseCase {
 
     const apiKey = this.cipher.decrypt(conn.apiKeyEnc);
     try {
-      const templateOf = await this.templatesFor(userId, apiKey, source.sets);
+      const templateOf = await hevyTemplatesFor(
+        this.repo,
+        this.client,
+        userId,
+        apiKey,
+        source.sets,
+      );
       const { exercises, skipped } = routineFrom(source.sets, (id) =>
         templateOf.get(id),
       );
@@ -396,39 +418,42 @@ export class SendPlannedRoutineToHevyUseCase {
         basedOnDay: source.day,
       };
     } catch (e) {
-      throw asHttpError(e);
+      throw hevyHttpError(e);
     }
   }
+}
 
-  /**
-   * Ejercicio de Hevy para cada ejercicio de Brío del entreno: el enlazado al
-   * importar o, para los apuntados a mano en Brío, el equivalente del catálogo.
-   */
-  private async templatesFor(
-    userId: string,
-    apiKey: string,
-    sets: { exerciseId: string; exerciseCode: string | null }[],
-  ): Promise<Map<string, string>> {
-    const out = new Map<string, string>();
-    for (const l of await this.repo.links(userId))
-      if (!out.has(l.exerciseId)) out.set(l.exerciseId, l.templateId);
+/**
+ * Ejercicio de Hevy para cada ejercicio de Brío: el enlazado al importar o,
+ * para los apuntados en Brío, el equivalente del catálogo de Hevy (se guarda
+ * el enlace para la próxima vez).
+ */
+export async function hevyTemplatesFor(
+  repo: BrioHevyRepositoryPort,
+  client: HevyClientPort,
+  userId: string,
+  apiKey: string,
+  items: { exerciseId: string; exerciseCode: string | null }[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  for (const l of await repo.links(userId))
+    if (!out.has(l.exerciseId)) out.set(l.exerciseId, l.templateId);
 
-    const pending = new Map<string, string>();
-    for (const s of sets)
-      if (!out.has(s.exerciseId) && s.exerciseCode)
-        pending.set(s.exerciseId, s.exerciseCode);
-    if (!pending.size) return out;
+  const pending = new Map<string, string>();
+  for (const s of items)
+    if (!out.has(s.exerciseId) && s.exerciseCode)
+      pending.set(s.exerciseId, s.exerciseCode);
+  if (!pending.size) return out;
 
-    const codes = new Set(pending.values());
-    const templates = await allTemplates(this.client, apiKey);
-    for (const [exerciseId, code] of pending) {
-      const match = templates.find(
-        (t) => !t.is_custom && catalogCodeFor(t.title, codes) === code,
-      );
-      if (!match) continue;
-      await this.repo.saveLink(userId, match.id, exerciseId);
-      out.set(exerciseId, match.id);
-    }
-    return out;
+  const codes = new Set(pending.values());
+  const templates = await allTemplates(client, apiKey);
+  for (const [exerciseId, code] of pending) {
+    const match = templates.find(
+      (t) => !t.is_custom && catalogCodeFor(t.title, codes) === code,
+    );
+    if (!match) continue;
+    await repo.saveLink(userId, match.id, exerciseId);
+    out.set(exerciseId, match.id);
   }
+  return out;
 }

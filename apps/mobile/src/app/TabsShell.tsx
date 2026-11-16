@@ -58,6 +58,8 @@ import ChallengesPage from '@/features/brio/social/ChallengesPage';
 import BrioProfilePage from '@/features/brio/profile/ProfilePage';
 import ConnectionsPage from '@/features/brio/profile/ConnectionsPage';
 import HevyConnectPage from '@/features/brio/profile/HevyConnectPage';
+import RoutinesPage from '@/features/brio/routines/RoutinesPage';
+import RoutineEditorPage from '@/features/brio/routines/RoutineEditorPage';
 import GarminConnectPage from '@/features/brio/profile/GarminConnectPage';
 import { useGarminAutoSync } from '@/features/brio/profile/garmin.api';
 import { useDeviceHealthAutoSync } from '@/features/brio/health/device-health';
@@ -178,6 +180,8 @@ export default function TabsShell() {
           <Route exact path="/tabs/settings" component={BrioProfilePage} />
           <Route exact path="/tabs/settings/conexiones" component={ConnectionsPage} />
           <Route exact path="/tabs/settings/hevy" component={HevyConnectPage} />
+          <Route exact path="/tabs/settings/rutinas" component={RoutinesPage} />
+          <Route exact path="/tabs/settings/rutinas/:id" component={RoutineEditorPage} />
           <Route exact path="/tabs/settings/garmin" component={GarminConnectPage} />
           <Route exact path="/tabs/settings/eliminar" component={DeleteAccountPage} />
           <Route exact path="/tabs/settings/profile" component={ProfilePage} />

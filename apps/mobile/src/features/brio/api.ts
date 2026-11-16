@@ -244,6 +244,8 @@ export interface MealHabits {
 
 export interface LogActivityBody {
   activityTypeId: string;
+  /** Rutina guardada con la que se ha hecho. */
+  routineId?: string;
   startedAt: string;
   durationSec: number;
   distanceM?: number;

@@ -107,6 +107,10 @@ Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
    Al firmar con `-allowProvisioningUpdates` (Xcode o Forja) el perfil se
    regenera con HealthKit.
 
+6. **Abrir Hevy desde Brío** (rutinas de gimnasio). En `ios/App/App/Info.plist`,
+   `LSApplicationQueriesSchemes` (array) con `hevy`: sin él iOS no deja
+   comprobar si Hevy está instalada y Brío abre hevy.com en su lugar.
+
 Desde Capacitor 8, `cap sync ios` sigue usando CocoaPods si `ios/` ya existía
 con Podfile. Si regeneras la carpeta, usa `npx cap add ios --packagemanager CocoaPods`
 para mantener `App.xcworkspace` (lo que compila Forja).

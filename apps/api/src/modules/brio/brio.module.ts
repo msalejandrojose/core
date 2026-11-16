@@ -60,6 +60,18 @@ import {
   GetHealthDeviceStatusUseCase,
   ImportDeviceHealthUseCase,
 } from './application/use-cases/device-health.use-cases';
+import { BrioRoutineController } from './infrastructure/http/brio-routine.controller';
+import { PrismaBrioRoutineRepository } from './infrastructure/persistence/prisma-brio-routine.repository';
+import { BRIO_ROUTINE_REPOSITORY } from './application/ports/routine.port';
+import {
+  ArchiveRoutineUseCase,
+  GetRoutineUseCase,
+  LinkSessionToRoutineUseCase,
+  ListRoutinesUseCase,
+  SaveRoutineUseCase,
+  SendRoutineToHevyUseCase,
+  SyncRoutineWithGarminUseCase,
+} from './application/use-cases/routine.use-cases';
 import { LogWeightUseCase } from './application/use-cases/log-weight.use-case';
 import { RefreshDailyLogUseCase } from './application/use-cases/refresh-daily-log.use-case';
 import { SaveMyProfileUseCase } from './application/use-cases/save-my-profile.use-case';
@@ -166,6 +178,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     BrioHevyController,
     BrioGarminController,
     BrioHealthDeviceController,
+    BrioRoutineController,
     BrioSocialController,
     BrioDigestionController,
     BrioConnectionsController,
@@ -188,6 +201,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     { provide: BRIO_HEVY_REPOSITORY, useClass: PrismaBrioHevyRepository },
     { provide: HEVY_CLIENT, useClass: HttpHevyClient },
     { provide: BRIO_GARMIN_REPOSITORY, useClass: PrismaBrioGarminRepository },
+    { provide: BRIO_ROUTINE_REPOSITORY, useClass: PrismaBrioRoutineRepository },
     {
       provide: BRIO_DEVICE_HEALTH_REPOSITORY,
       useClass: PrismaBrioDeviceHealthRepository,
@@ -298,6 +312,13 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     GetHealthDeviceStatusUseCase,
     ImportDeviceHealthUseCase,
     DisconnectHealthDeviceUseCase,
+    ListRoutinesUseCase,
+    GetRoutineUseCase,
+    SaveRoutineUseCase,
+    ArchiveRoutineUseCase,
+    LinkSessionToRoutineUseCase,
+    SendRoutineToHevyUseCase,
+    SyncRoutineWithGarminUseCase,
     ConnectGarminUseCase,
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,
