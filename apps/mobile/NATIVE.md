@@ -125,6 +125,15 @@ Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
    para leer el código de barras de los alimentos.» (sin ella iOS cierra la
    app al abrir la cámara).
 
+9. **Hablar al coach** (mantener el botón central de la barra;
+   `@capacitor-community/speech-recognition`). En `ios/App/App/Info.plist`:
+   - `NSMicrophoneUsageDescription` = «Brío usa el micrófono para que le cuentes
+     al coach lo que has comido o entrenado.»
+   - `NSSpeechRecognitionUsageDescription` = «Brío pasa a texto lo que le dices
+     al coach para apuntarlo.»
+   Sin las dos, iOS cierra la app al empezar a escuchar. Después, `cap sync ios`
+   para que CocoaPods instale el plugin.
+
 Desde Capacitor 8, `cap sync ios` sigue usando CocoaPods si `ios/` ya existía
 con Podfile. Si regeneras la carpeta, usa `npx cap add ios --packagemanager CocoaPods`
 para mantener `App.xcworkspace` (lo que compila Forja).
