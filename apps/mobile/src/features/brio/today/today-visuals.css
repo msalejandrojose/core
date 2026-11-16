@@ -1,0 +1,252 @@
+/* Hoy: anillos del día, semana y entreno de hoy. */
+
+.tv-card {
+  display: block;
+  border-radius: var(--brio-radius-xl);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+  text-decoration: none;
+}
+
+/* Semana */
+.tv-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  padding: 10px 8px;
+  border-radius: var(--brio-radius-xl);
+  background: var(--brio-surface);
+  text-decoration: none;
+}
+.tv-week__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.tv-week__letter {
+  color: var(--brio-ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.tv-week__day.is-today .tv-week__letter {
+  color: var(--brio-tint);
+}
+.tv-week__dot {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid var(--brio-separator);
+  color: #fff;
+}
+.tv-week__dot.is-done {
+  border: 0;
+  background: var(--brio-activity);
+}
+.tv-week__dot.is-today {
+  border-color: var(--brio-tint);
+  box-shadow: inset 0 0 0 4px var(--brio-surface), inset 0 0 0 14px var(--brio-tint);
+}
+.tv-week__dot.is-missed {
+  border-color: var(--brio-food);
+  border-style: dashed;
+}
+.tv-week__dot.is-planned {
+  border-color: var(--brio-border-strong);
+}
+.tv-week__dot.is-rest {
+  border-color: var(--brio-sleep-soft);
+  background: var(--brio-sleep-soft);
+}
+
+/* Anillos */
+.tv-rings {
+  padding: 14px 14px 12px;
+}
+.tv-rings__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.tv-rings__svg {
+  flex: none;
+}
+.tv-rings__arc {
+  transition: stroke-dasharray 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tv-rings__legend {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.tv-rings__legend li {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  column-gap: 8px;
+  align-items: center;
+}
+.tv-rings__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.tv-rings__label {
+  color: var(--brio-ink-2);
+  font-size: 13px;
+}
+.tv-rings__value {
+  grid-column: 2;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.tv-macros {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--brio-separator);
+}
+.tv-macro {
+  display: grid;
+  grid-template-columns: 70px 1fr 78px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.tv-macro__label {
+  color: var(--brio-ink-2);
+}
+.tv-macro__bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--brio-surface-fill);
+}
+.tv-macro__bar > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  transform-origin: left center;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tv-macro__value {
+  text-align: right;
+  color: var(--brio-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Entreno de hoy */
+.tv-workout {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  background: #1c1c1e;
+  color: #fff;
+}
+.tv-workout__kicker {
+  color: #8ec5ff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tv-workout__title {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.tv-workout__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tv-workout__chip {
+  padding: 3px 10px;
+  border-radius: var(--brio-radius-pill);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 13px;
+}
+.tv-workout__actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+.tv-workout__start {
+  min-height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--brio-activity);
+  color: #0b2a14;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+}
+.tv-workout__more {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.tv-workout.is-done,
+.tv-workout.is-rest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--brio-ink);
+}
+.tv-workout.is-done {
+  background: var(--brio-activity-soft);
+}
+.tv-workout.is-done .tv-workout__kicker {
+  color: var(--brio-activity-ink);
+}
+.tv-workout.is-rest {
+  background: var(--brio-sleep-soft);
+}
+.tv-workout.is-rest .tv-workout__kicker {
+  color: var(--brio-sleep-ink);
+}
+.tv-workout.is-done .tv-workout__title,
+.tv-workout.is-rest .tv-workout__title {
+  font-size: 17px;
+}
+.tv-workout__meta {
+  display: block;
+  color: var(--brio-ink-2);
+  font-size: 14px;
+}
+.tv-workout__check {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--brio-activity);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-rings__arc,
+  .tv-macro__bar > span {
+    transition: none;
+  }
+}
