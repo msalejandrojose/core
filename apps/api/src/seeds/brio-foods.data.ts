@@ -1166,4 +1166,28 @@ export const TYPICAL_FOODS: readonly SeedFood[] = [
     fat: 11,
     servings: r('2 bolas', 100),
   },
+  {
+    name: 'Salmón al horno con patatas y cebolla',
+    kcal: 150,
+    protein: 10,
+    carbs: 10,
+    fat: 8,
+    servings: r('1 plato', 350),
+  },
+  {
+    name: 'Merluza al horno con patatas',
+    kcal: 110,
+    protein: 9,
+    carbs: 10,
+    fat: 4,
+    servings: r('1 plato', 350),
+  },
+  {
+    name: 'Dorada al horno con patatas',
+    kcal: 120,
+    protein: 10,
+    carbs: 10,
+    fat: 4.5,
+    servings: r('1 plato', 350),
+  },
 ];
