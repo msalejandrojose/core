@@ -3,6 +3,27 @@ import { iconForFood } from './food-icons.data';
 
 /** Platos añadidos al catálogo el 16/11/2026: ninguno debe salir con el plato genérico. */
 const NEW_FOODS = [
+  "Pera",
+  "Mandarina",
+  "Uvas",
+  "Melocotón",
+  "Nectarina",
+  "Paraguayo",
+  "Albaricoques",
+  "Ciruelas",
+  "Cerezas",
+  "Sandía",
+  "Melón",
+  "Piña",
+  "Mango",
+  "Arándanos",
+  "Frambuesas",
+  "Granada",
+  "Higos",
+  "Caqui",
+  "Naranja",
+  "Kiwi",
+  "Fresas",
   "Salmón al horno con patatas y cebolla",
   "Merluza al horno con patatas",
   "Dorada al horno con patatas",
@@ -71,5 +92,8 @@ describe('iconos de los platos nuevos', () => {
     expect(iconForFood('Tostada de atún con tomate')).toBe('toast');
     expect(iconForFood('Arroz con pollo')).toBe('rice');
     expect(iconForFood('Gambas a la plancha')).toBe('salmon');
+    expect(iconForFood('Zumo de naranja natural')).toBe('drink');
+    expect(iconForFood('Tostada con crema de cacahuete y plátano')).toBe('toast');
+    expect(iconForFood('Espárragos verdes a la plancha')).toBe('salad');
   });
 });
