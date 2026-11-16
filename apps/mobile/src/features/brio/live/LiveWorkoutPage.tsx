@@ -15,6 +15,8 @@ import {
   addRest,
   addSet,
   clock,
+  linkWithNext,
+  setRest,
   editSet,
   previousLine,
   progress,
@@ -25,6 +27,7 @@ import {
   toLogBody,
   toggleSet,
 } from './live-workout';
+import { REST_OPTIONS, closesRound, linkedWithNext, restLabel, supersetLetter } from '../routines/supersets';
 import { previousSetsApi } from './live.api';
 import { useLiveStore } from './live.store';
 import { useNow } from './useNow';
@@ -70,6 +73,8 @@ export default function LiveWorkoutPage() {
   const [effort, setEffort] = useState<Effort>('MODERATE');
   const [updateRoutine, setUpdateRoutine] = useState(true);
   const [saving, setSaving] = useState(false);
+  /** Ejercicio con el selector de descanso abierto. */
+  const [restOpen, setRestOpen] = useState<number | null>(null);
   const restWasRunning = useRef(false);
 
   // Vibración al acabar el descanso (si la pantalla está delante).
@@ -164,8 +169,17 @@ export default function LiveWorkoutPage() {
 
           {workout.exercises.map((e, i) => {
             const prev = previousLine(e.previous);
+            const groups = workout.exercises.map((x) => x.group);
+            const firstOfGroup = e.group != null && groups[i - 1] !== e.group;
+            const members = e.group != null ? workout.exercises.filter((x) => x.group === e.group).map((x) => x.name) : [];
             return (
-              <section key={`${e.exerciseId}-${i}`} className="rk-list live__exercise" aria-label={e.name}>
+              <div key={`${e.exerciseId}-${i}`}>
+              {firstOfGroup ? (
+                <p className="live__ss-label">
+                  Superserie {supersetLetter(e.group!)} · alterna {members.join(' → ')} y descansa al acabar la vuelta
+                </p>
+              ) : null}
+              <section className={`rk-list live__exercise${e.group ? ' is-superset' : ''}`} aria-label={e.name}>
                 <div className="rk-row live__ex-head">
                   <span className="rk-row__main">
                     <span className="rk-row__title">{e.name}</span>
@@ -208,10 +222,53 @@ export default function LiveWorkoutPage() {
                     </button>
                   </div>
                 ))}
-                <button type="button" className="rk-row live__add-set" onClick={() => update((w) => addSet(w, i))}>
-                  Añadir serie{e.restSec ? ` · descanso ${clock(e.restSec * 1000)}` : ''}
-                </button>
+                <div className="live__ex-foot">
+                  <button type="button" className="rk-textbtn" onClick={() => update((w) => addSet(w, i))}>
+                    Añadir serie
+                  </button>
+                  {closesRound(groups, i) ? (
+                    <button
+                      type="button"
+                      className="rk-textbtn live__rest-btn"
+                      aria-expanded={restOpen === i}
+                      onClick={() => setRestOpen((x) => (x === i ? null : i))}
+                    >
+                      Descanso: {restLabel(e.restSec)}
+                    </button>
+                  ) : (
+                    <span className="live__rest-note">Sin descanso: sigue con el siguiente</span>
+                  )}
+                </div>
+                {restOpen === i ? (
+                  <div className="routine__rest-options live__rest-options" role="group" aria-label={`Descanso de ${e.name}`}>
+                    {REST_OPTIONS.map((sec) => (
+                      <button
+                        key={sec}
+                        type="button"
+                        className="workout__chip routine__rest-chip"
+                        aria-pressed={(e.restSec ?? 0) === sec}
+                        onClick={() => {
+                          update((w) => setRest(w, i, sec));
+                          setRestOpen(null);
+                        }}
+                      >
+                        {sec ? restLabel(sec) : 'Nada'}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </section>
+              {i < workout.exercises.length - 1 ? (
+                <button
+                  type="button"
+                  className={`routine__link${linkedWithNext(groups, i) ? ' is-on' : ''}`}
+                  aria-pressed={linkedWithNext(groups, i)}
+                  onClick={() => update((w) => linkWithNext(w, i))}
+                >
+                  {linkedWithNext(groups, i) ? '⛓ En superserie con el siguiente · separar' : '＋ Superserie con el siguiente'}
+                </button>
+              ) : null}
+              </div>
             );
           })}
 

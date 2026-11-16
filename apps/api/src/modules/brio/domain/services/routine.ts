@@ -21,6 +21,8 @@ export interface RoutineExerciseInput {
   reps: number;
   weightKg?: number | null;
   restSec?: number | null;
+  /** Mismo número que el ejercicio de al lado = superserie. */
+  supersetGroup?: number | null;
 }
 
 export interface RoutineInput {
@@ -56,6 +58,29 @@ const intIn = (n: number | null | undefined, min: number, max: number) =>
     ? null
     : Math.min(max, Math.max(min, Math.round(n)));
 
+/**
+ * Deja las superseries limpias: solo cuentan los ejercicios seguidos con el
+ * mismo número, un grupo de uno no es superserie y se numeran 1, 2, 3…
+ */
+export function normalizeSupersets(
+  groups: (number | null | undefined)[],
+): (number | null)[] {
+  const out: (number | null)[] = groups.map(() => null);
+  let next = 1;
+  let i = 0;
+  while (i < groups.length) {
+    const g = groups[i];
+    let j = i + 1;
+    if (g != null) while (j < groups.length && groups[j] === g) j += 1;
+    if (g != null && j - i >= 2) {
+      for (let k = i; k < j; k += 1) out[k] = next;
+      next += 1;
+    }
+    i = j;
+  }
+  return out;
+}
+
 /** Valida y normaliza una rutina. Las de cardio no llevan ejercicios. */
 export function cleanRoutine(input: RoutineInput): CleanRoutine {
   const name = input.name.trim().replace(/\s+/g, ' ');
@@ -66,6 +91,7 @@ export function cleanRoutine(input: RoutineInput): CleanRoutine {
     throw new InvalidRoutineError('BRIO_ROUTINE_EXERCISES_REQUIRED');
   if (exercises.length > MAX_ROUTINE_EXERCISES)
     throw new InvalidRoutineError('BRIO_ROUTINE_TOO_MANY_EXERCISES');
+  const groups = normalizeSupersets(exercises.map((e) => e.supersetGroup));
   return {
     name: name.slice(0, 80),
     kind: input.kind,
@@ -77,8 +103,9 @@ export function cleanRoutine(input: RoutineInput): CleanRoutine {
     targetPaceSecPerKm: strength
       ? null
       : intIn(input.targetPaceSecPerKm, 60, 1800),
-    exercises: exercises.map((e) => ({
+    exercises: exercises.map((e, i) => ({
       exerciseId: e.exerciseId,
+      supersetGroup: groups[i],
       sets: intIn(e.sets, 1, 20) ?? 3,
       reps: intIn(e.reps, 1, 100) ?? 10,
       weightKg:
@@ -125,7 +152,7 @@ export function routineMuscles(
 
 export interface HevyRoutineExercise {
   exercise_template_id: string;
-  superset_id: null;
+  superset_id: number | null;
   rest_seconds: number | null;
   notes: null;
   sets: { type: 'normal'; weight_kg: number | null; reps: number }[];
@@ -140,6 +167,7 @@ export function hevyRoutineFrom(
     reps: number;
     weightKg: number | null;
     restSec: number | null;
+    supersetGroup?: number | null;
   }[],
   templateIdOf: (exerciseId: string) => string | undefined,
 ): { exercises: HevyRoutineExercise[]; skipped: string[] } {
@@ -153,7 +181,8 @@ export function hevyRoutineFrom(
     }
     out.push({
       exercise_template_id: templateId,
-      superset_id: null,
+      // Hevy numera las superseries desde 0.
+      superset_id: e.supersetGroup ? e.supersetGroup - 1 : null,
       rest_seconds: e.restSec,
       notes: null,
       sets: Array.from({ length: e.sets }, () => ({

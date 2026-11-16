@@ -236,3 +236,53 @@
   margin-top: 2px;
   font-size: 15px;
 }
+
+/* Descanso con botones y superseries en el editor. */
+.routine__rest {
+  display: grid;
+  gap: 8px;
+  padding: 10px 16px 12px;
+}
+.routine__rest-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.routine__rest-chip {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+.routine__exercise.is-superset {
+  box-shadow: inset 4px 0 0 var(--brio-tint);
+}
+.routine__ss-label {
+  margin: 0 0 8px;
+  color: var(--brio-tint);
+  font-size: 13px;
+  font-weight: 600;
+}
+.routine__link {
+  display: block;
+  margin: -4px auto 12px;
+  padding: 6px 12px;
+  border: 1px dashed var(--brio-border-strong);
+  border-radius: var(--brio-radius-pill);
+  background: transparent;
+  color: var(--brio-ink-2);
+  font: inherit;
+  font-size: 13px;
+}
+.routine__link.is-on {
+  border-style: solid;
+  border-color: var(--brio-tint);
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+}
+
+.routine__rest-note {
+  margin: 0;
+  padding: 12px 16px;
+  color: var(--brio-ink-muted);
+  font-size: 14px;
+}

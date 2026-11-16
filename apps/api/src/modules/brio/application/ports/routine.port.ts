@@ -10,6 +10,7 @@ export interface RoutineExerciseView {
   reps: number;
   weightKg: number | null;
   restSec: number | null;
+  supersetGroup: number | null;
   muscles: { muscle: string; weight: number }[];
 }
 

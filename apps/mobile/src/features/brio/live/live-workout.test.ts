@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Routine } from '../routines/routines.api';
 import {
+  linkWithNext,
+  setRest,
   addExercise,
   addRest,
   addSet,
@@ -37,12 +39,13 @@ const routine: Routine = {
       reps: 8,
       weightKg: null,
       restSec: 120,
+      supersetGroup: null,
       muscles: [
         { muscle: 'CHEST', weight: 1 },
         { muscle: 'TRICEPS', weight: 0.5 },
       ],
     },
-    { exerciseId: 'row', code: null, name: 'Remo', sets: 2, reps: 10, weightKg: 50, restSec: null, muscles: [] },
+    { exerciseId: 'row', code: null, name: 'Remo', sets: 2, reps: 10, weightKg: 50, restSec: null, supersetGroup: null, muscles: [] },
   ],
 };
 
@@ -135,5 +138,18 @@ describe('live-workout', () => {
     expect(previousLine(null)).toBeNull();
     expect(clock(65_000)).toBe('1:05');
     expect(clock(3_725_000)).toBe('1:02:05');
+  });
+
+  it('en superserie solo se descansa al acabar la vuelta, con el descanso del último', () => {
+    let w = startFromRoutine(routine, [], (m) => m, T0);
+    w = linkWithNext(w, 0);
+    expect(w.exercises.map((e) => e.group)).toEqual([1, 1]);
+    w = setRest(w, 1, 60);
+    w = toggleSet(w, 0, 0, T0);
+    expect(w.restUntil).toBeNull();
+    w = toggleSet(w, 1, 0, T0);
+    expect(w.restUntil).toBe(T0 + 60_000);
+    // Separar vuelve a dejarlos sueltos.
+    expect(linkWithNext(w, 0).exercises.map((e) => e.group)).toEqual([null, null]);
   });
 });

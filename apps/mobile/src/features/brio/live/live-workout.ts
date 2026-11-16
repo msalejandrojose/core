@@ -1,5 +1,6 @@
 import type { LogActivityBody } from '../api';
 import type { Routine, SaveRoutineBody } from '../routines/routines.api';
+import { closesRound, normalizeGroups, toggleLink } from '../routines/supersets';
 
 /**
  * Entreno de gimnasio hecho en Brío, serie a serie. Todo es puro: la pantalla
@@ -26,6 +27,8 @@ export interface LiveExercise {
   /** Músculos principales, en texto. */
   muscles: string;
   restSec: number | null;
+  /** Superserie: mismo número que el ejercicio de al lado. */
+  group: number | null;
   sets: LiveSet[];
   previous: PreviousSets | null;
 }
@@ -72,6 +75,7 @@ export function startFromRoutine(
           .map((m) => muscleName(m.muscle))
           .join(', '),
         restSec: e.restSec,
+        group: e.supersetGroup,
         previous: prev,
         sets: Array.from({ length: e.sets }, () => ({
           weight: weight !== null ? fmt(weight) : '',
@@ -119,7 +123,9 @@ export function toggleSet(w: LiveWorkout, i: number, k: number, now = Date.now()
       return s;
     }),
   }));
-  const rest = done && ex.restSec ? ex.restSec : null;
+  // En superserie se descansa al cerrar la vuelta (último ejercicio del grupo).
+  const groups = w.exercises.map((e) => e.group);
+  const rest = done && closesRound(groups, i) && ex.restSec ? ex.restSec : null;
   return {
     ...next,
     restUntil: rest ? now + rest * 1000 : done ? null : w.restUntil,
@@ -140,7 +146,7 @@ export function removeSet(w: LiveWorkout, i: number, k: number): LiveWorkout {
 
 export function addExercise(
   w: LiveWorkout,
-  e: Omit<LiveExercise, 'sets' | 'previous'>,
+  e: Omit<LiveExercise, 'sets' | 'previous' | 'group'>,
   previous: PreviousSets | null,
 ): LiveWorkout {
   const top = previous?.sets.length ? Math.max(...previous.sets.map((s) => s.weightKg)) : null;
@@ -151,6 +157,7 @@ export function addExercise(
       ...w.exercises,
       {
         ...e,
+        group: null,
         previous,
         sets: Array.from({ length: 3 }, () => ({ weight: top ? fmt(top) : '', reps: String(reps), done: false })),
       },
@@ -158,10 +165,22 @@ export function addExercise(
   };
 }
 
-export const removeExercise = (w: LiveWorkout, i: number): LiveWorkout => ({
-  ...w,
-  exercises: w.exercises.filter((_, j) => j !== i),
-});
+const regroup = (exs: LiveExercise[], gs: (number | null)[]) => exs.map((e, k) => ({ ...e, group: gs[k] }));
+
+export function removeExercise(w: LiveWorkout, i: number): LiveWorkout {
+  const exs = w.exercises.filter((_, j) => j !== i);
+  return { ...w, exercises: regroup(exs, normalizeGroups(exs.map((e) => e.group))) };
+}
+
+/** Une con el siguiente en superserie (o los separa) sobre la marcha. */
+export function linkWithNext(w: LiveWorkout, i: number): LiveWorkout {
+  return { ...w, exercises: regroup(w.exercises, toggleLink(w.exercises.map((e) => e.group), i)) };
+}
+
+/** Cambia el descanso del ejercicio (en superserie, el que cuenta es el del último). */
+export function setRest(w: LiveWorkout, i: number, sec: number): LiveWorkout {
+  return mapExercise(w, i, (e) => ({ ...e, restSec: sec > 0 ? sec : null }));
+}
 
 export const skipRest = (w: LiveWorkout): LiveWorkout => ({ ...w, restUntil: null, restFor: null });
 
@@ -240,7 +259,9 @@ export function routineWithTodayWeights(r: Routine, w: LiveWorkout): SaveRoutine
         sets: e.sets,
         reps: e.reps,
         weightKg: top && top > 0 ? top : e.weightKg,
-        restSec: e.restSec,
+        // Si cambiaste el descanso entrenando, se queda el de hoy.
+        restSec: live ? live.restSec : e.restSec,
+        supersetGroup: e.supersetGroup,
       };
     }),
   };

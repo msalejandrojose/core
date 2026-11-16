@@ -15,6 +15,7 @@ export interface RoutineExercise {
   reps: number;
   weightKg: number | null;
   restSec: number | null;
+  supersetGroup: number | null;
   muscles: { muscle: string; weight: number }[];
 }
 
@@ -47,7 +48,14 @@ export interface SaveRoutineBody {
   plannedDurationMin?: number | null;
   plannedDistanceM?: number | null;
   targetPaceSecPerKm?: number | null;
-  exercises?: { exerciseId: string; sets: number; reps: number; weightKg?: number | null; restSec?: number | null }[];
+  exercises?: {
+    exerciseId: string;
+    sets: number;
+    reps: number;
+    weightKg?: number | null;
+    restSec?: number | null;
+    supersetGroup?: number | null;
+  }[];
 }
 
 export interface RoutineSentToHevy {

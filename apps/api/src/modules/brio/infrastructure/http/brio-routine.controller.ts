@@ -82,6 +82,14 @@ export class RoutineExerciseDto {
   @IsOptional()
   @IsInt()
   restSec?: number | null;
+  @ApiPropertyOptional({
+    example: 1,
+    description:
+      'Ejercicios seguidos con el mismo número van en superserie. Nulo = suelto.',
+  })
+  @IsOptional()
+  @IsInt()
+  supersetGroup?: number | null;
 }
 
 export class SaveRoutineDto {

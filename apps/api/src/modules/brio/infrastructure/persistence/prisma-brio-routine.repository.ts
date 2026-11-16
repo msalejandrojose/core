@@ -50,6 +50,7 @@ const toView = (r: Row): RoutineView => ({
     reps: e.reps,
     weightKg: e.weightKg == null ? null : Number(e.weightKg),
     restSec: e.restSec,
+    supersetGroup: e.supersetGroup,
     muscles: e.exercise.muscles.map((m) => ({
       muscle: m.muscle,
       weight: Number(m.weight),
@@ -67,6 +68,7 @@ const exerciseRows = (data: CleanRoutine) =>
     reps: e.reps,
     weightKg: e.weightKg,
     restSec: e.restSec,
+    supersetGroup: e.supersetGroup,
   }));
 
 const fields = (data: CleanRoutine) => ({

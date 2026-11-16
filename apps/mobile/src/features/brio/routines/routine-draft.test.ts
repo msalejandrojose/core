@@ -19,6 +19,7 @@ const bench = {
   reps: 8,
   weightKg: 62.5,
   restSec: 120,
+  supersetGroup: null,
   muscles: [
     { muscle: 'CHEST', weight: 1 },
     { muscle: 'TRICEPS', weight: 0.5 },
@@ -50,7 +51,7 @@ describe('routine-draft', () => {
       kind: 'STRENGTH',
       notes: null,
       plannedDurationMin: 60,
-      exercises: [{ exerciseId: 'e1', sets: 4, reps: 8, weightKg: 62.5, restSec: 120 }],
+      exercises: [{ exerciseId: 'e1', sets: 4, reps: 8, weightKg: 62.5, restSec: 120, supersetGroup: null }],
     });
   });
 
