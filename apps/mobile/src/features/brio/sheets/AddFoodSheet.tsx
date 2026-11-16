@@ -9,6 +9,7 @@ import { tapSuccess } from '../haptics';
 import { FoodIcon } from '../ui/food-icons';
 import { FOOD_ICONS, type FoodIconKey } from '../ui/food-icons.data';
 import { CreateFoodSheet } from './CreateFoodSheet';
+import { scanFoodBarcode } from '../food/barcode';
 import { Icon, SearchField, Segmented, SectionHeader, SheetBar } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { snackbar } from '@/lib/snackbar';
@@ -108,6 +109,9 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const [quickKcal, setQuickKcal] = useState('');
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  /** Código escaneado que no conocíamos: se pasa al crear el alimento. */
+  const [unknownBarcode, setUnknownBarcode] = useState<string | null>(null);
   const [typical, setTypical] = useState<Partial<Record<MealType, FoodSection[]>>>({});
   const [section, setSection] = useState<string | null>(null);
 
@@ -194,6 +198,31 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
     setQuickKcal('');
   }
 
+  /** Escanea un envase: si lo conocemos (o está en Open Food Facts) se añade; si no, a crearlo. */
+  async function scan() {
+    const code = await scanFoodBarcode();
+    if (!code) return;
+    setScanning(true);
+    try {
+      const food = await brioApi.foodByBarcode(code);
+      if (food) {
+        const item = fromFood(food);
+        setResults([food]);
+        setPicked((p) => ({ ...p, [item.key]: item }));
+        void tapSuccess();
+        toast.success(`${food.name} añadido`, 'Ajusta la cantidad si no es la ración entera.');
+      } else {
+        setUnknownBarcode(code);
+        setCreating(true);
+        toast.info('No conocemos ese producto', 'Apunta lo que pone la etiqueta y quedará guardado para la próxima.');
+      }
+    } catch {
+      toast.error('No se pudo buscar el código');
+    } finally {
+      setScanning(false);
+    }
+  }
+
   async function save() {
     if (items.length === 0) return;
     setSaving(true);
@@ -256,12 +285,23 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
             <span className="addfood__hint">{MEAL_HINT[mealType]}</span>
           </div>
 
-          <SearchField
-            label="Buscar alimento"
-            placeholder="Buscar o escribir lo que has comido"
-            value={query}
-            onChange={setQuery}
-          />
+          <div className="rk-search-row">
+            <SearchField
+              label="Buscar alimento"
+              placeholder="Buscar o escribir lo que has comido"
+              value={query}
+              onChange={setQuery}
+            />
+            <button
+              type="button"
+              className="rk-iconbtn addfood__scan"
+              aria-label="Escanear código de barras"
+              disabled={scanning}
+              onClick={() => void scan()}
+            >
+              <Icon d={PATHS.barcode} size={24} />
+            </button>
+          </div>
 
           {searching ? (
             <section className="rk-section" aria-label="Resultados">
@@ -500,9 +540,14 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
       <CreateFoodSheet
         isOpen={creating}
         initialName={query.trim()}
-        onClose={() => setCreating(false)}
+        barcode={unknownBarcode}
+        onClose={() => {
+          setCreating(false);
+          setUnknownBarcode(null);
+        }}
         onCreated={(food) => {
           setCreating(false);
+          setUnknownBarcode(null);
           setResults((r) => [food, ...(r ?? [])]);
           const item = fromFood(food);
           setPicked((p) => ({ ...p, [item.key]: item }));

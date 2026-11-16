@@ -120,6 +120,11 @@ Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
    - en `apps/mobile/.env.production.local`, `VITE_APPLE_SIGN_IN=true`.
    La API acepta tokens con `aud` = `APPLE_CLIENT_ID` (por defecto `es.aj.brio`).
 
+8. **Escanear códigos de barras** (`@capacitor/barcode-scanner`). En
+   `ios/App/App/Info.plist`, `NSCameraUsageDescription` = «Brío usa la cámara
+   para leer el código de barras de los alimentos.» (sin ella iOS cierra la
+   app al abrir la cámara).
+
 Desde Capacitor 8, `cap sync ios` sigue usando CocoaPods si `ios/` ya existía
 con Podfile. Si regeneras la carpeta, usa `npx cap add ios --packagemanager CocoaPods`
 para mantener `App.xcworkspace` (lo que compila Forja).

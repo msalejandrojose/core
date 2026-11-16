@@ -1,4 +1,5 @@
 import type { Food } from '../../domain/entities/food.entity';
+import type { OffFood } from '../../domain/services/open-food-facts';
 
 export const BRIO_FOOD_REPOSITORY = Symbol('BRIO_FOOD_REPOSITORY');
 
@@ -24,6 +25,11 @@ export interface BrioFoodRepositoryPort {
   findByBarcode(userId: string, barcode: string): Promise<Food | null>;
   findVisibleTo(id: string, userId: string): Promise<Food | null>;
   create(data: CreateFoodData): Promise<Food>;
+  /**
+   * Alimento del catálogo compartido importado de Open Food Facts. Si otro ya
+   * reclamó ese código (carrera o alimento propio de alguien), devuelve null.
+   */
+  createFromOpenFoodFacts(barcode: string, data: OffFood): Promise<Food | null>;
   /** Del catálogo compartido, por nombre exacto, en el orden pedido. */
   findGlobalByNames(names: readonly string[]): Promise<Food[]>;
 }

@@ -137,7 +137,9 @@ export interface CreateFoodBody {
   proteinPer100G: number;
   carbsPer100G: number;
   fatPer100G: number;
-  servings?: { label: string; grams: number; isDefault?: boolean }[];
+  servings?: { label: string; grams: number; isDefault?: boolean   /** EAN/UPC si se creó tras escanear un envase que no conocíamos. */
+  barcode?: string;
+}[];
 }
 
 /** Sección de lo típico de un momento del día (café, tostadas…), con su dibujo. */
@@ -343,6 +345,9 @@ export const brioApi = {
     call<void>('DELETE', `/brio/activities/${id}`),
   searchFoods: (q: string) =>
     call<Food[]>('GET', '/brio/foods', { params: { query: { q } } }),
+  /** Por código de barras: el nuestro o, si no lo tenemos, el de Open Food Facts. */
+  foodByBarcode: (barcode: string) =>
+    call<Food[]>('GET', '/brio/foods', { params: { query: { barcode } } }).then((r) => r[0] ?? null),
   logMeal: (body: LogMealBody) =>
     call<MealEntry>('POST', '/brio/meals', { body }),
   updateMeal: (id: string, body: UpdateMealBody) =>
