@@ -37,6 +37,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // El paquete principal ronda los 2 MB: sin margen, el build falla al no poder cachearlo.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         // Precache del shell (JS/CSS/HTML/imagenes) para que la app abra sin red.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: 'index.html',

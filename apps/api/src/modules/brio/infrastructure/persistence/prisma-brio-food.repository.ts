@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import type { Food } from '../../domain/entities/food.entity';
+import type { OffFood } from '../../domain/services/open-food-facts';
 import type {
   CreateFoodData,
   BrioFoodRepositoryPort,
@@ -84,5 +86,36 @@ export class PrismaBrioFoodRepository implements BrioFoodRepositoryPort {
       include: SERVINGS,
     });
     return toFood(row);
+  }
+
+  async createFromOpenFoodFacts(
+    barcode: string,
+    data: OffFood,
+  ): Promise<Food | null> {
+    const { servings, ...food } = data;
+    try {
+      const row = await this.prisma.brioFood.create({
+        data: {
+          ...food,
+          barcode,
+          source: 'OPEN_FOOD_FACTS',
+          externalId: barcode,
+          ownerUserId: null,
+          isVerified: false,
+          servings: { create: servings },
+        },
+        include: SERVINGS,
+      });
+      return toFood(row);
+    } catch (e) {
+      // Código ya usado: lo importó otra petición a la vez o es un alimento
+      // propio de otro usuario (que este no puede ver).
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      )
+        return null;
+      throw e;
+    }
   }
 }

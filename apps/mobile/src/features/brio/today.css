@@ -29,7 +29,20 @@
   font-weight: 700;
   letter-spacing: 0.3px;
 }
+.today-head h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.today-head h1.is-greeting {
+  font-size: 30px;
+  line-height: 36px;
+  letter-spacing: -0.2px;
+}
 .today-head__actions {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 2px;

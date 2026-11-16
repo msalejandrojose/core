@@ -83,6 +83,8 @@ import {
 import { PrismaBrioCatalogAdminRepository } from './infrastructure/persistence/prisma-brio-catalog-admin.repository';
 import { BRIO_CATALOG_ADMIN } from './application/ports/catalog-admin.port';
 import { CatalogAdminUseCases } from './application/use-cases/catalog-admin.use-cases';
+import { OPEN_FOOD_FACTS } from './application/ports/open-food-facts.port';
+import { HttpOpenFoodFactsClient } from './infrastructure/open-food-facts/http-open-food-facts.client';
 import { LogWeightUseCase } from './application/use-cases/log-weight.use-case';
 import { RefreshDailyLogUseCase } from './application/use-cases/refresh-daily-log.use-case';
 import { SaveMyProfileUseCase } from './application/use-cases/save-my-profile.use-case';
@@ -218,6 +220,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     { provide: BRIO_ROUTINE_REPOSITORY, useClass: PrismaBrioRoutineRepository },
     { provide: BRIO_CATALOG_ADMIN, useClass: PrismaBrioCatalogAdminRepository },
     CatalogAdminUseCases,
+    { provide: OPEN_FOOD_FACTS, useClass: HttpOpenFoodFactsClient },
     {
       provide: BRIO_DEVICE_HEALTH_REPOSITORY,
       useClass: PrismaBrioDeviceHealthRepository,

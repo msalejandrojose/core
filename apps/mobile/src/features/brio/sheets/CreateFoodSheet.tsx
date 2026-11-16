@@ -10,6 +10,8 @@ interface CreateFoodSheetProps {
   isOpen: boolean;
   /** Nombre de partida: lo que se estaba buscando. */
   initialName: string;
+  /** Código escaneado que no encontramos: se guarda con el alimento. */
+  barcode?: string | null;
   onClose: () => void;
   onCreated: (food: Food) => void;
 }
@@ -30,7 +32,7 @@ type NutrientKey = (typeof NUTRIENTS)[number]['key'];
  * del súper). Se copian los valores por 100 g de la etiqueta y, si se quiere,
  * una ración («1 tarro, 125 g»). Solo lo ve quien lo crea.
  */
-export function CreateFoodSheet({ isOpen, initialName, onClose, onCreated }: CreateFoodSheetProps) {
+export function CreateFoodSheet({ isOpen, initialName, barcode, onClose, onCreated }: CreateFoodSheetProps) {
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
   const [liquid, setLiquid] = useState(false);
@@ -66,6 +68,7 @@ export function CreateFoodSheet({ isOpen, initialName, onClose, onCreated }: Cre
       const food = await brioApi.createFood({
         name: name.trim(),
         ...(brand.trim() ? { brand: brand.trim() } : {}),
+        ...(barcode ? { barcode } : {}),
         isLiquid: liquid,
         kcalPer100: nums.kcal,
         proteinPer100G: nums.protein,
