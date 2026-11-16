@@ -1,0 +1,139 @@
+import { describe, expect, it } from 'vitest';
+import type { Routine } from '../routines/routines.api';
+import {
+  addExercise,
+  addRest,
+  addSet,
+  clock,
+  editSet,
+  previousLine,
+  progress,
+  routineWithTodayWeights,
+  skipRest,
+  startFromRoutine,
+  toLogBody,
+  toggleSet,
+} from './live-workout';
+
+const routine: Routine = {
+  id: 'r1',
+  name: 'Torso A',
+  kind: 'STRENGTH',
+  notes: null,
+  plannedDurationMin: 60,
+  plannedDistanceM: null,
+  targetPaceSecPerKm: null,
+  hevyRoutineId: null,
+  hevySentAt: null,
+  muscles: [],
+  lastDoneAt: null,
+  timesDone: 0,
+  exercises: [
+    {
+      exerciseId: 'bench',
+      code: 'bench_press',
+      name: 'Press de banca',
+      sets: 3,
+      reps: 8,
+      weightKg: null,
+      restSec: 120,
+      muscles: [
+        { muscle: 'CHEST', weight: 1 },
+        { muscle: 'TRICEPS', weight: 0.5 },
+      ],
+    },
+    { exerciseId: 'row', code: null, name: 'Remo', sets: 2, reps: 10, weightKg: 50, restSec: null, muscles: [] },
+  ],
+};
+
+const previous = [{ exerciseId: 'bench', day: '2026-11-10T08:00:00Z', sets: [{ weightKg: 70, reps: 8 }, { weightKg: 72.5, reps: 6 }] }];
+const T0 = 1_000_000;
+
+describe('live-workout', () => {
+  it('empieza con las series de la rutina y el peso de la última vez si la rutina no lo tiene', () => {
+    const w = startFromRoutine(routine, previous, (m) => m, T0);
+    expect(w.exercises[0].sets).toEqual([
+      { weight: '72,5', reps: '8', done: false },
+      { weight: '72,5', reps: '8', done: false },
+      { weight: '72,5', reps: '8', done: false },
+    ]);
+    expect(w.exercises[0].muscles).toBe('CHEST');
+    expect(w.exercises[1].sets[0].weight).toBe('50');
+  });
+
+  it('marcar una serie arranca el descanso del ejercicio; desmarcarla no lo toca', () => {
+    let w = startFromRoutine(routine, [], (m) => m, T0);
+    w = editSet(w, 0, 0, { weight: '70' });
+    w = toggleSet(w, 0, 0, T0 + 5000);
+    expect(w.exercises[0].sets[0].done).toBe(true);
+    expect(w.restUntil).toBe(T0 + 5000 + 120_000);
+    // Las series siguientes sin peso heredan el de esta.
+    expect(w.exercises[0].sets[1].weight).toBe('70');
+    w = addRest(w, 15, T0 + 6000);
+    expect(w.restFor).toBe(135);
+    w = skipRest(w);
+    expect(w.restUntil).toBeNull();
+    // Remo no tiene descanso: no arranca contador.
+    w = toggleSet(w, 1, 0, T0 + 10_000);
+    expect(w.restUntil).toBeNull();
+  });
+
+  it('cuenta progreso y volumen solo con las series hechas', () => {
+    let w = startFromRoutine(routine, previous, (m) => m, T0);
+    w = toggleSet(w, 0, 0, T0);
+    w = toggleSet(w, 0, 1, T0);
+    w = addSet(w, 1);
+    expect(progress(w)).toEqual({ done: 2, total: 6, volumeKg: 1160 });
+  });
+
+  it('convierte en entreno para la API con la rutina enlazada', () => {
+    let w = startFromRoutine(routine, previous, (m) => m, T0);
+    w = toggleSet(w, 0, 0, T0);
+    w = toggleSet(w, 0, 1, T0);
+    w = editSet(w, 0, 1, { reps: '6' });
+    const body = toLogBody(w, 'type-strength', 'VIGOROUS', T0 + 3_000_000);
+    expect(body).toEqual({
+      activityTypeId: 'type-strength',
+      startedAt: new Date(T0).toISOString(),
+      durationSec: 3000,
+      effort: 'VIGOROUS',
+      routineId: 'r1',
+      exercises: [
+        {
+          exerciseId: 'bench',
+          sets: [
+            { weightKg: 72.5, reps: 8 },
+            { weightKg: 72.5, reps: 6, restSec: 120 },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('actualiza la rutina con el mayor peso hecho hoy y deja igual lo que no se hizo', () => {
+    let w = startFromRoutine(routine, [], (m) => m, T0);
+    w = editSet(w, 0, 0, { weight: '75' });
+    w = toggleSet(w, 0, 0, T0);
+    const body = routineWithTodayWeights(routine, w);
+    expect(body.exercises?.map((e) => e.weightKg)).toEqual([75, 50]);
+  });
+
+  it('añade ejercicios sueltos con lo de la última vez', () => {
+    const w = addExercise(
+      startFromRoutine(routine, [], (m) => m, T0),
+      { exerciseId: 'curl', name: 'Curl', bodyweight: false, muscles: 'BICEPS', restSec: 60 },
+      { exerciseId: 'curl', day: 'x', sets: [{ weightKg: 12, reps: 12 }] },
+    );
+    expect(w.exercises[2].sets[0]).toEqual({ weight: '12', reps: '12', done: false });
+  });
+
+  it('textos: la última vez y el reloj', () => {
+    expect(previousLine(previous[0])).toBe('La última vez: 70×8, 72,5×6');
+    expect(previousLine({ exerciseId: 'x', day: '', sets: [{ weightKg: 60, reps: 8 }, { weightKg: 60, reps: 7 }] })).toBe(
+      'La última vez: 60 kg × 8, 7',
+    );
+    expect(previousLine(null)).toBeNull();
+    expect(clock(65_000)).toBe('1:05');
+    expect(clock(3_725_000)).toBe('1:02:05');
+  });
+});

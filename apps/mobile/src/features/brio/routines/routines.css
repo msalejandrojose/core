@@ -230,3 +230,9 @@
   margin-top: 8px;
   font-size: 15px;
 }
+
+.routine-pick__later {
+  justify-self: center;
+  margin-top: 2px;
+  font-size: 15px;
+}

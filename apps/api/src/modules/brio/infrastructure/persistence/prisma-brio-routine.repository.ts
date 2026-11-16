@@ -5,6 +5,7 @@ import type { CleanRoutine } from '../../domain/services/routine';
 import type {
   BrioRoutineRepositoryPort,
   LinkableSession,
+  PreviousSets,
   RoutineView,
 } from '../../application/ports/routine.port';
 
@@ -213,6 +214,45 @@ export class PrismaBrioRoutineRepository implements BrioRoutineRepositoryPort {
       id: r.id,
       startedAt: r.startedAt,
       kind: r.activityType.kind,
+    }));
+  }
+
+  async previousSets(
+    userId: string,
+    exerciseIds: string[],
+  ): Promise<PreviousSets[]> {
+    const ids = [...new Set(exerciseIds)];
+    if (!ids.length) return [];
+    const rows = await this.prisma.brioStrengthSet.findMany({
+      where: { userId, exerciseId: { in: ids }, isWarmup: false },
+      orderBy: [{ session: { startedAt: 'desc' } }, { setOrder: 'asc' }],
+      take: 400,
+      select: {
+        exerciseId: true,
+        sessionId: true,
+        weightKg: true,
+        reps: true,
+        session: { select: { startedAt: true } },
+      },
+    });
+    // De cada ejercicio, solo las series de su sesión más reciente.
+    const out = new Map<string, PreviousSets & { sessionId: string }>();
+    for (const r of rows) {
+      const cur = out.get(r.exerciseId);
+      if (!cur)
+        out.set(r.exerciseId, {
+          exerciseId: r.exerciseId,
+          sessionId: r.sessionId,
+          startedAt: r.session.startedAt,
+          sets: [{ weightKg: Number(r.weightKg), reps: r.reps }],
+        });
+      else if (cur.sessionId === r.sessionId)
+        cur.sets.push({ weightKg: Number(r.weightKg), reps: r.reps });
+    }
+    return [...out.values()].map((p) => ({
+      exerciseId: p.exerciseId,
+      startedAt: p.startedAt,
+      sets: p.sets,
     }));
   }
 }

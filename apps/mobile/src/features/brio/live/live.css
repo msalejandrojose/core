@@ -1,0 +1,233 @@
+/* Entrenar en Brío: rutina serie a serie. */
+
+.live {
+  padding-bottom: 120px;
+}
+.live__head {
+  margin: 4px 0 var(--brio-space-l);
+}
+.live__title {
+  margin: 0 0 8px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.live__stats {
+  display: flex;
+  gap: 18px;
+  color: var(--brio-ink-2);
+  font-size: 14px;
+}
+.live__stats strong {
+  color: var(--brio-ink);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.live__exercise {
+  margin-bottom: var(--brio-space-m);
+}
+.live__sets-head,
+.live__set {
+  display: grid;
+  grid-template-columns: 44px 1fr 1fr 52px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+}
+.live__sets-head {
+  padding-top: 8px;
+  color: var(--brio-ink-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.live__sets-head span:nth-child(2),
+.live__sets-head span:nth-child(3) {
+  text-align: center;
+}
+.live__set {
+  min-height: 52px;
+  transition: background-color 0.2s ease;
+}
+.live__set.is-done {
+  background: var(--brio-activity-soft);
+}
+.live__set-n {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brio-surface-fill);
+  color: var(--brio-ink-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+.live__num input {
+  width: 100%;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--brio-surface-fill);
+  color: var(--brio-ink);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.is-done .live__num input {
+  background: transparent;
+}
+.live__check {
+  justify-self: end;
+  width: 44px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--brio-surface-fill);
+  color: var(--brio-ink-muted);
+  font-size: 18px;
+  font-weight: 700;
+}
+.live__check[aria-pressed='true'] {
+  background: var(--brio-activity);
+  color: #fff;
+}
+.live__add-set {
+  justify-content: center;
+  color: var(--brio-tint);
+  font-size: 15px;
+}
+.live__add-ex {
+  margin-bottom: var(--brio-space-l);
+}
+
+.live__finish {
+  display: grid;
+  gap: var(--brio-space-m);
+  padding: 16px;
+  border-radius: var(--brio-radius-xl);
+  background: var(--brio-surface);
+}
+.live__toggle {
+  border-radius: var(--brio-radius-l);
+  background: var(--brio-surface-fill);
+}
+.live__tick {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--brio-border-strong);
+  border-radius: 50%;
+  color: transparent;
+  font-size: 14px;
+  font-weight: 700;
+}
+.live__tick.is-on {
+  border-color: var(--brio-activity);
+  background: var(--brio-activity);
+  color: #fff;
+}
+.live__save {
+  width: 100%;
+}
+.live__finish-more {
+  display: flex;
+  justify-content: space-between;
+}
+.live__discard {
+  color: var(--brio-danger);
+}
+
+/* Barra de descanso, fija abajo encima de la barra de pestañas. */
+.live__rest {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  padding: 12px 14px;
+  border-radius: var(--brio-radius-xl);
+  background: var(--brio-ink);
+  color: var(--brio-bg);
+  box-shadow: var(--brio-shadow-float);
+}
+.live__rest-label {
+  font-size: 14px;
+  opacity: 0.8;
+}
+.live__rest-time {
+  flex: 1;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.live__rest-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--brio-activity);
+  transition: width 1s linear;
+}
+.live__rest button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--brio-radius-pill);
+  background: rgba(255, 255, 255, 0.16);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Aviso en Hoy. */
+.live-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--brio-space-l);
+  padding: 14px 16px;
+  border-radius: var(--brio-radius-xl);
+  background: var(--brio-activity-soft);
+  color: var(--brio-ink);
+  text-decoration: none;
+}
+.live-banner__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--brio-activity);
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+.live-banner__title {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+}
+.live-banner__sub {
+  color: var(--brio-ink-2);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.live-banner__go {
+  color: var(--brio-activity-ink);
+  font-weight: 600;
+}
+@keyframes live-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-banner__dot {
+    animation: none;
+  }
+}

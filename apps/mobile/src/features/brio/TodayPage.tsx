@@ -1,3 +1,4 @@
+import { LiveWorkoutBanner } from './live/LiveWorkoutBanner';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Redirect } from 'react-router-dom';
 import {
@@ -275,6 +276,8 @@ export default function TodayPage() {
               </div>
             </div>
           </header>
+
+          <LiveWorkoutBanner />
 
           {dayStatus === 'error' ? (
             <ErrorState

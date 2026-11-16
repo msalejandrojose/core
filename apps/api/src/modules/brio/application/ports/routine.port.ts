@@ -35,6 +35,13 @@ export interface LinkableSession {
   kind: string;
 }
 
+/** Series de trabajo de la última sesión en que se hizo un ejercicio. */
+export interface PreviousSets {
+  exerciseId: string;
+  startedAt: Date;
+  sets: { weightKg: number; reps: number }[];
+}
+
 export interface BrioRoutineRepositoryPort {
   list(userId: string): Promise<RoutineView[]>;
   get(userId: string, id: string): Promise<RoutineView | null>;
@@ -63,4 +70,6 @@ export interface BrioRoutineRepositoryPort {
     userId: string,
     since: Date,
   ): Promise<LinkableSession[]>;
+  /** Lo que se hizo la última vez en cada ejercicio (si se ha hecho alguna). */
+  previousSets(userId: string, exerciseIds: string[]): Promise<PreviousSets[]>;
 }
