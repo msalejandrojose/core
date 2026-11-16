@@ -10,11 +10,15 @@ export type Period = '7d' | '30d' | '90d' | '6m' | 'all';
 export type Status = 'PROGRESSING' | 'POTENTIAL_PLATEAU' | 'REGRESSION' | 'INSUFFICIENT_DATA';
 export type Trend = 'UP' | 'STABLE' | 'DOWN' | 'INSUFFICIENT_DATA';
 
+export type Measure = 'REPS' | 'DISTANCE' | 'TIME' | 'CALORIES';
+
 export interface Exercise {
   id: string;
   code: string | null;
   name: string;
   isBodyweight: boolean;
+  /** Cómo se mide: repeticiones, metros, tiempo o calorías. */
+  measure?: Measure;
   /** null = del catálogo; con valor = creado por el usuario. */
   ownerUserId: string | null;
   /** true si el usuario ha ajustado los pesos de un ejercicio del catálogo. */

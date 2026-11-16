@@ -1,6 +1,8 @@
 import type { LogActivityBody } from '../api';
 import type { Routine, SaveRoutineBody } from '../routines/routines.api';
 import { closesRound, normalizeGroups, toggleLink } from '../routines/supersets';
+import { formatDistance, formatTime, parseTime } from '../routines/measures';
+import type { Measure } from '../performance/perf.api';
 
 /**
  * Entreno de gimnasio hecho en Brío, serie a serie. Todo es puro: la pantalla
@@ -11,19 +13,31 @@ import { closesRound, normalizeGroups, toggleLink } from '../routines/supersets'
 export interface LiveSet {
   weight: string;
   reps: string;
+  /** Metros, tiempo («4:05») y calorías, para lo que no va por repeticiones. */
+  distance: string;
+  time: string;
+  cal: string;
   done: boolean;
 }
 
 export interface PreviousSets {
   exerciseId: string;
   day: string;
-  sets: { weightKg: number; reps: number }[];
+  sets: {
+    weightKg: number;
+    reps: number;
+    distanceM?: number | null;
+    durationSec?: number | null;
+    calories?: number | null;
+  }[];
 }
 
 export interface LiveExercise {
   exerciseId: string;
   name: string;
   bodyweight: boolean;
+  /** Cómo se mide: repeticiones, metros, tiempo o calorías. */
+  measure: Measure;
   /** Músculos principales, en texto. */
   muscles: string;
   restSec: number | null;
@@ -69,7 +83,8 @@ export function startFromRoutine(
       return {
         exerciseId: e.exerciseId,
         name: e.name,
-        bodyweight: false,
+        bodyweight: e.isBodyweight ?? false,
+        measure: e.measure ?? 'REPS',
         muscles: e.muscles
           .filter((m) => m.weight >= 1)
           .map((m) => muscleName(m.muscle))
@@ -80,6 +95,9 @@ export function startFromRoutine(
         sets: Array.from({ length: e.sets }, () => ({
           weight: weight !== null ? fmt(weight) : '',
           reps: String(e.reps),
+          distance: e.distanceM ? String(e.distanceM) : '',
+          time: formatTime(e.durationSec),
+          cal: e.calories ? String(e.calories) : '',
           done: false,
         })),
       };
@@ -101,6 +119,8 @@ const mapExercise = (w: LiveWorkout, i: number, f: (e: LiveExercise) => LiveExer
   ...w,
   exercises: w.exercises.map((e, j) => (j === i ? f(e) : e)),
 });
+
+export const EMPTY_LIVE_SET: LiveSet = { weight: '', reps: '', distance: '', time: '', cal: '', done: false };
 
 export function editSet(w: LiveWorkout, i: number, k: number, changes: Partial<Omit<LiveSet, 'done'>>): LiveWorkout {
   return mapExercise(w, i, (e) => ({ ...e, sets: e.sets.map((s, y) => (y === k ? { ...s, ...changes } : s)) }));
@@ -136,7 +156,7 @@ export function toggleSet(w: LiveWorkout, i: number, k: number, now = Date.now()
 export function addSet(w: LiveWorkout, i: number): LiveWorkout {
   return mapExercise(w, i, (e) => {
     const last = e.sets[e.sets.length - 1];
-    return { ...e, sets: [...e.sets, { weight: last?.weight ?? '', reps: last?.reps ?? '', done: false }] };
+    return { ...e, sets: [...e.sets, { ...EMPTY_LIVE_SET, ...(last ?? {}), done: false }] };
   });
 }
 
@@ -150,7 +170,8 @@ export function addExercise(
   previous: PreviousSets | null,
 ): LiveWorkout {
   const top = previous?.sets.length ? Math.max(...previous.sets.map((s) => s.weightKg)) : null;
-  const reps = previous?.sets[0]?.reps ?? 10;
+  const first = previous?.sets[0];
+  const reps = first?.reps || 10;
   return {
     ...w,
     exercises: [
@@ -159,7 +180,14 @@ export function addExercise(
         ...e,
         group: null,
         previous,
-        sets: Array.from({ length: 3 }, () => ({ weight: top ? fmt(top) : '', reps: String(reps), done: false })),
+        sets: Array.from({ length: e.measure === 'REPS' ? 3 : 1 }, () => ({
+          ...EMPTY_LIVE_SET,
+          weight: top ? fmt(top) : '',
+          reps: String(reps),
+          distance: first?.distanceM ? String(first.distanceM) : e.measure === 'DISTANCE' ? '1000' : '',
+          time: e.measure === 'TIME' ? formatTime(first?.durationSec) || '1:00' : '',
+          cal: first?.calories ? String(first.calories) : e.measure === 'CALORIES' ? '15' : '',
+        })),
       },
     ],
   };
@@ -189,29 +217,58 @@ export function addRest(w: LiveWorkout, sec: number, now = Date.now()): LiveWork
   return { ...w, restUntil: Math.max(now, w.restUntil) + sec * 1000, restFor: (w.restFor ?? 0) + sec };
 }
 
-/** Series válidas hechas: con repeticiones y con peso (o de peso corporal). */
-function doneSets(e: LiveExercise) {
+interface DoneSet {
+  weightKg: number;
+  reps: number;
+  distanceM?: number;
+  durationSec?: number;
+  calories?: number;
+}
+
+/** Series válidas hechas, según cómo se mide el ejercicio. */
+function doneSets(e: LiveExercise): DoneSet[] {
   return e.sets.flatMap((s) => {
     if (!s.done) return [];
-    const reps = num(s.reps);
-    const weight = num(s.weight) ?? (e.bodyweight ? 0 : 0);
-    if (reps === null || reps < 1 || weight < 0) return [];
-    return [{ weightKg: Math.round(weight * 100) / 100, reps: Math.round(reps) }];
+    const weight = Math.round((num(s.weight) ?? 0) * 100) / 100;
+    if (weight < 0) return [];
+    const time = parseTime(s.time);
+    const extra = time ? { durationSec: time } : {};
+    switch (e.measure) {
+      case 'DISTANCE': {
+        const m = num(s.distance);
+        return m && m > 0 ? [{ weightKg: weight, reps: 0, distanceM: Math.round(m), ...extra }] : [];
+      }
+      case 'TIME':
+        return time ? [{ weightKg: weight, reps: 0, durationSec: time }] : [];
+      case 'CALORIES': {
+        const c = num(s.cal);
+        return c && c > 0 ? [{ weightKg: weight, reps: 0, calories: Math.round(c), ...extra }] : [];
+      }
+      default: {
+        const reps = num(s.reps);
+        return reps !== null && reps >= 1 ? [{ weightKg: weight, reps: Math.round(reps) }] : [];
+      }
+    }
   });
 }
 
-export function progress(w: LiveWorkout): { done: number; total: number; volumeKg: number } {
+/** Lleva algo que no va por repeticiones (carrera, remo, trineo…): entreno híbrido. */
+export const isHybrid = (w: LiveWorkout) => w.exercises.some((e) => e.measure !== 'REPS');
+
+export function progress(w: LiveWorkout): { done: number; total: number; volumeKg: number; distanceM: number } {
   let done = 0;
   let total = 0;
   let volumeKg = 0;
+  let distanceM = 0;
   for (const e of w.exercises) {
     total += e.sets.length;
     for (const s of doneSets(e)) {
       done += 1;
       volumeKg += s.weightKg * s.reps;
+      distanceM += s.distanceM ?? 0;
     }
   }
-  return { done, total, volumeKg: Math.round(volumeKg) };
+  return { done, total, volumeKg: Math.round(volumeKg), distanceM };
 }
 
 /** Entreno para `POST /brio/activities`: solo las series marcadas como hechas. */
@@ -262,14 +319,28 @@ export function routineWithTodayWeights(r: Routine, w: LiveWorkout): SaveRoutine
         // Si cambiaste el descanso entrenando, se queda el de hoy.
         restSec: live ? live.restSec : e.restSec,
         supersetGroup: e.supersetGroup,
+        distanceM: e.distanceM,
+        durationSec: e.durationSec,
+        calories: e.calories,
       };
     }),
   };
 }
 
-/** «La última vez: 70 kg × 8, 8, 7» (o con pesos distintos, serie a serie). */
-export function previousLine(p: PreviousSets | null): string | null {
+/** «La última vez: 70 kg × 8, 8, 7», «1 km en 4:05», «15 cal en 0:52». */
+export function previousLine(p: PreviousSets | null, measure: Measure = 'REPS'): string | null {
   if (!p?.sets.length) return null;
+  if (measure !== 'REPS') {
+    const parts = p.sets.map((s) => {
+      const what =
+        measure === 'DISTANCE' ? formatDistance(s.distanceM) : measure === 'CALORIES' ? (s.calories ? `${s.calories} cal` : '') : '';
+      const time = formatTime(s.durationSec);
+      return [what, time && (what ? `en ${time}` : time)].filter(Boolean).join(' ');
+    });
+    const kg = p.sets[0].weightKg ? ` · ${fmt(p.sets[0].weightKg)} kg` : '';
+    const text = parts.filter(Boolean).join(', ');
+    return text ? `La última vez: ${text}${kg}` : null;
+  }
   const same = p.sets.every((s) => s.weightKg === p.sets[0].weightKg);
   if (same) {
     const w = p.sets[0].weightKg;

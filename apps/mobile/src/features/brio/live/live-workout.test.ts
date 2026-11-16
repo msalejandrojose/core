@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Routine } from '../routines/routines.api';
 import {
+  isHybrid,
   linkWithNext,
   setRest,
   addExercise,
@@ -40,12 +41,17 @@ const routine: Routine = {
       weightKg: null,
       restSec: 120,
       supersetGroup: null,
+      measure: 'REPS',
+      isBodyweight: false,
+      distanceM: null,
+      durationSec: null,
+      calories: null,
       muscles: [
         { muscle: 'CHEST', weight: 1 },
         { muscle: 'TRICEPS', weight: 0.5 },
       ],
     },
-    { exerciseId: 'row', code: null, name: 'Remo', sets: 2, reps: 10, weightKg: 50, restSec: null, supersetGroup: null, muscles: [] },
+    { exerciseId: 'row', code: null, name: 'Remo', sets: 2, reps: 10, weightKg: 50, restSec: null, supersetGroup: null, measure: 'REPS', isBodyweight: false, distanceM: null, durationSec: null, calories: null, muscles: [] },
   ],
 };
 
@@ -56,9 +62,9 @@ describe('live-workout', () => {
   it('empieza con las series de la rutina y el peso de la última vez si la rutina no lo tiene', () => {
     const w = startFromRoutine(routine, previous, (m) => m, T0);
     expect(w.exercises[0].sets).toEqual([
-      { weight: '72,5', reps: '8', done: false },
-      { weight: '72,5', reps: '8', done: false },
-      { weight: '72,5', reps: '8', done: false },
+      { weight: '72,5', reps: '8', distance: '', time: '', cal: '', done: false },
+      { weight: '72,5', reps: '8', distance: '', time: '', cal: '', done: false },
+      { weight: '72,5', reps: '8', distance: '', time: '', cal: '', done: false },
     ]);
     expect(w.exercises[0].muscles).toBe('CHEST');
     expect(w.exercises[1].sets[0].weight).toBe('50');
@@ -86,7 +92,7 @@ describe('live-workout', () => {
     w = toggleSet(w, 0, 0, T0);
     w = toggleSet(w, 0, 1, T0);
     w = addSet(w, 1);
-    expect(progress(w)).toEqual({ done: 2, total: 6, volumeKg: 1160 });
+    expect(progress(w)).toEqual({ done: 2, total: 6, volumeKg: 1160, distanceM: 0 });
   });
 
   it('convierte en entreno para la API con la rutina enlazada', () => {
@@ -124,10 +130,10 @@ describe('live-workout', () => {
   it('añade ejercicios sueltos con lo de la última vez', () => {
     const w = addExercise(
       startFromRoutine(routine, [], (m) => m, T0),
-      { exerciseId: 'curl', name: 'Curl', bodyweight: false, muscles: 'BICEPS', restSec: 60 },
+      { exerciseId: 'curl', name: 'Curl', bodyweight: false, measure: 'REPS', muscles: 'BICEPS', restSec: 60 },
       { exerciseId: 'curl', day: 'x', sets: [{ weightKg: 12, reps: 12 }] },
     );
-    expect(w.exercises[2].sets[0]).toEqual({ weight: '12', reps: '12', done: false });
+    expect(w.exercises[2].sets[0]).toMatchObject({ weight: '12', reps: '12', done: false });
   });
 
   it('textos: la última vez y el reloj', () => {
@@ -151,5 +157,29 @@ describe('live-workout', () => {
     expect(w.restUntil).toBe(T0 + 60_000);
     // Separar vuelve a dejarlos sueltos.
     expect(linkWithNext(w, 0).exercises.map((e) => e.group)).toEqual([null, null]);
+  });
+
+  it('carrera y trineo: se guardan metros y tiempo, y el entreno cuenta como híbrido', () => {
+    const hyrox: Routine = {
+      ...routine,
+      exercises: [
+        { ...routine.exercises[1], exerciseId: 'run', name: 'Carrera', measure: 'DISTANCE', isBodyweight: true, sets: 1, reps: 1, weightKg: null, distanceM: 1000 },
+        { ...routine.exercises[1], exerciseId: 'sled', name: 'Trineo', measure: 'DISTANCE', isBodyweight: false, sets: 1, reps: 1, weightKg: 152, distanceM: 50 },
+      ],
+    };
+    let w = startFromRoutine(hyrox, [], (m) => m, T0);
+    expect(isHybrid(w)).toBe(true);
+    expect(w.exercises[0].sets[0]).toMatchObject({ distance: '1000', time: '' });
+    w = editSet(w, 0, 0, { time: '4:05' });
+    w = toggleSet(w, 0, 0, T0);
+    w = toggleSet(w, 1, 0, T0);
+    expect(progress(w)).toMatchObject({ done: 2, distanceM: 1050, volumeKg: 0 });
+    expect(toLogBody(w, 'hyb', 'VIGOROUS', T0 + 600_000).exercises).toEqual([
+      { exerciseId: 'run', sets: [{ weightKg: 0, reps: 0, distanceM: 1000, durationSec: 245 }] },
+      { exerciseId: 'sled', sets: [{ weightKg: 152, reps: 0, distanceM: 50 }] },
+    ]);
+    expect(previousLine({ exerciseId: 'run', day: '', sets: [{ weightKg: 0, reps: 0, distanceM: 1000, durationSec: 245 }] }, 'DISTANCE')).toBe(
+      'La última vez: 1 km en 4:05',
+    );
   });
 });

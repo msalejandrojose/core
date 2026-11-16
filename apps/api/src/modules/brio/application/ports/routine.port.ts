@@ -11,6 +11,11 @@ export interface RoutineExerciseView {
   weightKg: number | null;
   restSec: number | null;
   supersetGroup: number | null;
+  measure: 'REPS' | 'DISTANCE' | 'TIME' | 'CALORIES';
+  isBodyweight: boolean;
+  distanceM: number | null;
+  durationSec: number | null;
+  calories: number | null;
   muscles: { muscle: string; weight: number }[];
 }
 
@@ -40,7 +45,13 @@ export interface LinkableSession {
 export interface PreviousSets {
   exerciseId: string;
   startedAt: Date;
-  sets: { weightKg: number; reps: number }[];
+  sets: {
+    weightKg: number;
+    reps: number;
+    distanceM: number | null;
+    durationSec: number | null;
+    calories: number | null;
+  }[];
 }
 
 export interface BrioRoutineRepositoryPort {
@@ -73,4 +84,6 @@ export interface BrioRoutineRepositoryPort {
   ): Promise<LinkableSession[]>;
   /** Lo que se hizo la última vez en cada ejercicio (si se ha hecho alguna). */
   previousSets(userId: string, exerciseIds: string[]): Promise<PreviousSets[]>;
+  /** Ids de los ejercicios del catálogo global por código. */
+  exerciseIdsByCode(codes: string[]): Promise<Map<string, string>>;
 }

@@ -27,6 +27,11 @@ import {
   type HevyClientPort,
   type SecretCipher,
 } from '../ports/hevy.port';
+import {
+  ROUTINE_TEMPLATES,
+  routineFromTemplate,
+  templateByCode,
+} from '../../domain/services/routine-templates';
 import { hevyHttpError, hevyTemplatesFor } from './hevy.use-cases';
 import { SyncGarminUseCase, type GarminSyncResult } from './garmin.use-cases';
 
@@ -126,7 +131,13 @@ export class ArchiveRoutineUseCase {
 export interface PreviousExercise {
   exerciseId: string;
   day: string;
-  sets: { weightKg: number; reps: number }[];
+  sets: {
+    weightKg: number;
+    reps: number;
+    distanceM: number | null;
+    durationSec: number | null;
+    calories: number | null;
+  }[];
 }
 
 /** Qué hiciste la última vez en cada ejercicio, para tenerlo delante al entrenar. */
@@ -147,6 +158,47 @@ export class GetPreviousSetsUseCase {
       day: r.startedAt.toISOString(),
       sets: r.sets,
     }));
+  }
+}
+
+export interface RoutineTemplateSummary {
+  code: string;
+  name: string;
+  description: string;
+  plannedDurationMin: number;
+  exercises: number;
+}
+
+@Injectable()
+export class ListRoutineTemplatesUseCase {
+  execute(): RoutineTemplateSummary[] {
+    return ROUTINE_TEMPLATES.map((t) => ({
+      code: t.code,
+      name: t.name,
+      description: t.description,
+      plannedDurationMin: t.plannedDurationMin,
+      exercises: t.items.length,
+    }));
+  }
+}
+
+/** Crea una rutina del usuario a partir de una plantilla (HYROX, híbridas). */
+@Injectable()
+export class CreateRoutineFromTemplateUseCase {
+  constructor(
+    @Inject(BRIO_ROUTINE_REPOSITORY)
+    private readonly repo: BrioRoutineRepositoryPort,
+    private readonly save: SaveRoutineUseCase,
+  ) {}
+
+  async execute(userId: string, code: string): Promise<Routine> {
+    const t = templateByCode(code);
+    if (!t) throw new NotFoundException('BRIO_ROUTINE_TEMPLATE_NOT_FOUND');
+    const ids = await this.repo.exerciseIdsByCode(t.items.map((i) => i.code));
+    const input = routineFromTemplate(t, (c) => ids.get(c));
+    // Falta algún ejercicio: el catálogo no se ha sembrado en este entorno.
+    if (!input) throw new NotFoundException('BRIO_EXERCISE_NOT_FOUND');
+    return this.save.execute(userId, input);
   }
 }
 

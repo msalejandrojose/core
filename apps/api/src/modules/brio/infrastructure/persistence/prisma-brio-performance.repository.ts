@@ -31,6 +31,7 @@ interface ExerciseRow {
   name: string;
   isCompound: boolean;
   isBodyweight: boolean;
+  measure?: 'REPS' | 'DISTANCE' | 'TIME' | 'CALORIES';
   ownerUserId: string | null;
   muscles: { muscle: string; weight: unknown }[];
   overrides?: { muscle: string; weight: unknown }[];
@@ -43,6 +44,7 @@ function toExercise(row: ExerciseRow): Exercise {
     name: row.name,
     isCompound: row.isCompound,
     isBodyweight: row.isBodyweight,
+    measure: row.measure,
     ownerUserId: row.ownerUserId,
     customized: !!row.overrides?.length,
     // Con ajustes personales, sustituyen por completo a los del catálogo.

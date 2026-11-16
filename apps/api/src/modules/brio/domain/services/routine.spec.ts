@@ -29,6 +29,9 @@ describe('routine', () => {
         reps: 1,
         weightKg: 61.25,
         restSec: 900,
+        distanceM: null,
+        durationSec: null,
+        calories: null,
       },
       {
         exerciseId: 'e2',
@@ -37,6 +40,9 @@ describe('routine', () => {
         reps: 12,
         weightKg: null,
         restSec: null,
+        distanceM: null,
+        durationSec: null,
+        calories: null,
       },
     ]);
   });

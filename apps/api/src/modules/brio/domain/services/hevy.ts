@@ -12,6 +12,8 @@ export interface HevySet {
   weight_kg: number | null;
   reps: number | null;
   rpe: number | null;
+  distance_meters?: number | null;
+  duration_seconds?: number | null;
 }
 
 export interface HevyExercise {
@@ -117,6 +119,20 @@ const ALIASES: Record<string, string> = {
   'calf press|machine': 'calf_raise',
   'back extension hyperextension': 'back_extension',
   'back extension|machine': 'back_extension',
+  // HYROX y cardio de gimnasio.
+  'air bike': 'assault_bike',
+  'assault bike': 'assault_bike',
+  'sandbag lunge': 'sandbag_lunges',
+  'sandbag lunges': 'sandbag_lunges',
+  'lunge|sandbag': 'sandbag_lunges',
+  'rowing machine': 'rowing_machine',
+  treadmill: 'running',
+  running: 'running',
+  'wall ball': 'wall_ball',
+  'wall balls': 'wall_ball',
+  'burpee broad jump': 'burpee_broad_jump',
+  'burpee broad jumps': 'burpee_broad_jump',
+  'farmers carry': 'farmers_walk',
   // Ampliación del catálogo (los que no casan solos por "material base").
   'butterfly pec deck': 'pec_deck',
   'decline bench press|barbell': 'decline_bench_press',
@@ -249,13 +265,18 @@ export function setsFrom(
     if (!exerciseId) continue;
     let setOrder = 0;
     for (const s of [...ex.sets].sort((a, b) => a.index - b.index)) {
-      if (!s.reps || s.reps <= 0) continue;
+      const distance = s.distance_meters ?? null;
+      const duration = s.duration_seconds ?? null;
+      // Las series sin repeticiones valen si traen distancia o tiempo (carrera, remo…).
+      if ((!s.reps || s.reps <= 0) && !distance && !duration) continue;
       sets.push({
         exerciseId,
         exerciseOrder,
         setOrder,
         weightKg: Math.min(9999, Math.max(0, round2(s.weight_kg ?? 0))),
-        reps: Math.min(999, Math.round(s.reps)),
+        reps: s.reps && s.reps > 0 ? Math.min(999, Math.round(s.reps)) : 0,
+        distanceM: distance ? Math.round(distance) : null,
+        durationSec: duration ? Math.round(duration) : null,
         rir:
           s.rpe == null
             ? null
@@ -283,7 +304,9 @@ export function durationSecOf(workout: HevyWorkout): number {
 export interface RoutineSet {
   type: 'warmup' | 'normal';
   weight_kg: number | null;
-  reps: number;
+  reps: number | null;
+  distance_meters?: number | null;
+  duration_seconds?: number | null;
 }
 
 export interface RoutineExercise {

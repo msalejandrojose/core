@@ -175,6 +175,9 @@ export interface StrengthSetRow {
   rir: number | null;
   restSec: number | null;
   isWarmup: boolean;
+  distanceM?: number | null;
+  durationSec?: number | null;
+  calories?: number | null;
 }
 
 export function toStrengthSet(row: StrengthSetRow): StrengthSet {
@@ -187,6 +190,9 @@ export function toStrengthSet(row: StrengthSetRow): StrengthSet {
     rir: row.rir,
     restSec: row.restSec,
     isWarmup: row.isWarmup,
+    distanceM: row.distanceM ?? null,
+    durationSec: row.durationSec ?? null,
+    calories: row.calories ?? null,
   };
 }
 

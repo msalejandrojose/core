@@ -32,6 +32,8 @@ const ACTIVITY_TYPES: readonly {
   { code: 'elliptical', name: 'Elíptica', met: 5.0, icon: 'ellipse' },
   { code: 'dancing', name: 'Baile', met: 5.0, icon: 'musical-notes' },
   { code: 'climbing', name: 'Escalada', met: 8.0, icon: 'trending-up' },
+  // Fuerza + carrera/estaciones (HYROX, entrenos híbridos): más gasto que pesas.
+  { code: 'hybrid', name: 'Híbrido / HYROX', met: 8.0, icon: 'flash' },
 ];
 
 /** Valores por 100 g (o 100 ml en los líquidos). */
@@ -244,6 +246,7 @@ async function main(): Promise<void> {
       name: ex.name,
       isCompound: ex.compound ?? false,
       isBodyweight: ex.bodyweight ?? false,
+      measure: ex.measure ?? 'REPS',
     };
     const row = await prisma.brioExercise.upsert({
       where: { code: ex.code },
