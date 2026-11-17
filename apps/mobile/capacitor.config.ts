@@ -5,8 +5,16 @@ import { loadEnv } from 'vite';
 // o ZeroTier), Android necesita servir la app por `http` y permitir tráfico sin
 // cifrar; si no, el WebView bloquea las llamadas. Contra una API `https` se
 // mantienen los valores seguros por defecto.
-const apiUrl = loadEnv('production', __dirname, 'VITE_').VITE_API_URL ?? '';
+const env = loadEnv('production', __dirname, ['VITE_', 'CAP_']);
+const apiUrl = env.VITE_API_URL ?? '';
 const httpApi = apiUrl.startsWith('http://');
+
+// Modo «app conectada al Mac» (solo para probar): con CAP_SERVER_URL en
+// `.env.production.local` (no se commitea), la app nativa no lleva la web dentro
+// y la carga de esa URL, p. ej. el Vite del Mac por ZeroTier. Así los cambios de
+// web llegan al iPhone sin reinstalar, estés donde estés. Sin la variable, el
+// build es el normal. Ver NATIVE.md.
+const devServerUrl = env.CAP_SERVER_URL?.trim() || '';
 
 // Config de Capacitor para los builds nativos (iOS/Android). `webDir` apunta al
 // output de Vite. Las plataformas nativas se añaden con `pnpm cap:add:ios` /
@@ -16,7 +24,11 @@ const config: CapacitorConfig = {
   appId: 'es.aj.brio',
   appName: 'Brío',
   webDir: 'dist',
-  ...(httpApi ? { server: { androidScheme: 'http', cleartext: true } } : {}),
+  ...(devServerUrl
+    ? { server: { url: devServerUrl, cleartext: true } }
+    : httpApi
+      ? { server: { androidScheme: 'http', cleartext: true } }
+      : {}),
   plugins: {
     // Splash de arranque. El color de fondo casa con `--ion-background-color`
     // (gris claro del DS de Brío). La variante oscura la generan los assets (splash-dark).

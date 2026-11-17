@@ -134,6 +134,26 @@ Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
    Sin las dos, iOS cierra la app al empezar a escuchar. Después, `cap sync ios`
    para que CocoaPods instale el plugin.
 
+## App conectada al Mac por ZeroTier (probar sin reinstalar)
+
+Con la cuenta gratuita, Xcode solo instala por cable o en la misma Wi-Fi. Para
+probar cambios de web desde cualquier sitio, la app puede cargar la web del Mac:
+
+1. En `apps/mobile/.env.production.local` (no se commitea):
+   `CAP_SERVER_URL=http://<IP-ZeroTier-del-Mac>:4410`
+2. En el Mac, deja corriendo el servidor de la app en esa IP, apuntando a la API
+   por ZeroTier:
+   ```bash
+   cd apps/mobile && VITE_API_URL=http://<IP-ZeroTier>:3100 npx vite --host <IP-ZeroTier> --port 4410
+   ```
+   y añade `http://<IP-ZeroTier>:4410` a `CORS_ORIGINS` de la API.
+3. Instala la app una vez en casa (Forja o Xcode). A partir de ahí, con ZeroTier
+   activo en el iPhone y el Mac encendido, cada cambio de web se ve al volver a
+   abrir la app. Los cambios nativos (plugins, permisos) y la firma de 7 días
+   siguen pidiendo reinstalar en casa.
+
+Para volver al build normal, quita `CAP_SERVER_URL` y reinstala.
+
 Desde Capacitor 8, `cap sync ios` sigue usando CocoaPods si `ios/` ya existía
 con Podfile. Si regeneras la carpeta, usa `npx cap add ios --packagemanager CocoaPods`
 para mantener `App.xcworkspace` (lo que compila Forja).
