@@ -38,6 +38,8 @@ import { toast } from '@/lib/toast';
 import './brio.css';
 import { RecoveryRow } from './pages/RecoveryRow';
 import { TomorrowRow } from './plan/TomorrowRow';
+import { WeekPlanCard } from './plan/WeekPlanCard';
+import './plan/plan.css';
 import { usePlanWeekData } from './plan/plan.api';
 import { useRecentHealth } from './profile/garmin.api';
 import { DayRingsCard, TodayWorkoutCard, WeekStrip } from './today/TodayVisuals';
@@ -462,6 +464,8 @@ export default function TodayPage() {
               </section>
 
               <TomorrowRow today={today} />
+
+              {week ? <WeekPlanCard week={week} /> : null}
             </>
           )}
         </div>

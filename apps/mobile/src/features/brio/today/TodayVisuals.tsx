@@ -103,7 +103,7 @@ export function WeekStrip({ days, today }: { days: PlanDay[]; today: string }) {
   const dots = weekDots(days, today);
   if (!dots.length) return null;
   return (
-    <Link to="/tabs/plan" className="tv-week" aria-label={`Tu semana. ${dots.map((d) => d.label).join(', ')}. Abrir plan.`}>
+    <Link to="/tabs/today/plan" className="tv-week" aria-label={`Tu semana. ${dots.map((d) => d.label).join(', ')}. Abrir plan.`}>
       {dots.map((d) => (
         <span key={d.day} className={`tv-week__day${d.state === 'today' ? ' is-today' : ''}`}>
           <span className="tv-week__letter">{d.letter}</span>
@@ -138,7 +138,7 @@ export function TodayWorkoutCard({
     const many = doneCount > 1;
     return (
       <section className="tv-card tv-workout is-done is-stack">
-        <Link to={`/tabs/plan/sesion/${day.day}`} className="tv-workout__done">
+        <Link to={`/tabs/today/plan/sesion/${day.day}`} className="tv-workout__done">
           <span className="tv-workout__check" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 24 24">
               <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
@@ -170,7 +170,7 @@ export function TodayWorkoutCard({
 
   if (planned.load === 'REST') {
     return (
-      <Link to={`/tabs/plan/sesion/${day.day}`} className="tv-card tv-workout is-rest">
+      <Link to={`/tabs/today/plan/sesion/${day.day}`} className="tv-card tv-workout is-rest">
         <span className="rk-row__main">
           <span className="tv-workout__kicker">Hoy descansas</span>
           <span className="tv-workout__title">{planned.title}</span>
@@ -204,7 +204,7 @@ export function TodayWorkoutCard({
         <button type="button" className="tv-workout__start" onClick={onStart}>
           {planned.kind === 'STRENGTH' ? 'Empezar entreno' : 'Registrar entreno'}
         </button>
-        <Link to={`/tabs/plan/sesion/${day.day}`} className="tv-workout__more">
+        <Link to={`/tabs/today/plan/sesion/${day.day}`} className="tv-workout__more">
           Ver sesión
         </Link>
       </div>

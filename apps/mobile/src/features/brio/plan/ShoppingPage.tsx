@@ -61,7 +61,7 @@ export default function ShoppingPage() {
       <IonContent>
         <div className="rk-screen plan">
           <NavRow
-            back={<BackLink label="Dieta" fallback="/tabs/plan/dieta" />}
+            back={<BackLink label="Dieta" fallback="/tabs/comida" />}
             actions={
               <button type="button" aria-label="Compartir lista" className="rk-iconbtn" disabled={!list?.total} onClick={() => void share()}>
                 <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

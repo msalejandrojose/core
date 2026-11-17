@@ -11,8 +11,8 @@ import { Redirect, Route, useLocation } from 'react-router-dom';
 import {
   barChart,
   barChartOutline,
-  calendar,
-  calendarOutline,
+  restaurant,
+  restaurantOutline,
   home,
   homeOutline,
   people,
@@ -77,14 +77,14 @@ import { Snackbar } from '@/components/ux';
 /** Pestañas en el orden fijo del DS (TabBar): el + va en el centro. */
 const TABS = [
   { tab: 'today', href: '/tabs/today', label: 'Hoy', icon: homeOutline, active: home },
-  { tab: 'plan', href: '/tabs/plan', label: 'Plan', icon: calendarOutline, active: calendar },
+  { tab: 'food', href: '/tabs/comida', label: 'Comida', icon: restaurantOutline, active: restaurant },
   { tab: 'progress', href: '/tabs/progress', label: 'Progreso', icon: barChartOutline, active: barChart },
   { tab: 'social', href: '/tabs/social', label: 'Social', icon: peopleOutline, active: people },
 ] as const;
 
 /**
  * Shell del área autenticada de Brío con la barra flotante de cristal:
- * Hoy · Plan · orbe del coach · Progreso · Social. El orbe no es una pestaña:
+ * Hoy · Comida · orbe del coach · Progreso · Social. El orbe no es una pestaña:
  * un toque abre el campo del coach (con + para registrar a mano y cámara) y
  * mantenerlo pulsado escucha lo que dices. Encima flota la píldora del momento.
  *
@@ -133,15 +133,29 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/comida" component={FoodDayPage} />
           <Route exact path="/tabs/today/coach" component={CoachPage} />
           <Route exact path="/tabs/today/entreno" component={LiveWorkoutPage} />
-          <Route exact path="/tabs/today/recetas" component={RecipesPage} />
-          <Route exact path="/tabs/today/recetas/nueva" component={NewRecipePage} />
+          <Route exact path="/tabs/comida/recetas" component={RecipesPage} />
+          <Route exact path="/tabs/comida/recetas/nueva" component={NewRecipePage} />
           <Route exact path="/tabs/today/recuperacion" component={RecoveryPage} />
           <Route exact path="/tabs/today/avisos" component={AlertsPage} />
           <Route exact path="/tabs/today/entreno/:id" component={SessionEditPage} />
-          <Route exact path="/tabs/plan" component={PlanPage} />
-          <Route exact path="/tabs/plan/sesion/:day" component={EditSessionPage} />
-          <Route exact path="/tabs/plan/dieta" component={DietPage} />
-          <Route exact path="/tabs/plan/compra" component={ShoppingPage} />
+          <Route exact path="/tabs/today/plan" component={PlanPage} />
+          {/* Rutas de antes (Plan era una pestaña): siguen funcionando en enlaces y avisos. */}
+          <Route exact path="/tabs/plan">
+            <Redirect to="/tabs/today/plan" />
+          </Route>
+          <Route exact path="/tabs/plan/sesion/:day" render={({ match }) => <Redirect to={`/tabs/today/plan/sesion/${match.params.day}`} />} />
+          <Route exact path="/tabs/plan/dieta">
+            <Redirect to="/tabs/comida" />
+          </Route>
+          <Route exact path="/tabs/plan/compra">
+            <Redirect to="/tabs/comida/compra" />
+          </Route>
+          <Route exact path="/tabs/today/recetas">
+            <Redirect to="/tabs/comida/recetas" />
+          </Route>
+          <Route exact path="/tabs/today/plan/sesion/:day" component={EditSessionPage} />
+          <Route exact path="/tabs/comida" component={DietPage} />
+          <Route exact path="/tabs/comida/compra" component={ShoppingPage} />
           <Route exact path="/tabs/progress" component={ProgressPage} />
           <Route exact path="/tabs/progress/objetivos" component={GoalsPage} />
           <Route exact path="/tabs/progress/objetivos/nuevo" component={NewGoalPage} />

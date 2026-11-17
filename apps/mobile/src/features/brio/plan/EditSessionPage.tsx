@@ -72,7 +72,7 @@ export default function EditSessionPage() {
     setTemplateCode(p?.templateCode ?? null);
   }, [entry, loadedFor]);
 
-  const back = () => (history.length > 1 ? history.goBack() : history.replace('/tabs/plan'));
+  const back = () => (history.length > 1 ? history.goBack() : history.replace('/tabs/today/plan'));
 
   async function run(action: () => Promise<unknown>, ok: string, leave = false) {
     setSaving(true);

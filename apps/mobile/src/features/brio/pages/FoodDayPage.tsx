@@ -77,7 +77,7 @@ export default function FoodDayPage() {
           <NavRow
             back={<BackLink label="Hoy" fallback="/tabs/today" />}
             actions={
-              <Link to="/tabs/plan" className="rk-textbtn">
+              <Link to="/tabs/comida" className="rk-textbtn">
                 Menú del día
               </Link>
             }
@@ -155,7 +155,7 @@ export default function FoodDayPage() {
                   <Icon d={PATHS.copy} size={18} />
                   Copiar de otro día
                 </button>
-                <Link to="/tabs/today/recetas" className="rk-tilebtn">
+                <Link to="/tabs/comida/recetas" className="rk-tilebtn">
                   <Icon d={PATHS.book} size={18} />
                   Mis recetas
                 </Link>

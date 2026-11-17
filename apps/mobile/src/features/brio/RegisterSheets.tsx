@@ -97,7 +97,7 @@ export function RegisterSheets() {
       domain: 'food',
       run: () => {
         close();
-        history.push('/tabs/today/recetas');
+        history.push('/tabs/comida/recetas');
       },
     },
     { label: 'Entreno', icon: PATHS.run, domain: 'activity', run: () => open('activity') },
