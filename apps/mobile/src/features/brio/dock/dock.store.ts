@@ -21,6 +21,9 @@ interface DockState {
   /** Deslizando hacia abajo: al soltar se cancela. */
   cancelArmed: boolean;
   reply: CoachReply | null;
+  /** Lo dicho por voz, a la espera de que el chat del coach lo mande. */
+  pending: string | null;
+  takePending: () => string | null;
   openComposer: () => void;
   close: () => void;
   startListening: () => Promise<void>;
@@ -31,7 +34,7 @@ interface DockState {
 }
 
 /** Conversación que se sigue desde la barra: la última si es de las últimas 6 h. */
-const RECENT_MS = 6 * 60 * 60 * 1000;
+export const RECENT_MS = 6 * 60 * 60 * 1000;
 async function currentConversation(): Promise<string | undefined> {
   const list = await coachApi.conversations().catch(() => []);
   const last = list[0];
@@ -50,6 +53,13 @@ export const useDockStore = create<DockState>((set, get) => ({
   heard: '',
   cancelArmed: false,
   reply: null,
+  pending: null,
+
+  takePending: () => {
+    const text = get().pending;
+    if (text) set({ pending: null });
+    return text;
+  },
 
   openComposer: () => set({ mode: 'typing', reply: null }),
   close: () => {
@@ -110,11 +120,9 @@ export const useDockStore = create<DockState>((set, get) => ({
       return;
     }
     const text = (await s.stop()) || get().heard.trim();
-    if (!text) {
-      set({ mode: 'idle', heard: '' });
-      return;
-    }
-    await get().send(text);
+    // Lo dicho se lleva al chat del coach (DockOverlay navega y CoachPage lo
+    // manda), para ver la conversación y seguir hablando.
+    set({ mode: 'idle', heard: '', pending: text || null });
   },
 
   send: async (text, images = []) => {

@@ -193,6 +193,23 @@ ion-tabs ion-content {
     0 2px 8px rgba(0, 0, 0, 0.08);
   transition: transform 0.55s var(--brio-spring), background 0.3s, color 0.3s;
 }
+/* Marca de micro: el orbe también escucha (mantener o deslizar hacia arriba). */
+.brio-orb__glass {
+  position: relative;
+}
+.brio-orb__mic {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brio-tint);
+  color: var(--brio-on-tint);
+  box-shadow: 0 0 0 2px var(--brio-glass-strong);
+}
 .brio-orb:active .brio-orb__glass {
   transform: scale(0.92);
 }
