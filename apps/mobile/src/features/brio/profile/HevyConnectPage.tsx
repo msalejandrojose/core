@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useBrioStore } from '../brio.store';
 import { hevyApi, hevyErrorText, syncSummary, useHevyStatus } from './hevy.api';
 import { useHistory } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
@@ -7,10 +8,11 @@ import { SectionHeader, Switch } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import './profile.css';
 
-type Mode = 'full' | 'basic';
+type Mode = 'full' | 'csv' | 'basic';
 
 const MODES: { id: Mode; title: string; badge: string; desc: string }[] = [
   { id: 'full', title: 'Completo', badge: 'Hevy Pro', desc: 'Ejercicios, series, pesos y rutinas' },
+  { id: 'csv', title: 'Importar archivo', badge: 'Gratis', desc: 'Tu historial con series y pesos, desde lo que exporta Hevy' },
   { id: 'basic', title: 'Básico, vía Salud', badge: 'Gratis', desc: 'Solo duración, kcal y frecuencia cardíaca' },
 ];
 
@@ -174,7 +176,7 @@ export default function HevyConnectPage() {
                   <span className="profile__radio-cell">
                     <span className="hevy__mode-head">
                       <span className="rk-row__title">{m.title}</span>
-                      <span className={`hevy__badge${m.id === 'basic' ? ' hevy__badge--free' : ''}`}>{m.badge}</span>
+                      <span className={`hevy__badge${m.id !== 'full' ? ' hevy__badge--free' : ''}`}>{m.badge}</span>
                     </span>
                     <span className="rk-row__sub">{m.desc}</span>
                   </span>
@@ -222,6 +224,8 @@ export default function HevyConnectPage() {
                 </button>
               </div>
             </>
+          ) : mode === 'csv' ? (
+            <HevyCsvImport onDone={cancel} />
           ) : (
             <p className="hevy__basic">
               En la app de Hevy, activa la conexión con Salud (o Health Connect en Android). Nosotros leemos tus entrenos
@@ -229,11 +233,65 @@ export default function HevyConnectPage() {
             </p>
           )}
 
-          <button type="button" className="rk-btn hevy__connect" disabled={!can || busy} onClick={() => void connect()}>
-            {busy ? 'Conectando…' : 'Conectar'}
-          </button>
+          {mode === 'csv' ? null : (
+            <button type="button" className="rk-btn hevy__connect" disabled={!can || busy} onClick={() => void connect()}>
+              {busy ? 'Conectando…' : 'Conectar'}
+            </button>
+          )}
         </div>
       </IonContent>
     </IonPage>
+  );
+}
+
+/**
+ * Sin Hevy Pro: se exporta el historial desde la app de Hevy (CSV) y se sube
+ * aquí. Trae ejercicios, series y pesos; reimportar el mismo archivo no duplica.
+ */
+function HevyCsvImport({ onDone }: { onDone: () => void }) {
+  const refreshDay = useBrioStore((s) => s.refreshDay);
+  const file = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function pick(files: FileList | null) {
+    const f = files?.[0];
+    if (file.current) file.current.value = '';
+    if (!f) return;
+    setBusy(true);
+    try {
+      const r = await hevyApi.importCsv(await f.text());
+      void refreshDay();
+      const parts = [
+        r.imported ? `${r.imported} ${r.imported === 1 ? 'entreno nuevo' : 'entrenos nuevos'}` : null,
+        r.updated ? `${r.updated} actualizados` : null,
+      ].filter(Boolean);
+      toast.success('Hevy importado', parts.length ? parts.join(' · ') : 'No había nada nuevo');
+      onDone();
+    } catch (e) {
+      toast.error('No se pudo importar', hevyErrorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="rk-section" aria-labelledby="csv">
+      <SectionHeader id="csv">Importar desde Hevy</SectionHeader>
+      <div className="hevy__key">
+        <ol>
+          <li>En la app de Hevy: Perfil › Ajustes › Exportar e importar datos</li>
+          <li>Pulsa «Exportar entrenos» y guarda el archivo .csv (en Archivos, por ejemplo)</li>
+          <li>Vuelve aquí y elígelo</li>
+        </ol>
+        <span className="hevy__fine">
+          Se traen tus entrenos con sus ejercicios, series y pesos. Puedes volver a importarlo cuando quieras: lo que ya
+          estaba se actualiza, no se duplica.
+        </span>
+      </div>
+      <input ref={file} type="file" accept=".csv,text/csv,text/comma-separated-values" hidden onChange={(e) => void pick(e.target.files)} />
+      <button type="button" className="rk-btn hevy__connect" disabled={busy} onClick={() => file.current?.click()}>
+        {busy ? 'Importando…' : 'Elegir el archivo de Hevy'}
+      </button>
+    </section>
   );
 }

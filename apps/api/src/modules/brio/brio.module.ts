@@ -169,6 +169,7 @@ import {
   GetHevyStatusUseCase,
   SendPlannedRoutineToHevyUseCase,
   SyncHevyUseCase,
+  ImportHevyCsvUseCase,
 } from './application/use-cases/hevy.use-cases';
 import { AesSecretCipher } from '../notifications/infrastructure/crypto/aes-secret-cipher';
 import { NullSecretCipher } from '../notifications/infrastructure/crypto/null-secret-cipher';
@@ -328,6 +329,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     // Hevy.
     GetHevyStatusUseCase,
     SyncHevyUseCase,
+    ImportHevyCsvUseCase,
     ConnectHevyUseCase,
     DisconnectHevyUseCase,
     SendPlannedRoutineToHevyUseCase,

@@ -40,6 +40,7 @@ import {
   type BrioRoutineRepositoryPort,
 } from '../ports/routine.port';
 import { routineForHevyWorkout } from '../../domain/services/routine';
+import { parseHevyCsv } from '../../domain/services/hevy-csv';
 import { RefreshDailyLogUseCase } from './refresh-daily-log.use-case';
 
 /** Primera importación: como mucho estos entrenos (10 por página en Hevy). */
@@ -191,6 +192,31 @@ export class SyncHevyUseCase {
       }
     }
 
+    const saved = await this.importWorkouts(userId, workouts, () =>
+      allTemplates(this.client, apiKey),
+    );
+    for (const d of saved.days) days.add(d);
+    const { imported, updated } = saved;
+
+    for (const day of days) await this.refreshDailyLog.execute(userId, day);
+    return { imported, updated, deleted, truncated };
+  }
+
+  /**
+   * Ejercicio de Brío para cada ejercicio de Hevy que aparece en los entrenos:
+   * el ya enlazado, el del catálogo si hay equivalente, o uno propio nuevo.
+   */
+
+  /**
+   * Guarda entrenos de Hevy (de su API o de su CSV) como sesiones de fuerza:
+   * uno por id, con sus series y el ejercicio de Brío que corresponda.
+   */
+  async importWorkouts(
+    userId: string,
+    workouts: HevyWorkout[],
+    loadTemplates: () => Promise<HevyTemplate[]>,
+  ): Promise<{ imported: number; updated: number; days: Set<string> }> {
+    const days = new Set<string>();
     let imported = 0;
     let updated = 0;
     if (workouts.length) {
@@ -203,8 +229,8 @@ export class SyncHevyUseCase {
       const timezone = profile?.timezone ?? 'Europe/Madrid';
       const exerciseIdOf = await this.resolveExercises(
         userId,
-        apiKey,
         workouts,
+        loadTemplates,
       );
       const myRoutines = (await this.routines.list(userId)).filter(
         (r) => r.kind === 'STRENGTH',
@@ -246,18 +272,13 @@ export class SyncHevyUseCase {
       }
     }
 
-    for (const day of days) await this.refreshDailyLog.execute(userId, day);
-    return { imported, updated, deleted, truncated };
+    return { imported, updated, days };
   }
 
-  /**
-   * Ejercicio de Brío para cada ejercicio de Hevy que aparece en los entrenos:
-   * el ya enlazado, el del catálogo si hay equivalente, o uno propio nuevo.
-   */
   private async resolveExercises(
     userId: string,
-    apiKey: string,
     workouts: HevyWorkout[],
+    loadTemplates: () => Promise<HevyTemplate[]>,
   ): Promise<Map<string, string>> {
     const known = new Map(
       (await this.repo.links(userId)).map((l) => [l.templateId, l.exerciseId]),
@@ -271,7 +292,7 @@ export class SyncHevyUseCase {
 
     const [catalog, templates] = await Promise.all([
       this.repo.catalog(),
-      allTemplates(this.client, apiKey),
+      loadTemplates(),
     ]);
     const byCode = new Map(catalog.map((c) => [c.code, c.id]));
     const codes = new Set(byCode.keys());
@@ -291,6 +312,54 @@ export class SyncHevyUseCase {
       known.set(templateId, exerciseId);
     }
     return known;
+  }
+}
+
+export interface HevyCsvImportResult {
+  imported: number;
+  updated: number;
+  /** Entrenos que había en el archivo. */
+  workouts: number;
+  skippedRows: number;
+}
+
+/**
+ * Importa el CSV que exporta Hevy (gratis, sin Hevy Pro). Va por el mismo
+ * camino que la sincronización: mismos ejercicios, series y sesiones, y
+ * reimportar el mismo archivo actualiza en vez de duplicar.
+ */
+@Injectable()
+export class ImportHevyCsvUseCase {
+  constructor(
+    @Inject(BRIO_PROFILE_REPOSITORY)
+    private readonly profiles: BrioProfileRepositoryPort,
+    private readonly sync: SyncHevyUseCase,
+    private readonly refreshDailyLog: RefreshDailyLogUseCase,
+  ) {}
+
+  async execute(userId: string, csv: string): Promise<HevyCsvImportResult> {
+    const profile = await this.profiles.findByUserId(userId);
+    let parsed: ReturnType<typeof parseHevyCsv>;
+    try {
+      parsed = parseHevyCsv(csv, profile?.timezone ?? 'Europe/Madrid');
+    } catch {
+      throw new BadRequestException('BRIO_HEVY_CSV_INVALID');
+    }
+    if (!parsed.workouts.length)
+      throw new BadRequestException('BRIO_HEVY_CSV_EMPTY');
+    const saved = await this.sync.importWorkouts(
+      userId,
+      parsed.workouts,
+      async () => [],
+    );
+    for (const day of saved.days)
+      await this.refreshDailyLog.execute(userId, day);
+    return {
+      imported: saved.imported,
+      updated: saved.updated,
+      workouts: parsed.workouts.length,
+      skippedRows: parsed.skippedRows,
+    };
   }
 }
 
