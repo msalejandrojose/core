@@ -4,6 +4,7 @@ export const PATHS = {
   forward: 'M9 5l7 7-7 7',
   plus: 'M12 5v14M5 12h14',
   close: 'M6 6l12 12M18 6L6 18',
+  drop: 'M12 3c3 4.5 6 7.6 6 11a6 6 0 0 1-12 0c0-3.4 3-6.5 6-11z',
   spark: 'M12 3.5l2 5.5 5.5 2-5.5 2-2 5.5-2-5.5-5.5-2 5.5-2z',
   arrowUp: 'M12 19V5M6 11l6-6 6 6',
   plusCircle: 'M12 3a9 9 0 1 0 .01 0M12 8v8M8 12h8',

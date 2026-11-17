@@ -34,6 +34,66 @@ const ACTIVITY_TYPES: readonly {
   { code: 'climbing', name: 'Escalada', met: 8.0, icon: 'trending-up' },
   // Fuerza + carrera/estaciones (HYROX, entrenos híbridos): más gasto que pesas.
   { code: 'hybrid', name: 'Híbrido / HYROX', met: 8.0, icon: 'flash' },
+  // ── Deportes de equipo ──
+  { code: 'football_7', name: 'Fútbol 7', met: 8.0, icon: 'football' },
+  { code: 'futsal', name: 'Fútbol sala', met: 8.0, icon: 'football' },
+  { code: 'handball', name: 'Balonmano', met: 8.0, icon: 'basketball' },
+  { code: 'volleyball', name: 'Voleibol', met: 4.0, icon: 'basketball' },
+  { code: 'beach_volleyball', name: 'Vóley playa', met: 8.0, icon: 'sunny' },
+  { code: 'rugby', name: 'Rugby', met: 8.3, icon: 'american-football' },
+  { code: 'hockey', name: 'Hockey', met: 7.8, icon: 'golf' },
+  { code: 'water_polo', name: 'Waterpolo', met: 10.0, icon: 'water' },
+  // ── Raqueta ──
+  { code: 'tennis', name: 'Tenis', met: 7.3, icon: 'tennisball' },
+  {
+    code: 'tennis_doubles',
+    name: 'Tenis dobles',
+    met: 6.0,
+    icon: 'tennisball',
+  },
+  { code: 'squash', name: 'Squash', met: 7.3, icon: 'tennisball' },
+  { code: 'badminton', name: 'Bádminton', met: 5.5, icon: 'tennisball' },
+  { code: 'table_tennis', name: 'Ping-pong', met: 4.0, icon: 'tennisball' },
+  { code: 'fronton', name: 'Frontón', met: 7.0, icon: 'tennisball' },
+  // ── Combate ──
+  { code: 'boxing', name: 'Boxeo', met: 7.8, icon: 'hand-left' },
+  {
+    code: 'martial_arts',
+    name: 'Artes marciales',
+    met: 10.3,
+    icon: 'hand-left',
+  },
+  // ── Gimnasio y clases ──
+  { code: 'crossfit', name: 'CrossFit', met: 8.0, icon: 'barbell' },
+  { code: 'spinning', name: 'Spinning', met: 8.5, icon: 'bicycle' },
+  { code: 'pilates', name: 'Pilates', met: 3.0, icon: 'body' },
+  { code: 'functional', name: 'Entreno funcional', met: 6.0, icon: 'fitness' },
+  // ── Aire libre ──
+  {
+    code: 'trail_running',
+    name: 'Trail running',
+    met: 9.0,
+    icon: 'trail-sign',
+  },
+  {
+    code: 'mountain_biking',
+    name: 'Bici de montaña',
+    met: 8.5,
+    icon: 'bicycle',
+  },
+  { code: 'skiing', name: 'Esquí', met: 5.3, icon: 'snow' },
+  {
+    code: 'cross_country_skiing',
+    name: 'Esquí de fondo',
+    met: 9.0,
+    icon: 'snow',
+  },
+  { code: 'snowboard', name: 'Snowboard', met: 5.3, icon: 'snow' },
+  { code: 'surf', name: 'Surf', met: 3.0, icon: 'water' },
+  { code: 'kayak', name: 'Kayak / piragüismo', met: 5.0, icon: 'boat' },
+  { code: 'skating', name: 'Patinaje', met: 7.0, icon: 'speedometer' },
+  { code: 'golf', name: 'Golf', met: 4.8, icon: 'golf' },
+  { code: 'horse_riding', name: 'Hípica', met: 5.5, icon: 'paw' },
 ];
 
 /** Valores por 100 g (o 100 ml en los líquidos). */

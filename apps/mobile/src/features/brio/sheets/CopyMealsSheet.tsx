@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IonContent, IonModal } from '@ionic/react';
+import { SWIPE_TO_CLOSE } from './swipe';
 import { brioApi, type DaySummary, type MealEntry, type MealType } from '../api';
 import { MEAL_ORDER, formatKcal, joinNames, mealLabel, todayIn } from '../format';
 import { useBrioStore } from '../brio.store';
@@ -113,7 +114,7 @@ export function CopyMealsSheet({ isOpen, onClose }: CopyMealsSheetProps) {
   const targetLabel = day === today ? 'Hoy' : dayChip(day, today).label;
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full">
+    <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full" {...SWIPE_TO_CLOSE}>
       <IonContent>
         <div className="rk-sheet copy">
           <span className="rk-grab" aria-hidden="true" />

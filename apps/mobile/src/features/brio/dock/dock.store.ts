@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { useBrioStore } from '../brio.store';
 import { coachApi, TOOL_NOTES } from '../coach/coach.api';
 import { tapSuccess } from '../haptics';
-import { startSpeech, type SpeechSession } from './speech';
+import { requestSpeechPermission, speechPermission, startSpeech, type SpeechSession } from './speech';
 
 export type DockMode = 'idle' | 'typing' | 'listening' | 'sending';
 
@@ -10,6 +10,8 @@ export interface CoachReply {
   text: string;
   notes: string[];
   error?: boolean;
+  /** Aviso de la propia app (permisos, agua…), no una respuesta del coach. */
+  local?: boolean;
 }
 
 interface DockState {
@@ -57,24 +59,39 @@ export const useDockStore = create<DockState>((set, get) => ({
   },
 
   startListening: async () => {
+    // Primera vez: se piden los permisos sin abrir la burbuja (los avisos de iOS
+    // se tragarían el «soltar») y se invita a volver a mantener.
+    const perm = await speechPermission().catch(() => 'granted' as const);
+    if (perm !== 'granted') {
+      set({ mode: 'idle', heard: '', cancelArmed: false });
+      const ok = perm === 'prompt' && (await requestSpeechPermission().catch(() => false));
+      set({
+        reply: ok
+          ? { local: true, notes: [], text: 'Listo. Mantén pulsado el botón y háblame; al soltar, lo apunto.' }
+          : {
+              error: true,
+              notes: [],
+              text: 'Brío no tiene permiso para el micro. Actívalo en Ajustes › Brío, o tócame y escríbelo.',
+            },
+      });
+      return;
+    }
     set({ mode: 'listening', heard: '', cancelArmed: false, reply: null });
     void tapSuccess();
     try {
-      session = await startSpeech((heard) => set({ heard }));
-      // Si se soltó mientras se pedían permisos, no seguimos escuchando.
-      if (get().mode !== 'listening') get().close();
-    } catch (e) {
+      const s = await startSpeech((heard) => set({ heard }));
+      // Si se soltó mientras arrancaba, no seguimos escuchando.
+      if (get().mode !== 'listening') {
+        s.cancel();
+        return;
+      }
+      session = s;
+    } catch {
       session = null;
-      const denied = e instanceof Error && e.message === 'SPEECH_DENIED';
       set({
-        mode: 'typing',
-        reply: {
-          error: true,
-          notes: [],
-          text: denied
-            ? 'Brío no tiene permiso para el micro. Actívalo en Ajustes, o escríbelo aquí.'
-            : 'Aquí no puedo escucharte. Escríbelo y lo apunto.',
-        },
+        mode: 'idle',
+        heard: '',
+        reply: { error: true, notes: [], text: 'Ahora no puedo usar el micro. Tócame y escríbemelo.' },
       });
     }
   },
@@ -84,6 +101,7 @@ export const useDockStore = create<DockState>((set, get) => ({
   },
 
   finishListening: async () => {
+    if (get().mode !== 'listening') return;
     const s = session;
     session = null;
     if (get().cancelArmed || !s) {

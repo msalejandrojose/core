@@ -250,3 +250,25 @@
     transition: none;
   }
 }
+
+/* Entreno hecho: la tarjeta deja apuntar otro (fútbol por la tarde, gym…). */
+.tv-workout.is-done.is-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+.tv-workout__done {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.tv-workout__another {
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--brio-radius-pill);
+  background: color-mix(in srgb, var(--brio-activity) 16%, transparent);
+  color: var(--brio-activity-ink);
+  font: 600 15px var(--brio-font-sans);
+}

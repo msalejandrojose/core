@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useBrioStore } from '../brio.store';
+import { tapSuccess } from '../haptics';
 import { photoToDataUrl } from '../coach/photos';
 import { mealLabel } from '../format';
 import { planApi, type PlanWeek } from '../plan/plan.api';
 import { useRegisterStore } from '../register.store';
+import { useWaterStore, WATER_GOAL } from '../water.store';
 import { Icon } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { useDockStore } from './dock.store';
@@ -41,6 +43,22 @@ function useMoment(): Moment | null {
   });
 }
 
+/** ¿Hay una hoja (IonModal) abierta? Entonces la píldora no debe flotar encima. */
+function useModalOpen(): boolean {
+  const [open, setOpen] = useState(0);
+  useEffect(() => {
+    const up = () => setOpen((n) => n + 1);
+    const down = () => setOpen((n) => Math.max(0, n - 1));
+    document.addEventListener('ionModalWillPresent', up);
+    document.addEventListener('ionModalWillDismiss', down);
+    return () => {
+      document.removeEventListener('ionModalWillPresent', up);
+      document.removeEventListener('ionModalWillDismiss', down);
+    };
+  }, []);
+  return open > 0;
+}
+
 function MomentPill({ moment }: { moment: Moment }) {
   const open = useRegisterStore((s) => s.open);
   const icon = moment.kind === 'workout' ? PATHS.run : moment.kind === 'weigh' ? PATHS.scale : PATHS.fork;
@@ -60,10 +78,53 @@ function MomentPill({ moment }: { moment: Moment }) {
   );
 }
 
+/** Accesos directos encima del campo: lo que antes abría el + de la barra. */
+function Shortcuts() {
+  const open = useRegisterStore((s) => s.open);
+  const close = useDockStore((s) => s.close);
+  const day = useBrioStore((s) => s.day);
+  const addWater = useWaterStore((s) => s.add);
+  const history = useHistory();
+  const go = (fn: () => void) => () => {
+    close();
+    fn();
+  };
+  const items: { label: string; icon: string; domain: 'food' | 'activity' | 'sleep'; run: () => void }[] = [
+    { label: 'Comida', icon: PATHS.fork, domain: 'food', run: go(() => open('meal')) },
+    { label: 'Entreno', icon: PATHS.run, domain: 'activity', run: go(() => open('activity')) },
+    { label: 'Peso', icon: PATHS.scale, domain: 'sleep', run: go(() => open('weight')) },
+    {
+      label: 'Agua',
+      icon: PATHS.drop,
+      domain: 'sleep',
+      run: () => {
+        addWater(day, 1);
+        void tapSuccess();
+        const n = useWaterStore.getState().byDay[day] ?? 0;
+        useDockStore.setState({ reply: { local: true, notes: [], text: `Agua · ${n} de ${WATER_GOAL} vasos` } });
+      },
+    },
+    { label: 'Receta', icon: PATHS.book, domain: 'food', run: go(() => history.push('/tabs/today/recetas')) },
+    { label: 'Copiar día', icon: PATHS.copy, domain: 'food', run: go(() => open('copy')) },
+    { label: 'Digestión', icon: PATHS.leaf, domain: 'food', run: go(() => open('digestion')) },
+  ];
+  return (
+    <div className="dock-shortcuts" role="toolbar" aria-label="Registrar a mano">
+      {items.map((it) => (
+        <button key={it.label} type="button" className="dock-shortcut brio-glass" onClick={it.run}>
+          <span className={`dock-shortcut__icon dock-shortcut__icon--${it.domain}`} aria-hidden="true">
+            <Icon d={it.icon} size={18} />
+          </span>
+          {it.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Composer() {
   const send = useDockStore((s) => s.send);
   const close = useDockStore((s) => s.close);
-  const openRegister = useRegisterStore((s) => s.open);
   const [text, setText] = useState('');
   const input = useRef<HTMLInputElement>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -96,16 +157,8 @@ function Composer() {
         submit();
       }}
     >
-      <button
-        type="button"
-        className="dock-composer__btn"
-        aria-label="Registrar a mano"
-        onClick={() => {
-          close();
-          openRegister('menu');
-        }}
-      >
-        <Icon d={PATHS.plus} size={22} />
+      <button type="button" className="dock-composer__btn" aria-label="Mandar una foto" onClick={() => file.current?.click()}>
+        <Icon d={PATHS.camera} size={22} />
       </button>
       <input
         ref={input}
@@ -117,9 +170,6 @@ function Composer() {
         onChange={(e) => setText(e.target.value)}
       />
       <input ref={file} type="file" accept="image/*" hidden onChange={(e) => void photo(e.target.files)} />
-      <button type="button" className="dock-composer__btn" aria-label="Mandar una foto" onClick={() => file.current?.click()}>
-        <Icon d={PATHS.camera} size={22} />
-      </button>
       <button type="submit" className="dock-composer__send" aria-label={text.trim() ? 'Enviar' : 'Cerrar'}>
         <Icon d={text.trim() ? PATHS.arrowUp : PATHS.close} size={20} stroke={2.4} />
       </button>
@@ -164,8 +214,8 @@ function ReplyCard() {
   const history = useHistory();
 
   useEffect(() => {
-    if (!reply || reply.error) return;
-    const id = window.setTimeout(dismiss, 7000);
+    if (!reply) return;
+    const id = window.setTimeout(dismiss, reply.local ? 3500 : 7000);
     return () => window.clearTimeout(id);
   }, [reply, dismiss]);
 
@@ -180,7 +230,7 @@ function ReplyCard() {
         ) : null}
         <span className="dock-reply__text">{reply.text}</span>
       </button>
-      {reply.error ? null : (
+      {reply.error || reply.local ? null : (
         <button
           type="button"
           className="dock-reply__open"
@@ -205,20 +255,36 @@ export function DockOverlay({ hidden }: { hidden: boolean }) {
   const close = useDockStore((s) => s.close);
   const { pathname } = useLocation();
   const moment = useMoment();
-  const showMoment = !hidden && mode === 'idle' && ROOTS.includes(pathname) && moment;
+  const modalOpen = useModalOpen();
+  const showMoment = !hidden && !modalOpen && mode === 'idle' && ROOTS.includes(pathname) && moment;
 
   // Cambiar de pantalla cierra el campo del coach.
   useEffect(() => {
     if (useDockStore.getState().mode === 'typing') close();
   }, [pathname, close]);
+  // Si la app se va a segundo plano mientras escucha, se cancela.
+  useEffect(() => {
+    const onHide = () => {
+      if (document.hidden && useDockStore.getState().mode === 'listening') close();
+    };
+    document.addEventListener('visibilitychange', onHide);
+    return () => document.removeEventListener('visibilitychange', onHide);
+  }, [close]);
 
   // En `body`: dentro del router de Ionic quedaría por debajo de las páginas.
   return createPortal(
     <div className={`dock dock--${mode}`}>
-      {mode === 'listening' || mode === 'sending' ? <div className="dock-scrim" /> : null}
+      {mode === 'listening' || mode === 'sending' ? (
+        <div className="dock-scrim" onClick={() => (mode === 'listening' ? close() : undefined)} />
+      ) : null}
       {mode === 'typing' ? <div className="dock-scrim dock-scrim--clear" onClick={close} /> : null}
       {showMoment ? <MomentPill moment={moment} /> : null}
-      {mode === 'typing' && !hidden ? <Composer /> : null}
+      {mode === 'typing' && !hidden ? (
+        <>
+          <Shortcuts />
+          <Composer />
+        </>
+      ) : null}
       {mode === 'listening' || mode === 'sending' ? <VoiceBubble /> : null}
       <ReplyCard />
     </div>,
