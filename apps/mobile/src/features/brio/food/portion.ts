@@ -40,3 +40,15 @@ export function factorLabel(f: number): string {
   if (f === 1.5) return '1½';
   return `×${String(round1(f)).replace('.', ',')}`;
 }
+
+/** Toque en el número: salta entre las raciones típicas (1 → 1½ → 2 → ½ → 1). */
+export function nextQuickFactor(f: number): number {
+  const order = [1, 1.5, 2, 0.5];
+  const c = clampFactor(f);
+  const at = order.indexOf(c);
+  if (at >= 0) return order[(at + 1) % order.length];
+  // Un valor afinado a mano (1,3) salta al siguiente típico por encima, o a ½.
+  if (c < 1.5) return 1.5;
+  if (c < 2) return 2;
+  return 0.5;
+}

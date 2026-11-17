@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampFactor, factorLabel, scaleItem, stepFactor } from './portion';
+import { clampFactor, factorLabel, scaleItem, stepFactor, nextQuickFactor } from './portion';
 
 const salmon = { foodId: 'f', name: 'Salmón', quantityG: 150, kcal: 307.5, proteinG: 33, carbsG: 0, fatG: 19.5 };
 
@@ -23,5 +23,18 @@ describe('multiplicador de ración', () => {
 
   it('etiquetas', () => {
     expect([0.5, 1, 1.3, 1.5, 2].map(factorLabel)).toEqual(['½', '×1', '×1,3', '1½', '×2']);
+  });
+});
+
+describe('nextQuickFactor', () => {
+  it('recorre 1 → 1½ → 2 → ½ → 1', () => {
+    expect(nextQuickFactor(1)).toBe(1.5);
+    expect(nextQuickFactor(1.5)).toBe(2);
+    expect(nextQuickFactor(2)).toBe(0.5);
+    expect(nextQuickFactor(0.5)).toBe(1);
+  });
+  it('desde un valor afinado salta al siguiente típico', () => {
+    expect(nextQuickFactor(1.3)).toBe(1.5);
+    expect(nextQuickFactor(2.4)).toBe(0.5);
   });
 });
