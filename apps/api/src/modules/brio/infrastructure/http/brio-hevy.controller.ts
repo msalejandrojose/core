@@ -21,13 +21,19 @@ import {
   ConnectHevyUseCase,
   DisconnectHevyUseCase,
   GetHevyStatusUseCase,
+  ImportHevyCsvUseCase,
   SendPlannedRoutineToHevyUseCase,
+  type HevyCsvImportResult,
   SyncHevyUseCase,
   type HevyStatus,
   type HevySyncResult,
   type SentRoutine,
 } from '../../application/use-cases/hevy.use-cases';
-import { ConnectHevyDto, SendRoutineDto } from './dto/hevy.dto';
+import {
+  ConnectHevyDto,
+  ImportHevyCsvDto,
+  SendRoutineDto,
+} from './dto/hevy.dto';
 
 // Conexión con Hevy: la clave la pone el usuario y solo sirve para su cuenta.
 // Nunca se devuelve ni se escribe en logs.
@@ -41,7 +47,22 @@ export class BrioHevyController {
     private readonly sync: SyncHevyUseCase,
     private readonly disconnect: DisconnectHevyUseCase,
     private readonly sendRoutine: SendPlannedRoutineToHevyUseCase,
+    private readonly importCsv: ImportHevyCsvUseCase,
   ) {}
+
+  @Post('import-csv')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Importar el CSV que exporta Hevy (sin Hevy Pro): entrenos, ejercicios y series.',
+  })
+  @ApiOkResponse({ description: 'Cuántos entrenos se han traído.' })
+  postImportCsv(
+    @CurrentUser() current: AccessTokenPayload,
+    @Body() dto: ImportHevyCsvDto,
+  ): Promise<HevyCsvImportResult> {
+    return this.importCsv.execute(current.sub, dto.csv);
+  }
 
   @Get()
   @ApiOperation({ summary: 'Estado de mi conexión con Hevy.' })

@@ -35,6 +35,10 @@ export const hevyApi = {
   sync: () => call<{ status: HevyStatus; sync: HevySyncResult }>('POST', '/brio/hevy/sync'),
   disconnect: () => call<void>('DELETE', '/brio/hevy'),
   sendRoutine: (day: string) => call<SentRoutine>('POST', '/brio/hevy/routines', { body: { day } }),
+  importCsv: (csv: string) =>
+    call<{ imported: number; updated: number; workouts: number; skippedRows: number }>('POST', '/brio/hevy/import-csv', {
+      body: { csv },
+    }),
 };
 
 const ERROR_TEXT: Record<string, string> = {
@@ -42,6 +46,8 @@ const ERROR_TEXT: Record<string, string> = {
   BRIO_HEVY_RATE_LIMIT: 'Hevy está limitando las peticiones. Prueba otra vez en unos minutos.',
   BRIO_HEVY_UNAVAILABLE: 'No hemos podido hablar con Hevy. Prueba otra vez en un rato.',
   BRIO_HEVY_NOT_CONNECTED: 'Conecta Hevy primero.',
+  BRIO_HEVY_CSV_INVALID: 'Ese archivo no parece el que exporta Hevy. Usa «Exportar entrenos» y elige el .csv.',
+  BRIO_HEVY_CSV_EMPTY: 'El archivo no tiene entrenos.',
   BRIO_HEVY_NOT_STRENGTH: 'Solo se envían a Hevy las sesiones de fuerza.',
   BRIO_HEVY_NO_SOURCE_SESSION: 'Aún no tienes ningún entreno de fuerza con series del que copiar la rutina.',
   BRIO_HEVY_NO_MATCHING_EXERCISES: 'Ninguno de los ejercicios de tu último entreno existe en Hevy.',

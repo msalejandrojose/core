@@ -36,3 +36,13 @@ export class SendRoutineDto {
   @Matches(DAY_PATTERN, { message: 'day debe tener formato YYYY-MM-DD.' })
   day!: string;
 }
+
+export class ImportHevyCsvDto {
+  @ApiProperty({
+    description: 'Contenido del CSV de Hevy (Exportar entrenos).',
+  })
+  @IsString()
+  @MinLength(10)
+  @MaxLength(10_000_000)
+  csv!: string;
+}
