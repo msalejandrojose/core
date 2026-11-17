@@ -100,9 +100,40 @@ function Dot({ d }: { d: WeekDot }) {
 }
 
 /** Tira de la semana del plan: un punto por día (hecho, falló, planificado, descanso). */
-export function WeekStrip({ days, today }: { days: PlanDay[]; today: string }) {
+export function WeekStrip({
+  days,
+  today,
+  selected,
+  onSelect,
+}: {
+  days: PlanDay[];
+  today: string;
+  /** Día que se está viendo; con `onSelect`, la tira sirve para cambiar de día. */
+  selected?: string;
+  onSelect?: (day: string) => void;
+}) {
   const dots = weekDots(days, today);
   if (!dots.length) return null;
+  if (onSelect) {
+    return (
+      <div className="tv-week" role="group" aria-label="Elegir día de la semana">
+        {dots.map((d) => (
+          <button
+            key={d.day}
+            type="button"
+            className={`tv-week__day tv-week__pick${d.state === 'today' ? ' is-today' : ''}${d.day === selected ? ' is-selected' : ''}`}
+            aria-pressed={d.day === selected}
+            aria-label={d.label}
+            disabled={d.day > today}
+            onClick={() => onSelect(d.day)}
+          >
+            <span className="tv-week__letter">{d.letter}</span>
+            <Dot d={d} />
+          </button>
+        ))}
+      </div>
+    );
+  }
   return (
     <Link to="/tabs/today/plan" className="tv-week" aria-label={`Tu semana. ${dots.map((d) => d.label).join(', ')}. Abrir plan.`}>
       {dots.map((d) => (
@@ -142,17 +173,21 @@ export function TodayWorkoutCard({
   onStart,
   doneMinutes,
   done = [],
+  isToday = true,
 }: {
   day: PlanDay | null;
   onStart: () => void;
   doneMinutes: number;
+  /** Otro día: los textos hablan de «ese día» y no se ofrece empezar lo planificado. */
+  isToday?: boolean;
   /** Entrenos registrados hoy (puede haber varios: fútbol y gimnasio, p. ej.). */
   done?: DoneWorkout[];
 }) {
   const planned: PlannedSession | null = day?.planned ?? null;
-  if (!day || (!planned && !day.actual)) return null;
+  // Entrenos sin plan también cuentan (un pádel improvisado, por ejemplo).
+  if (!done.length && (!day || (!planned && !day.actual))) return null;
 
-  if (day.status === 'DONE' || day.actual) {
+  if (done.length || day?.status === 'DONE' || day?.actual) {
     // Varios entrenos: cada uno en su fila; uno solo: el título grande de siempre.
     if (done.length > 1) {
       const kcal = done.reduce((t, w) => t + w.kcal, 0);
@@ -160,7 +195,7 @@ export function TodayWorkoutCard({
         <section className="tv-card tv-workout is-done is-stack" aria-labelledby="tv-done">
           <div className="tv-workout__done-head">
             <span id="tv-done" className="tv-workout__kicker">
-              Hoy has entrenado {done.length} veces
+              {isToday ? 'Hoy has entrenado' : 'Entrenaste'} {done.length} veces
             </span>
             <span className="tv-workout__total">
               {fmtMinutes(doneMinutes)} · {formatNumber(Math.round(kcal))} kcal
@@ -198,22 +233,22 @@ export function TodayWorkoutCard({
         </section>
       );
     }
-    const title = done[0]?.name ?? day.actual?.title ?? planned?.title ?? 'Entreno';
+    const title = done[0]?.name ?? day?.actual?.title ?? planned?.title ?? 'Entreno';
     return (
       <section className="tv-card tv-workout is-done is-stack">
-        <Link to={`/tabs/today/plan/sesion/${day.day}`} className="tv-workout__done">
+        <Link to={done[0]?.to ?? (day ? `/tabs/today/plan/sesion/${day.day}` : '/tabs/today/plan')} className="tv-workout__done">
           <span className="tv-workout__check" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 24 24">
               <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
           <span className="rk-row__main">
-            <span className="tv-workout__kicker">Entreno de hoy hecho</span>
+            <span className="tv-workout__kicker">{isToday ? 'Entreno de hoy hecho' : 'Entreno hecho'}</span>
             <span className="tv-workout__title">{title}</span>
             <span className="tv-workout__meta">
               {done[0]
                 ? formatDuration(done[0].durationSec)
-                : day.actual
+                : day?.actual
                   ? formatDuration(day.actual.durationSec)
                   : doneMinutes
                     ? `${doneMinutes} min`
@@ -229,13 +264,13 @@ export function TodayWorkoutCard({
     );
   }
 
-  if (!planned) return null;
+  if (!planned || !day) return null;
 
   if (planned.load === 'REST') {
     return (
       <Link to={`/tabs/today/plan/sesion/${day.day}`} className="tv-card tv-workout is-rest">
         <span className="rk-row__main">
-          <span className="tv-workout__kicker">Hoy descansas</span>
+          <span className="tv-workout__kicker">{isToday ? 'Hoy descansas' : 'Día de descanso'}</span>
           <span className="tv-workout__title">{planned.title}</span>
           <span className="tv-workout__meta">Recuperar también es entrenar.</span>
         </span>
@@ -252,7 +287,7 @@ export function TodayWorkoutCard({
 
   return (
     <section className="tv-card tv-workout" aria-labelledby="tv-workout-title">
-      <span className="tv-workout__kicker">Hoy entrenas{planned.startTime ? ` · ${planned.startTime}` : ''}</span>
+      <span className="tv-workout__kicker">{isToday ? 'Hoy entrenas' : 'Tocaba entrenar'}{planned.startTime ? ` · ${planned.startTime}` : ''}</span>
       <span id="tv-workout-title" className="tv-workout__title">
         {planned.title}
       </span>
@@ -265,7 +300,7 @@ export function TodayWorkoutCard({
       </span>
       <div className="tv-workout__actions">
         <button type="button" className="tv-workout__start" onClick={onStart}>
-          {planned.kind === 'STRENGTH' ? 'Empezar entreno' : 'Registrar entreno'}
+          {isToday && planned.kind === 'STRENGTH' ? 'Empezar entreno' : 'Registrar entreno'}
         </button>
         <Link to={`/tabs/today/plan/sesion/${day.day}`} className="tv-workout__more">
           Ver sesión

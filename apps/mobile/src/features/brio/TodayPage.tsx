@@ -1,5 +1,5 @@
 import { LiveWorkoutBanner } from './live/LiveWorkoutBanner';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Redirect } from 'react-router-dom';
 import {
   IonContent,
@@ -15,6 +15,7 @@ import {
   formatKcal,
   hourIn,
   joinNames,
+  dayLabel,
   longDate,
   mealForHour,
   mealLabel,
@@ -106,6 +107,63 @@ function pendingMeals(summary: DaySummary, hour: number): MealType[] {
   return MEAL_ORDER.filter((t, i) => i >= now && !logged.has(t));
 }
 
+/** Título de un día que no es hoy: «Ayer», «Lunes» (esta semana) o «3 nov». */
+function pastTitle(day: string, today: string): string {
+  const diff = Math.round((Date.parse(`${today}T12:00:00Z`) - Date.parse(`${day}T12:00:00Z`)) / 86_400_000);
+  if (diff > 1 && diff < 7) {
+    const wd = new Intl.DateTimeFormat('es-ES', { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
+    return wd.charAt(0).toUpperCase() + wd.slice(1);
+  }
+  return dayLabel(day, today);
+}
+
+/**
+ * Comidas de un día pasado: qué se apuntó en cada momento (con sus kcal y
+ * alimentos) y, en lo que falta, un toque para añadirlo a ese día.
+ */
+function PastDayMeals({
+  summary,
+  onAdd,
+  onAddWorkout,
+}: {
+  summary: DaySummary;
+  onAdd: (type: MealType) => void;
+  onAddWorkout: () => void;
+}) {
+  return (
+    <section aria-label="Comidas del día" className="today-day">
+      {MEAL_ORDER.map((type) => {
+        const entries = summary.meals.filter((m) => m.mealType === type);
+        const kcal = entries.reduce((t, m) => t + m.kcal, 0);
+        return (
+          <button key={type} type="button" className="today-day__row" onClick={() => onAdd(type)}>
+            <CheckCircle on={entries.length > 0} color="var(--brio-activity)" />
+            <span className="rk-row__main">
+              <span className="rk-row__title">{mealLabel(type)}</span>
+              <span className="rk-row__sub">
+                {entries.length ? joinNames(entries.map((e) => e.name)) : 'Sin registrar · toca para añadir'}
+              </span>
+            </span>
+            <span className="rk-row__value">{entries.length ? `${formatKcal(kcal)} kcal` : '+'}</span>
+          </button>
+        );
+      })}
+      <button type="button" className="today-day__row" onClick={onAddWorkout}>
+        <CheckCircle on={summary.sessions.length > 0} color="var(--brio-activity)" />
+        <span className="rk-row__main">
+          <span className="rk-row__title">Entreno</span>
+          <span className="rk-row__sub">
+            {summary.sessions.length
+              ? joinNames(summary.sessions.map((x) => x.activityTypeName))
+              : 'Sin entreno · toca para añadir'}
+          </span>
+        </span>
+        <span className="rk-row__value">+</span>
+      </button>
+    </section>
+  );
+}
+
 /**
  * Hoy (lienzo "Hoy"). Arriba, de un vistazo: la semana del plan, los anillos
  * del día (comida, entreno, pasos) con los macros y el entreno de hoy en
@@ -125,6 +183,7 @@ export default function TodayPage() {
   const loadDay = useBrioStore((s) => s.loadDay);
   const refreshDay = useBrioStore((s) => s.refreshDay);
   const goToToday = useBrioStore((s) => s.goToToday);
+  const stepDay = useBrioStore((s) => s.stepDay);
   const openRegister = useRegisterStore((s) => s.open);
   const habitsByMeal = useHabitsStore((s) => s.byMeal);
   const loadHabits = useHabitsStore((s) => s.load);
@@ -136,7 +195,9 @@ export default function TodayPage() {
   const timezone = profile?.timezone ?? 'Europe/Madrid';
   const today = todayIn(timezone);
   const firstName = useAuthStore((s) => s.user?.firstName ?? null);
-  const { data: week } = usePlanWeekData(today);
+  /** El día que se ve: hoy, o el que elijas con las flechas o la semana. */
+  const isToday = day === today;
+  const { data: week } = usePlanWeekData(day);
   const health = useRecentHealth();
 
   useEffect(() => {
@@ -149,14 +210,19 @@ export default function TodayPage() {
     }
   }, [profileStatus, needsOnboarding, dayStatus, loadDay]);
 
-  // Hoy siempre enseña hoy: si en Comida se navegó a otro día, se vuelve.
+  // A medianoche, si estabas viendo «hoy», pasa al nuevo hoy. Si estabas en
+  // otro día lo respeta; ni el futuro ni un día por delante de hoy.
+  const lastToday = useRef(today);
   useEffect(() => {
-    if (dayStatus === 'ready' && day !== today) void goToToday();
+    const prev = lastToday.current;
+    lastToday.current = today;
+    if (dayStatus !== 'ready') return;
+    if ((prev !== today && day === prev) || day > today) void goToToday();
   }, [dayStatus, day, today, goToToday]);
 
   const pending = useMemo(
-    () => (summary ? pendingMeals(summary, hourIn(timezone)) : []),
-    [summary, timezone],
+    () => (summary && isToday ? pendingMeals(summary, hourIn(timezone)) : []),
+    [summary, timezone, isToday],
   );
   const next = pending[0] ?? null;
   // Comidas de antes de esta hora que se quedaron sin registrar.
@@ -181,10 +247,10 @@ export default function TodayPage() {
   const remaining = totals?.kcalRemaining ?? null;
 
   // Cabecera visual: semana, anillos del día y el entreno de hoy.
-  const todayPlan = week?.days.find((d) => d.day === today) ?? null;
-  const todayDiet = week?.diet?.find((d) => d.day === today) ?? null;
+  const todayPlan = week?.days.find((d) => d.day === day) ?? null;
+  const todayDiet = week?.diet?.find((d) => d.day === day) ?? null;
   const activeMinutes = Math.round((summary?.sessions ?? []).reduce((m, x) => m + x.durationSec, 0) / 60);
-  const steps = health?.days.find((d) => d.day === today)?.steps ?? null;
+  const steps = health?.days.find((d) => d.day === day)?.steps ?? null;
   const rings = totals
     ? dayRings({
         totals,
@@ -261,9 +327,28 @@ export default function TodayPage() {
         <div className="rk-screen today">
           <header className="today-head">
             <div className="today-head__row">
-              <span className="today-head__kicker">
-              {longDate(today)}
-            </span>
+              <div className="today-nav">
+                <button
+                  type="button"
+                  className="today-nav__arrow"
+                  aria-label="Día anterior"
+                  onClick={() => void stepDay(-1)}
+                >
+                  <Icon d={PATHS.back} size={16} stroke={2.6} />
+                </button>
+                <span className="today-head__kicker" aria-live="polite">
+                  {longDate(day)}
+                </span>
+                <button
+                  type="button"
+                  className="today-nav__arrow"
+                  aria-label="Día siguiente"
+                  disabled={isToday}
+                  onClick={() => void stepDay(1)}
+                >
+                  <Icon d={PATHS.forward} size={16} stroke={2.6} />
+                </button>
+              </div>
               <div className="today-head__actions">
                 {firstDay ? null : (
                   <Link
@@ -301,7 +386,16 @@ export default function TodayPage() {
                 </Link>
               </div>
             </div>
-            <h1 className={firstDay ? undefined : 'is-greeting'}>{firstDay ? 'Hoy' : greeting(hourIn(timezone), firstName)}</h1>
+            {isToday ? (
+              <h1 className={firstDay ? undefined : 'is-greeting'}>{firstDay ? 'Hoy' : greeting(hourIn(timezone), firstName)}</h1>
+            ) : (
+              <div className="today-past">
+                <h1>{pastTitle(day, today)}</h1>
+                <button type="button" className="today-past__back" onClick={() => void goToToday()}>
+                  Volver a hoy
+                </button>
+              </div>
+            )}
           </header>
 
           <LiveWorkoutBanner />
@@ -313,11 +407,13 @@ export default function TodayPage() {
             />
           ) : !summary || !totals ? (
             <SkeletonList rows={5} />
-          ) : firstDay ? (
+          ) : firstDay && isToday ? (
             <FirstDay profile={profile} summary={summary} />
           ) : (
             <>
-              {week ? <WeekStrip days={week.days} today={today} /> : null}
+              {week ? (
+                <WeekStrip days={week.days} today={today} selected={day} onSelect={(d) => void loadDay(d)} />
+              ) : null}
 
               <DayRingsCard rings={rings} totals={totals} targets={macroTargets} />
 
@@ -332,8 +428,12 @@ export default function TodayPage() {
                   kcal: x.kcalBurned,
                   to: x.kind === 'STRENGTH' ? `/tabs/today/entreno/${x.id}` : undefined,
                 }))}
+                isToday={isToday}
                 onStart={() => openRegister('activity')}
               />
+
+              {isToday ? (
+              <>
 
               <section aria-labelledby="ahora" className="rk-hero today-now">
                 <span id="ahora" className="rk-kicker">
@@ -471,6 +571,10 @@ export default function TodayPage() {
               </section>
 
               <TomorrowRow today={today} />
+              </>
+              ) : (
+                <PastDayMeals summary={summary} onAdd={(t) => openRegister('meal', t)} onAddWorkout={() => openRegister('activity')} />
+              )}
 
               {week ? <WeekPlanCard week={week} /> : null}
             </>
