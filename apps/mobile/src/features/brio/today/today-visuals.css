@@ -347,3 +347,41 @@
 .tv-week__pick.is-selected .tv-week__letter {
   color: var(--brio-tint);
 }
+
+/* Deslizar la rueda para cambiar de día. */
+.day-swipe {
+  touch-action: pan-y;
+  overflow: hidden;
+  margin: -4px;
+  padding: 4px;
+}
+.day-swipe__inner {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.day-swipe__inner.is-dragging {
+  transition: none;
+}
+.day-swipe__inner.enter-left {
+  animation: day-swipe-from-left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.day-swipe__inner.enter-right {
+  animation: day-swipe-from-right 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes day-swipe-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-36px);
+  }
+}
+@keyframes day-swipe-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(36px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .day-swipe__inner.enter-left,
+  .day-swipe__inner.enter-right {
+    animation: none;
+  }
+}

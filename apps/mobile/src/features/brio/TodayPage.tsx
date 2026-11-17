@@ -45,6 +45,7 @@ import { usePlanWeekData } from './plan/plan.api';
 import { useRecentHealth } from './profile/garmin.api';
 import { DayRingsCard, TodayWorkoutCard, WeekStrip } from './today/TodayVisuals';
 import { dayRings, greeting } from './today/today-visuals';
+import { DaySwipe } from './today/DaySwipe';
 import { useAuthStore } from '@/store/auth.store';
 import './today.css';
 
@@ -415,7 +416,9 @@ export default function TodayPage() {
                 <WeekStrip days={week.days} today={today} selected={day} onSelect={(d) => void loadDay(d)} />
               ) : null}
 
-              <DayRingsCard rings={rings} totals={totals} targets={macroTargets} />
+              <DaySwipe day={summary.day} canGoNext={!isToday} onStep={(d) => void stepDay(d)}>
+                <DayRingsCard rings={rings} totals={totals} targets={macroTargets} />
+              </DaySwipe>
 
               <TodayWorkoutCard
                 day={todayPlan}
