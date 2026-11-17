@@ -108,6 +108,13 @@ function pendingMeals(summary: DaySummary, hour: number): MealType[] {
   return MEAL_ORDER.filter((t, i) => i >= now && !logged.has(t));
 }
 
+/** Fecha corta para la cabecera con flechas: «miércoles, 18 nov». */
+function shortDate(day: string): string {
+  return new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(new Date(`${day}T12:00:00Z`))
+    .replace('.', '');
+}
+
 /** Título de un día que no es hoy: «Ayer», «Lunes» (esta semana) o «3 nov». */
 function pastTitle(day: string, today: string): string {
   const diff = Math.round((Date.parse(`${today}T12:00:00Z`) - Date.parse(`${day}T12:00:00Z`)) / 86_400_000);
@@ -337,8 +344,8 @@ export default function TodayPage() {
                 >
                   <Icon d={PATHS.back} size={16} stroke={2.6} />
                 </button>
-                <span className="today-head__kicker" aria-live="polite">
-                  {longDate(day)}
+                <span className="today-head__kicker" aria-live="polite" aria-label={longDate(day)}>
+                  {shortDate(day)}
                 </span>
                 <button
                   type="button"
