@@ -277,3 +277,53 @@
   color: var(--brio-ink-muted);
   text-align: center;
 }
+
+/* Cambiar de día: flechas junto a la fecha y, fuera de hoy, «Volver a hoy». */
+.today-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: -10px;
+  min-width: 0;
+}
+.today-nav .today-head__kicker {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.today-nav__arrow {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--brio-tint);
+  cursor: pointer;
+}
+.today-nav__arrow:disabled {
+  color: var(--brio-ink-muted);
+  opacity: 0.35;
+  cursor: default;
+}
+.today-past {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--brio-space-m);
+}
+.today-past__back {
+  flex: none;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}

@@ -327,3 +327,23 @@
   font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
+
+/* La semana como selector de día (pantalla Hoy). */
+.tv-week__pick {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.tv-week__pick:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tv-week__pick.is-selected {
+  background: var(--brio-tint-soft);
+}
+.tv-week__pick.is-selected .tv-week__letter {
+  color: var(--brio-tint);
+}
