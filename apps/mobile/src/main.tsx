@@ -19,7 +19,6 @@ import './theme/tokens.css';
 import './theme/components.css';
 
 /* Estilos de Sileo (toasts). El <Toaster/> se monta en App. */
-import 'sileo/styles.css';
 
 // `mode: 'ios'` fija el look iOS en todas las plataformas (coherente con el
 // norte estético de las capturas). Quitar para transiciones material en Android.

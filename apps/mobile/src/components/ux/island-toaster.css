@@ -1,0 +1,121 @@
+/*
+ * Avisos que salen de la Dynamic Island / notch. La píldora siempre está a su
+ * tamaño final; lo que se anima es el recorte (clip-path), que empieza con la
+ * forma exacta de la isla y crece hasta la píldora, como en iOS.
+ */
+.island {
+  --island-w: 126px;
+  --island-h: 37px;
+  --island-r: 19px;
+  position: fixed;
+  z-index: 40000;
+  left: 50%;
+  top: 11px;
+  width: min(calc(100vw - 16px), 400px);
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  padding: 12px 18px 12px 12px;
+  border-radius: 30px;
+  background: #000;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  clip-path: inset(
+    0 calc(50% - var(--island-w) / 2) calc(100% - var(--island-h)) calc(50% - var(--island-w) / 2) round
+      var(--island-r)
+  );
+  transition:
+    clip-path 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.05),
+    box-shadow 0.3s ease;
+}
+.island.is-open {
+  clip-path: inset(0 0 0 0 round 30px);
+}
+.island:not(.is-open) {
+  box-shadow: none;
+}
+
+/* Notch: la píldora cuelga del borde de arriba, con el notch como raíz. */
+.island--notch {
+  --island-w: 162px;
+  --island-h: 32px;
+  --island-r: 0 0 20px 20px;
+  top: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
+  border-radius: 0 0 30px 30px;
+  clip-path: inset(0 calc(50% - var(--island-w) / 2) calc(100% - var(--island-h)) calc(50% - var(--island-w) / 2) round 0 0 20px 20px);
+}
+.island--notch.is-open {
+  clip-path: inset(0 0 0 0 round 0 0 30px 30px);
+}
+
+/* Sin isla ni notch (Android, web): una píldora que crece desde un punto. */
+.island--none {
+  --island-w: 40px;
+  --island-h: 40px;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+}
+
+.island__body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+  opacity: 0;
+  filter: blur(4px);
+  transition:
+    opacity 0.2s ease,
+    filter 0.2s ease;
+}
+.island.is-open .island__body {
+  opacity: 1;
+  filter: none;
+  transition-delay: 0.12s;
+}
+
+.island__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: #fff;
+}
+.island__icon--success {
+  background: #30d158;
+}
+.island__icon--error {
+  background: #ff453a;
+}
+.island__icon--warning {
+  background: #ff9f0a;
+}
+.island__icon--info {
+  background: #0a84ff;
+}
+
+.island__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+.island__title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.island__desc {
+  font-size: 13px;
+  line-height: 17px;
+  color: rgba(235, 235, 245, 0.62);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .island,
+  .island__body {
+    transition: opacity 0.15s ease;
+  }
+}

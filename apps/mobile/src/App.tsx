@@ -1,9 +1,8 @@
 import { IonApp, IonRouterOutlet, IonSpinner } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { Redirect, Route } from 'react-router-dom';
-import { Toaster } from 'sileo';
 import { useAuthStore } from '@/store/auth.store';
-import { useThemeStore } from '@/store/theme.store';
+import { IslandToaster } from '@/components/ux/IslandToaster';
 import LoginPage from '@/features/auth/LoginPage';
 import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage';
@@ -27,7 +26,6 @@ import { ErrorBoundary, OfflineBanner } from '@/components/ux';
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
-  const theme = useThemeStore((s) => s.theme);
   const home = '/tabs/today';
 
   // La sesión se rehidrata de forma asíncrona (Capacitor Preferences). Hasta que
@@ -121,13 +119,8 @@ export default function App() {
           </IonRouterOutlet>
         </IonReactRouter>
         <OfflineBanner />
-        {/* Toasts (Sileo): un único host para toda la app, con el tema del
-            usuario y respetando el safe-area superior (notch / status bar). */}
-        <Toaster
-          theme={theme}
-          position="top-center"
-          offset={{ top: 'calc(env(safe-area-inset-top) + 8px)' }}
-        />
+        {/* Avisos de arriba: salen de la Dynamic Island / notch (un único host). */}
+        <IslandToaster />
       </ErrorBoundary>
     </IonApp>
   );
