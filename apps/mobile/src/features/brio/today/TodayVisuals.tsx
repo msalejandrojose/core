@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import type { DayTotals } from '../api';
-import { formatDuration } from '../format';
+import { formatDuration, formatNumber } from '../format';
 import type { PlanDay, PlannedSession } from '../plan/plan.api';
 import { LOAD_LABEL, fmtMinutes } from '../plan/plan-labels';
-import { Chevron } from '../ui/kit';
+import { Chevron, Icon } from '../ui/kit';
+import { PATHS } from '../ui/paths';
 import { macroBars, weekDots, type DayRing, type WeekDot } from './today-visuals';
 import './today-visuals.css';
 
@@ -118,24 +119,86 @@ export function WeekStrip({ days, today }: { days: PlanDay[]; today: string }) {
  * El entreno de hoy en grande: lo planificado (con su botón para empezarlo),
  * lo ya hecho o el día de descanso. Sin plan para hoy no sale.
  */
+export interface DoneWorkout {
+  id: string;
+  name: string;
+  kind: string;
+  durationSec: number;
+  kcal: number;
+  /** Para los de fuerza: abre sus series. */
+  to?: string;
+}
+
+const KIND_ICON: Record<string, string> = {
+  STRENGTH: PATHS.strength,
+  RUN: PATHS.run,
+  CYCLE: PATHS.bike,
+  WALK: PATHS.walk,
+  HIKE: PATHS.walk,
+};
+
 export function TodayWorkoutCard({
   day,
   onStart,
   doneMinutes,
-  doneCount = 0,
+  done = [],
 }: {
   day: PlanDay | null;
   onStart: () => void;
   doneMinutes: number;
   /** Entrenos registrados hoy (puede haber varios: fútbol y gimnasio, p. ej.). */
-  doneCount?: number;
+  done?: DoneWorkout[];
 }) {
   const planned: PlannedSession | null = day?.planned ?? null;
   if (!day || (!planned && !day.actual)) return null;
 
   if (day.status === 'DONE' || day.actual) {
-    const title = day.actual?.title ?? planned?.title ?? 'Entreno';
-    const many = doneCount > 1;
+    // Varios entrenos: cada uno en su fila; uno solo: el título grande de siempre.
+    if (done.length > 1) {
+      const kcal = done.reduce((t, w) => t + w.kcal, 0);
+      return (
+        <section className="tv-card tv-workout is-done is-stack" aria-labelledby="tv-done">
+          <div className="tv-workout__done-head">
+            <span id="tv-done" className="tv-workout__kicker">
+              Hoy has entrenado {done.length} veces
+            </span>
+            <span className="tv-workout__total">
+              {fmtMinutes(doneMinutes)} · {formatNumber(Math.round(kcal))} kcal
+            </span>
+          </div>
+          <ul className="tv-done-list">
+            {done.map((w) => {
+              const body = (
+                <>
+                  <span className="tv-done-list__icon" aria-hidden="true">
+                    <Icon d={KIND_ICON[w.kind] ?? PATHS.dance} size={18} stroke={2.2} />
+                  </span>
+                  <span className="tv-done-list__name">{w.name}</span>
+                  <span className="tv-done-list__meta">
+                    {formatDuration(w.durationSec)} · {formatNumber(Math.round(w.kcal))} kcal
+                  </span>
+                </>
+              );
+              return (
+                <li key={w.id}>
+                  {w.to ? (
+                    <Link to={w.to} className="tv-done-list__row">
+                      {body}
+                    </Link>
+                  ) : (
+                    <span className="tv-done-list__row">{body}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <button type="button" className="tv-workout__another" onClick={onStart}>
+            + Añadir otro entreno
+          </button>
+        </section>
+      );
+    }
+    const title = done[0]?.name ?? day.actual?.title ?? planned?.title ?? 'Entreno';
     return (
       <section className="tv-card tv-workout is-done is-stack">
         <Link to={`/tabs/today/plan/sesion/${day.day}`} className="tv-workout__done">
@@ -145,11 +208,11 @@ export function TodayWorkoutCard({
             </svg>
           </span>
           <span className="rk-row__main">
-            <span className="tv-workout__kicker">{many ? `${doneCount} entrenos hoy` : 'Entreno de hoy hecho'}</span>
+            <span className="tv-workout__kicker">Entreno de hoy hecho</span>
             <span className="tv-workout__title">{title}</span>
             <span className="tv-workout__meta">
-              {many
-                ? `${doneMinutes} min en total`
+              {done[0]
+                ? formatDuration(done[0].durationSec)
                 : day.actual
                   ? formatDuration(day.actual.durationSec)
                   : doneMinutes

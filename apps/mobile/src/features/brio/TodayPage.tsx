@@ -324,7 +324,14 @@ export default function TodayPage() {
               <TodayWorkoutCard
                 day={todayPlan}
                 doneMinutes={activeMinutes}
-                doneCount={summary?.sessions.length ?? 0}
+                done={(summary?.sessions ?? []).map((x) => ({
+                  id: x.id,
+                  name: x.activityTypeName,
+                  kind: x.kind ?? 'OTHER',
+                  durationSec: x.durationSec,
+                  kcal: x.kcalBurned,
+                  to: x.kind === 'STRENGTH' ? `/tabs/today/entreno/${x.id}` : undefined,
+                }))}
                 onStart={() => openRegister('activity')}
               />
 

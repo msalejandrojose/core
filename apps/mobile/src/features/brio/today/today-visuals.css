@@ -272,3 +272,58 @@
   color: var(--brio-activity-ink);
   font: 600 15px var(--brio-font-sans);
 }
+
+/* Varios entrenos hoy: uno por fila */
+.tv-workout__done-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tv-workout__total {
+  color: var(--brio-activity-ink);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.tv-done-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tv-done-list__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--brio-ink);
+  text-decoration: none;
+}
+.tv-done-list li + li .tv-done-list__row {
+  border-top: 1px solid color-mix(in srgb, var(--brio-activity) 18%, transparent);
+}
+.tv-done-list__icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brio-activity);
+  color: #fff;
+}
+.tv-done-list__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.tv-done-list__meta {
+  flex: none;
+  color: var(--brio-ink-2);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
