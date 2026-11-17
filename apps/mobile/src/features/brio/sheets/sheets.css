@@ -875,70 +875,34 @@ button.workout__set-n.is-warmup {
 }
 
 /* Lo que añades: cada alimento con su multiplicador de ración. */
-.addfood__picked {
-  max-height: 38vh;
-  overflow-y: auto;
-  padding: 6px 16px 2px;
-  border-top: 1px solid var(--brio-separator);
-  background: var(--brio-surface);
-}
-.addfood__picked-row {
-  display: grid;
-  gap: 6px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--brio-separator);
-}
-.addfood__picked-row:last-child {
-  border-bottom: 0;
-}
-.addfood__picked-name {
-  display: block;
-  font-size: 15px;
-  font-weight: 600;
-}
-.addfood__factor {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-.addfood__factor-chip {
-  min-width: 40px;
-  min-height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--brio-border);
-  border-radius: var(--brio-radius-pill);
-  background: var(--brio-surface);
-  color: var(--brio-ink);
-  font: inherit;
-  font-size: 14px;
-}
-.addfood__factor-chip[aria-pressed='true'] {
-  border-color: var(--brio-tint);
-  background: var(--brio-tint);
-  color: var(--brio-on-tint);
-}
-.addfood__factor-step {
+
+/* Ración junto al ✓ de cada alimento elegido: − · número · + */
+.addfood__portion {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  margin-left: auto;
+  flex: none;
+  margin-left: 2px;
   border-radius: var(--brio-radius-pill);
-  background: var(--brio-surface-fill);
-}
-.addfood__factor-step button {
-  width: 34px;
-  height: 32px;
-  border: 0;
-  background: transparent;
+  background: var(--brio-tint-soft);
   color: var(--brio-tint);
-  font: inherit;
-  font-size: 18px;
 }
-.addfood__factor-step span {
+.addfood__portion button {
+  min-width: 30px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: 600 17px/1 var(--brio-font-sans);
+}
+.addfood__portion .addfood__portion-value {
   min-width: 40px;
-  text-align: center;
   font-size: 14px;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+.addfood__freq-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }

@@ -10,7 +10,7 @@ import { FoodIcon } from '../ui/food-icons';
 import { FOOD_ICONS, type FoodIconKey } from '../ui/food-icons.data';
 import { CreateFoodSheet } from './CreateFoodSheet';
 import { scanFoodBarcode } from '../food/barcode';
-import { QUICK_FACTORS, clampFactor, factorLabel, scaleItem, stepFactor } from '../food/portion';
+import { clampFactor, factorLabel, nextQuickFactor, scaleItem, stepFactor } from '../food/portion';
 import { Icon, SearchField, Segmented, SectionHeader, SheetBar } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { snackbar } from '@/lib/snackbar';
@@ -164,6 +164,17 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const total = items.reduce((s, i) => s + i.kcal, 0);
   const setFactor = (key: string, f: number) => setFactors((x) => ({ ...x, [key]: clampFactor(f) }));
   const remaining = summary?.totals.kcalRemaining ?? null;
+  /** Kcal de una fila: con su ración multiplicada si ya está elegida. */
+  const kcalOf = (it: { key: string; kcal: number } & Picked) =>
+    picked[it.key] ? scaleItem(it, factors[it.key] ?? 1).kcal : it.kcal;
+  /** Ración a la derecha del ✓: − / número (toca para 1 → 1½ → 2 → ½) / +. */
+  const portionFor = (it: { key: string; name: string }) => (
+    <PortionStepper
+      name={it.name}
+      factor={factors[it.key] ?? 1}
+      onChange={(f) => setFactor(it.key, f)}
+    />
+  );
 
   const toggle = (item: Picked) =>
     setPicked((p) => {
@@ -321,11 +332,14 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
                         <div className="rk-row__main">
                           <span className="rk-row__title">{food.name}</span>
                           <span className="rk-row__sub">
-                            {portion(item.quantityG, food.isLiquid)} · {formatKcal(food.kcalPer100)} kcal/100
+                            {on
+                              ? `${formatKcal(kcalOf(item))} kcal · ${formatKcal(scaleItem(item, factors[item.key] ?? 1).quantityG)} ${food.isLiquid ? 'ml' : 'g'}`
+                              : `${portion(item.quantityG, food.isLiquid)} · ${formatKcal(food.kcalPer100)} kcal/100`}
                           </span>
                         </div>
-                        <span className="rk-row__value">{formatKcal(item.kcal)} kcal</span>
+                        {on ? null : <span className="rk-row__value">{formatKcal(kcalOf(item))} kcal</span>}
                         <AddToggle on={on} name={food.name} onClick={() => toggle(item)} />
+                        {on ? portionFor(item) : null}
                       </div>
                     </li>
                   );
@@ -385,10 +399,12 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
                           <span className="rk-row__title">{food.name}</span>
                           <span className="rk-row__sub">
                             {serving ? serving.label : portion(item.quantityG, food.isLiquid)}
+                            {on ? ` · ${formatKcal(kcalOf(item))} kcal` : ''}
                           </span>
                         </div>
-                        <span className="rk-row__value">{formatKcal(item.kcal)} kcal</span>
+                        {on ? null : <span className="rk-row__value">{formatKcal(kcalOf(item))} kcal</span>}
                         <AddToggle on={on} name={food.name} onClick={() => toggle(item)} />
+                        {on ? portionFor(item) : null}
                       </div>
                     </li>
                   );
@@ -468,8 +484,8 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
                     {habits.frequent.map((f) => {
                       const on = !!picked[f.key];
                       return (
+                        <div key={f.key} className="addfood__freq-cell">
                         <button
-                          key={f.key}
                           type="button"
                           className="addfood__freq-item"
                           aria-pressed={on}
@@ -489,8 +505,10 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
                             ) : null}
                           </span>
                           <span className="addfood__freq-name">{f.name.split(' ')[0]}</span>
-                          <span className="addfood__freq-kcal">{formatKcal(f.kcal)} kcal</span>
+                          <span className="addfood__freq-kcal">{formatKcal(kcalOf(fromHabit(f)))} kcal</span>
                         </button>
+                        {on ? portionFor(f) : null}
+                        </div>
                       );
                     })}
                   </div>
@@ -511,10 +529,12 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
                               <span className="rk-row__title">{r.name}</span>
                               <span className="rk-row__sub">
                                 {whenLabel(r.lastOn, today)} · {portion(r.quantityG)}
+                                {on ? ` · ${formatKcal(kcalOf(r))} kcal` : ''}
                               </span>
                             </div>
-                            <span className="rk-row__value">{formatKcal(r.kcal)} kcal</span>
+                            {on ? null : <span className="rk-row__value">{formatKcal(kcalOf(r))} kcal</span>}
                             <AddToggle on={on} name={r.name} onClick={() => toggle(fromHabit(r))} />
+                            {on ? portionFor(r) : null}
                           </div>
                         </li>
                       );
@@ -532,48 +552,6 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
           )}
         </div>
       </IonContent>
-
-      {items.length ? (
-        <section className="addfood__picked" aria-label="Lo que añades">
-          {Object.values(picked).map((p) => {
-            const f = factors[p.key] ?? 1;
-            const scaled = scaleItem(p, f);
-            return (
-              <div key={p.key} className="addfood__picked-row">
-                <span className="rk-row__main">
-                  <span className="addfood__picked-name">{p.name}</span>
-                  <span className="rk-row__sub">
-                    {formatKcal(scaled.kcal)} kcal
-                    {p.foodId ? ` · ${formatKcal(scaled.quantityG)} g` : ''}
-                  </span>
-                </span>
-                <div className="addfood__factor" role="group" aria-label={`Ración de ${p.name}`}>
-                  {QUICK_FACTORS.map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      className="addfood__factor-chip"
-                      aria-pressed={f === q}
-                      onClick={() => setFactor(p.key, q)}
-                    >
-                      {q === 1 ? '1' : factorLabel(q)}
-                    </button>
-                  ))}
-                  <span className="addfood__factor-step">
-                    <button type="button" aria-label="Un poco menos" onClick={() => setFactor(p.key, stepFactor(f, -1))}>
-                      −
-                    </button>
-                    <span aria-live="polite">{factorLabel(f)}</span>
-                    <button type="button" aria-label="Un poco más" onClick={() => setFactor(p.key, stepFactor(f, 1))}>
-                      +
-                    </button>
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </section>
-      ) : null}
 
       <div className="addfood__bar">
         <div className="rk-row__main">
@@ -633,5 +611,26 @@ function AddToggle({
         <Icon d={PATHS.plusCircle} size={26} stroke={1.8} />
       )}
     </button>
+  );
+}
+
+function PortionStepper({ name, factor, onChange }: { name: string; factor: number; onChange: (f: number) => void }) {
+  return (
+    <span className="addfood__portion" role="group" aria-label={`Ración de ${name}`}>
+      <button type="button" aria-label="Un poco menos" onClick={() => onChange(stepFactor(factor, -1))}>
+        −
+      </button>
+      <button
+        type="button"
+        className="addfood__portion-value"
+        aria-label={`Ración ${factorLabel(factor)}: toca para cambiar`}
+        onClick={() => onChange(nextQuickFactor(factor))}
+      >
+        {factor === 1 ? '×1' : factorLabel(factor)}
+      </button>
+      <button type="button" aria-label="Un poco más" onClick={() => onChange(stepFactor(factor, 1))}>
+        +
+      </button>
+    </span>
   );
 }
