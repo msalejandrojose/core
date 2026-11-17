@@ -35,6 +35,13 @@ function fakes(initial: Partial<GarminConnection> | null = {}) {
   const imported = new Map<string, GarminSessionData>();
   const health = new Map<string, DailyHealth>();
   let hevy = new Set<string>();
+  let deviceSessions: {
+    id: string;
+    startedAt: Date;
+    durationSec: number;
+    loggedOn: string;
+  }[] = [];
+  const deleted: string[] = [];
   let otherTypes = 0;
   let prefs = {
     importActivities: true,
@@ -69,6 +76,11 @@ function fakes(initial: Partial<GarminConnection> | null = {}) {
       return { id: 'T-other', met: 5 };
     },
     hevyDays: async () => hevy,
+    deviceSessionsBetween: async () => deviceSessions,
+    deleteDeviceSessions: async (_u, ids) => {
+      deleted.push(...ids);
+      deviceSessions = deviceSessions.filter((d) => !ids.includes(d.id));
+    },
     upsertImported: async (_u, id, d) => {
       const created = !imported.has(id);
       imported.set(id, d);
@@ -106,6 +118,8 @@ function fakes(initial: Partial<GarminConnection> | null = {}) {
     health,
     conn: () => conn,
     setHevy: (days: string[]) => (hevy = new Set(days)),
+    setDevice: (d: typeof deviceSessions) => (deviceSessions = d),
+    deleted,
     otherTypes: () => otherTypes,
   };
 }
@@ -209,6 +223,37 @@ describe('SyncGarminUseCase', () => {
     const r = await f.sync.execute(USER, NOW);
     expect(r).toMatchObject({ imported: 1, skipped: 1 });
     expect([...f.imported.keys()]).toEqual(['2']);
+  });
+
+  it('el mismo entreno que ya trajo Salud se queda solo el de Garmin', async () => {
+    const f = fakes();
+    f.setDevice([
+      // Mismo entreno visto por el iPhone (un minuto antes): se sustituye.
+      {
+        id: 'S1',
+        startedAt: new Date('2026-11-10T17:59:00Z'),
+        durationSec: 3500,
+        loggedOn: '2026-11-10',
+      },
+      // Otro entreno distinto ese día: se queda.
+      {
+        id: 'S2',
+        startedAt: new Date('2026-11-10T08:00:00Z'),
+        durationSec: 1800,
+        loggedOn: '2026-11-10',
+      },
+    ]);
+    f.client.activities.mockResolvedValue([
+      {
+        activityId: 7,
+        startTimeGMT: '2026-11-10 18:00:00',
+        duration: 3600,
+        activityType: { typeKey: 'strength_training' },
+      },
+    ]);
+    const r = await f.sync.execute(USER, NOW);
+    expect(r).toMatchObject({ imported: 1 });
+    expect(f.deleted).toEqual(['S1']);
   });
 
   it('pagina hasta agotar los entrenos', async () => {

@@ -94,6 +94,35 @@ export class PrismaBrioGarminRepository implements BrioGarminRepositoryPort {
     return new Set(rows.map((r) => toDay(r.loggedOn)));
   }
 
+  async deviceSessionsBetween(
+    userId: string,
+    from: Date,
+    to: Date,
+  ): Promise<
+    { id: string; startedAt: Date; durationSec: number; loggedOn: string }[]
+  > {
+    const rows = await this.prisma.brioActivitySession.findMany({
+      where: {
+        userId,
+        source: { in: ['HEALTHKIT', 'HEALTH_CONNECT'] },
+        startedAt: { gte: from, lte: to },
+      },
+      select: { id: true, startedAt: true, durationSec: true, loggedOn: true },
+    });
+    return rows.map((r) => ({ ...r, loggedOn: toDay(r.loggedOn) }));
+  }
+
+  async deleteDeviceSessions(userId: string, ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    await this.prisma.brioActivitySession.deleteMany({
+      where: {
+        userId,
+        id: { in: ids },
+        source: { in: ['HEALTHKIT', 'HEALTH_CONNECT'] },
+      },
+    });
+  }
+
   async upsertImported(
     userId: string,
     externalId: string,

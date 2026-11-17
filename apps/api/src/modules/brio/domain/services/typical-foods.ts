@@ -206,6 +206,22 @@ const POSTRE: FoodSection = {
     'Chocolate negro 70 %',
   ],
 };
+const PROTEINA: FoodSection = {
+  code: 'proteina',
+  label: 'Batidos y proteína',
+  icon: 'drink',
+  foods: [
+    'Batido de proteínas con agua',
+    'Batido de proteínas con leche',
+    'Batido de proteínas con plátano y leche',
+    'Bebida de proteínas (lista para tomar)',
+    'Proteína whey en polvo',
+    'Barrita de proteínas',
+    'Yogur proteico',
+    'Natillas proteicas',
+    'Bebida isotónica',
+  ],
+};
 const BEBIDA: FoodSection = {
   code: 'bebida',
   label: 'Bebida',
@@ -256,12 +272,14 @@ export const MEAL_SECTIONS: Record<MealType, readonly FoodSection[]> = {
       ],
     },
     LACTEOS,
+    PROTEINA,
     FRUTA,
     HUEVOS,
   ],
   SNACK: [
     BOCATAS,
     CAFE,
+    PROTEINA,
     FRUTA,
     LACTEOS,
     BOLLERIA,
@@ -364,6 +382,7 @@ export const MEAL_SECTIONS: Record<MealType, readonly FoodSection[]> = {
       ],
     },
     FRUTA,
+    PROTEINA,
     POSTRE,
     BEBIDA,
   ],

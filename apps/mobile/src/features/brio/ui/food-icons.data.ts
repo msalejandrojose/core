@@ -57,7 +57,9 @@ const KEYWORDS: [RegExp, FoodIconKey][] = [
   [/arroz con leche|flan|natillas|postre|helado/i, 'flan'],
   // Pasta con atún, fideuá…: manda la pasta, no lo que lleva.
   [/^(pasta|espagu|macarr|fideu)/i, 'pasta'],
-  [/cerveza|vino|refresco|zumo/i, 'drink'],
+  [/cerveza|vino|refresco|zumo|batido|bebida|isot[oó]nica/i, 'drink'],
+  [/whey|prote[ií]na en polvo/i, 'milk'],
+  [/barrita/i, 'nuts'],
   [/croissant|napolitana|magdalena|bizcocho|churro|porra|galleta|boller|tortitas|ensaimada|palmera/i, 'croissant'],
   [/tostada/i, 'toast'],
   [/bocadillo|s[aá]ndwich|bocata|empanad|wrap|quesadilla/i, 'sandwich'],
