@@ -125,7 +125,11 @@ Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
    para leer el código de barras de los alimentos.» (sin ella iOS cierra la
    app al abrir la cámara).
 
-9. **Hablar al coach** (mantener el botón central de la barra;
+9. **Nombre en los avisos del sistema**: en `ios/App/App/Info.plist`,
+   `CFBundleName` = `Brío` (por defecto es `$(PRODUCT_NAME)` = «App», y avisos
+   como el de iniciar sesión con Google dicen «App quiere usar…»).
+
+10. **Hablar al coach** (mantener el botón central de la barra;
    `@capacitor-community/speech-recognition`). En `ios/App/App/Info.plist`:
    - `NSMicrophoneUsageDescription` = «Brío usa el micrófono para que le cuentes
      al coach lo que has comido o entrenado.»
@@ -144,8 +148,11 @@ probar cambios de web desde cualquier sitio, la app puede cargar la web del Mac:
 2. En el Mac, deja corriendo el servidor de la app en esa IP, apuntando a la API
    por ZeroTier:
    ```bash
-   cd apps/mobile && VITE_API_URL=http://<IP-ZeroTier>:3100 npx vite --host <IP-ZeroTier> --port 4410
+   cd apps/mobile && npx vite --mode production --host <IP-ZeroTier> --port 4410
    ```
+   `--mode production` hace que lea `.env.production.local` (la API por ZeroTier
+   y los client IDs de Google): en modo desarrollo no los tiene y el login con
+   Google no arranca.
    y añade `http://<IP-ZeroTier>:4410` a `CORS_ORIGINS` de la API.
 3. Instala la app una vez en casa (Forja o Xcode). A partir de ahí, con ZeroTier
    activo en el iPhone y el Mac encendido, cada cambio de web se ve al volver a
