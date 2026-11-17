@@ -913,7 +913,7 @@ button.workout__set-n.is-warmup {
   padding: 0 14px;
   border: 0;
   border-radius: var(--brio-radius-pill);
-  background: var(--brio-fill, rgba(120, 120, 128, 0.12));
+  background: var(--brio-surface);
   color: var(--brio-ink);
   font: inherit;
   font-size: 16px;
@@ -924,4 +924,54 @@ button.workout__set-n.is-warmup {
   margin: 0;
   color: var(--brio-ink-muted);
   font-size: 14px;
+}
+
+/* «Cuándo»: últimos días a un toque y el calendario para lo de antes. */
+.daypick {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--brio-space-xl));
+  padding: 2px var(--brio-space-xl);
+  scrollbar-width: none;
+}
+.daypick::-webkit-scrollbar {
+  display: none;
+}
+.daypick__chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.daypick__other {
+  position: relative;
+  overflow: hidden;
+}
+.daypick__other.is-on {
+  background: var(--brio-tint);
+  border-color: var(--brio-tint);
+  color: var(--brio-on-tint);
+}
+/* El input nativo, invisible encima del chip: el toque abre el calendario. */
+.daypick__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  cursor: pointer;
+}
+.weight__day {
+  margin: 0 0 var(--brio-space-m);
+}
+.workout__time {
+  font: inherit;
+  font-size: 16px;
+  color: var(--brio-ink);
+  background: var(--brio-surface);
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 10px;
 }

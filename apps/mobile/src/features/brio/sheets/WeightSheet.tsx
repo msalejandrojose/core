@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { IonModal } from '@ionic/react';
 import { isApiError, brioApi } from '../api';
-import { formatNumber, formatWeight } from '../format';
+import { formatNumber, formatWeight, todayIn } from '../format';
 import { useBrioStore } from '../brio.store';
 import { tapSuccess } from '../haptics';
 import { SheetBar } from '../ui/kit';
 import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
+import { DayPicker } from './DayPicker';
+import { dayChipLabel } from './day-pick';
 import './sheets.css';
 
 interface WeightSheetProps {
@@ -26,10 +28,16 @@ export function WeightSheet({ isOpen, onClose }: WeightSheetProps) {
   const last = profile?.currentWeightKg ?? null;
   const [weight, setWeight] = useState(last ?? 75);
   const [saving, setSaving] = useState(false);
+  const today = todayIn(profile?.timezone ?? 'Europe/Madrid');
+  /** Día de la pesada: el que estás viendo, o el que elijas. */
+  const [on, setOn] = useState(day);
 
   useEffect(() => {
     if (isOpen) setWeight(last ?? 75);
   }, [isOpen, last]);
+  useEffect(() => {
+    if (isOpen) setOn(day > today ? today : day);
+  }, [isOpen, day, today]);
 
   const step = (delta: number) =>
     setWeight((w) => Math.min(400, Math.max(25, Math.round((w + delta) * 10) / 10)));
@@ -37,11 +45,13 @@ export function WeightSheet({ isOpen, onClose }: WeightSheetProps) {
   async function save() {
     setSaving(true);
     try {
-      await brioApi.logWeight({ weightKg: weight, measuredOn: day });
+      await brioApi.logWeight({ weightKg: weight, measuredOn: on });
       await Promise.all([loadProfile(), refreshDay()]);
       void tapSuccess();
       // Sin "Deshacer": la API no borra pesadas y otra del mismo día la sustituye.
-      snackbar.show(`Peso guardado · ${formatWeight(weight)}`);
+      snackbar.show(
+        `Peso guardado · ${formatWeight(weight)}${on === today ? '' : ` · ${dayChipLabel(on, today).toLowerCase()}`}`,
+      );
       onClose();
     } catch (e) {
       toast.error('No se pudo guardar el peso', isApiError(e) ? e.message : undefined);
@@ -60,7 +70,10 @@ export function WeightSheet({ isOpen, onClose }: WeightSheetProps) {
       handle
     >
       <div className="rk-sheet">
-        <SheetBar title="Peso de hoy" onCancel={onClose} />
+        <SheetBar title={on === today ? 'Peso de hoy' : 'Peso'} onCancel={onClose} />
+        <div className="weight__day">
+          <DayPicker value={on} today={today} onChange={setOn} label="Día de la pesada" />
+        </div>
         <div className="weight__card">
           <button type="button" className="weight__step" aria-label="Restar 100 gramos" onClick={() => step(-0.1)}>
             −

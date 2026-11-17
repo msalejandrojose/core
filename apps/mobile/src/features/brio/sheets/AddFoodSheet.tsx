@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { IonContent, IonModal } from '@ionic/react';
 import { SWIPE_TO_CLOSE } from './swipe';
 import { brioApi, type Food, type FoodSection, type HabitItem, type MealType } from '../api';
-import { MEAL_ORDER, formatKcal, joinNames, mealLabel } from '../format';
+import { MEAL_ORDER, formatKcal, joinNames, mealLabel, todayIn } from '../format';
 import { useBrioStore } from '../brio.store';
 import { useHabitsStore } from '../habits.store';
 import { deleteEntries, logItems, type RelogItem } from '../relog';
@@ -16,6 +16,8 @@ import { Icon, SearchField, Segmented, SectionHeader, SheetBar } from '../ui/kit
 import { PATHS } from '../ui/paths';
 import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
+import { DayPicker } from './DayPicker';
+import { dayChipLabel } from './day-pick';
 import './sheets.css';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -98,6 +100,7 @@ interface AddFoodSheetProps {
  */
 export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetProps) {
   const day = useBrioStore((s) => s.day);
+  const timezone = useBrioStore((s) => s.profile?.timezone ?? 'Europe/Madrid');
   const summary = useBrioStore((s) => s.summary);
   const refreshDay = useBrioStore((s) => s.refreshDay);
   const habitsByMeal = useHabitsStore((s) => s.byMeal);
@@ -118,6 +121,9 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const [unknownBarcode, setUnknownBarcode] = useState<string | null>(null);
   const [typical, setTypical] = useState<Partial<Record<MealType, FoodSection[]>>>({});
   const [section, setSection] = useState<string | null>(null);
+  const realToday = todayIn(timezone);
+  /** Día en que se apunta: el que estás viendo, o el que elijas. */
+  const [on, setOn] = useState(day);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -129,6 +135,10 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
     setQuickKcal('');
     setSection(null);
   }, [isOpen, initialMealType]);
+
+  useEffect(() => {
+    if (isOpen) setOn(day > realToday ? realToday : day);
+  }, [isOpen, day, realToday]);
 
   useEffect(() => setSection(null), [mealType]);
 
@@ -164,7 +174,8 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const items = Object.values(picked).map((i) => scaleItem(i, factors[i.key] ?? 1));
   const total = items.reduce((s, i) => s + i.kcal, 0);
   const setFactor = (key: string, f: number) => setFactors((x) => ({ ...x, [key]: clampFactor(f) }));
-  const remaining = summary?.totals.kcalRemaining ?? null;
+  // Lo que queda solo se sabe del día que está cargado.
+  const remaining = on === day ? (summary?.totals.kcalRemaining ?? null) : null;
   /** Kcal de una fila: con su ración multiplicada si ya está elegida. */
   const kcalOf = (it: { key: string; kcal: number } & Picked) =>
     picked[it.key] ? scaleItem(it, factors[it.key] ?? 1).kcal : it.kcal;
@@ -244,12 +255,13 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
     if (items.length === 0) return;
     setSaving(true);
     try {
-      const created = await logItems(items, mealType, day);
+      const created = await logItems(items, mealType, on);
       await refreshDay();
       invalidateHabits();
       void tapSuccess();
       const kcal = created.reduce((s, e) => s + e.kcal, 0);
-      snackbar.undo(`${MEAL_LOGGED[mealType]} · ${formatKcal(kcal)} kcal`, async () => {
+      snackbar.undo(
+        `${MEAL_LOGGED[mealType]}${on === realToday ? '' : ` · ${dayChipLabel(on, realToday).toLowerCase()}`} · ${formatKcal(kcal)} kcal`, async () => {
         await deleteEntries(created.map((c) => c.id));
         await refreshDay();
         invalidateHabits();
@@ -273,7 +285,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const kcalLabel = items.length
     ? `${formatKcal(total)} kcal${remaining !== null ? ` · quedarán ${formatKcal(remaining - total)}` : ''}`
     : remaining !== null
-      ? `Te quedan ${formatKcal(remaining)} kcal hoy`
+      ? `Te quedan ${formatKcal(remaining)} kcal${on === realToday ? ' hoy' : ''}`
       : '';
 
   const combos = useMemo(() => habits?.combos ?? [], [habits]);
@@ -300,6 +312,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
               options={MEAL_ORDER.map((t) => ({ value: t, label: mealLabel(t) }))}
             />
             <span className="addfood__hint">{MEAL_HINT[mealType]}</span>
+            <DayPicker value={on} today={realToday} onChange={setOn} label="Día de la comida" />
           </div>
 
           <div className="rk-search-row">
