@@ -11,8 +11,12 @@ export const BRIO_GARMIN_REPOSITORY = Symbol('BRIO_GARMIN_REPOSITORY');
 
 /** Fallo al hablar con Garmin; `status` 0 = no hubo respuesta. */
 export class GarminApiError extends Error {
-  constructor(readonly status: number) {
-    super(`Garmin respondió ${status}`);
+  constructor(
+    readonly status: number,
+    /** Lo que contestó Garmin (recortado y sin tokens), para diagnosticar. */
+    readonly detail?: string,
+  ) {
+    super(`Garmin respondió ${status}${detail ? `: ${detail}` : ''}`);
   }
 }
 

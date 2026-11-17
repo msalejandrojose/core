@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { dayInTimezone, shiftDay } from '../../domain/services/calendar';
 import { sessionKcal } from '../../domain/services/energy';
@@ -248,6 +249,8 @@ export class SyncGarminUseCase {
 /** Guarda la clave personal (cifrada) tras comprobarla contra Garmin, y hace la primera importación. */
 @Injectable()
 export class ConnectGarminUseCase {
+  private readonly logger = new Logger(ConnectGarminUseCase.name);
+
   constructor(
     @Inject(BRIO_GARMIN_REPOSITORY)
     private readonly repo: BrioGarminRepositoryPort,
@@ -265,6 +268,8 @@ export class ConnectGarminUseCase {
     try {
       await this.client.accessToken(key);
     } catch (e) {
+      if (e instanceof GarminApiError)
+        this.logger.warn(`Garmin rechazó la clave: ${e.message}`);
       throw asHttpError(e);
     }
     await this.repo.saveConnection(userId, this.cipher.encrypt(key));
