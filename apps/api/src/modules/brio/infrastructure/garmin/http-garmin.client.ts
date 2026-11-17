@@ -13,6 +13,13 @@ import type {
 const BASE = 'https://personal.connectapi.garmin.com';
 const TIMEOUT_MS = 20_000;
 
+/** Recorta la respuesta de Garmin y tapa cualquier cosa con pinta de token. */
+const redact = (body: string) =>
+  body
+    .replace(/[A-Za-z0-9._~+/=-]{24,}/g, '<oculto>')
+    .replace(/\s+/g, ' ')
+    .slice(0, 300);
+
 const asArray = <T>(value: unknown): T[] =>
   Array.isArray(value) ? (value as T[]) : [];
 
@@ -23,18 +30,22 @@ export class HttpGarminClient implements GarminClientPort {
     path: string,
     authorization: string,
     method = 'GET',
+    accept = 'application/json',
   ): Promise<T> {
     let res: Response;
     try {
       res = await fetch(`${BASE}${path}`, {
         method,
-        headers: { authorization, accept: 'application/json' },
+        headers: { authorization, accept },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch {
       throw new GarminApiError(0);
     }
-    if (!res.ok) throw new GarminApiError(res.status);
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new GarminApiError(res.status, redact(body));
+    }
     // Un día sin datos puede venir como 204 sin cuerpo.
     const text = await res.text();
     if (!text) return undefined as T;
@@ -55,12 +66,18 @@ export class HttpGarminClient implements GarminClientPort {
       '/personalapitoken-service/personal-api/personal-api-key/token',
       `ApiKey ${apiKey}`,
       'POST',
+      // El token llega como texto plano: pedir solo JSON da 406 (Not Acceptable).
+      'application/json, text/plain, */*',
     );
     const token =
       typeof r === 'string'
         ? r.trim()
         : (r?.access_token ?? r?.accessToken ?? r?.token);
-    if (!token) throw new GarminApiError(502);
+    if (!token)
+      throw new GarminApiError(
+        502,
+        `respuesta sin token: ${typeof r === 'object' && r ? `campos ${Object.keys(r).join(', ')}` : typeof r}`,
+      );
     return token;
   }
 
