@@ -122,32 +122,47 @@ export function TodayWorkoutCard({
   day,
   onStart,
   doneMinutes,
+  doneCount = 0,
 }: {
   day: PlanDay | null;
   onStart: () => void;
   doneMinutes: number;
+  /** Entrenos registrados hoy (puede haber varios: fútbol y gimnasio, p. ej.). */
+  doneCount?: number;
 }) {
   const planned: PlannedSession | null = day?.planned ?? null;
   if (!day || (!planned && !day.actual)) return null;
 
   if (day.status === 'DONE' || day.actual) {
     const title = day.actual?.title ?? planned?.title ?? 'Entreno';
+    const many = doneCount > 1;
     return (
-      <Link to={`/tabs/plan/sesion/${day.day}`} className="tv-card tv-workout is-done">
-        <span className="tv-workout__check" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24">
-            <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
-        <span className="rk-row__main">
-          <span className="tv-workout__kicker">Entreno de hoy hecho</span>
-          <span className="tv-workout__title">{title}</span>
-          <span className="tv-workout__meta">
-            {day.actual ? formatDuration(day.actual.durationSec) : doneMinutes ? `${doneMinutes} min` : 'Buen trabajo'}
+      <section className="tv-card tv-workout is-done is-stack">
+        <Link to={`/tabs/plan/sesion/${day.day}`} className="tv-workout__done">
+          <span className="tv-workout__check" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24">
+              <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </span>
-        </span>
-        <Chevron />
-      </Link>
+          <span className="rk-row__main">
+            <span className="tv-workout__kicker">{many ? `${doneCount} entrenos hoy` : 'Entreno de hoy hecho'}</span>
+            <span className="tv-workout__title">{title}</span>
+            <span className="tv-workout__meta">
+              {many
+                ? `${doneMinutes} min en total`
+                : day.actual
+                  ? formatDuration(day.actual.durationSec)
+                  : doneMinutes
+                    ? `${doneMinutes} min`
+                    : 'Buen trabajo'}
+            </span>
+          </span>
+          <Chevron />
+        </Link>
+        <button type="button" className="tv-workout__another" onClick={onStart}>
+          + Añadir otro entreno
+        </button>
+      </section>
     );
   }
 

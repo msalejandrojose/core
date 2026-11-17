@@ -43,6 +43,22 @@ function useMoment(): Moment | null {
   });
 }
 
+/** ¿Hay una hoja (IonModal) abierta? Entonces la píldora no debe flotar encima. */
+function useModalOpen(): boolean {
+  const [open, setOpen] = useState(0);
+  useEffect(() => {
+    const up = () => setOpen((n) => n + 1);
+    const down = () => setOpen((n) => Math.max(0, n - 1));
+    document.addEventListener('ionModalWillPresent', up);
+    document.addEventListener('ionModalWillDismiss', down);
+    return () => {
+      document.removeEventListener('ionModalWillPresent', up);
+      document.removeEventListener('ionModalWillDismiss', down);
+    };
+  }, []);
+  return open > 0;
+}
+
 function MomentPill({ moment }: { moment: Moment }) {
   const open = useRegisterStore((s) => s.open);
   const icon = moment.kind === 'workout' ? PATHS.run : moment.kind === 'weigh' ? PATHS.scale : PATHS.fork;
@@ -239,7 +255,8 @@ export function DockOverlay({ hidden }: { hidden: boolean }) {
   const close = useDockStore((s) => s.close);
   const { pathname } = useLocation();
   const moment = useMoment();
-  const showMoment = !hidden && mode === 'idle' && ROOTS.includes(pathname) && moment;
+  const modalOpen = useModalOpen();
+  const showMoment = !hidden && !modalOpen && mode === 'idle' && ROOTS.includes(pathname) && moment;
 
   // Cambiar de pantalla cierra el campo del coach.
   useEffect(() => {

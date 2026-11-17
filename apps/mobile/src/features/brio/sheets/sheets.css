@@ -942,3 +942,22 @@ button.workout__set-n.is-warmup {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+.workout__search {
+  flex: 1 0 100%;
+  min-height: var(--brio-control);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-fill, rgba(120, 120, 128, 0.12));
+  color: var(--brio-ink);
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+}
+.workout__none {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--brio-ink-muted);
+  font-size: 14px;
+}

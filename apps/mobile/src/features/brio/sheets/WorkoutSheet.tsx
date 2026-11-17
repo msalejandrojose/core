@@ -28,7 +28,7 @@ const TILES = [
   { id: 'bici', label: 'Bici', icon: PATHS.bike, code: 'cycling' },
   { id: 'caminar', label: 'Caminar', icon: PATHS.walk, code: 'walking' },
   { id: 'clase', label: 'Clase', icon: PATHS.dance, code: 'hiit' },
-  { id: 'otro', label: 'Otro', icon: PATHS.plus, code: null },
+  { id: 'otro', label: 'Deportes', icon: PATHS.plus, code: null },
 ] as const;
 
 type TileId = (typeof TILES)[number]['id'];
@@ -90,7 +90,12 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
   }, [isOpen]);
 
   const tileCodes = TILES.map((t) => t.code).filter(Boolean);
-  const others = (types ?? []).filter((t) => !tileCodes.includes(t.code as never));
+  const [sportQuery, setSportQuery] = useState('');
+  const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const others = (types ?? [])
+    .filter((t) => !tileCodes.includes(t.code as never))
+    .filter((t) => !sportQuery.trim() || norm(t.name).includes(norm(sportQuery.trim())))
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   const selected = useMemo(() => {
     if (!types) return null;
     if (tile === 'otro') return types.find((t) => t.id === otherId) ?? null;
@@ -195,7 +200,16 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
               ))}
             </div>
             {tile === 'otro' ? (
-              <div className="workout__others" role="group" aria-label="Otra actividad">
+              <div className="workout__others" role="group" aria-label="Deporte o actividad">
+                <input
+                  className="workout__search"
+                  type="search"
+                  value={sportQuery}
+                  placeholder="Busca: fútbol 7, pádel, tenis…"
+                  aria-label="Buscar deporte"
+                  onChange={(e) => setSportQuery(e.target.value)}
+                />
+                {others.length === 0 ? <p className="workout__none">No está en la lista. Elige el más parecido.</p> : null}
                 {others.map((t) => (
                   <button
                     key={t.id}
