@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@capacitor-community/speech-recognition@7.0.1':
+    hash: 3edf76732b12feb0c981c391caf2feb1a051a838f6b8223ce0bed7507433e0aa
+    path: patches/@capacitor-community__speech-recognition@7.0.1.patch
+
 importers:
 
   .:
@@ -359,7 +364,7 @@ importers:
     dependencies:
       '@capacitor-community/speech-recognition':
         specifier: 7.0.1
-        version: 7.0.1(@capacitor/core@8.6.2)
+        version: 7.0.1(patch_hash=3edf76732b12feb0c981c391caf2feb1a051a838f6b8223ce0bed7507433e0aa)(@capacitor/core@8.6.2)
       '@capacitor/android':
         specifier: ^8.6.2
         version: 8.6.2(@capacitor/core@8.6.2)
@@ -11747,7 +11752,7 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@capacitor-community/speech-recognition@7.0.1(@capacitor/core@8.6.2)':
+  '@capacitor-community/speech-recognition@7.0.1(patch_hash=3edf76732b12feb0c981c391caf2feb1a051a838f6b8223ce0bed7507433e0aa)(@capacitor/core@8.6.2)':
     dependencies:
       '@capacitor/core': 8.6.2
 
