@@ -12,6 +12,7 @@ import { Icon } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { useDockStore } from './dock.store';
 import { currentMoment, type Moment } from './moment';
+import { useKeyboardLayout } from './keyboard';
 import './dock.css';
 
 /** Pantallas raíz de las pestañas: solo en ellas flota la píldora del momento. */
@@ -291,6 +292,7 @@ export function DockOverlay({ hidden }: { hidden: boolean }) {
   const mode = useDockStore((s) => s.mode);
   const close = useDockStore((s) => s.close);
   const { pathname } = useLocation();
+  useKeyboardLayout();
   const moment = useMoment();
   const modalOpen = useModalOpen();
   const history = useHistory();
