@@ -20,6 +20,8 @@ import {
 import { RoutinePick } from '../routines/RoutinePick';
 import { ROUTINE_KINDS, workoutDraftFrom } from '../routines/routine-draft';
 import type { Routine } from '../routines/routines.api';
+import { DayPicker } from './DayPicker';
+import { dayChipLabel, zonedIso } from './day-pick';
 import './sheets.css';
 
 /** Si aún no tienes historial, estas son las cinco de arriba. */
@@ -82,6 +84,9 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
   const [saving, setSaving] = useState(false);
   /** Rutina elegida en «Tus rutinas» (se enlaza al guardar). */
   const [routineId, setRoutineId] = useState<string | null>(null);
+  /** Cuándo fue: día y hora de inicio (vacía = ahora si es hoy). */
+  const [on, setOn] = useState(day);
+  const [at, setAt] = useState('');
 
   useEffect(() => {
     if (isOpen && types === null) {
@@ -100,6 +105,7 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
       setExercises([]);
       setCardio(EMPTY_CARDIO);
       setRoutineId(null);
+      setAt('');
     }
   }, [isOpen]);
 
@@ -145,7 +151,13 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
       ? Math.round(((selected.met * 3.5 * weight) / 200) * minutes * EFFORT_FACTOR[effort] / 5) * 5
       : null;
   const timezone = profile?.timezone ?? 'Europe/Madrid';
-  const isToday = day === todayIn(timezone);
+  const today = todayIn(timezone);
+  const isToday = on === today;
+  useEffect(() => {
+    if (isOpen) setOn(day > today ? today : day);
+  }, [isOpen, day, today]);
+  /** Hora de inicio: la que pongas; si no, ahora (hoy) o las 18:00 (otro día). */
+  const startTime = at || (isToday ? nowIn(timezone).padStart(5, '0') : '18:00');
 
   /** Rellena el registro con la rutina: tipo, duración y, en gimnasio, sus series. */
   function logHere(r: Routine) {
@@ -164,8 +176,8 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
       const session = await brioApi.logActivity({
         activityTypeId: selected.id,
         ...(routineId ? { routineId } : {}),
-        // Hoy: ahora. Otro día: mediodía de ese día, para que el huso no lo mueva.
-        startedAt: isToday ? new Date().toISOString() : new Date(`${day}T12:00:00.000Z`).toISOString(),
+        // Hoy sin tocar la hora: ahora. Si no, esa hora de ese día en tu zona.
+        startedAt: isToday && !at ? new Date().toISOString() : zonedIso(on, startTime, timezone),
         durationSec: minutes * 60,
         effort,
         ...(rpe !== null ? { rpe } : {}),
@@ -174,7 +186,8 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
       });
       await refreshDay();
       void tapSuccess();
-      snackbar.undo(`Entreno registrado · ${formatKcal(session.kcalBurned)} kcal`, async () => {
+      snackbar.undo(
+        `Entreno registrado${isToday ? '' : ` · ${dayChipLabel(on, today).toLowerCase()}`} · ${formatKcal(session.kcalBurned)} kcal`, async () => {
         try {
           await brioApi.deleteActivity(session.id);
           await refreshDay();
@@ -273,6 +286,11 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
             ) : null}
           </section>
 
+          <section className="rk-section" aria-labelledby="cuando">
+            <SectionHeader id="cuando">Cuándo</SectionHeader>
+            <DayPicker value={on} today={today} onChange={setOn} label="Día del entreno" />
+          </section>
+
           <div className="rk-list">
             <div className="rk-row workout__row">
               <span className="rk-row__main rk-row__title">Duración</span>
@@ -284,11 +302,15 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
                 onPlus={() => setMinutes((m) => Math.min(300, m + 5))}
               />
             </div>
-            <div className="rk-row">
-              <span className="rk-row__main rk-row__title">Cuándo</span>
-              <span className="rk-row__value workout__when">
-                {isToday ? `Hoy, ${nowIn(timezone)}` : 'Ese día, 12:00'}
-              </span>
+            <div className="rk-row workout__row">
+              <span className="rk-row__main rk-row__title">Empezó a las</span>
+              <input
+                type="time"
+                className="workout__time"
+                aria-label="Hora de inicio"
+                value={startTime}
+                onChange={(e) => setAt(e.target.value)}
+              />
             </div>
           </div>
 
