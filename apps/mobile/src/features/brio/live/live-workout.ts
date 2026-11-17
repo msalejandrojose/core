@@ -55,6 +55,8 @@ export interface LiveWorkout {
   /** Fin del descanso en curso (ms) y cuánto dura, para la barra. */
   restUntil: number | null;
   restFor: number | null;
+  /** Ejercicio en el que estás (lo usa la Live Activity); si falta, el primero pendiente. */
+  focus?: number;
 }
 
 const fmt = (n: number) => String(n).replace('.', ',');
@@ -148,6 +150,8 @@ export function toggleSet(w: LiveWorkout, i: number, k: number, now = Date.now()
   const rest = done && closesRound(groups, i) && ex.restSec ? ex.restSec : null;
   return {
     ...next,
+    // Marcar una serie te sitúa en ese ejercicio.
+    focus: done ? i : w.focus,
     restUntil: rest ? now + rest * 1000 : done ? null : w.restUntil,
     restFor: rest ?? (done ? null : w.restFor),
   };

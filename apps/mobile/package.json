@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "cap:sync": "cap sync",
     "cap:add:ios": "cap add ios",
+    "ios:live-activity": "ruby scripts/ios-live-activity.rb",
     "cap:add:android": "cap add android",
     "assets:generate": "capacitor-assets generate --iconBackgroundColor '#1c1c1e' --iconBackgroundColorDark '#1c1c1e' --splashBackgroundColor '#f2f2f7' --splashBackgroundColorDark '#1c1c1e'"
   },

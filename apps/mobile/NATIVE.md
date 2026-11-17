@@ -138,6 +138,34 @@ Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
    Sin las dos, iOS cierra la app al empezar a escuchar. Después, `cap sync ios`
    para que CocoaPods instale el plugin.
 
+## iOS: Live Activity del entreno en vivo
+
+La pantalla bloqueada y la Dynamic Island enseñan el entreno de gimnasio en
+curso (ejercicio, serie, peso, repes y descanso) con botones que funcionan sin
+desbloquear: ✓ serie hecha, ±2,5 kg, ±1 repe, ejercicio anterior/siguiente y
+saltar descanso. Requiere iOS 17 (la app sigue funcionando en 15; solo no sale).
+
+Como `ios/` no se commitea, el código nativo vive en `native/ios/` y un script
+lo engancha al proyecto de Xcode. Tras `cap add ios` (o en un proyecto que no
+lo tenga), una vez:
+
+```bash
+pnpm --filter @core/mobile ios:live-activity
+```
+
+Hace, de forma idempotente: crea el target `BrioWidgets` (extensión WidgetKit,
+bundle `es.aj.brio.widgets`), añade `native/ios/Shared` (modelo e intents) a la
+app y a la extensión, `native/ios/App` (plugin y controlador) a la app, pone
+`NSSupportsLiveActivities` en el Info.plist y apunta Main.storyboard a
+`BrioBridgeViewController`, que registra el plugin `BrioLiveActivity`.
+
+Cómo funciona: la web manda el estado completo al plugin (`useLiveActivitySync`,
+montado en `TabsShell`); los botones son `LiveActivityIntent`, que iOS ejecuta
+en el proceso de la app aunque esté bloqueada: actualizan la actividad y dejan
+el estado pendiente, que la web recoge (`takeChanges`) al instante si está viva
+o al volver a la app. Con la cuenta gratuita de Apple funciona igual (no usa
+App Groups ni push).
+
 ## App conectada al Mac por ZeroTier (probar sin reinstalar)
 
 Con la cuenta gratuita, Xcode solo instala por cable o en la misma Wi-Fi. Para
