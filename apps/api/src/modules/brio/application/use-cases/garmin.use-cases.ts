@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { dayInTimezone, shiftDay } from '../../domain/services/calendar';
 import { sessionKcal } from '../../domain/services/energy';
+import { overlaps } from '../../domain/services/device-health';
 import {
   STRENGTH_TYPE_CODE,
   activityFrom,
@@ -175,10 +176,31 @@ export class SyncGarminUseCase {
     }
     if (!activities.length) return { imported: 0, updated: 0, skipped: 0 };
 
-    const [weight, hevyDays] = await Promise.all([
+    const parsed = activities
+      .map((raw) => ({ raw, a: activityFrom(raw) }))
+      .filter(
+        (
+          x,
+        ): x is {
+          raw: GarminActivity;
+          a: NonNullable<ReturnType<typeof activityFrom>>;
+        } => !!x.a,
+      );
+    const starts = parsed.map((x) => x.a.startedAt.getTime());
+    const [weight, hevyDays, deviceSessions] = await Promise.all([
       this.body.latestWeightKg(userId),
       this.repo.hevyDays(userId, from),
+      starts.length
+        ? this.repo.deviceSessionsBetween(
+            userId,
+            new Date(Math.min(...starts) - 24 * 3600 * 1000),
+            new Date(Math.max(...starts) + 24 * 3600 * 1000),
+          )
+        : Promise.resolve([]),
     ]);
+    // El mismo entreno que ya trajo el móvil (Salud) desde Garmin Connect u
+    // otra app: se queda el de Garmin, que trae pulso, zonas y desnivel.
+    const replaced = new Set<string>();
     const types = new Map<string, { id: string; met: number }>();
     const typeFor = async (code: string | null) => {
       const key = code ?? '';
@@ -193,15 +215,26 @@ export class SyncGarminUseCase {
     let imported = 0;
     let updated = 0;
     let skipped = 0;
-    for (const raw of activities) {
-      const a = activityFrom(raw);
-      if (!a) continue;
+    for (const { raw, a } of parsed) {
       const code = typeCodeFor(raw);
       const loggedOn = dayInTimezone(a.startedAt, timezone);
       // La fuerza con series la trae Hevy; el mismo entreno desde el reloj la duplicaría.
       if (code === STRENGTH_TYPE_CODE && hevyDays.has(loggedOn)) {
         skipped += 1;
         continue;
+      }
+      const twins = deviceSessions.filter(
+        (d) => !replaced.has(d.id) && overlaps(d, a),
+      );
+      if (twins.length) {
+        await this.repo.deleteDeviceSessions(
+          userId,
+          twins.map((d) => d.id),
+        );
+        for (const d of twins) {
+          replaced.add(d.id);
+          days.add(d.loggedOn);
+        }
       }
       const type = await typeFor(code);
       const { externalId, kcal, ...fields } = a;

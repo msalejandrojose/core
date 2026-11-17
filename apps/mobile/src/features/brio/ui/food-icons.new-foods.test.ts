@@ -3,6 +3,15 @@ import { iconForFood } from './food-icons.data';
 
 /** Platos añadidos al catálogo el 16/11/2026: ninguno debe salir con el plato genérico. */
 const NEW_FOODS = [
+  "Batido de proteínas con agua",
+  "Batido de proteínas con leche",
+  "Batido de proteínas con plátano y leche",
+  "Bebida de proteínas (lista para tomar)",
+  "Proteína whey en polvo",
+  "Barrita de proteínas",
+  "Yogur proteico",
+  "Natillas proteicas",
+  "Bebida isotónica",
   "Pera",
   "Mandarina",
   "Uvas",

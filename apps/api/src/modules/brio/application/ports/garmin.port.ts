@@ -82,6 +82,16 @@ export interface BrioGarminRepositoryPort {
   ensureOtherType(userId: string): Promise<{ id: string; met: number }>;
   /** Días (YYYY-MM-DD) con entrenos traídos de Hevy: ahí Garmin no añade fuerza. */
   hevyDays(userId: string, from: string): Promise<Set<string>>;
+  /** Entrenos que trajo el móvil (Salud / Health Connect) en ese intervalo. */
+  deviceSessionsBetween(
+    userId: string,
+    from: Date,
+    to: Date,
+  ): Promise<
+    { id: string; startedAt: Date; durationSec: number; loggedOn: string }[]
+  >;
+  /** Borra esas sesiones del móvil (Garmin trae el mismo entreno con más datos). */
+  deleteDeviceSessions(userId: string, ids: string[]): Promise<void>;
 
   upsertImported(
     userId: string,
