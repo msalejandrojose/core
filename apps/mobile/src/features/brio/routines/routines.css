@@ -293,3 +293,20 @@
   color: var(--brio-tint);
   font-weight: 600;
 }
+
+/* Entreno libre en el gym (sin rutina): abre el entreno en directo vacío. */
+.routine-pick__free {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--brio-tint) 35%, transparent);
+  border-radius: var(--brio-radius-l);
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+  font: inherit;
+  text-align: left;
+}
+.routine-pick__free .routine-pick__meta {
+  color: var(--brio-ink-muted);
+}

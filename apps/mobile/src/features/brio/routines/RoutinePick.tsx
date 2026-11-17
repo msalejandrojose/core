@@ -4,7 +4,7 @@ import { toast } from '@/lib/toast';
 import { useBrioStore } from '../brio.store';
 import { MUSCLE_NAME } from '../performance/labels';
 import { SectionHeader } from '../ui/kit';
-import { startFromRoutine } from '../live/live-workout';
+import { emptyWorkout, startFromRoutine } from '../live/live-workout';
 import { previousSetsApi } from '../live/live.api';
 import { useLiveStore } from '../live/live.store';
 import { kindLabel, routineSummary } from './routine-draft';
@@ -58,6 +58,13 @@ export function RoutinePick({
     }
   }
 
+  /** Gimnasio sin rutina: se abre el entreno en directo vacío y se añaden ejercicios. */
+  function trainFree() {
+    if (!live) startLive(emptyWorkout());
+    onDone();
+    history.push('/tabs/today/entreno');
+  }
+
   async function trainInHevy(r: Routine) {
     setBusy(true);
     try {
@@ -101,6 +108,10 @@ export function RoutinePick({
   return (
     <section className="rk-section" aria-labelledby="rutinas">
       <SectionHeader id="rutinas">Tus rutinas</SectionHeader>
+      <button type="button" className="routine-pick__free" onClick={trainFree}>
+        <span className="routine-pick__name">{live ? 'Seguir con el entreno en curso' : 'Empezar entreno libre en el gym'}</span>
+        <span className="routine-pick__meta">Serie a serie con descansos; añades los ejercicios sobre la marcha</span>
+      </button>
       {!routines.length ? (
         <p className="rk-note">
           Guarda los entrenos que repites para elegirlos aquí.{' '}
