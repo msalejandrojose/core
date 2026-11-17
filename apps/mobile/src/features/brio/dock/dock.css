@@ -381,3 +381,11 @@
     animation-duration: 0.01s;
   }
 }
+
+/* Con el teclado abierto: el campo, pegado a él (sin el margen del indicador de inicio). */
+body.kb-open .dock-composer {
+  bottom: 6px;
+}
+body.kb-open .dock-shortcuts {
+  bottom: 76px;
+}
