@@ -62,6 +62,8 @@ export interface ActivityType {
   kind: string;
   icon: string | null;
   isCustom: boolean;
+  /** Sesiones tuyas de este tipo en los últimos 120 días (para «tus deportes»). */
+  myUses?: number;
 }
 
 export interface ActivitySession {

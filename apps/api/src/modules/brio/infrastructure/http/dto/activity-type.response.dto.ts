@@ -21,8 +21,14 @@ export class ActivityTypeResponseDto {
     description: 'true si es una actividad creada por el propio usuario.',
   })
   isCustom: boolean;
+  @ApiProperty({
+    example: 12,
+    description:
+      'Sesiones de la persona con este tipo en los últimos 120 días.',
+  })
+  myUses: number;
 
-  static from(t: ActivityType): ActivityTypeResponseDto {
+  static from(t: ActivityType & { myUses?: number }): ActivityTypeResponseDto {
     const dto = new ActivityTypeResponseDto();
     dto.id = t.id;
     dto.code = t.code;
@@ -31,6 +37,7 @@ export class ActivityTypeResponseDto {
     dto.kind = t.kind;
     dto.icon = t.icon;
     dto.isCustom = t.ownerUserId !== null;
+    dto.myUses = t.myUses ?? 0;
     return dto;
   }
 }
