@@ -291,3 +291,58 @@
     transform: scaleY(3);
   }
 }
+
+/* Accesos directos encima del campo del coach */
+.dock-shortcuts {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(88px + var(--ion-safe-area-bottom, 0px));
+  display: flex;
+  gap: 8px;
+  padding: 4px 16px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  animation: dock-pop 0.45s var(--brio-spring) both;
+}
+.dock-shortcuts::-webkit-scrollbar {
+  display: none;
+}
+.dock-shortcut {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 14px 6px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brio-glass-strong);
+  color: var(--brio-ink);
+  font: 600 14px/1 var(--brio-font-sans);
+  white-space: nowrap;
+}
+.dock-shortcut__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.dock-shortcut__icon--food {
+  background: var(--brio-food-soft);
+  color: var(--brio-food-ink);
+}
+.dock-shortcut__icon--activity {
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
+}
+.dock-shortcut__icon--sleep {
+  background: var(--brio-sleep-soft);
+  color: var(--brio-sleep-ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dock-shortcuts {
+    animation-duration: 0.01s;
+  }
+}

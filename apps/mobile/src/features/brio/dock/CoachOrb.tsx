@@ -19,11 +19,39 @@ export function CoachOrb({ tab }: { tab: string }) {
   const startY = useRef(0);
   const held = useRef(false);
 
+  // El «soltar» se escucha también en la ventana: si el dedo sale del botón o
+  // el sistema se queda la pulsación, la burbuja no se puede quedar abierta.
+  const release = useRef<() => void>(() => undefined);
+
+  const end = (cancelled: boolean) => {
+    window.clearTimeout(timer.current);
+    window.removeEventListener('pointerup', release.current);
+    window.removeEventListener('pointercancel', release.current);
+    const dock = useDockStore.getState();
+    if (held.current) {
+      held.current = false;
+      if (cancelled) dock.close();
+      else void dock.finishListening();
+      return;
+    }
+    if (cancelled) return;
+    if (dock.mode === 'typing') dock.close();
+    else if (dock.mode === 'idle') dock.openComposer();
+    else if (dock.mode === 'listening') dock.close();
+  };
+
   const down = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (mode === 'sending') return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Sin captura también vale: está el respaldo de la ventana.
+    }
     startY.current = e.clientY;
     held.current = false;
+    release.current = () => end(false);
+    window.addEventListener('pointerup', release.current, { once: true });
+    window.addEventListener('pointercancel', release.current, { once: true });
     timer.current = window.setTimeout(() => {
       held.current = true;
       void useDockStore.getState().startListening();
@@ -31,22 +59,6 @@ export function CoachOrb({ tab }: { tab: string }) {
   };
   const move = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (held.current) useDockStore.getState().armCancel(e.clientY - startY.current > CANCEL_PX);
-  };
-  const up = () => {
-    window.clearTimeout(timer.current);
-    const dock = useDockStore.getState();
-    if (held.current) {
-      held.current = false;
-      if (dock.mode === 'listening') void dock.finishListening();
-      return;
-    }
-    if (dock.mode === 'typing') dock.close();
-    else if (dock.mode === 'idle') dock.openComposer();
-  };
-  const cancel = () => {
-    window.clearTimeout(timer.current);
-    if (held.current) useDockStore.getState().close();
-    held.current = false;
   };
 
   return (
@@ -57,8 +69,6 @@ export function CoachOrb({ tab }: { tab: string }) {
       aria-label="Coach: toca para escribirle, mantén para hablarle"
       onPointerDown={down}
       onPointerMove={move}
-      onPointerUp={up}
-      onPointerCancel={cancel}
       onContextMenu={(e) => e.preventDefault()}
     >
       <span className="brio-orb__glass">

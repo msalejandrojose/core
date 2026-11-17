@@ -1,0 +1,21 @@
+diff --git a/ios/Plugin/Plugin.swift b/ios/Plugin/Plugin.swift
+index 5d1b35b175de90e2aafbd75b8a20a791f068dc17..a4028b94562283eab9bba3231a083881dcd5838f 100644
+--- a/ios/Plugin/Plugin.swift
++++ b/ios/Plugin/Plugin.swift
+@@ -83,6 +83,16 @@ public class SpeechRecognition: CAPPlugin {
+             let inputNode: AVAudioInputNode = self.audioEngine!.inputNode
+             let format: AVAudioFormat = inputNode.outputFormat(forBus: 0)
+ 
++            // Sin entrada de audio (simulador sin micro, micro ocupado…) el
++            // formato llega con 0 Hz o 0 canales e installTap lanza una
++            // excepción de Objective-C que cierra la app: mejor rechazar.
++            if format.sampleRate == 0 || format.channelCount == 0 {
++                self.audioEngine = nil
++                self.recognitionRequest = nil
++                call.reject("Microphone is not available.")
++                return
++            }
++
+             self.recognitionTask = self.speechRecognizer?.recognitionTask(with: self.recognitionRequest!, resultHandler: { (result, error) in
+                 if result != nil {
+                     let resultArray: NSMutableArray = NSMutableArray()

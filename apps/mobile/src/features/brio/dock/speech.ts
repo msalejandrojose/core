@@ -24,6 +24,25 @@ const webCtor = (): (new () => WebRecognition) | undefined => {
 };
 
 /**
+ * ¿Hay permiso para dictar? En iOS/Android, sin preguntar todavía. En la web lo
+ * decide el navegador al empezar, así que se da por bueno.
+ */
+export async function speechPermission(): Promise<'granted' | 'prompt' | 'denied'> {
+  if (!Capacitor.isNativePlatform()) return 'granted';
+  const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+  const { speechRecognition } = await SpeechRecognition.checkPermissions();
+  return speechRecognition === 'granted' ? 'granted' : speechRecognition === 'denied' ? 'denied' : 'prompt';
+}
+
+/** Pide micro y voz (iOS enseña sus dos avisos). Se llama sin estar escuchando. */
+export async function requestSpeechPermission(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return true;
+  const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+  const { speechRecognition } = await SpeechRecognition.requestPermissions();
+  return speechRecognition === 'granted';
+}
+
+/**
  * Dictado en español. En iOS/Android usa el reconocedor del sistema (plugin
  * `@capacitor-community/speech-recognition`, que pide micro y voz); en la web,
  * la Web Speech API si el navegador la tiene. Lanza `SPEECH_UNAVAILABLE` o
@@ -34,14 +53,22 @@ export async function startSpeech(onText: (text: string) => void): Promise<Speec
     const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
     const { available } = await SpeechRecognition.available();
     if (!available) throw new Error('SPEECH_UNAVAILABLE');
-    const perm = await SpeechRecognition.requestPermissions();
-    if (perm.speechRecognition !== 'granted') throw new Error('SPEECH_DENIED');
+    // Los permisos se piden antes (requestSpeechPermission): si iOS enseña sus
+    // avisos a mitad de pulsación, se traga el «soltar» y la burbuja se queda.
+    const perm = await SpeechRecognition.checkPermissions();
+    if (perm.speechRecognition !== 'granted') throw new Error('SPEECH_NEEDS_PERMISSION');
     let last = '';
     const sub = await SpeechRecognition.addListener('partialResults', (d: { matches?: string[] }) => {
       last = d.matches?.[0] ?? last;
       onText(last);
     });
-    void SpeechRecognition.start({ language: 'es-ES', partialResults: true, popup: false, maxResults: 1 });
+    try {
+      // Con resultados parciales, `start` resuelve en cuanto empieza a escuchar.
+      await SpeechRecognition.start({ language: 'es-ES', partialResults: true, popup: false, maxResults: 1 });
+    } catch {
+      await sub.remove();
+      throw new Error('SPEECH_UNAVAILABLE');
+    }
     const end = async () => {
       await SpeechRecognition.stop().catch(() => undefined);
       await sub.remove();
