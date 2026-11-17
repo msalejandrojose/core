@@ -1,6 +1,7 @@
 /** Trazados de iconos del lienzo de Brío (24×24, trazo redondeado). */
 export const PATHS = {
   back: 'M15 5l-7 7 7 7',
+  more: 'M5 12h.01M12 12h.01M19 12h.01',
   forward: 'M9 5l7 7-7 7',
   plus: 'M12 5v14M5 12h14',
   close: 'M6 6l12 12M18 6L6 18',

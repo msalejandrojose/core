@@ -13,6 +13,8 @@ import { PATHS } from '../ui/paths';
 import { useDockStore } from './dock.store';
 import { currentMoment, type Moment } from './moment';
 import { useKeyboardLayout } from './keyboard';
+import { InlineCamera } from './InlineCamera';
+import { canUseInlineCamera } from './camera';
 import './dock.css';
 
 /** Pantallas raíz de las pestañas: solo en ellas flota la píldora del momento. */
@@ -166,6 +168,9 @@ function Composer() {
   const [text, setText] = useState('');
   const input = useRef<HTMLInputElement>(null);
   const file = useRef<HTMLInputElement>(null);
+  const [camera, setCamera] = useState(false);
+  // Dentro de la app (visor propio); si no se puede, la cámara del sistema directamente.
+  const openCamera = () => (canUseInlineCamera() ? setCamera(true) : file.current?.click());
 
   useEffect(() => {
     const id = window.setTimeout(() => input.current?.focus(), 220);
@@ -188,6 +193,17 @@ function Composer() {
   };
 
   return (
+    <>
+    {camera ? (
+      <InlineCamera
+        onClose={() => setCamera(false)}
+        onShot={(url) => {
+          setCamera(false);
+          void send(text.trim() || 'Mira esta foto', [url]);
+          setText('');
+        }}
+      />
+    ) : null}
     <form
       className="dock-composer brio-glass"
       onSubmit={(e) => {
@@ -195,7 +211,7 @@ function Composer() {
         submit();
       }}
     >
-      <button type="button" className="dock-composer__btn" aria-label="Mandar una foto" onClick={() => file.current?.click()}>
+      <button type="button" className="dock-composer__btn" aria-label="Hacer una foto" onClick={openCamera}>
         <Icon d={PATHS.camera} size={22} />
       </button>
       <input
@@ -207,11 +223,12 @@ function Composer() {
         aria-label="Mensaje para el coach"
         onChange={(e) => setText(e.target.value)}
       />
-      <input ref={file} type="file" accept="image/*" hidden onChange={(e) => void photo(e.target.files)} />
+      <input ref={file} type="file" accept="image/*" capture="environment" hidden onChange={(e) => void photo(e.target.files)} />
       <button type="submit" className="dock-composer__send" aria-label={text.trim() ? 'Enviar' : 'Cerrar'}>
         <Icon d={text.trim() ? PATHS.arrowUp : PATHS.close} size={20} stroke={2.4} />
       </button>
     </form>
+    </>
   );
 }
 
