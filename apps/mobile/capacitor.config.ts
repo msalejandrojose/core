@@ -29,7 +29,17 @@ const config: CapacitorConfig = {
     : httpApi
       ? { server: { androidScheme: 'http', cleartext: true } }
       : {}),
+  // Fondo de la vista nativa: lo que asoma detrás del teclado (que es
+  // translúcido) y al rebotar. Sin él, iOS pinta negro. Es el --brio-bg.
+  backgroundColor: '#f2f2f7',
   plugins: {
+    // Teclado claro siempre (la app es clara) y la web se encoge para dejarle
+    // sitio; el campo del coach se pega encima (ver dock/keyboard.ts).
+    Keyboard: {
+      resize: 'native',
+      style: 'LIGHT',
+      resizeOnFullScreen: true,
+    },
     // Splash de arranque. El color de fondo casa con `--ion-background-color`
     // (gris claro del DS de Brío). La variante oscura la generan los assets (splash-dark).
     // Se auto-oculta al cargar la web; sin spinner (norte estético minimalista).
