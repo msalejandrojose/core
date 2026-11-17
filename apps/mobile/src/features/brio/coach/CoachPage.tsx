@@ -7,6 +7,7 @@ import { PATHS } from '../ui/paths';
 import { toast } from '@/lib/toast';
 import { coachApi, TOOL_NOTES, type CoachConversation, type CoachMessage } from './coach.api';
 import { MAX_PHOTOS, photoToDataUrl } from './photos';
+import { RECENT_MS, useDockStore } from '../dock/dock.store';
 import './coach.css';
 
 const SUGGESTIONS = [
@@ -47,6 +48,28 @@ export default function CoachPage() {
     scrollDown();
   }
 
+  // Lo dicho por voz desde la barra llega aquí: sigue la conversación reciente
+  // (o empieza otra) y lo manda, para ver la respuesta y seguir hablando.
+  const pending = useDockStore((s) => s.pending);
+  useEffect(() => {
+    if (!pending || loading) return;
+    const said = useDockStore.getState().takePending();
+    if (!said) return;
+    void (async () => {
+      const list = await coachApi.conversations().catch(() => [] as CoachConversation[]);
+      setHistory(list);
+      const last = list[0];
+      if (last && Date.now() - new Date(last.updatedAt).getTime() < RECENT_MS) {
+        await open(last.id);
+        await send(said, last.id);
+      } else {
+        startNew();
+        await send(said, null);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar algo nuevo
+  }, [pending, loading]);
+
   useEffect(() => {
     coachApi
       .conversations()
@@ -69,7 +92,8 @@ export default function CoachPage() {
     }
   }
 
-  async function send(message: string) {
+  /** `conv`: la conversación en la que mandarlo (null = nueva); por defecto, la abierta. */
+  async function send(message: string, conv: string | null = conversationId ?? null) {
     const images = photos;
     const clean = message.trim() || (images.length ? 'Mira esta foto' : '');
     if (!clean || sending) return;
@@ -88,8 +112,8 @@ export default function CoachPage() {
     setMessages((m) => [...m, pending]);
     scrollDown();
     try {
-      const out = await coachApi.send(clean, conversationId, images);
-      if (!conversationId) {
+      const out = await coachApi.send(clean, conv ?? undefined, images);
+      if (!conv) {
         setConversationId(out.conversationId);
         void coachApi.conversations().then(setHistory).catch(() => undefined);
       }

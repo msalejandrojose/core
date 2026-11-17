@@ -43,6 +43,43 @@ function useMoment(): Moment | null {
   });
 }
 
+const HINT_KEY = 'brio-orb-hint';
+const readHint = () => {
+  try {
+    return Number(localStorage.getItem(HINT_KEY) ?? '0');
+  } catch {
+    return 99;
+  }
+};
+const writeHint = (n: number) => {
+  try {
+    localStorage.setItem(HINT_KEY, String(n));
+  } catch {
+    // Sin almacenamiento: la pista simplemente vuelve a salir.
+  }
+};
+
+/**
+ * Pista «mantén o desliza para hablar» sobre el orbe: sale en las tres primeras
+ * aperturas, unos segundos, y deja de salir en cuanto se usa la voz.
+ */
+function useOrbHint(mode: string): boolean {
+  const [show, setShow] = useState(() => readHint() < 3);
+  useEffect(() => {
+    if (!show) return;
+    writeHint(readHint() + 1);
+    const id = window.setTimeout(() => setShow(false), 7000);
+    return () => window.clearTimeout(id);
+  }, [show]);
+  useEffect(() => {
+    if (mode === 'listening') {
+      writeHint(99);
+      setShow(false);
+    }
+  }, [mode]);
+  return show;
+}
+
 /** ¿Hay una hoja (IonModal) abierta? Entonces la píldora no debe flotar encima. */
 function useModalOpen(): boolean {
   const [open, setOpen] = useState(0);
@@ -256,7 +293,17 @@ export function DockOverlay({ hidden }: { hidden: boolean }) {
   const { pathname } = useLocation();
   const moment = useMoment();
   const modalOpen = useModalOpen();
-  const showMoment = !hidden && !modalOpen && mode === 'idle' && ROOTS.includes(pathname) && moment;
+  const history = useHistory();
+  const pending = useDockStore((s) => s.pending);
+  const hint = useOrbHint(mode);
+  const calm = !hidden && !modalOpen && mode === 'idle' && ROOTS.includes(pathname);
+  const showHint = calm && hint;
+  const showMoment = calm && !hint && moment;
+
+  // Lo dicho por voz se lleva al chat del coach, que lo manda y enseña la respuesta.
+  useEffect(() => {
+    if (pending && pathname !== '/tabs/today/coach') history.push('/tabs/today/coach');
+  }, [pending, pathname, history]);
 
   // Cambiar de pantalla cierra el campo del coach.
   useEffect(() => {
@@ -278,6 +325,12 @@ export function DockOverlay({ hidden }: { hidden: boolean }) {
         <div className="dock-scrim" onClick={() => (mode === 'listening' ? close() : undefined)} />
       ) : null}
       {mode === 'typing' ? <div className="dock-scrim dock-scrim--clear" onClick={close} /> : null}
+      {showHint ? (
+        <div className="dock-hint brio-glass" role="note">
+          <Icon d={PATHS.mic} size={16} stroke={2.2} />
+          Mantén o desliza ↑ para hablarme
+        </div>
+      ) : null}
       {showMoment ? <MomentPill moment={moment} /> : null}
       {mode === 'typing' && !hidden ? (
         <>
