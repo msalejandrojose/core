@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IonContent, IonModal } from '@ionic/react';
+import { SWIPE_TO_CLOSE } from './swipe';
 import { brioApi, type Food, type FoodSection, type HabitItem, type MealType } from '../api';
 import { MEAL_ORDER, formatKcal, joinNames, mealLabel } from '../format';
 import { useBrioStore } from '../brio.store';
@@ -269,7 +270,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const openSection = sections.find((sec) => sec.code === section) ?? null;
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full">
+    <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full" {...SWIPE_TO_CLOSE}>
       <IonContent>
         <div className="rk-sheet addfood">
           <span className="rk-grab" aria-hidden="true" />

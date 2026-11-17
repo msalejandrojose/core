@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IonContent, IonModal } from '@ionic/react';
+import { SWIPE_TO_CLOSE } from './swipe';
 import { brioApi, isApiError, type Food } from '../api';
 import { tapSuccess } from '../haptics';
 import { SectionHeader, SheetBar, Switch } from '../ui/kit';
@@ -87,7 +88,7 @@ export function CreateFoodSheet({ isOpen, initialName, barcode, onClose, onCreat
   }
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full">
+    <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full" {...SWIPE_TO_CLOSE}>
       <IonContent>
         <div className="rk-sheet">
           <span className="rk-grab" aria-hidden="true" />
