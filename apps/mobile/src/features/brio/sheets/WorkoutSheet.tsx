@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IonContent, IonModal } from '@ionic/react';
+import { SWIPE_TO_CLOSE } from './swipe';
 import { isApiError, brioApi, type ActivityType, type Effort } from '../api';
 import { formatKcal, nowIn, todayIn } from '../format';
 import { useBrioStore } from '../brio.store';
@@ -165,7 +166,7 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
   }
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full">
+    <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full" {...SWIPE_TO_CLOSE}>
       <IonContent>
         <div className="rk-sheet workout">
           <span className="rk-grab" aria-hidden="true" />
