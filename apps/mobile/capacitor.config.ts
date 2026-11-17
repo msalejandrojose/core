@@ -35,10 +35,12 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
-    // El estilo de la status bar (claro/oscuro) se ajusta en caliente desde
-    // ThemeProvider según el tema; aquí solo evitamos que la web quede debajo.
+    // Pantalla completa: la web se pinta también bajo la status bar y la isla
+    // (si no, iOS deja esa franja en negro). Las pantallas ya reservan el hueco
+    // con `env(safe-area-inset-top)`. El estilo (texto claro/oscuro) se ajusta
+    // en caliente desde ThemeProvider según el tema.
     StatusBar: {
-      overlaysWebView: false,
+      overlaysWebView: true,
     },
   },
 };
