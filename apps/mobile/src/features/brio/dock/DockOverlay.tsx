@@ -103,7 +103,7 @@ function MomentPill({ moment }: { moment: Moment }) {
   const open = useRegisterStore((s) => s.open);
   const icon = moment.kind === 'workout' ? PATHS.run : moment.kind === 'weigh' ? PATHS.scale : PATHS.fork;
   const label =
-    moment.kind === 'workout' ? moment.title : moment.kind === 'weigh' ? 'Pésate' : `Apunta la ${mealLabel(moment.meal).toLowerCase()}`;
+    moment.kind === 'workout' ? moment.title : moment.kind === 'weigh' ? 'Pésate' : `Apunta ${moment.meal === 'BREAKFAST' ? 'el' : 'la'} ${mealLabel(moment.meal).toLowerCase()}`;
   const detail = moment.kind === 'workout' ? moment.time : null;
   const run = () =>
     moment.kind === 'workout' ? open('activity') : moment.kind === 'weigh' ? open('weight') : open('meal', moment.meal);

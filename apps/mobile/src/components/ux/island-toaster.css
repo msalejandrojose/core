@@ -36,6 +36,19 @@
   box-shadow: none;
 }
 
+/*
+ * Con isla, el contenido va DEBAJO de ella: iOS pinta la isla del sistema (y
+ * sus Live Activities, como la música) por encima de la web, así que lo que
+ * quede a su altura no se ve. La isla queda como «raíz» negra arriba.
+ */
+.island--island {
+  padding: 46px 18px 14px 16px;
+  border-radius: 34px;
+}
+.island--island.is-open {
+  clip-path: inset(0 0 0 0 round 34px);
+}
+
 /* Notch: la píldora cuelga del borde de arriba, con el notch como raíz. */
 .island--notch {
   --island-w: 162px;
