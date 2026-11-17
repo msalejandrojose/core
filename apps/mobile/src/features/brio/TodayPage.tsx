@@ -319,7 +319,12 @@ export default function TodayPage() {
 
               <DayRingsCard rings={rings} totals={totals} targets={macroTargets} />
 
-              <TodayWorkoutCard day={todayPlan} doneMinutes={activeMinutes} onStart={() => openRegister('activity')} />
+              <TodayWorkoutCard
+                day={todayPlan}
+                doneMinutes={activeMinutes}
+                doneCount={summary?.sessions.length ?? 0}
+                onStart={() => openRegister('activity')}
+              />
 
               <section aria-labelledby="ahora" className="rk-hero today-now">
                 <span id="ahora" className="rk-kicker">
