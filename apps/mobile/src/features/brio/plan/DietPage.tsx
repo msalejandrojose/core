@@ -6,7 +6,9 @@ import { isApiError, type GoalType } from '../api';
 import { useBrioStore } from '../brio.store';
 import { profileBody } from '../profile/profile-body';
 import { formatNumber } from '../format';
-import { BackLink, NavRow, Segmented } from '../ui/kit';
+import { Chevron, Icon, NavRow, Segmented } from '../ui/kit';
+import { PATHS } from '../ui/paths';
+import { useRegisterStore } from '../register.store';
 import { MEAL_LABEL, menuApi, type Meal, type MenuWeek } from './menu.api';
 import { usePlanWeekData, type PlanLoad } from './plan.api';
 import { LOAD_CLASS, LOAD_LABEL, dayFull, dayLetter, dayNumber, fmtMinutes } from './plan-labels';
@@ -84,10 +86,10 @@ export default function DietPage() {
       <IonPage>
         <IonContent>
           <div className="rk-screen plan">
-            <NavRow back={<BackLink label="Plan" fallback="/tabs/plan" />} />
             <header className="rk-title">
-              <h1>Dieta y menú</h1>
+              <h1>Comida</h1>
             </header>
+            <FoodShortcuts />
           </div>
         </IonContent>
       </IonPage>
@@ -125,10 +127,9 @@ export default function DietPage() {
       <IonContent>
         <div className="rk-screen plan">
           <NavRow
-            back={<BackLink label="Plan" fallback="/tabs/plan" />}
             actions={
               <>
-                <Link to="/tabs/plan/compra" aria-label="Lista de la compra" className="rk-iconbtn">
+                <Link to="/tabs/comida/compra" aria-label="Lista de la compra" className="rk-iconbtn">
                   <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6M10 21h.01M17 21h.01" />
                   </svg>
@@ -145,11 +146,15 @@ export default function DietPage() {
             }
           />
           <header className="rk-title">
-            <h1>Dieta y menú</h1>
+            <h1>Comida</h1>
             <span className="rk-title__sub plan__sub">
               Semana del {days[0].n} al {days[6].n} · calorías según la carga de tu plan
             </span>
           </header>
+
+          <FoodShortcuts />
+
+          <h2 className="food-hub__h2">Menú de la semana</h2>
 
           <Segmented
             label="Objetivo"
@@ -254,11 +259,67 @@ export default function DietPage() {
           </ul>
           <p className="rk-note">Las raciones están ajustadas a las calorías del día. Los valores son aproximados.</p>
 
-          <Link to="/tabs/plan/compra" className="plan__btn">
+          <Link to="/tabs/comida/compra" className="plan__btn">
             Ver la lista de la compra
           </Link>
         </div>
       </IonContent>
     </IonPage>
+  );
+}
+
+/**
+ * Arriba de la pestaña Comida: lo de hoy, las recetas y la compra, a un toque.
+ * El menú de la semana (con su objetivo por día) va debajo.
+ */
+function FoodShortcuts() {
+  const summary = useBrioStore((s) => s.summary);
+  const open = useRegisterStore((s) => s.open);
+  const left = summary?.totals.kcalRemaining;
+  return (
+    <div className="rk-list food-hub">
+      <button type="button" className="rk-row" onClick={() => open('meal')}>
+        <span className="food-hub__icon is-tint" aria-hidden="true">
+          <Icon d={PATHS.plus} size={20} stroke={2.4} />
+        </span>
+        <span className="rk-row__main">
+          <span className="rk-row__title">Añadir comida</span>
+          <span className="rk-row__sub">
+            {left != null ? `Hoy te quedan ${formatNumber(Math.max(0, Math.round(left)))} kcal` : 'Apunta lo que has comido'}
+          </span>
+        </span>
+        <Chevron />
+      </button>
+      <Link to="/tabs/today/comida" className="rk-row">
+        <span className="food-hub__icon" aria-hidden="true">
+          <Icon d={PATHS.fork} size={20} />
+        </span>
+        <span className="rk-row__main">
+          <span className="rk-row__title">Lo que has comido hoy</span>
+          <span className="rk-row__sub">Comidas, macros y digestión del día</span>
+        </span>
+        <Chevron />
+      </Link>
+      <Link to="/tabs/comida/recetas" className="rk-row">
+        <span className="food-hub__icon" aria-hidden="true">
+          <Icon d={PATHS.book} size={20} />
+        </span>
+        <span className="rk-row__main">
+          <span className="rk-row__title">Mis recetas</span>
+          <span className="rk-row__sub">Las tuyas, con kcal por ración</span>
+        </span>
+        <Chevron />
+      </Link>
+      <Link to="/tabs/comida/compra" className="rk-row">
+        <span className="food-hub__icon" aria-hidden="true">
+          <Icon d={PATHS.cart} size={20} />
+        </span>
+        <span className="rk-row__main">
+          <span className="rk-row__title">Lista de la compra</span>
+          <span className="rk-row__sub">Sale del menú de la semana</span>
+        </span>
+        <Chevron />
+      </Link>
+    </div>
   );
 }

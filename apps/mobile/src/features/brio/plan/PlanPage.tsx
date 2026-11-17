@@ -3,17 +3,16 @@ import { Link, useHistory } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
 import { isApiError } from '../api';
-import { Chevron, EmptyCard, NavRow } from '../ui/kit';
-import { PATHS } from '../ui/paths';
+import { BackLink, Chevron, EmptyCard, NavRow } from '../ui/kit';
 import { GoalSheet } from './GoalSheet';
 import { planApi, usePlanWeekData, type PlanDay, type PlanTemplate } from './plan.api';
-import { LOAD_CLASS, LOAD_LABEL, dayFull, dayLetter, dayMeta, dayNumber, dayShort, fmtMinutes, shiftDay, weekRange } from './plan-labels';
+import { LOAD_CLASS, LOAD_LABEL, titleOf, dayFull, dayLetter, dayMeta, dayNumber, dayShort, fmtMinutes, shiftDay, weekRange } from './plan-labels';
 import { usePlanTemplates } from './usePlanTemplates';
 import './plan.css';
 
 const CALENDAR = 'M7 3v3M17 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z';
 
-function StatusIcon({ day }: { day: PlanDay }) {
+export function StatusIcon({ day }: { day: PlanDay }) {
   const st = day.status;
   if (st === 'DONE' || (st !== 'TODAY' && day.actual))
     return (
@@ -55,7 +54,6 @@ function StatusIcon({ day }: { day: PlanDay }) {
   );
 }
 
-const titleOf = (d: PlanDay) => d.planned?.title ?? d.actual?.title ?? 'Día libre';
 
 /** Plan (lienzo "Plan (con modo editar)"): la semana de entrenos, su objetivo y su edición. */
 export default function PlanPage() {
@@ -109,14 +107,7 @@ export default function PlanPage() {
       <IonContent>
         <div className="rk-screen plan">
           <NavRow
-            back={
-              <Link to="/tabs/plan/dieta" className="rk-textbtn plan__navlink">
-                <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d={PATHS.fork} />
-                </svg>
-                Dieta y menú
-              </Link>
-            }
+            back={<BackLink label="Hoy" fallback="/tabs/today" />}
             actions={
               <button type="button" aria-pressed={editing} className="rk-textbtn rk-textbtn--strong" disabled={!data} onClick={() => setEditing((v) => !v)}>
                 {editing ? 'Listo' : 'Editar'}
@@ -124,7 +115,7 @@ export default function PlanPage() {
             }
           />
           <header className="rk-title">
-            <h1>Plan</h1>
+            <h1>Tu semana de entreno</h1>
             {data ? (
               <span className="rk-title__sub plan__sub">
                 {data.summary.planned
@@ -212,7 +203,7 @@ export default function PlanPage() {
                             <span className="plan__row-icon" aria-hidden="true">
                               <StatusIcon day={d} />
                             </span>
-                            <button type="button" className="plan__row-cell" onClick={() => history.push(`/tabs/plan/sesion/${d.day}`)}>
+                            <button type="button" className="plan__row-cell" onClick={() => history.push(`/tabs/today/plan/sesion/${d.day}`)}>
                               <span className="rk-row__main">
                                 <span className="plan__row-title">{titleOf(d)}</span>
                                 <span className="rk-row__sub">{dayMeta(d)}</span>
@@ -274,10 +265,10 @@ export default function PlanPage() {
                     </div>
                   </section>
                   <div className="plan__edit-actions">
-                    <Link to={`/tabs/plan/sesion/${sel.day}`} className="plan__btn">
+                    <Link to={`/tabs/today/plan/sesion/${sel.day}`} className="plan__btn">
                       Detalles del día
                     </Link>
-                    <Link to="/tabs/plan/dieta" className="plan__btn plan__btn--primary">
+                    <Link to="/tabs/comida" className="plan__btn plan__btn--primary">
                       Ajustar dieta
                     </Link>
                   </div>

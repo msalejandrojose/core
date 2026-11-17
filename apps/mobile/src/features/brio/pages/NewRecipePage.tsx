@@ -49,7 +49,7 @@ export default function NewRecipePage() {
   const per = perServing(lines, servings);
   const used = lines.filter((l) => l.grams > 0);
   const canSave = name.trim().length >= 2 && used.length > 0 && !saving;
-  const back = () => (history.length > 1 ? history.goBack() : history.replace('/tabs/today/recetas'));
+  const back = () => (history.length > 1 ? history.goBack() : history.replace('/tabs/comida/recetas'));
   const toCoach = () => history.push('/tabs/today/coach');
 
   const add = (food: Food) => {
@@ -81,7 +81,7 @@ export default function NewRecipePage() {
         ingredients: used.map((l) => ({ foodId: l.food.id, grams: l.grams })),
       });
       toast.success('Receta guardada', `${formatKcal(per.kcal)} kcal por ración. Ya puedes apuntarla en tus comidas.`);
-      history.replace('/tabs/today/recetas');
+      history.replace('/tabs/comida/recetas');
     } catch (e) {
       toast.error('No se pudo guardar la receta', isApiError(e) ? e.message : undefined);
       setSaving(false);

@@ -769,3 +769,61 @@
   white-space: normal;
   line-height: 1.35;
 }
+
+/* Pestaña Comida: accesos de arriba */
+.food-hub .rk-row {
+  gap: 12px;
+}
+.food-hub__icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--brio-food-soft);
+  color: var(--brio-food-ink);
+}
+.food-hub__icon.is-tint {
+  background: var(--brio-tint);
+  color: var(--brio-on-tint);
+}
+.food-hub__h2 {
+  margin: 8px 2px -4px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Hoy › Tu semana de entreno */
+.week-plan__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+.week-plan__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--brio-ink);
+}
+.week-plan__sub {
+  display: block;
+  margin: -4px 2px 4px;
+}
+.week-plan__row {
+  gap: 12px;
+}
+.week-plan__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+.week-plan__day {
+  flex: none;
+  font-size: 14px;
+  color: var(--brio-ink-muted);
+}
+.week-plan__day.is-today {
+  color: var(--brio-tint);
+  font-weight: 600;
+}

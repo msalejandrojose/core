@@ -9,7 +9,7 @@ import { PATHS } from '../ui/paths';
 import { recipeMeta } from '../recipes/recipe-math';
 import './pages.css';
 
-const NEW_RECIPE = '/tabs/today/recetas/nueva';
+const NEW_RECIPE = '/tabs/comida/recetas/nueva';
 
 /**
  * Mis recetas (lienzo "Mis recetas"): los alimentos propios que el usuario

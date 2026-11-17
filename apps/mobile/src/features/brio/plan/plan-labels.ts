@@ -71,3 +71,6 @@ export function dayMeta(d: PlanDay): string {
   if (d.status === 'SKIPPED') parts.push('saltada');
   return parts.join(' · ') || 'Sesión planificada';
 }
+
+/** Título de un día del plan: lo planificado, lo hecho o «Día libre». */
+export const titleOf = (d: PlanDay) => d.planned?.title ?? d.actual?.title ?? 'Día libre';

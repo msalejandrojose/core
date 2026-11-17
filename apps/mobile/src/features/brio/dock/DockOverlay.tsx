@@ -15,7 +15,7 @@ import { currentMoment, type Moment } from './moment';
 import './dock.css';
 
 /** Pantallas raíz de las pestañas: solo en ellas flota la píldora del momento. */
-const ROOTS = ['/tabs/today', '/tabs/plan', '/tabs/progress', '/tabs/social'];
+const ROOTS = ['/tabs/today', '/tabs/comida', '/tabs/progress', '/tabs/social'];
 
 function useMoment(): Moment | null {
   const summary = useBrioStore((s) => s.summary);
@@ -141,7 +141,7 @@ function Shortcuts() {
         useDockStore.setState({ reply: { local: true, notes: [], text: `Agua · ${n} de ${WATER_GOAL} vasos` } });
       },
     },
-    { label: 'Receta', icon: PATHS.book, domain: 'food', run: go(() => history.push('/tabs/today/recetas')) },
+    { label: 'Receta', icon: PATHS.book, domain: 'food', run: go(() => history.push('/tabs/comida/recetas')) },
     { label: 'Copiar día', icon: PATHS.copy, domain: 'food', run: go(() => open('copy')) },
     { label: 'Digestión', icon: PATHS.leaf, domain: 'food', run: go(() => open('digestion')) },
   ];
