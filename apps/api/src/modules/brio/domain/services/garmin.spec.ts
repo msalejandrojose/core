@@ -23,7 +23,13 @@ describe('garmin: entrenos', () => {
         activityId: 1,
         activityType: { typeKey: 'trail_running' },
       }),
-    ).toBe('running');
+    ).toBe('trail_running');
+    expect(
+      typeCodeFor({
+        activityId: 9,
+        activityType: { typeKey: 'tennis' },
+      } as never),
+    ).toBe('tennis');
     expect(
       typeCodeFor({
         activityId: 1,

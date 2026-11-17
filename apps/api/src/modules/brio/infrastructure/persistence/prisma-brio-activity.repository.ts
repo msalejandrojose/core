@@ -38,6 +38,20 @@ export class PrismaBrioActivityRepository implements BrioActivityRepositoryPort 
     return rows.map(toActivityType);
   }
 
+  async typeUsage(
+    userId: string,
+    since: Date,
+  ): Promise<Record<string, number>> {
+    const rows = await this.prisma.brioActivitySession.groupBy({
+      by: ['activityTypeId'],
+      where: { userId, startedAt: { gte: since } },
+      _count: { _all: true },
+    });
+    return Object.fromEntries(
+      rows.map((r) => [r.activityTypeId, r._count._all]),
+    );
+  }
+
   async findTypeVisibleTo(
     id: string,
     userId: string,

@@ -22,17 +22,26 @@ import { ROUTINE_KINDS, workoutDraftFrom } from '../routines/routine-draft';
 import type { Routine } from '../routines/routines.api';
 import './sheets.css';
 
-/** Las seis teselas del diseño y el tipo de actividad del catálogo que usan. */
-const TILES = [
-  { id: 'carrera', label: 'Carrera', icon: PATHS.run, code: 'running' },
-  { id: 'fuerza', label: 'Fuerza', icon: PATHS.strength, code: 'strength' },
-  { id: 'bici', label: 'Bici', icon: PATHS.bike, code: 'cycling' },
-  { id: 'caminar', label: 'Caminar', icon: PATHS.walk, code: 'walking' },
-  { id: 'clase', label: 'Clase', icon: PATHS.dance, code: 'hiit' },
-  { id: 'otro', label: 'Deportes', icon: PATHS.plus, code: null },
-] as const;
+/** Si aún no tienes historial, estas son las cinco de arriba. */
+const DEFAULT_CODES = ['running', 'strength', 'cycling', 'walking', 'hiit'];
+/** Ideas en «Otro deporte» antes de escribir nada. */
+const SUGGESTED_CODES = ['football', 'padel', 'tennis', 'swimming', 'basketball', 'yoga', 'football_7', 'futsal'];
+const FAVORITES = 5;
 
-type TileId = (typeof TILES)[number]['id'];
+/** Dibujo de cada tipo, por código o disciplina. */
+function iconFor(t: ActivityType): string {
+  const c = t.code ?? '';
+  if (/^(football|futsal|football_7|basketball|handball|volleyball|beach_volleyball|rugby|hockey)$/.test(c)) return PATHS.ball;
+  if (/^(padel|tennis|tennis_doubles|squash|badminton|table_tennis|fronton|golf)$/.test(c)) return PATHS.racket;
+  if (/^(swimming|water_polo|surf|kayak|rowing)$/.test(c)) return PATHS.swim;
+  if (t.kind === 'STRENGTH') return PATHS.strength;
+  if (t.kind === 'RUN') return PATHS.run;
+  if (t.kind === 'CYCLE') return PATHS.bike;
+  if (t.kind === 'WALK' || t.kind === 'HIKE') return PATHS.walk;
+  return PATHS.dance;
+}
+
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 const LEVELS: { value: Effort; label: string }[] = [
   { value: 'LIGHT', label: 'Suave' },
@@ -60,8 +69,11 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
   const profile = useBrioStore((s) => s.profile);
   const refreshDay = useBrioStore((s) => s.refreshDay);
   const [types, setTypes] = useState<ActivityType[] | null>(null);
-  const [tile, setTile] = useState<TileId>('fuerza');
-  const [otherId, setOtherId] = useState<string | null>(null);
+  /** Tipo elegido (id del catálogo). */
+  const [typeId, setTypeId] = useState<string | null>(null);
+  /** «Otro deporte» abierto: buscador en vez de lista larga. */
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [sportQuery, setSportQuery] = useState('');
   const [minutes, setMinutes] = useState(45);
   const [effort, setEffort] = useState<Effort>('MODERATE');
   const [rpe, setRpe] = useState<number | null>(null);
@@ -79,8 +91,9 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
 
   useEffect(() => {
     if (isOpen) {
-      setTile('fuerza');
-      setOtherId(null);
+      setTypeId(null);
+      setOtherOpen(false);
+      setSportQuery('');
       setMinutes(45);
       setEffort('MODERATE');
       setRpe(null);
@@ -90,19 +103,39 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
     }
   }, [isOpen]);
 
-  const tileCodes = TILES.map((t) => t.code).filter(Boolean);
-  const [sportQuery, setSportQuery] = useState('');
-  const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const others = (types ?? [])
-    .filter((t) => !tileCodes.includes(t.code as never))
-    .filter((t) => !sportQuery.trim() || norm(t.name).includes(norm(sportQuery.trim())))
-    .sort((a, b) => a.name.localeCompare(b.name, 'es'));
-  const selected = useMemo(() => {
-    if (!types) return null;
-    if (tile === 'otro') return types.find((t) => t.id === otherId) ?? null;
-    const code = TILES.find((t) => t.id === tile)?.code;
-    return types.find((t) => t.code === code) ?? null;
-  }, [types, tile, otherId]);
+  /** Tus deportes: los que más usas (120 días); si no hay historial, los de siempre. */
+  const favorites = useMemo(() => {
+    if (!types) return [];
+    const used = types
+      .filter((t) => (t.myUses ?? 0) > 0)
+      .sort((a, b) => (b.myUses ?? 0) - (a.myUses ?? 0))
+      .slice(0, FAVORITES);
+    for (const code of DEFAULT_CODES) {
+      if (used.length >= FAVORITES) break;
+      const t = types.find((x) => x.code === code);
+      if (t && !used.includes(t)) used.push(t);
+    }
+    return used;
+  }, [types]);
+  // Al abrir, el que más usas ya viene elegido.
+  useEffect(() => {
+    if (isOpen && !typeId && favorites[0]) setTypeId(favorites[0].id);
+  }, [isOpen, typeId, favorites]);
+
+  const results = useMemo(() => {
+    if (!types) return [];
+    const q = norm(sportQuery.trim());
+    if (!q)
+      return SUGGESTED_CODES.map((c) => types.find((t) => t.code === c)).filter(
+        (t): t is ActivityType => !!t && !favorites.includes(t),
+      );
+    return types
+      .filter((t) => norm(t.name).includes(q))
+      .sort((a, b) => (b.myUses ?? 0) - (a.myUses ?? 0) || a.name.localeCompare(b.name, 'es'))
+      .slice(0, 8);
+  }, [types, sportQuery, favorites]);
+  const selected = useMemo(() => types?.find((t) => t.id === typeId) ?? null, [types, typeId]);
+  const pickedOther = selected && !favorites.includes(selected) ? selected : null;
 
   const isStrength = selected?.kind === 'STRENGTH';
   const isCardio = !!selected && CARDIO_KINDS.includes(selected.kind);
@@ -118,12 +151,8 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
   function logHere(r: Routine) {
     setRoutineId(r.id);
     const code = ROUTINE_KINDS.find((k) => k.value === r.kind)?.activityCode ?? null;
-    const t = TILES.find((x) => x.code === code);
-    if (t) setTile(t.id);
-    else {
-      setTile('otro');
-      setOtherId((types ?? []).find((x) => x.kind === r.kind)?.id ?? null);
-    }
+    const t = (types ?? []).find((x) => x.code === code) ?? (types ?? []).find((x) => x.kind === r.kind);
+    if (t) setTypeId(t.id);
     if (r.plannedDurationMin) setMinutes(Math.min(300, Math.max(5, Math.round(r.plannedDurationMin / 5) * 5)));
     setExercises(r.kind === 'STRENGTH' ? workoutDraftFrom(r) : []);
   }
@@ -187,37 +216,55 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
           <section className="rk-section" aria-labelledby="tipo">
             <SectionHeader id="tipo">Tipo</SectionHeader>
             <div className="workout__types">
-              {TILES.map((t) => (
+              {favorites.map((t) => (
                 <button
                   key={t.id}
                   type="button"
-                  aria-pressed={tile === t.id}
+                  aria-pressed={typeId === t.id}
                   className="workout__type"
-                  onClick={() => setTile(t.id)}
+                  onClick={() => {
+                    setTypeId(t.id);
+                    setOtherOpen(false);
+                  }}
                 >
-                  <Icon d={t.icon} size={22} />
-                  <span>{t.label}</span>
+                  <Icon d={iconFor(t)} size={22} />
+                  <span>{t.name}</span>
                 </button>
               ))}
+              <button
+                type="button"
+                aria-pressed={!!pickedOther || otherOpen}
+                className="workout__type"
+                onClick={() => setOtherOpen((v) => !v)}
+              >
+                <Icon d={pickedOther ? iconFor(pickedOther) : PATHS.search} size={22} />
+                <span>{pickedOther ? pickedOther.name : 'Otro deporte'}</span>
+              </button>
             </div>
-            {tile === 'otro' ? (
-              <div className="workout__others" role="group" aria-label="Deporte o actividad">
+            {otherOpen ? (
+              <div className="workout__others" role="group" aria-label="Otro deporte">
                 <input
                   className="workout__search"
                   type="search"
                   value={sportQuery}
-                  placeholder="Busca: fútbol 7, pádel, tenis…"
+                  placeholder="Busca: fútbol 7, tenis, natación…"
                   aria-label="Buscar deporte"
                   onChange={(e) => setSportQuery(e.target.value)}
                 />
-                {others.length === 0 ? <p className="workout__none">No está en la lista. Elige el más parecido.</p> : null}
-                {others.map((t) => (
+                {sportQuery.trim() && results.length === 0 ? (
+                  <p className="workout__none">No está. Elige el más parecido.</p>
+                ) : null}
+                {results.map((t) => (
                   <button
                     key={t.id}
                     type="button"
-                    aria-pressed={otherId === t.id}
+                    aria-pressed={typeId === t.id}
                     className="workout__chip"
-                    onClick={() => setOtherId(t.id)}
+                    onClick={() => {
+                      setTypeId(t.id);
+                      setOtherOpen(false);
+                      setSportQuery('');
+                    }}
                   >
                     {t.name}
                   </button>

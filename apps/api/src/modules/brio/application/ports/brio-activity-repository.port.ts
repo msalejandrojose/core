@@ -53,6 +53,8 @@ export interface UpdateSessionData {
 export interface BrioActivityRepositoryPort {
   /** Catálogo visible para el usuario: las globales más las suyas. */
   listTypesVisibleTo(userId: string): Promise<ActivityType[]>;
+  /** Cuántas sesiones tiene la persona de cada tipo desde `since` (id del tipo → número). */
+  typeUsage(userId: string, since: Date): Promise<Record<string, number>>;
   /** Un tipo, solo si es global o del propio usuario. */
   findTypeVisibleTo(id: string, userId: string): Promise<ActivityType | null>;
   createSession(data: CreateSessionData): Promise<ActivitySession>;
