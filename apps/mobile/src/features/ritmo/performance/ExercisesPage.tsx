@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { isApiError } from '../api';
 import { toast } from '@/lib/toast';
 import { MusclePicker } from '../sheets/MusclePicker';
+import { ExerciseGuide } from '../exercise-guide/ExerciseGuide';
+import { searchExercises } from '../exercise-guide/search';
 import { SearchField } from '../ui/kit';
 import { MUSCLE_NAME } from './labels';
 import { perfApi, type Exercise } from './perf.api';
@@ -16,6 +18,7 @@ const summary = (e: Exercise) =>
 
 function ExerciseRow({ exercise, onSaved }: { exercise: Exercise; onSaved: () => void }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [weights, setWeights] = useState<Record<string, number>>(toRecord(exercise));
   const [saving, setSaving] = useState(false);
   const own = exercise.ownerUserId !== null;
@@ -29,7 +32,7 @@ function ExerciseRow({ exercise, onSaved }: { exercise: Exercise; onSaved: () =>
     try {
       const saved = await action();
       setWeights(toRecord(saved));
-      setOpen(false);
+      setEditing(false);
       onSaved();
       toast.success(done, 'Tus análisis de músculos ya usan estos pesos.');
     } catch (e) {
@@ -50,6 +53,16 @@ function ExerciseRow({ exercise, onSaved }: { exercise: Exercise; onSaved: () =>
       </button>
       {open ? (
         <div className="perf__card-body">
+          <ExerciseGuide exercise={exercise} />
+          {editing ? null : (
+            <button type="button" className="rk-btn rk-btn--soft rk-btn--small" onClick={() => setEditing(true)}>
+              Ajustar músculos
+            </button>
+          )}
+        </div>
+      ) : null}
+      {open && editing ? (
+        <div className="perf__card-body">
           <MusclePicker value={weights} onChange={setWeights} />
           <div className="workout__newex-actions">
             {exercise.customized ? (
@@ -62,7 +75,14 @@ function ExerciseRow({ exercise, onSaved }: { exercise: Exercise; onSaved: () =>
                 Volver al catálogo
               </button>
             ) : (
-              <button type="button" className="rk-btn rk-btn--soft rk-btn--small" onClick={() => setOpen(false)}>
+              <button
+                type="button"
+                className="rk-btn rk-btn--soft rk-btn--small"
+                onClick={() => {
+                  setEditing(false);
+                  setWeights(toRecord(exercise));
+                }}
+              >
                 Cancelar
               </button>
             )}
@@ -86,11 +106,11 @@ function ExerciseRow({ exercise, onSaved }: { exercise: Exercise; onSaved: () =>
 export default function ExercisesPage() {
   const { data, error, reload } = usePerf(() => perfApi.exercises());
   const [query, setQuery] = useState('');
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   return (
     <PerfPage
       title="Ejercicios"
-      sub="Qué músculos trabaja cada uno"
+      sub="Cómo se hace cada uno y qué trabaja"
       back={{ label: 'Músculos', to: '/tabs/progress/rendimiento/musculos' }}
       data={data}
       error={error}
@@ -98,7 +118,7 @@ export default function ExercisesPage() {
       header={<SearchField label="Buscar ejercicio" placeholder="Buscar ejercicio" value={query} onChange={setQuery} />}
     >
       {(list) => {
-        const shown = list.filter((e) => e.name.toLowerCase().includes(q));
+        const shown = searchExercises(list, q);
         return (
           <>
             {shown.length ? (
@@ -111,7 +131,7 @@ export default function ExercisesPage() {
               <Empty>No hay ejercicios con ese nombre.</Empty>
             )}
             <p className="rk-note">
-              Toca un ejercicio y marca cada músculo como principal (cuenta 1 serie), secundario (0,5) o indirecto (0,25). En los del catálogo el cambio es solo para ti y se aplica también a tus entrenos anteriores.
+              Toca un ejercicio para ver cómo se hace. Con «Ajustar músculos» marca cada músculo como principal (cuenta 1 serie), secundario (0,5) o indirecto (0,25). En los del catálogo el cambio es solo para ti y se aplica también a tus entrenos anteriores.
             </p>
           </>
         );

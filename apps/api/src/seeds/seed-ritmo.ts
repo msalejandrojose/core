@@ -242,6 +242,8 @@ async function main(): Promise<void> {
       name: ex.name,
       isCompound: ex.compound ?? false,
       isBodyweight: ex.bodyweight ?? false,
+      description: ex.description,
+      steps: ex.steps,
     };
     const row = await prisma.ritmoExercise.upsert({
       where: { code: ex.code },

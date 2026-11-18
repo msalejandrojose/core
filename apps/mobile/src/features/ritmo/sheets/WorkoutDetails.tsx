@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { SearchField, SectionHeader } from '../ui/kit';
 import { perfApi, type Exercise } from '../performance/perf.api';
 import { NewExerciseForm } from './NewExerciseForm';
+import { ExerciseGuideSheet } from '../exercise-guide/ExerciseGuide';
+import { searchExercises } from '../exercise-guide/search';
 import { EMPTY_SET, type DraftCardio, type DraftExercise, type DraftSet } from './workout-draft';
 
 function NumField({
@@ -43,12 +45,15 @@ export function StrengthEditor({
   const [picking, setPicking] = useState(false);
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState('');
+  /** Ejercicio cuya ficha está abierta («Cómo se hace»). */
+  const [guideId, setGuideId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (picking && catalog === null) {
+    if ((picking || guideId) && catalog === null) {
       perfApi.exercises().then(setCatalog).catch(() => setCatalog([]));
     }
-  }, [picking, catalog]);
+  }, [picking, guideId, catalog]);
+  const guide = guideId ? (catalog?.find((e) => e.id === guideId) ?? null) : null;
 
   const patch = (i: number, changes: Partial<DraftExercise>) =>
     onChange(value.map((e, j) => (j === i ? { ...e, ...changes } : e)));
@@ -58,8 +63,8 @@ export function StrengthEditor({
     setCreating(false);
     setQuery('');
   };
-  const q = query.trim().toLowerCase();
-  const matches = (catalog ?? []).filter((e) => e.name.toLowerCase().includes(q)).slice(0, 8);
+  const q = query.trim();
+  const matches = searchExercises(catalog ?? [], q).slice(0, 8);
 
   return (
     <section className="rk-section" aria-labelledby="ejercicios">
@@ -69,6 +74,14 @@ export function StrengthEditor({
         <div key={`${ex.exerciseId}-${i}`} className="rk-list workout__exercise">
           <div className="rk-row">
             <span className="rk-row__main rk-row__title">{ex.name}</span>
+            <button
+              type="button"
+              className="rk-textbtn"
+              aria-label={`Cómo se hace: ${ex.name}`}
+              onClick={() => setGuideId(ex.exerciseId)}
+            >
+              Cómo se hace
+            </button>
             <button type="button" className="rk-textbtn" onClick={() => onChange(value.filter((_, j) => j !== i))}>
               Quitar
             </button>
@@ -157,6 +170,7 @@ export function StrengthEditor({
       <p className="rk-note">
         Opcional. RIR = repeticiones que te quedaban. Toca el número de una serie para marcarla como calentamiento (C): no cuenta para marcas ni volumen.
       </p>
+      <ExerciseGuideSheet exercise={guide} onClose={() => setGuideId(null)} />
     </section>
   );
 }

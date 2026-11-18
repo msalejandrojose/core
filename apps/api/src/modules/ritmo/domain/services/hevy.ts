@@ -47,6 +47,8 @@ export function splitTitle(title: string): {
   const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(title.trim());
   const clean = (s: string) =>
     s
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, ' ')
       .trim();
@@ -105,6 +107,11 @@ const ALIASES: Record<string, string> = {
   'bulgarian split squat': 'bulgarian_split_squat',
   'leg extension|machine': 'leg_extension',
   'deadlift|barbell': 'deadlift',
+  'good morning|barbell': 'good_morning',
+  'good morning': 'good_morning',
+  // Hevy en español traduce «Good Morning» al pie de la letra.
+  'buenos dias|barra': 'good_morning',
+  'buenos dias': 'good_morning',
   'romanian deadlift|barbell': 'romanian_deadlift',
   'romanian deadlift|dumbbell': 'romanian_deadlift',
   'lying leg curl|machine': 'leg_curl',

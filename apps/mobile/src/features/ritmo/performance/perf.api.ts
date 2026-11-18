@@ -15,6 +15,10 @@ export interface Exercise {
   code: string | null;
   name: string;
   isBodyweight: boolean;
+  /** Qué es y qué trabaja. Los del catálogo la traen; los propios, no. */
+  description?: string | null;
+  /** Técnica paso a paso, en orden. */
+  steps?: string[];
   /** null = del catálogo; con valor = creado por el usuario. */
   ownerUserId: string | null;
   /** true si el usuario ha ajustado los pesos de un ejercicio del catálogo. */

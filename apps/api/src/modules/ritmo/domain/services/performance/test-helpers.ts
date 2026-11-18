@@ -18,6 +18,8 @@ export function exercise(
     name: id,
     isCompound: muscles.length > 1,
     isBodyweight: opts.bodyweight ?? false,
+    description: null,
+    steps: [],
     ownerUserId: null,
     customized: false,
     muscles: muscles.map(([muscle, weight]) => ({ muscle, weight })),
