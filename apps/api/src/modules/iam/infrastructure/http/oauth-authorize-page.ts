@@ -149,7 +149,7 @@ export function renderOAuthAuthorizePage(input: {
     // La pestaña se abre ya en el clic (si no, el navegador la bloquea) y luego se le pone la URL.
     var tab = window.open('', '_blank');
     busy(true);
-    fetch('/v1/auth/google/start', { method: 'POST' })
+    fetch('/v1/auth/google/start?origin=web', { method: 'POST' })
       .then(function (r) { return r.json(); })
       .then(function (s) {
         if (!s.authUrl || !s.sessionId) throw new Error();

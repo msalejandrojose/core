@@ -2,6 +2,8 @@
 // TASK-216): la app abre `authUrl` en el navegador del sistema y hace polling
 // de esta entidad hasta que deja de estar PENDING.
 export type GoogleAuthSessionStatus = 'PENDING' | 'READY' | 'FAILED';
+/** `GAME`: Godot (vuelve con deep link). `WEB`: una página web que hace el polling. */
+export type GoogleAuthSessionOrigin = 'GAME' | 'WEB';
 
 export class GoogleAuthSession {
   constructor(
@@ -12,6 +14,7 @@ export class GoogleAuthSession {
     readonly userId: string | null,
     readonly failureReason: string | null,
     readonly expiresAt: Date,
+    readonly origin: GoogleAuthSessionOrigin = 'GAME',
   ) {}
 
   isExpired(now: Date): boolean {

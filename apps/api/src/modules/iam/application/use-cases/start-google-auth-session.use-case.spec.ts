@@ -85,4 +85,22 @@ describe('StartGoogleAuthSessionUseCase', () => {
 
     expect(repo.created[0].state).not.toBe(repo.created[1].state);
   });
+
+  it('guarda quién lo inicia: GAME por defecto, WEB si lo pide la web', async () => {
+    const repo = new FakeGoogleAuthSessionRepository();
+    const useCase = new StartGoogleAuthSessionUseCase(
+      repo,
+      config({
+        GOOGLE_OAUTH_CLIENT_ID: 'client-abc',
+        GOOGLE_OAUTH_REDIRECT_URI:
+          'https://api.example.com/auth/google/callback',
+      }),
+    );
+
+    await useCase.execute();
+    await useCase.execute('WEB');
+
+    expect(repo.created[0].origin).toBe('GAME');
+    expect(repo.created[1].origin).toBe('WEB');
+  });
 });
