@@ -1,0 +1,106 @@
+/* Evolución de un ejercicio: lectura de la sesión señalada y dos gráficos de línea. */
+
+.exprog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.exprog__loading {
+  height: 220px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-bg);
+}
+.exprog__readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.exprog__readout-day {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--ritmo-ink-muted);
+}
+.exprog__readout-v {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ritmo-ink);
+  font-variant-numeric: tabular-nums;
+}
+.exprog__readout-s {
+  font-size: 15px;
+  color: var(--ritmo-ink-muted);
+}
+.exprog__delta {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--ritmo-ink-muted);
+}
+.exprog__chart {
+  margin: 0;
+}
+.exprog__chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ritmo-ink-2);
+  margin-bottom: 2px;
+}
+.exprog__svg {
+  display: block;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+.exprog__grid {
+  stroke: var(--ritmo-separator);
+  stroke-width: 1;
+}
+.exprog__tick {
+  fill: var(--ritmo-ink-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.exprog__line {
+  fill: none;
+  stroke: var(--ritmo-tint);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.exprog__area {
+  fill: var(--ritmo-tint);
+  opacity: 0.08;
+}
+.exprog__dot {
+  fill: var(--ritmo-tint);
+}
+.exprog__marker {
+  fill: var(--ritmo-tint);
+  stroke: var(--ritmo-surface);
+  stroke-width: 2;
+}
+.exprog__cross {
+  stroke: var(--ritmo-ink-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.exprog__table-btn {
+  align-self: flex-start;
+}
+.exprog__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.exprog__table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ritmo-ink-muted);
+  font-size: 12px;
+  padding: 4px 0;
+}
+.exprog__table td {
+  padding: 6px 0;
+  border-top: 1px solid var(--ritmo-separator);
+  color: var(--ritmo-ink);
+}

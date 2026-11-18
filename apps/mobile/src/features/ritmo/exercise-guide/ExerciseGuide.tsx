@@ -3,6 +3,7 @@ import { SheetBar } from '../ui/kit';
 import { MUSCLE_NAME } from '../performance/labels';
 import type { Exercise } from '../performance/perf.api';
 import { ExerciseAnimation } from './ExerciseAnimation';
+import { ExerciseProgress } from './ExerciseProgress';
 import { motionFor } from './motions';
 import './exercise-guide.css';
 
@@ -66,7 +67,12 @@ export function ExerciseGuideSheet({ exercise, onClose }: { exercise: Exercise |
       <IonContent>
         <div className="rk-sheet">
           <SheetBar title={exercise?.name ?? ''} onCancel={onClose} cancelLabel="Cerrar" />
-          {exercise ? <ExerciseGuide exercise={exercise} /> : null}
+          {exercise ? (
+            <div className="exguide__sheet">
+              <ExerciseGuide exercise={exercise} />
+              <ExerciseProgress exerciseId={exercise.id} isBodyweight={exercise.isBodyweight} />
+            </div>
+          ) : null}
         </div>
       </IonContent>
     </IonModal>

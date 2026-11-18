@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ExerciseFigure } from './ExerciseFigure';
 import { partsFor } from './parts';
-import { lerpPose, phase, solvePose, type Motion } from './motion';
+import { phase, poseAt, solvePose, type Motion } from './motion';
 import { motionFor } from './motions';
 import './exercise-guide.css';
 
@@ -84,7 +84,7 @@ export function ExerciseAnimation({ code, primary, name }: Props) {
         aria-pressed={paused}
         onClick={() => setPaused((p) => !p)}
       >
-        <ExerciseFigure frame={solvePose(lerpPose(motion.a, motion.b, t), view)} motion={motion} hot={hot} />
+        <ExerciseFigure frame={solvePose(poseAt(motion, t), view)} motion={motion} hot={hot} />
         {paused ? <span className="exanim__paused">En pausa</span> : null}
       </button>
     </div>

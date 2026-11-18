@@ -124,6 +124,11 @@ function fakes(initial: Partial<HevyConnection> | null = {}) {
       imported.set(id, d);
       return { created, previousDay: created ? null : d.loggedOn };
     },
+    importedStarts: async () =>
+      [...imported].map(([externalId, d]) => ({
+        externalId,
+        startedAt: d.startedAt,
+      })),
     deleteImported: async (_u, id) =>
       imported.delete(id) ? '2026-11-10' : null,
     recentStrengthSessions: async () => sessions,

@@ -4,6 +4,10 @@ import { perfApi, type Exercise } from '../performance/perf.api';
 import { NewExerciseForm } from './NewExerciseForm';
 import { ExerciseGuideSheet } from '../exercise-guide/ExerciseGuide';
 import { searchExercises } from '../exercise-guide/search';
+import { toast } from '@/lib/toast';
+import { templateErrorText, templatesApi, type WorkoutTemplate } from '../templates.api';
+import { draftFromTemplate, templateBodyFromDraft } from '../templates/template-draft';
+import '../templates/templates.css';
 import { EMPTY_SET, type DraftCardio, type DraftExercise, type DraftSet } from './workout-draft';
 
 function NumField({
@@ -55,6 +59,29 @@ export function StrengthEditor({
   }, [picking, guideId, catalog]);
   const guide = guideId ? (catalog?.find((e) => e.id === guideId) ?? null) : null;
 
+  const [templates, setTemplates] = useState<WorkoutTemplate[] | null>(null);
+  const [templateName, setTemplateName] = useState<string | null>(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  useEffect(() => {
+    templatesApi.list().then(setTemplates).catch(() => setTemplates([]));
+  }, []);
+  const nameTaken = !!templateName && !!templates?.some((t) => t.name.toLowerCase() === templateName.trim().toLowerCase());
+
+  async function saveTemplate() {
+    if (!templateName?.trim()) return;
+    setSavingTemplate(true);
+    try {
+      const saved = await templatesApi.create(templateBodyFromDraft(templateName, value));
+      setTemplates((list) => [...(list ?? []).filter((t) => t.id !== saved.id && t.name !== saved.name), saved]);
+      setTemplateName(null);
+      toast.success(nameTaken ? 'Plantilla actualizada' : 'Plantilla guardada', saved.name);
+    } catch (e) {
+      toast.error('No se pudo guardar la plantilla', templateErrorText(e));
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
   const patch = (i: number, changes: Partial<DraftExercise>) =>
     onChange(value.map((e, j) => (j === i ? { ...e, ...changes } : e)));
   const add = (e: Exercise) => {
@@ -69,6 +96,19 @@ export function StrengthEditor({
   return (
     <section className="rk-section" aria-labelledby="ejercicios">
       <SectionHeader id="ejercicios">Ejercicios y series</SectionHeader>
+
+      {!value.length && templates?.length ? (
+        <p className="tpl__hint" id="tpl-hint">Empieza con una plantilla</p>
+      ) : null}
+      {!value.length && templates?.length ? (
+        <div className="tpl__chips" role="group" aria-labelledby="tpl-hint">
+          {templates.map((t) => (
+            <button key={t.id} type="button" className="tpl__chip" onClick={() => onChange(draftFromTemplate(t))}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {value.map((ex, i) => (
         <div key={`${ex.exerciseId}-${i}`} className="rk-list workout__exercise">
@@ -167,6 +207,36 @@ export function StrengthEditor({
           Añadir ejercicio
         </button>
       )}
+      {value.length ? (
+        templateName === null ? (
+          <button type="button" className="rk-textbtn" onClick={() => setTemplateName('')}>
+            Guardar como plantilla
+          </button>
+        ) : (
+          <div className="tpl__save">
+            <input
+              type="text"
+              value={templateName}
+              maxLength={120}
+              placeholder="Nombre (p. ej. Piernas)"
+              aria-label="Nombre de la plantilla"
+              autoFocus
+              onChange={(e) => setTemplateName(e.target.value)}
+            />
+            <button type="button" className="rk-textbtn" onClick={() => setTemplateName(null)}>
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="rk-btn rk-btn--small"
+              disabled={!templateName.trim() || savingTemplate}
+              onClick={() => void saveTemplate()}
+            >
+              {nameTaken ? 'Sustituir' : 'Guardar'}
+            </button>
+          </div>
+        )
+      ) : null}
       <p className="rk-note">
         Opcional. RIR = repeticiones que te quedaban. Toca el número de una serie para marcarla como calentamiento (C): no cuenta para marcas ni volumen.
       </p>

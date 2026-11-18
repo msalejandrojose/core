@@ -52,6 +52,40 @@ const curlUp = [ang(95, -72)];
 /** Manos cruzadas sobre el pecho. */
 const handsOnChest = [relAng(-30, 150)];
 
+/** Asiento de máquina visto de perfil, con o sin respaldo. */
+const seatSide = (back = true, tall = false): Prop[] => [
+  { kind: 'rect', x: 62, y: 133, w: 50, h: 7 },
+  { kind: 'line', from: [87, 140], to: [87, 166], w: 4 },
+  ...(back ? [{ kind: 'line', from: [70, 132], to: [tall ? 58 : 62, tall ? 36 : 70], w: 7 } as Prop] : []),
+];
+/** Sentado en una máquina, de perfil. */
+const seated = (arms: Limb[], over: Partial<Pose> = {}): Pose => ({
+  hip: [90, 128],
+  torso: -95,
+  arms,
+  legs: [ang(0, 90)],
+  ...over,
+});
+/** Sentado, de frente (los muslos se ven acortados). */
+const seatedFront = (arms: Limb[], over: Partial<Pose> = {}): Pose => ({
+  hip: [100, 124],
+  torso: -90,
+  arms,
+  legs: [{ a: 60, b: 92, k: 0.35 }],
+  feet: [20],
+  ...over,
+});
+const seatFront: Prop[] = [
+  { kind: 'rect', x: 76, y: 128, w: 48, h: 7 },
+  { kind: 'line', from: [100, 135], to: [100, 166], w: 4 },
+];
+/** Raíl de la máquina Smith en el x de la barra. */
+const smithRail = (x: number): Prop => ({ kind: 'line', from: [x, -20], to: [x, 166], w: 3 });
+/** Plataforma bajo las rodillas de las máquinas de asistencia (vista de frente). */
+const assistPad: Prop = { kind: 'pad', at: 'knee', shift: [-7, 6], w: 4, h: 30, angle: 0 };
+/** Tumbado en el suelo, cabeza a la izquierda. */
+const FLOOR_HIP: Vec = [110, 158];
+
 /** Tumbado boca arriba en el banco plano, cabeza a la izquierda. */
 const supine = (arms: Limb[]): Pose => ({
   hip: [130, 113],
@@ -363,6 +397,264 @@ export const MOTIONS: Record<string, Motion> = {
       { kind: 'disc', at: [104, 104], r: 7 },
       { kind: 'disc', at: [48, 146], r: 5 },
     ],
+  },
+
+  // ── Máquinas, poleas y variantes ───────────────────────────────────────
+  smith_bench_press: {
+    a: supine([to(98, 66)]),
+    b: supine([to(102, 97)]),
+    props: [...flatBench, smithRail(100), { kind: 'plate', at: 'hand' }],
+  },
+  smith_incline_bench_press: {
+    a: { hip: [120, 117], torso: -145, arms: [to(92, 45)], legs: [to(150, 165, -1)] },
+    b: { hip: [120, 117], torso: -145, arms: [to(98, 80)], legs: [to(150, 165, -1)] },
+    props: [
+      { kind: 'line', from: [118, 124], to: [66, 87], w: 7 },
+      { kind: 'line', from: [110, 124], to: [142, 124], w: 7 },
+      { kind: 'line', from: [126, 126], to: [126, 166], w: 4 },
+      smithRail(95),
+      { kind: 'plate', at: 'hand' },
+    ],
+  },
+  smith_decline_bench_press: {
+    a: { hip: [126, 108], torso: 168, arms: [to(88, 68)], legs: [to(152, 136, -1)] },
+    b: { hip: [126, 108], torso: 168, arms: [to(98, 100)], legs: [to(152, 136, -1)] },
+    props: [
+      { kind: 'line', from: [136, 113], to: [56, 130], w: 7 },
+      { kind: 'line', from: [122, 118], to: [122, 166], w: 4 },
+      { kind: 'line', from: [66, 128], to: [66, 166], w: 4 },
+      { kind: 'roller', at: 'ankle', shift: [0, 5], r: 5 },
+      smithRail(94),
+      { kind: 'plate', at: 'hand' },
+    ],
+  },
+  smith_squat: {
+    a: stand(backBarArms, { torso: -88, legs: [to(110, 166, -1)] }),
+    b: { hip: [76, 128], torso: -60, arms: backBarArms, legs: [to(110, 166, -1)] },
+    props: [smithRail(92), backBar],
+  },
+  machine_chest_press: {
+    a: seated([to(89, 90)]),
+    b: seated([to(134, 84)]),
+    props: [...seatSide(), { kind: 'roller', at: 'hand', r: 3 }],
+  },
+  machine_incline_chest_press: {
+    a: seated([to(89, 88)]),
+    b: seated([to(124, 48)]),
+    props: [...seatSide(), { kind: 'roller', at: 'hand', r: 3 }],
+  },
+  pec_deck: {
+    view: 'front',
+    a: seatedFront([ang(4, -90)]),
+    b: seatedFront([{ a: 10, b: -90, k: 0.35 }]),
+    props: [...seatFront],
+  },
+  cable_lateral_raise: {
+    view: 'front',
+    a: standFront([to(108, 100, -1), to(80, 97, 1)]),
+    b: standFront([to(160, 54, -1), to(80, 97, 1)]),
+    props: [
+      { kind: 'disc', at: [30, 160], r: 4 },
+      { kind: 'line', from: [24, 166], to: [24, 120], w: 4 },
+      { kind: 'cable', from: [30, 160], to: 'hand' },
+      { kind: 'roller', at: 'hand', r: 3 },
+    ],
+  },
+  machine_lateral_raise: {
+    view: 'front',
+    a: seatedFront([to(120, 124, -1)]),
+    b: seatedFront([to(158, 80, -1)]),
+    props: [...seatFront],
+  },
+  cable_front_raise: {
+    a: stand([to(104, 97, -1)]),
+    b: stand([to(149, 44, -1)]),
+    props: [
+      { kind: 'line', from: [52, 166], to: [52, 120], w: 4 },
+      { kind: 'cable', from: [58, 160], to: 'hand' },
+      { kind: 'roller', at: 'hand', r: 3 },
+    ],
+  },
+  machine_shoulder_press: {
+    a: seated([to(98, 78)]),
+    b: seated([to(90, 33)]),
+    props: [...seatSide(true, true), { kind: 'roller', at: 'hand', r: 3 }],
+  },
+  rope_pushdown: {
+    a: stand([to(124, 62)], { torso: -84 }),
+    b: stand([to(110, 97)], { torso: -84 }),
+    props: [
+      { kind: 'cable', from: [158, -8], to: 'hand' },
+      { kind: 'line', from: [166, -16], to: [166, 166], w: 5 },
+      { kind: 'roller', at: 'hand', r: 3 },
+    ],
+  },
+  overhead_triceps_extension: {
+    a: stand([ang(-60, 150)], { torso: -75, legs: [to(112, 166, -1), to(86, 166, -1)] }),
+    b: stand([ang(-60, -55)], { torso: -75, legs: [to(112, 166, -1), to(86, 166, -1)] }),
+    props: [
+      { kind: 'line', from: [22, -16], to: [22, 166], w: 5 },
+      { kind: 'cable', from: [28, 64], to: 'hand' },
+      { kind: 'roller', at: 'hand', r: 3 },
+    ],
+  },
+  seated_dip_machine: {
+    a: seated([to(96, 100)], { torso: -90 }),
+    b: seated([to(94, 130)], { torso: -90 }),
+    props: [...seatSide(), { kind: 'roller', at: 'hand', r: 3 }],
+  },
+  bench_dip: {
+    a: { hip: [88, 118], torso: -95, arms: [to(80, 118)], legs: [to(148, 163, -1)], feet: [-60] },
+    b: { hip: [90, 146], torso: -95, arms: [to(80, 118)], legs: [to(148, 163, -1)], feet: [-60] },
+    props: [
+      { kind: 'rect', x: 36, y: 120, w: 46, h: 7 },
+      { kind: 'line', from: [44, 127], to: [44, 166], w: 4 },
+      { kind: 'line', from: [74, 127], to: [74, 166], w: 4 },
+    ],
+  },
+  assisted_dip: {
+    a: { hip: [92, 85.3], torso: -80, arms: [to(106, 88)], legs: [ang(100, 190)], feet: [100] },
+    b: { hip: [88.3, 107.2], torso: -70, arms: [to(106, 88)], legs: [ang(98, 195)], feet: [105] },
+    props: [
+      { kind: 'line', from: [90, 93], to: [130, 93], w: 5 },
+      { kind: 'line', from: [126, 93], to: [126, 166], w: 4 },
+      { kind: 'pad', at: 'knee', shift: [-12, 7], w: 5, h: 28, angle: 0 },
+    ],
+  },
+  iso_lateral_row: {
+    a: seated([to(150, 78)], { torso: -75 }),
+    b: seated([to(104, 96)], { torso: -75 }),
+    props: [...seatSide(false), { kind: 'disc', at: [107, 101], r: 6 }, { kind: 'roller', at: 'hand', r: 3 }],
+  },
+  chin_up: {
+    view: 'front',
+    ground: false,
+    a: { hip: [100, 104], torso: -90, arms: [to(126, 14)], legs: [ang(91, 92)], feet: [30] },
+    b: { hip: [100, 68], torso: -90, arms: [to(126, 14)], legs: [ang(91, 92)], feet: [30] },
+    props: [
+      { kind: 'line', from: [40, 12], to: [160, 12], w: 5 },
+      { kind: 'line', from: [44, 12], to: [44, -20], w: 4 },
+      { kind: 'line', from: [156, 12], to: [156, -20], w: 4 },
+    ],
+  },
+  assisted_pull_up: {
+    view: 'front',
+    ground: false,
+    a: { hip: [100, 104], torso: -90, arms: [to(140, 14)], legs: [ang(91, 92)], feet: [30] },
+    b: { hip: [100, 68], torso: -90, arms: [to(140, 14)], legs: [ang(91, 92)], feet: [30] },
+    props: [
+      { kind: 'line', from: [40, 12], to: [160, 12], w: 5 },
+      { kind: 'line', from: [44, 12], to: [44, -20], w: 4 },
+      { kind: 'line', from: [156, 12], to: [156, -20], w: 4 },
+      assistPad,
+    ],
+  },
+  assisted_chin_up: {
+    view: 'front',
+    ground: false,
+    a: { hip: [100, 104], torso: -90, arms: [to(126, 14)], legs: [ang(91, 92)], feet: [30] },
+    b: { hip: [100, 68], torso: -90, arms: [to(126, 14)], legs: [ang(91, 92)], feet: [30] },
+    props: [
+      { kind: 'line', from: [40, 12], to: [160, 12], w: 5 },
+      { kind: 'line', from: [44, 12], to: [44, -20], w: 4 },
+      { kind: 'line', from: [156, 12], to: [156, -20], w: 4 },
+      assistPad,
+    ],
+  },
+  rear_delt_machine: {
+    view: 'front',
+    a: seatedFront([to(104, 86, -1)]),
+    b: seatedFront([to(160, 80, -1)]),
+    props: [...seatFront],
+  },
+  incline_dumbbell_curl: {
+    a: { hip: [95, 128], torso: -125, arms: [ang(95, 90)], legs: [ang(5, 90)] },
+    b: { hip: [95, 128], torso: -125, arms: [ang(95, -60)], legs: [ang(5, 90)] },
+    props: [
+      { kind: 'line', from: [90, 133], to: [56, 84], w: 7 },
+      { kind: 'rect', x: 80, y: 134, w: 40, h: 7 },
+      { kind: 'line', from: [100, 141], to: [100, 166], w: 4 },
+      { kind: 'dumbbell', at: 'hand' },
+    ],
+  },
+  cable_curl: {
+    a: stand(curlDown),
+    b: stand(curlUp),
+    props: [
+      { kind: 'line', from: [156, 166], to: [156, 124], w: 4 },
+      { kind: 'cable', from: [150, 160], to: 'hand' },
+      { kind: 'roller', at: 'hand', r: 3 },
+    ],
+  },
+  preacher_curl: {
+    a: { hip: [88, 128], torso: -80, arms: [ang(40, 55)], legs: [ang(0, 90)] },
+    b: { hip: [88, 128], torso: -80, arms: [ang(40, -85)], legs: [ang(0, 90)] },
+    props: [
+      { kind: 'rect', x: 62, y: 133, w: 50, h: 7 },
+      { kind: 'line', from: [87, 140], to: [87, 166], w: 4 },
+      { kind: 'line', from: [99, 93], to: [124, 113], w: 6 },
+      { kind: 'line', from: [120, 113], to: [120, 166], w: 4 },
+      { kind: 'plate', at: 'hand', r: 8 },
+    ],
+  },
+  seated_leg_curl: {
+    a: { hip: [90, 120], torso: -100, arms: [to(100, 126)], legs: [ang(0, -5)], feet: [-95] },
+    b: { hip: [90, 120], torso: -100, arms: [to(100, 126)], legs: [ang(0, 100)], feet: [0] },
+    props: [
+      { kind: 'rect', x: 62, y: 125, w: 64, h: 7 },
+      { kind: 'line', from: [74, 124], to: [62, 64], w: 7 },
+      { kind: 'line', from: [90, 132], to: [90, 166], w: 4 },
+      { kind: 'disc', at: [112, 112], r: 5 },
+      { kind: 'roller', at: 'ankle', shift: [0, 5], r: 6 },
+    ],
+  },
+  seated_calf_raise: {
+    a: { hip: [80, 128], torso: -90, arms: [ang(60, 10)], legs: [to(117.2, 160.1, -1)], feet: [10] },
+    b: { hip: [80, 128], torso: -90, arms: [ang(60, 10)], legs: [to(121.7, 153, -1)], feet: [55] },
+    props: [
+      { kind: 'rect', x: 52, y: 133, w: 46, h: 7 },
+      { kind: 'line', from: [75, 140], to: [75, 166], w: 4 },
+      { kind: 'rect', x: 120, y: 161, w: 22, h: 5 },
+      { kind: 'roller', at: 'knee', shift: [0, -7], r: 6 },
+    ],
+  },
+  hip_abduction: {
+    view: 'front',
+    a: seatedFront([to(124, 124, -1)], { legs: [{ a: 84, b: 92, k: 0.35 }] }),
+    b: seatedFront([to(124, 124, -1)], { legs: [{ a: 40, b: 92, k: 0.55 }] }),
+    props: [...seatFront],
+  },
+  hip_adduction: {
+    view: 'front',
+    a: seatedFront([to(124, 124, -1)], { legs: [{ a: 40, b: 92, k: 0.55 }] }),
+    b: seatedFront([to(124, 124, -1)], { legs: [{ a: 84, b: 92, k: 0.35 }] }),
+    props: [...seatFront],
+  },
+  box_jump: {
+    a: { hip: [78, 118], torso: -50, arms: [ang(130, 120)], legs: [to(96, 166, -1)] },
+    mid: { hip: [112, 84], torso: -70, arms: [ang(-20, -40)], legs: [ang(50, 125)] },
+    b: { hip: [134, 62], torso: -86, arms: [ang(40, 20)], legs: [to(138, 128, -1)] },
+    props: [{ kind: 'rect', x: 116, y: 128, w: 50, h: 38 }],
+  },
+  decline_crunch: {
+    a: { hip: [124, 108], torso: 160, arms: [relAng(-110, 112)], legs: [to(156, 132, -1)] },
+    b: { hip: [124, 108], torso: -155, arms: [relAng(-110, 112)], legs: [to(156, 132, -1)] },
+    props: [
+      { kind: 'line', from: [138, 113], to: [48, 146], w: 7 },
+      { kind: 'line', from: [126, 118], to: [126, 166], w: 4 },
+      { kind: 'line', from: [60, 142], to: [60, 166], w: 4 },
+      { kind: 'roller', at: 'ankle', shift: [0, 5], r: 5 },
+    ],
+  },
+  bicycle_crunch: {
+    a: { hip: FLOOR_HIP, torso: -160, arms: [relAng(-110, 112)], legs: [ang(-70, 20), ang(-15, -15)] },
+    b: { hip: FLOOR_HIP, torso: -158, arms: [relAng(-110, 112)], legs: [ang(-15, -15), ang(-70, 20)] },
+    ms: 2200,
+  },
+  scissor_kicks: {
+    a: { hip: FLOOR_HIP, torso: 180, arms: [relAng(-5, 0)], legs: [ang(-25, -25), ang(-8, -8)] },
+    b: { hip: FLOOR_HIP, torso: 180, arms: [relAng(-5, 0)], legs: [ang(-8, -8), ang(-25, -25)] },
+    ms: 1800,
   },
 };
 

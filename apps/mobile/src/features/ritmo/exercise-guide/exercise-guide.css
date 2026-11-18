@@ -175,3 +175,18 @@
   line-height: 1.45;
   color: var(--ritmo-ink-muted);
 }
+
+.exdetail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.exguide__sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 24px;
+}

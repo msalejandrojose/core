@@ -1,0 +1,70 @@
+.tpl__list {
+  margin: 0;
+  padding: 0 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tpl__list li {
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--ritmo-ink);
+}
+.tpl__ex {
+  color: var(--ritmo-ink);
+  text-decoration: none;
+}
+.tpl__line {
+  display: block;
+  font-size: 13px;
+  color: var(--ritmo-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.tpl__delete {
+  align-self: flex-start;
+  color: var(--ritmo-danger);
+}
+.tpl__danger {
+  background: var(--ritmo-danger);
+}
+.tpl__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tpl__chip {
+  border: 0;
+  border-radius: var(--ritmo-radius-pill);
+  background: var(--ritmo-tint-soft);
+  color: var(--ritmo-tint);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 14px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.tpl__save {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.tpl__save input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid var(--ritmo-border);
+  border-radius: 10px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 16px;
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+}
+
+.tpl__hint {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--ritmo-ink-muted);
+}

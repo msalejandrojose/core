@@ -105,6 +105,8 @@ export interface Motion {
   view?: 'side' | 'front';
   a: Pose;
   b: Pose;
+  /** Pose a mitad de recorrido, si el camino no es recto (un salto). */
+  mid?: Pose;
   props?: Prop[];
   /** Si se dibuja el suelo (no en ejercicios colgado). */
   ground?: boolean;
@@ -275,6 +277,12 @@ export function lerpPose(a: Pose, b: Pose, t: number): Pose {
     feet: a.feet || b.feet ? (a.feet ?? b.feet ?? []).map((_, i) => lerpAngle(a.feet?.[i] ?? 0, b.feet?.[i] ?? 0, t)) : undefined,
     wrist: lerpOpt(a.wrist, b.wrist, t, 0, lerpAngle),
   };
+}
+
+/** Pose del ejercicio en un punto del recorrido (0 = inicio, 1 = final). */
+export function poseAt(motion: Motion, t: number): Pose {
+  if (!motion.mid) return lerpPose(motion.a, motion.b, t);
+  return t < 0.5 ? lerpPose(motion.a, motion.mid, t * 2) : lerpPose(motion.mid, motion.b, t * 2 - 1);
 }
 
 const ease = (t: number) => (1 - Math.cos(Math.PI * t)) / 2;

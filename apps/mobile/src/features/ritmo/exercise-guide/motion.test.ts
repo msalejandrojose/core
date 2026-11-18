@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BODY, lerpPose, phase, solvePose, type Frame, type Vec } from './motion';
+import { BODY, lerpPose, phase, poseAt, solvePose, type Frame, type Vec } from './motion';
 import { MOTIONS, motionFor } from './motions';
 
 /** Los códigos del catálogo global (apps/api/src/seeds/ritmo-exercises.data.ts). */
@@ -11,6 +11,13 @@ const CATALOG = [
   'back_squat', 'front_squat', 'leg_press', 'lunge', 'bulgarian_split_squat', 'leg_extension',
   'deadlift', 'romanian_deadlift', 'good_morning', 'leg_curl', 'hip_thrust', 'calf_raise',
   'plank', 'crunch', 'hanging_leg_raise', 'back_extension',
+  'smith_bench_press', 'smith_incline_bench_press', 'smith_decline_bench_press', 'smith_squat',
+  'machine_chest_press', 'machine_incline_chest_press', 'pec_deck', 'cable_lateral_raise',
+  'machine_lateral_raise', 'cable_front_raise', 'machine_shoulder_press', 'rope_pushdown',
+  'overhead_triceps_extension', 'seated_dip_machine', 'bench_dip', 'assisted_dip', 'iso_lateral_row',
+  'chin_up', 'assisted_pull_up', 'assisted_chin_up', 'rear_delt_machine', 'incline_dumbbell_curl',
+  'cable_curl', 'preacher_curl', 'seated_leg_curl', 'seated_calf_raise', 'hip_abduction',
+  'hip_adduction', 'box_jump', 'decline_crunch', 'bicycle_crunch', 'scissor_kicks',
 ];
 
 const dist = (p: Vec, q: Vec) => Math.hypot(p[0] - q[0], p[1] - q[1]);
@@ -38,9 +45,9 @@ describe('animaciones de ejercicios', () => {
 
   it.each(CATALOG)('%s: la figura es coherente en todo el recorrido', (code) => {
     const m = MOTIONS[code];
-    const foreshortened = [m.a, m.b].some((p) => p.legs.some((l) => 'k' in l && l.k !== undefined));
+    const foreshortened = [m.a, m.b, ...(m.mid ? [m.mid] : [])].some((p) => p.legs.some((l) => 'k' in l && l.k !== undefined));
     for (const t of [0, 0.25, 0.5, 0.75, 1]) {
-      expectSound(solvePose(lerpPose(m.a, m.b, t), m.view), foreshortened);
+      expectSound(solvePose(poseAt(m, t), m.view), foreshortened);
     }
   });
 

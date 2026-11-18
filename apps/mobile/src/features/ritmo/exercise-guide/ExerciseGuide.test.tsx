@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { vi, describe, expect, it } from 'vitest';
+
+// La ficha arrastra el cliente de la API, que exige VITE_API_URL; aquí no se llama.
+vi.mock('@/api/client', () => ({ apiClient: {} }));
 import { render, screen } from '@testing-library/react';
 import type { Exercise } from '../performance/perf.api';
 import { ExerciseGuide } from './ExerciseGuide';

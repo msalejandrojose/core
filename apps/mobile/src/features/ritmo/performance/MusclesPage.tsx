@@ -136,6 +136,13 @@ export default function MusclesPage() {
               </span>
               <Chevron />
             </Link>
+            <Link to="/tabs/progress/rendimiento/plantillas" className="rk-row perf__entry">
+              <span className="rk-row__main">
+                <span className="rk-row__title">Plantillas</span>
+                <span className="rk-row__sub perf__wrap">Tus entrenos tipo, para registrar más rápido</span>
+              </span>
+              <Chevron />
+            </Link>
           </>
         );
       }}
