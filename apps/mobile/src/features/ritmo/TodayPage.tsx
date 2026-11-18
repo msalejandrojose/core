@@ -286,7 +286,14 @@ export default function TodayPage() {
             </div>
           </header>
 
-          {dayStatus === 'error' ? (
+          {profileStatus === 'error' ? (
+            // Sin perfil no se carga el día: sin esto se quedaba para siempre
+            // en el esqueleto (API caída, URL inalcanzable o sin red).
+            <ErrorState
+              message="No se pudo conectar con Brío. Comprueba tu conexión e inténtalo de nuevo."
+              onRetry={() => void loadProfile()}
+            />
+          ) : dayStatus === 'error' ? (
             <ErrorState
               message="No se pudo cargar el día."
               onRetry={() => void loadDay()}
