@@ -25,7 +25,11 @@ const config: CapacitorConfig = {
   appName: 'Brío',
   webDir: 'dist',
   ...(devServerUrl
-    ? { server: { url: devServerUrl, cleartext: true } }
+    ? {
+        // Si el Vite del Mac no responde (apagado, sin ZeroTier), el WebView
+        // se quedaba en blanco: esta página local dice qué pasa.
+        server: { url: devServerUrl, cleartext: true, errorPath: 'dev-server-offline.html' },
+      }
     : httpApi
       ? { server: { androidScheme: 'http', cleartext: true } }
       : {}),

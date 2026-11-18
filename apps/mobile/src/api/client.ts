@@ -1,17 +1,12 @@
 import { createApiClient } from '@core/api-client';
 import { getAuthToken, useAuthStore } from '@/store/auth.store';
-
-const apiUrl = import.meta.env.VITE_API_URL;
-
-if (!apiUrl) {
-  // Fallar pronto y claro si falta la config en vez de hacer requests a `undefined`.
-  throw new Error('VITE_API_URL no está definida. Revisa apps/mobile/.env');
-}
+import { API_BASE_URL } from './config';
 
 // La API vive bajo `/v1` (ver apps/api/src/main.ts). El schema generado y los
-// call sites de la app son prefix-less: el prefijo se añade aquí, una única
-// vez, en vez de en cada llamada.
-const baseUrl = `${apiUrl}/v1`;
+// call sites de la app son prefix-less: el prefijo lo pone `API_BASE_URL`, una
+// única vez. Sin `VITE_API_URL` no se lanza aquí (dejaba la app en blanco): lo
+// gestiona `main.tsx` con `apiConfigured`.
+const baseUrl = API_BASE_URL;
 
 /**
  * Cliente HTTP tipado contra el OpenAPI de `@core/api` (openapi-fetch).
