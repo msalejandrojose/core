@@ -32,6 +32,12 @@ export class CompleteGoogleAuthSessionUseCase {
     private readonly resolveSocialUser: ResolveSocialUserUseCase,
   ) {}
 
+  /** Quién inició la sesión, para elegir la página de vuelta. GAME si no se sabe. */
+  async originOf(state: string): Promise<'GAME' | 'WEB'> {
+    const session = await this.sessions.findByState(state).catch(() => null);
+    return session?.origin ?? 'GAME';
+  }
+
   /** Devuelve `true` si la sesión quedó READY, `false` si quedó FAILED. */
   async execute(state: string, code: string): Promise<boolean> {
     const session = await this.sessions.findByState(state);

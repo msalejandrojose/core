@@ -8,6 +8,7 @@ import { BackLink, LargeTitle, NavRow, SectionHeader, Segmented, Switch } from '
 import { PATHS } from '../ui/paths';
 import { useGarminStatus } from './garmin.api';
 import { useHevyStatus } from './hevy.api';
+import { AiConnections } from './AiConnections';
 import './profile.css';
 
 interface Prefs {
@@ -23,8 +24,8 @@ const IMPORTS: { id: 'importActivities' | 'importHealth'; label: string; desc: s
 const SHARES = ['100', '75', '50', '0'] as const;
 
 /**
- * Conexiones (lienzo "Conexiones"): el reloj Garmin, Hevy y qué hace Ritmo con
- * lo que traen. Las preferencias se guardan al tocarlas. Apple Salud y enviar
+ * Conexiones (lienzo "Conexiones"): el reloj Garmin, Hevy, los asistentes de IA
+ * conectados (conector MCP) y qué hace Ritmo con lo que traen. Las preferencias se guardan al tocarlas. Apple Salud y enviar
  * datos al reloj aún no existen, y la pantalla lo dice en vez de simularlo.
  */
 export default function ConnectionsPage() {
@@ -127,6 +128,8 @@ export default function ConnectionsPage() {
               <span className="conn__link">{hevy?.connected ? 'Conectado' : 'Conectar'}</span>
             </Link>
           </section>
+
+          <AiConnections />
 
           <section className="rk-section" aria-labelledby="salud">
             <SectionHeader id="salud">Salud del teléfono</SectionHeader>

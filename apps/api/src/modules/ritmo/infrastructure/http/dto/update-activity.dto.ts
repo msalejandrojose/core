@@ -37,14 +37,14 @@ export class UpdateActivityDto {
   @Max(MAX_DURATION_SEC)
   durationSec?: number;
 
-  @ApiPropertyOptional({ example: 5200, nullable: true })
+  @ApiPropertyOptional({ type: Number, example: 5200, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsInt()
   @Min(0)
   distanceM?: number | null;
 
-  @ApiPropertyOptional({ example: 148, nullable: true })
+  @ApiPropertyOptional({ type: Number, example: 148, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsInt()
@@ -52,7 +52,7 @@ export class UpdateActivityDto {
   @Max(250)
   avgHeartRate?: number | null;
 
-  @ApiPropertyOptional({ example: 176, nullable: true })
+  @ApiPropertyOptional({ type: Number, example: 176, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsInt()
@@ -60,7 +60,7 @@ export class UpdateActivityDto {
   @Max(250)
   maxHeartRate?: number | null;
 
-  @ApiPropertyOptional({ example: 140, nullable: true })
+  @ApiPropertyOptional({ type: Number, example: 140, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsInt()
@@ -68,7 +68,7 @@ export class UpdateActivityDto {
   @Max(20000)
   elevationGainM?: number | null;
 
-  @ApiPropertyOptional({ example: 172, nullable: true })
+  @ApiPropertyOptional({ type: Number, example: 172, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsInt()
@@ -77,6 +77,7 @@ export class UpdateActivityDto {
   cadence?: number | null;
 
   @ApiPropertyOptional({
+    type: Number,
     example: 7,
     nullable: true,
     description: 'CR10 (1–10).',
@@ -88,7 +89,11 @@ export class UpdateActivityDto {
   @Max(10)
   rpe?: number | null;
 
-  @ApiPropertyOptional({ example: [300, 1200, 600, 240, 60], nullable: true })
+  @ApiPropertyOptional({
+    type: [Number],
+    example: [300, 1200, 600, 240, 60],
+    nullable: true,
+  })
   @IsOptional()
   @ValidateIf(notNull)
   @IsArray()
@@ -104,7 +109,7 @@ export class UpdateActivityDto {
   @IsIn(EFFORTS)
   effort?: Effort | null;
 
-  @ApiPropertyOptional({ maxLength: 500, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 500, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsString()

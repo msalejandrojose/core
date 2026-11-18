@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { countedExerciseKcal } from '../../../application/ports/connection-prefs.port';
 import type { DaySummary } from '../../../application/use-cases/get-day-summary.use-case';
 import { ActivitySessionResponseDto } from './activity-session.response.dto';
@@ -15,9 +15,16 @@ export class DayTotalsDto {
       'kcal de actividad que cuentan para el día, según la preferencia del usuario.',
   })
   kcalBurnedCounted: number;
-  @ApiPropertyOptional({ example: 2209, description: 'Objetivo de ese día.' })
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    example: 2209,
+    description: 'Objetivo de ese día.',
+  })
   kcalTarget: number | null;
-  @ApiPropertyOptional({
+  @ApiProperty({
+    type: Number,
+    nullable: true,
     example: 705,
     description:
       'kcal que quedan: objetivo − ingeridas + gastadas que cuentan. null sin objetivo.',
@@ -26,7 +33,8 @@ export class DayTotalsDto {
   @ApiProperty({ example: 92 }) proteinG: number;
   @ApiProperty({ example: 180 }) carbsG: number;
   @ApiProperty({ example: 61 }) fatG: number;
-  @ApiPropertyOptional({ example: 80.4 }) weightKg: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 80.4 })
+  weightKg: number | null;
 }
 
 export class DaySummaryResponseDto {

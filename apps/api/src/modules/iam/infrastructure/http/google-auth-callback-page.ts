@@ -10,7 +10,12 @@
 // memoria desde que abrió el navegador, así que el deep link solo hace falta
 // como señal de "despierta y comprueba ahora" — nada sensible que pueda
 // quedar en el histórico de enlaces del sistema operativo.
-export function renderGoogleAuthCallbackPage(ok: boolean, state: string): string {
+export function renderGoogleAuthCallbackPage(
+  ok: boolean,
+  state: string,
+  origin: 'GAME' | 'WEB' = 'GAME',
+): string {
+  if (origin === 'WEB') return renderWebCallbackPage(ok);
   const title = ok ? 'Sesión iniciada' : 'No se pudo iniciar sesión';
   const message = ok
     ? 'Ya puedes volver al juego, la sesión se ha iniciado correctamente.'
@@ -37,6 +42,38 @@ export function renderGoogleAuthCallbackPage(ok: boolean, state: string): string
     <p>${message}</p>
     <a class="button" href="${deepLink}">Volver al juego</a>
   </div>
+</body>
+</html>`;
+}
+
+// Login con Google iniciado desde una página web que hace el polling (la
+// pantalla de autorizar un conector OAuth): esa página sigue sola, así que
+// aquí solo se avisa y se intenta cerrar la pestaña. Sin deep link al juego.
+function renderWebCallbackPage(ok: boolean): string {
+  const title = ok ? 'Sesión iniciada' : 'No se pudo iniciar sesión';
+  const message = ok
+    ? 'Ya puedes cerrar esta pestaña: la otra página continúa sola.'
+    : 'Ha ocurrido un error al iniciar sesión con Google. Cierra esta pestaña y vuelve a intentarlo.';
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${title}</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background: #f2f2f7; color: #1c1c1e; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; text-align: center; padding: 24px; box-sizing: border-box; }
+  @media (prefers-color-scheme: dark) { body { background: #000; color: #f2f2f7; } .card { background: #1c1c1e; } p { color: #98989f; } }
+  .card { max-width: 360px; background: #fff; border-radius: 22px; padding: 24px; }
+  h1 { font-size: 1.25rem; margin: 0 0 8px; }
+  p { color: #6c6c70; margin: 0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>${title}</h1>
+    <p>${message}</p>
+  </div>
+  <script>${ok ? 'setTimeout(function () { window.close(); }, 800);' : ''}</script>
 </body>
 </html>`;
 }

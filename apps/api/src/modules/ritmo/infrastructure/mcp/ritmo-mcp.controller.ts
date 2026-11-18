@@ -1,5 +1,5 @@
 import { All, Controller, Get, Req, Res } from '@nestjs/common';
-import { ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Request, Response } from 'express';
 import { VerifyOAuthAccessTokenUseCase } from '../../../iam/application/use-cases/oauth.use-cases';
@@ -54,10 +54,9 @@ export class RitmoMcpController {
 
   @All('ritmo/mcp')
   @Public()
-  @ApiOperation({
-    summary:
-      'Conector MCP (Streamable HTTP) para gestionar el plan desde una IA. Auth: OAuth 2.1.',
-  })
+  // Fuera de Swagger: `@All` saldría 8 veces y no es una API REST (es JSON-RPC
+  // sobre Streamable HTTP; se describe con los metadatos MCP).
+  @ApiExcludeEndpoint()
   async mcp(@Req() req: Request, @Res() res: Response): Promise<void> {
     const base = publicBaseUrl(req);
     const challenge = (error?: string, description?: string) =>

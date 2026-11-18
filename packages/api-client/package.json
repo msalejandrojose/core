@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "generate": "openapi-typescript $API_URL/docs-json --default-non-nullable false -o src/generated/schema.d.ts"
+    "generate": "openapi-typescript $API_URL/docs-json --default-non-nullable false -o src/generated/schema.d.ts",
+    "generate:offline": "pnpm --filter @core/api build && node ../../apps/api/dist/generate-openapi.js ./openapi.json && openapi-typescript ./openapi.json --default-non-nullable false -o src/generated/schema.d.ts && rm ./openapi.json"
   },
   "dependencies": {
     "openapi-fetch": "^0.13.0"

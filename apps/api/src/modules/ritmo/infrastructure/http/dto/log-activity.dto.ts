@@ -93,7 +93,7 @@ export class LogActivityDto {
   @Max(10)
   rpe?: number;
 
-  @ApiPropertyOptional({
+  @ApiPropertyOptional({ type: [Number],
     example: [300, 1200, 600, 240, 60],
     description: 'Segundos en cada zona cardíaca, Z1 a Z5.',
   })
