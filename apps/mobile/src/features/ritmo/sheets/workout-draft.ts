@@ -7,6 +7,8 @@ export interface DraftSet {
   rir: string;
   /** Calentamiento: no cuenta para volumen ni marcas. */
   warmup: boolean;
+  /** Solo en vivo: la serie ya se ha hecho (✓). Nunca viaja a la API. */
+  done?: boolean;
 }
 export interface DraftExercise {
   exerciseId: string;
@@ -94,6 +96,51 @@ export function cardioBody(c: DraftCardio): Partial<LogActivityBody> {
 }
 
 const text = (n: number) => String(n).replace('.', ',');
+
+/** Kilos levantados en las series de trabajo completas (peso × reps). */
+export function exerciseVolume(ex: DraftExercise): number {
+  return ex.sets.reduce((sum, s) => {
+    if (s.warmup) return sum;
+    const w = num(s.weight) ?? (ex.bodyweight ? 0 : null);
+    const r = num(s.reps);
+    return w !== null && r !== null && r > 0 ? sum + w * r : sum;
+  }, 0);
+}
+
+/**
+ * Al terminar en vivo se guardan las series marcadas como hechas. Si no se
+ * marcó ninguna en todo el entreno (se usó como un formulario), se respeta
+ * todo lo apuntado. Las marcas `done` se quitan: son solo de la pantalla.
+ */
+export function finishLiveDrafts(drafts: DraftExercise[]): DraftExercise[] {
+  const anyDone = drafts.some((e) => e.sets.some((s) => s.done));
+  return drafts
+    .map((e) => ({
+      ...e,
+      sets: (anyDone ? e.sets.filter((s) => s.done) : e.sets).map((s) => ({ weight: s.weight, reps: s.reps, rir: s.rir, warmup: s.warmup })),
+    }))
+    .filter((e) => e.sets.length > 0);
+}
+
+/** "80 × 8" de una serie guardada, con coma decimal. */
+export function setLabel(s: { weightKg: number; reps: number }, bodyweight: boolean): string {
+  if (bodyweight && s.weightKg === 0) return `${s.reps} reps`;
+  return `${text(s.weightKg)} × ${s.reps}`;
+}
+
+/** Cronómetro: "4:05" o "1:02:09". */
+export function clock(totalSec: number): string {
+  const t = Math.max(0, Math.floor(totalSec));
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const sec = String(t % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+
+/** Valor de la serie anterior para precargar un campo vacío. */
+export function previousAsDraft(s: { weightKg: number; reps: number; rir: number | null }): Pick<DraftSet, 'weight' | 'reps' | 'rir'> {
+  return { weight: text(s.weightKg), reps: String(s.reps), rir: s.rir === null ? '' : String(s.rir) };
+}
 
 /** Campos de cardio de una edición: `null` quita el dato. */
 export interface CardioPatch {

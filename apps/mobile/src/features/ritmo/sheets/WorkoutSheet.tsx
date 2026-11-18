@@ -4,14 +4,17 @@ import { isApiError, ritmoApi, type ActivityType, type Effort } from '../api';
 import { formatKcal, nowIn, todayIn } from '../format';
 import { useRitmoStore } from '../ritmo.store';
 import { tapSuccess } from '../haptics';
-import { Icon, Segmented, SectionHeader, SheetBar, Stepper } from '../ui/kit';
+import { Chevron, Icon, Segmented, SectionHeader, SheetBar, Stepper } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
 import { CardioFields, StrengthEditor } from './WorkoutDetails';
+import { LiveWorkoutScreen } from './LiveWorkout';
+import { loadLive, type LiveWorkout } from './live-workout';
 import {
   EMPTY_CARDIO,
   cardioBody,
+  clock,
   exercisesBody,
   type DraftCardio,
   type DraftExercise,
@@ -64,6 +67,12 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
   const [exercises, setExercises] = useState<DraftExercise[]>([]);
   const [cardio, setCardio] = useState<DraftCardio>(EMPTY_CARDIO);
   const [saving, setSaving] = useState(false);
+  /** Entreno en vivo en marcha (también si está oculto) y si su pantalla está abierta. */
+  const [live, setLive] = useState<LiveWorkout | null>(null);
+  const [liveOpen, setLiveOpen] = useState(false);
+  /** Inicio real si el entreno se hizo en vivo: se guarda con esa hora. */
+  const [liveStartedAt, setLiveStartedAt] = useState<number | null>(null);
+  const [tick, setTick] = useState(() => Date.now());
 
   useEffect(() => {
     if (isOpen && types === null) {
@@ -80,8 +89,18 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
       setRpe(null);
       setExercises([]);
       setCardio(EMPTY_CARDIO);
+      setLiveStartedAt(null);
+      setLiveOpen(false);
+      setLive(loadLive());
     }
   }, [isOpen]);
+
+  // El "Retomar · 12:34" de la tarjeta en vivo avanza mientras está oculto.
+  useEffect(() => {
+    if (!isOpen || !live || liveOpen) return;
+    const t = window.setInterval(() => setTick(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [isOpen, live, liveOpen]);
 
   const tileCodes = TILES.map((t) => t.code).filter(Boolean);
   const others = (types ?? []).filter((t) => !tileCodes.includes(t.code as never));
@@ -108,8 +127,13 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
     try {
       const session = await ritmoApi.logActivity({
         activityTypeId: selected.id,
-        // Hoy: ahora. Otro día: mediodía de ese día, para que el huso no lo mueva.
-        startedAt: isToday ? new Date().toISOString() : new Date(`${day}T12:00:00.000Z`).toISOString(),
+        // En vivo: cuando empezó. Hoy: ahora. Otro día: mediodía de ese día, para que el huso no lo mueva.
+        startedAt:
+          liveStartedAt !== null
+            ? new Date(liveStartedAt).toISOString()
+            : isToday
+              ? new Date().toISOString()
+              : new Date(`${day}T12:00:00.000Z`).toISOString(),
         durationSec: minutes * 60,
         effort,
         ...(rpe !== null ? { rpe } : {}),
@@ -230,6 +254,29 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
             </div>
           </section>
 
+          {isStrength && isToday ? (
+            <button
+              type="button"
+              className={`live-cta${live ? ' is-running' : ''}`}
+              onClick={() => {
+                if (!live) setLive({ startedAt: Date.now(), exercises, rest: null });
+                setLiveOpen(true);
+              }}
+            >
+              <span className="live-cta__icon" aria-hidden="true">
+                <Icon d={PATHS.timer} size={22} />
+              </span>
+              <span className="rk-row__main">
+                <span className="live-cta__title">{live ? 'Retomar entreno en vivo' : 'Entrenar en vivo'}</span>
+                <span className="rk-row__sub">
+                  {live
+                    ? `En marcha · ${clock((tick - live.startedAt) / 1000)}`
+                    : 'Cronómetro, descansos y ✓ por serie'}
+                </span>
+              </span>
+              <Chevron />
+            </button>
+          ) : null}
           {isStrength ? <StrengthEditor value={exercises} onChange={setExercises} /> : null}
           {isCardio ? <CardioFields value={cardio} onChange={setCardio} /> : null}
 
@@ -243,6 +290,26 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
             Guardar entreno
           </button>
         </div>
+        {live ? (
+          <LiveWorkoutScreen
+            isOpen={liveOpen}
+            workout={live}
+            onChange={(update) => setLive((w) => (w ? update(w) : w))}
+            onHide={() => setLiveOpen(false)}
+            onDiscard={() => {
+              setLiveOpen(false);
+              setLive(null);
+            }}
+            onFinish={(r) => {
+              setLiveOpen(false);
+              setLive(null);
+              setExercises(r.exercises);
+              setMinutes(r.minutes);
+              setLiveStartedAt(r.startedAt);
+              toast.success('Entreno terminado', 'Revisa la intensidad y guárdalo.');
+            }}
+          />
+        ) : null}
       </IonContent>
     </IonModal>
   );

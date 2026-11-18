@@ -1,8 +1,19 @@
 import { useEffect, useState } from 'react';
-import { SearchField, SectionHeader } from '../ui/kit';
+import { Icon, SearchField, SectionHeader } from '../ui/kit';
+import { PATHS } from '../ui/paths';
 import { perfApi, type Exercise } from '../performance/perf.api';
 import { NewExerciseForm } from './NewExerciseForm';
-import { EMPTY_SET, type DraftCardio, type DraftExercise, type DraftSet } from './workout-draft';
+import { usePreviousSets } from './usePreviousSets';
+import {
+  EMPTY_SET,
+  clock,
+  exerciseVolume,
+  previousAsDraft,
+  setLabel,
+  type DraftCardio,
+  type DraftExercise,
+  type DraftSet,
+} from './workout-draft';
 
 function NumField({
   label,
@@ -31,18 +42,70 @@ function NumField({
   );
 }
 
-/** Ejercicios y series de una sesión de fuerza. */
-export function StrengthEditor({
+/** Campo numérico de una serie: grande, tabular y con la referencia de la última vez de placeholder. */
+function SetInput({
+  label,
   value,
   onChange,
+  placeholder,
+  decimal,
+  done,
 }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  decimal?: boolean;
+  done?: boolean;
+}) {
+  return (
+    <label className={`lift__in${done ? ' is-done' : ''}`}>
+      <span className="rk-visually-hidden">{label}</span>
+      <input
+        type="text"
+        inputMode={decimal ? 'decimal' : 'numeric'}
+        enterKeyHint="next"
+        value={value}
+        placeholder={placeholder}
+        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => onChange(e.target.value.replace(/[^0-9.,]/g, ''))}
+      />
+    </label>
+  );
+}
+
+const kg = (n: number) => `${Math.round(n).toLocaleString('es-ES')} kg`;
+const REST_STEP = 15;
+const REST_DEFAULT = 90;
+const REST_MAX = 600;
+
+export interface StrengthEditorProps {
   value: DraftExercise[];
   onChange: (next: DraftExercise[]) => void;
-}) {
+  /**
+   * Modo en vivo: cada serie lleva su ✓ en vez de la ×, y al marcarla se avisa
+   * con el descanso del ejercicio (en segundos, o null si no lo tiene).
+   */
+  live?: { onSetDone: (exercise: DraftExercise, restSec: number | null) => void };
+  /** Solo compara con entrenos anteriores a esta fecha (al editar uno guardado). */
+  previousBefore?: string | null;
+}
+
+/**
+ * Ejercicios y series de una sesión de fuerza. Cada ejercicio es una tarjeta
+ * con su resumen (series y volumen), una tabla Serie · Anterior · kg · Reps ·
+ * RIR y, al pie, añadir serie y el descanso. Lo que hiciste la última vez sale
+ * como referencia y se copia a la serie con un toque.
+ */
+export function StrengthEditor({ value, onChange, live, previousBefore = null }: StrengthEditorProps) {
   const [catalog, setCatalog] = useState<Exercise[] | null>(null);
   const [picking, setPicking] = useState(false);
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState('');
+  const previous = usePreviousSets(
+    value.map((e) => e.exerciseId),
+    previousBefore,
+  );
 
   useEffect(() => {
     if (picking && catalog === null) {
@@ -65,66 +128,173 @@ export function StrengthEditor({
     <section className="rk-section" aria-labelledby="ejercicios">
       <SectionHeader id="ejercicios">Ejercicios y series</SectionHeader>
 
-      {value.map((ex, i) => (
-        <div key={`${ex.exerciseId}-${i}`} className="rk-list workout__exercise">
-          <div className="rk-row">
-            <span className="rk-row__main rk-row__title">{ex.name}</span>
-            <button type="button" className="rk-textbtn" onClick={() => onChange(value.filter((_, j) => j !== i))}>
-              Quitar
-            </button>
-          </div>
-          <div className="workout__sets-head" aria-hidden="true">
-            <span />
-            <span>{ex.bodyweight ? 'Lastre kg' : 'kg'}</span>
-            <span>Reps</span>
-            <span>RIR</span>
-            <span />
-          </div>
-          {ex.sets.map((s, k) => {
-            const set = (changes: Partial<DraftSet>) =>
-              patch(i, { sets: ex.sets.map((x, y) => (y === k ? { ...x, ...changes } : x)) });
-            // Las de calentamiento no llevan número: la numeración es de las series de trabajo.
-            const n = ex.sets.slice(0, k + 1).filter((x) => !x.warmup).length;
-            return (
-              <div key={k} className="workout__set">
+      {value.map((ex, i) => {
+        const prev = previous[ex.exerciseId];
+        const working = ex.sets.filter((s) => !s.warmup).length;
+        const doneCount = ex.sets.filter((s) => s.done && !s.warmup).length;
+        const volume = exerciseVolume(live ? { ...ex, sets: ex.sets.filter((s) => s.done) } : ex);
+        const restSec = ex.rest === '' ? null : Number(ex.rest);
+        const setRest = (sec: number | null) => patch(i, { rest: sec === null ? '' : String(sec) });
+        const meta = [
+          live ? `${doneCount} de ${working} ${working === 1 ? 'serie' : 'series'}` : `${working} ${working === 1 ? 'serie' : 'series'}`,
+          volume > 0 ? kg(volume) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ');
+
+        return (
+          <article key={`${ex.exerciseId}-${i}`} className="lift" aria-labelledby={`lift-${i}`}>
+            <header className="lift__head">
+              <span className="lift__icon" aria-hidden="true">
+                <Icon d={PATHS.strength} size={20} />
+              </span>
+              <span className="lift__title">
+                <h3 id={`lift-${i}`}>{ex.name}</h3>
+                <span className="lift__meta">{meta}</span>
+              </span>
+              <button
+                type="button"
+                className="rk-iconbtn lift__remove"
+                aria-label={`Quitar ${ex.name}`}
+                onClick={() => onChange(value.filter((_, j) => j !== i))}
+              >
+                <Icon d={PATHS.trash} size={19} />
+              </button>
+            </header>
+
+            <div className="lift__grid lift__grid--head" aria-hidden="true">
+              <span>Serie</span>
+              <span className="lift__prevcol">Anterior</span>
+              <span>{ex.bodyweight ? '+kg' : 'kg'}</span>
+              <span>Reps</span>
+              <span>RIR</span>
+              <span>{live ? <Icon d={PATHS.check} size={16} stroke={2.6} /> : null}</span>
+            </div>
+
+            {ex.sets.map((s, k) => {
+              const set = (changes: Partial<DraftSet>) =>
+                patch(i, { sets: ex.sets.map((x, y) => (y === k ? { ...x, ...changes } : x)) });
+              // Las de calentamiento no llevan número: la numeración es de las series de trabajo.
+              const n = ex.sets.slice(0, k + 1).filter((x) => !x.warmup).length;
+              // Se empareja calentamiento con calentamiento y trabajo con trabajo.
+              const nth = ex.sets.slice(0, k).filter((x) => x.warmup === s.warmup).length;
+              const p = prev?.filter((x) => x.isWarmup === s.warmup)[nth] ?? null;
+              const ref = p ? previousAsDraft(p) : null;
+              // La referencia como placeholder solo en vivo, donde el ✓ la rellena;
+              // al registrar parecería un dato apuntado y no se guardaría.
+              const hint = live ? ref : null;
+              const canDone = (s.reps || ref?.reps || '') !== '';
+              const name = s.warmup ? 'Calentamiento' : `Serie ${n}`;
+              return (
+                <div key={k} className={`lift__grid lift__set${s.done ? ' is-done' : ''}${s.warmup ? ' is-warmup' : ''}`}>
+                  <button
+                    type="button"
+                    className="lift__n"
+                    aria-pressed={s.warmup}
+                    aria-label={s.warmup ? 'Serie de calentamiento. Toca para contarla como serie de trabajo.' : `Serie ${n}. Toca para marcarla como calentamiento.`}
+                    onClick={() => set({ warmup: !s.warmup })}
+                  >
+                    {s.warmup ? 'C' : n}
+                  </button>
+                  {p && ref ? (
+                    <button
+                      type="button"
+                      className="lift__prev lift__prevcol"
+                      aria-label={`Anterior: ${setLabel(p, ex.bodyweight)}. Toca para copiarla en ${name.toLowerCase()}.`}
+                      onClick={() => set(ref)}
+                    >
+                      {setLabel(p, ex.bodyweight)}
+                    </button>
+                  ) : (
+                    <span className="lift__prev lift__prevcol is-empty" aria-hidden="true">
+                      {prev === undefined ? '' : '—'}
+                    </span>
+                  )}
+                  <SetInput label={`${name}, peso en kilos`} value={s.weight} onChange={(v) => set({ weight: v })} placeholder={hint?.weight ?? (ex.bodyweight ? '0' : '—')} decimal done={s.done} />
+                  <SetInput label={`${name}, repeticiones`} value={s.reps} onChange={(v) => set({ reps: v })} placeholder={hint?.reps ?? '—'} done={s.done} />
+                  <SetInput label={`${name}, repeticiones en reserva`} value={s.rir} onChange={(v) => set({ rir: v })} placeholder={hint?.rir || '—'} done={s.done} />
+                  {live ? (
+                    <button
+                      type="button"
+                      className="lift__check"
+                      aria-pressed={!!s.done}
+                      aria-label={s.done ? `${name} hecha. Toca para desmarcarla.` : `Marcar ${name.toLowerCase()} como hecha`}
+                      disabled={!s.done && !canDone}
+                      onClick={() => {
+                        if (s.done) return set({ done: false });
+                        // Lo que no se tecleó se toma de la última vez, como en el placeholder.
+                        const filled = {
+                          weight: s.weight || ref?.weight || '',
+                          reps: s.reps || ref?.reps || '',
+                          rir: s.rir || ref?.rir || '',
+                        };
+                        const next = { ...ex, sets: ex.sets.map((x, y) => (y === k ? { ...x, ...filled, done: true } : x)) };
+                        patch(i, { sets: next.sets });
+                        live.onSetDone(next, restSec);
+                      }}
+                    >
+                      <Icon d={PATHS.check} size={18} stroke={2.6} />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="lift__x"
+                      aria-label={`Quitar ${name.toLowerCase()}`}
+                      disabled={ex.sets.length === 1}
+                      onClick={() => patch(i, { sets: ex.sets.filter((_, y) => y !== k) })}
+                    >
+                      <Icon d={PATHS.plus} size={16} stroke={2.2} className="lift__x-icon" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+
+            <footer className="lift__foot">
+              <button
+                type="button"
+                className="lift__add"
+                onClick={() => {
+                  const last = ex.sets[ex.sets.length - 1];
+                  patch(i, { sets: [...ex.sets, { ...last, warmup: false, done: false }] });
+                }}
+              >
+                <Icon d={PATHS.plus} size={16} stroke={2.4} />
+                Añadir serie
+              </button>
+              {live && ex.sets.length > 1 && !ex.sets[ex.sets.length - 1].done ? (
                 <button
                   type="button"
-                  className={`workout__set-n${s.warmup ? ' is-warmup' : ''}`}
-                  aria-pressed={s.warmup}
-                  aria-label={s.warmup ? 'Serie de calentamiento. Toca para contarla como serie de trabajo.' : `Serie ${n}. Toca para marcarla como calentamiento.`}
-                  onClick={() => set({ warmup: !s.warmup })}
+                  className="lift__undo"
+                  aria-label="Quitar la última serie"
+                  onClick={() => patch(i, { sets: ex.sets.slice(0, -1) })}
                 >
-                  {s.warmup ? 'C' : n}
+                  −
                 </button>
-                <NumField label={`Serie ${k + 1}, peso en kilos`} value={s.weight} onChange={(v) => set({ weight: v })} placeholder={ex.bodyweight ? '0' : '—'} decimal />
-                <NumField label={`Serie ${k + 1}, repeticiones`} value={s.reps} onChange={(v) => set({ reps: v })} placeholder="—" />
-                <NumField label={`Serie ${k + 1}, repeticiones en reserva`} value={s.rir} onChange={(v) => set({ rir: v })} placeholder="—" />
+              ) : null}
+              <div className="lift__rest" role="group" aria-label="Descanso entre series">
+                <Icon d={PATHS.timer} size={16} />
                 <button
                   type="button"
-                  className="workout__set-x"
-                  aria-label={`Quitar la serie ${k + 1}`}
-                  disabled={ex.sets.length === 1}
-                  onClick={() => patch(i, { sets: ex.sets.filter((_, y) => y !== k) })}
+                  aria-label="Quince segundos menos de descanso"
+                  disabled={restSec === null}
+                  onClick={() => setRest(restSec !== null && restSec > REST_STEP ? restSec - REST_STEP : null)}
                 >
-                  ×
+                  −
+                </button>
+                <span aria-live="polite">{restSec === null ? 'Descanso' : clock(restSec)}</span>
+                <button
+                  type="button"
+                  aria-label="Quince segundos más de descanso"
+                  onClick={() => setRest(restSec === null ? REST_DEFAULT : Math.min(REST_MAX, restSec + REST_STEP))}
+                >
+                  +
                 </button>
               </div>
-            );
-          })}
-          <div className="rk-row workout__row workout__rest">
-            <span className="rk-row__main rk-row__title">Descanso entre series</span>
-            <NumField label="Descanso entre series, en segundos" value={ex.rest} onChange={(v) => patch(i, { rest: v })} placeholder="—" />
-            <span className="workout__unit">s</span>
-          </div>
-          <button
-            type="button"
-            className="rk-row workout__add"
-            onClick={() => patch(i, { sets: [...ex.sets, { ...ex.sets[ex.sets.length - 1], warmup: false }] })}
-          >
-            Añadir serie
-          </button>
-        </div>
-      ))}
+            </footer>
+          </article>
+        );
+      })}
 
       {creating ? (
         <NewExerciseForm
@@ -151,11 +321,14 @@ export function StrengthEditor({
         </div>
       ) : (
         <button type="button" className="rk-tilebtn workout__add-ex" onClick={() => setPicking(true)}>
+          <Icon d={PATHS.plus} size={18} stroke={2.4} />
           Añadir ejercicio
         </button>
       )}
       <p className="rk-note">
-        Opcional. RIR = repeticiones que te quedaban. Toca el número de una serie para marcarla como calentamiento (C): no cuenta para marcas ni volumen.
+        {live
+          ? 'Marca cada serie con ✓ al acabarla: arranca el descanso. Si dejas un campo vacío, se usa lo de la última vez. Toca el número para marcarla como calentamiento (C).'
+          : 'Opcional. RIR = repeticiones que te quedaban. Toca «Anterior» para copiar lo de la última vez, y el número de una serie para marcarla como calentamiento (C): no cuenta para marcas ni volumen.'}
       </p>
     </section>
   );
