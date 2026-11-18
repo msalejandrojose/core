@@ -726,6 +726,13 @@ ion-modal.rk-modal-full ion-content {
   color: var(--ritmo-ink-muted);
   margin-right: -6px;
 }
+.lift__guide {
+  color: var(--ritmo-tint);
+  margin-right: -10px;
+}
+.lift__tpl {
+  align-self: center;
+}
 
 /* Rejilla Serie · Anterior · kg · Reps · RIR · acción. */
 .lift__grid {

@@ -131,8 +131,15 @@ export default function MusclesPage() {
           </section>
             <Link to="/tabs/progress/rendimiento/ejercicios" className="rk-row perf__entry">
               <span className="rk-row__main">
-                <span className="rk-row__title">Ajustar ejercicios</span>
-                <span className="rk-row__sub perf__wrap">Cambia qué músculos trabaja cada uno</span>
+                <span className="rk-row__title">Ejercicios</span>
+                <span className="rk-row__sub perf__wrap">Cómo se hace cada uno y qué músculos trabaja</span>
+              </span>
+              <Chevron />
+            </Link>
+            <Link to="/tabs/progress/rendimiento/plantillas" className="rk-row perf__entry">
+              <span className="rk-row__main">
+                <span className="rk-row__title">Plantillas</span>
+                <span className="rk-row__sub perf__wrap">Tus entrenos tipo, para registrar más rápido</span>
               </span>
               <Chevron />
             </Link>

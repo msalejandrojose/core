@@ -3,6 +3,12 @@ import { Icon, SearchField, SectionHeader } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { perfApi, type Exercise } from '../performance/perf.api';
 import { NewExerciseForm } from './NewExerciseForm';
+import { ExerciseGuideSheet } from '../exercise-guide/ExerciseGuide';
+import { searchExercises } from '../exercise-guide/search';
+import { toast } from '@/lib/toast';
+import { templateErrorText, templatesApi, type WorkoutTemplate } from '../templates.api';
+import { draftFromTemplate, templateBodyFromDraft } from '../templates/template-draft';
+import '../templates/templates.css';
 import { usePreviousSets } from './usePreviousSets';
 import {
   EMPTY_SET,
@@ -104,6 +110,8 @@ export function StrengthEditor({ value, onChange, live, previousBefore = null }:
   const [picking, setPicking] = useState(false);
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState('');
+  /** Ejercicio cuya ficha está abierta («Cómo se hace»). */
+  const [guideId, setGuideId] = useState<string | null>(null);
   const previous = usePreviousSets(
     value.map((e) => e.exerciseId),
     previousBefore,
@@ -121,10 +129,34 @@ export function StrengthEditor({ value, onChange, live, previousBefore = null }:
     });
 
   useEffect(() => {
-    if (picking && catalog === null) {
+    if ((picking || guideId) && catalog === null) {
       perfApi.exercises().then(setCatalog).catch(() => setCatalog([]));
     }
-  }, [picking, catalog]);
+  }, [picking, guideId, catalog]);
+  const guide = guideId ? (catalog?.find((e) => e.id === guideId) ?? null) : null;
+
+  const [templates, setTemplates] = useState<WorkoutTemplate[] | null>(null);
+  const [templateName, setTemplateName] = useState<string | null>(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  useEffect(() => {
+    templatesApi.list().then(setTemplates).catch(() => setTemplates([]));
+  }, []);
+  const nameTaken = !!templateName && !!templates?.some((t) => t.name.toLowerCase() === templateName.trim().toLowerCase());
+
+  async function saveTemplate() {
+    if (!templateName?.trim()) return;
+    setSavingTemplate(true);
+    try {
+      const saved = await templatesApi.create(templateBodyFromDraft(templateName, value));
+      setTemplates((list) => [...(list ?? []).filter((t) => t.id !== saved.id && t.name !== saved.name), saved]);
+      setTemplateName(null);
+      toast.success(nameTaken ? 'Plantilla actualizada' : 'Plantilla guardada', saved.name);
+    } catch (e) {
+      toast.error('No se pudo guardar la plantilla', templateErrorText(e));
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
 
   const patch = (i: number, changes: Partial<DraftExercise>) =>
     onChange(value.map((e, j) => (j === i ? { ...e, ...changes } : e)));
@@ -134,8 +166,8 @@ export function StrengthEditor({ value, onChange, live, previousBefore = null }:
     setCreating(false);
     setQuery('');
   };
-  const q = query.trim().toLowerCase();
-  const matches = (catalog ?? []).filter((e) => e.name.toLowerCase().includes(q)).slice(0, 8);
+  const q = query.trim();
+  const matches = searchExercises(catalog ?? [], q).slice(0, 8);
 
   const card = (ex: DraftExercise, i: number) => {
     const prev = previous[ex.exerciseId];
@@ -169,6 +201,14 @@ export function StrengthEditor({ value, onChange, live, previousBefore = null }:
             <h3 id={`lift-${i}`}>{ex.name}</h3>
             <span className="lift__meta">{meta}</span>
           </span>
+          <button
+            type="button"
+            className="rk-iconbtn lift__guide"
+            aria-label={`Cómo se hace: ${ex.name}`}
+            onClick={() => setGuideId(ex.exerciseId)}
+          >
+            <Icon d={PATHS.info} size={20} />
+          </button>
           {live && isExerciseDone(ex) ? (
             <button
               type="button"
@@ -385,6 +425,18 @@ export function StrengthEditor({ value, onChange, live, previousBefore = null }:
       ) : null}
 
       <SectionHeader id="ejercicios">{doneIdx.length > 0 ? 'Por hacer' : 'Ejercicios y series'}</SectionHeader>
+      {!value.length && templates?.length ? (
+        <p className="tpl__hint" id="tpl-hint">Empieza con una plantilla</p>
+      ) : null}
+      {!value.length && templates?.length ? (
+        <div className="tpl__chips" role="group" aria-labelledby="tpl-hint">
+          {templates.map((t) => (
+            <button key={t.id} type="button" className="tpl__chip" onClick={() => onChange(draftFromTemplate(t))}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {todoIdx.map((i) => card(value[i], i))}
       {live && doneIdx.length > 0 && todoIdx.length === 0 ? (
         <p className="lift-allset">Todo hecho. Añade otro ejercicio o pulsa Terminar.</p>
@@ -419,11 +471,42 @@ export function StrengthEditor({ value, onChange, live, previousBefore = null }:
           Añadir ejercicio
         </button>
       )}
+      {value.length ? (
+        templateName === null ? (
+          <button type="button" className="rk-textbtn lift__tpl" onClick={() => setTemplateName('')}>
+            Guardar como plantilla
+          </button>
+        ) : (
+          <div className="tpl__save">
+            <input
+              type="text"
+              value={templateName}
+              maxLength={120}
+              placeholder="Nombre (p. ej. Piernas)"
+              aria-label="Nombre de la plantilla"
+              autoFocus
+              onChange={(e) => setTemplateName(e.target.value)}
+            />
+            <button type="button" className="rk-textbtn" onClick={() => setTemplateName(null)}>
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="rk-btn rk-btn--small"
+              disabled={!templateName.trim() || savingTemplate}
+              onClick={() => void saveTemplate()}
+            >
+              {nameTaken ? 'Sustituir' : 'Guardar'}
+            </button>
+          </div>
+        )
+      ) : null}
       <p className="rk-note">
         {live
           ? 'Marca cada serie con ✓ al acabarla: arranca el descanso. Si dejas un campo vacío, se usa lo de la última vez. Al terminar un ejercicio se pliega arriba, en Hechos. Toca el número de una serie para marcarla como calentamiento (C).'
           : 'Opcional. RIR = repeticiones que te quedaban. Toca «Anterior» para copiar lo de la última vez, y el número de una serie para marcarla como calentamiento (C): no cuenta para marcas ni volumen.'}
       </p>
+      <ExerciseGuideSheet exercise={guide} onClose={() => setGuideId(null)} />
     </section>
   );
 }

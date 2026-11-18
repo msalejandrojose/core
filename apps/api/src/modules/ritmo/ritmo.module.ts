@@ -92,6 +92,15 @@ import {
   SocialProfileUseCase,
 } from './application/use-cases/social.use-cases';
 import { RitmoConnectionsController } from './infrastructure/http/ritmo-connections.controller';
+import { RitmoTemplatesController } from './infrastructure/http/ritmo-templates.controller';
+import { ImportHevyCsvUseCase } from './application/use-cases/import-hevy-csv.use-case';
+import { PrismaWorkoutTemplateRepository } from './infrastructure/persistence/prisma-workout-template.repository';
+import { RITMO_WORKOUT_TEMPLATES } from './application/ports/workout-template.port';
+import {
+  DeleteWorkoutTemplateUseCase,
+  ListWorkoutTemplatesUseCase,
+  SaveWorkoutTemplateUseCase,
+} from './application/use-cases/workout-templates.use-cases';
 import { PrismaConnectionPrefsRepository } from './infrastructure/persistence/prisma-connection-prefs.repository';
 import { RITMO_CONNECTION_PREFS } from './application/ports/connection-prefs.port';
 import { RitmoRecoveryController } from './infrastructure/http/ritmo-recovery.controller';
@@ -151,6 +160,7 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     RitmoGarminController,
     RitmoSocialController,
     RitmoConnectionsController,
+    RitmoTemplatesController,
     RitmoRecoveryController,
   ],
   providers: [
@@ -172,6 +182,14 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
     { provide: RITMO_GARMIN_REPOSITORY, useClass: PrismaRitmoGarminRepository },
     { provide: GARMIN_CLIENT, useClass: HttpGarminClient },
     { provide: RITMO_SOCIAL_REPOSITORY, useClass: PrismaRitmoSocialRepository },
+    {
+      provide: RITMO_WORKOUT_TEMPLATES,
+      useClass: PrismaWorkoutTemplateRepository,
+    },
+    ListWorkoutTemplatesUseCase,
+    SaveWorkoutTemplateUseCase,
+    DeleteWorkoutTemplateUseCase,
+    ImportHevyCsvUseCase,
     {
       provide: RITMO_CONNECTION_PREFS,
       useClass: PrismaConnectionPrefsRepository,

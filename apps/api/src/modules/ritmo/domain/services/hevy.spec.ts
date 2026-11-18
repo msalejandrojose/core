@@ -16,6 +16,7 @@ const CODES = new Set([
   'pull_up',
   'leg_press',
   'hammer_curl',
+  'good_morning',
 ]);
 
 const workout = (over: Partial<HevyWorkout> = {}): HevyWorkout => ({
@@ -45,6 +46,14 @@ describe('hevy: nombres de ejercicio', () => {
     expect(catalogCodeFor('Squat (Barbell)', CODES)).toBe('back_squat');
     expect(catalogCodeFor('Pull Up', CODES)).toBe('pull_up');
     expect(catalogCodeFor('Leg Press (Machine)', CODES)).toBe('leg_press');
+  });
+
+  it('reconoce el good morning en inglés y en español, con o sin tildes', () => {
+    expect(catalogCodeFor('Good Morning (Barbell)', CODES)).toBe(
+      'good_morning',
+    );
+    expect(catalogCodeFor('Buenos Días (Barra)', CODES)).toBe('good_morning');
+    expect(catalogCodeFor('Buenos dias', CODES)).toBe('good_morning');
   });
 
   it('no inventa equivalencias', () => {

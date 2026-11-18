@@ -175,6 +175,19 @@ export class PrismaRitmoHevyRepository implements RitmoHevyRepositoryPort {
     });
   }
 
+  async importedStarts(
+    userId: string,
+  ): Promise<{ externalId: string; startedAt: Date }[]> {
+    const rows = await this.prisma.ritmoActivitySession.findMany({
+      where: { userId, source: 'HEVY', externalId: { not: null } },
+      select: { externalId: true, startedAt: true },
+    });
+    return rows.map((r) => ({
+      externalId: r.externalId!,
+      startedAt: r.startedAt,
+    }));
+  }
+
   async deleteImported(
     userId: string,
     externalId: string,

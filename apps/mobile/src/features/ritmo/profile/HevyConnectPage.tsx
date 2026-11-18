@@ -5,6 +5,7 @@ import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
 import { SectionHeader, Switch } from '../ui/kit';
 import { PATHS } from '../ui/paths';
+import { HevyCsvImport } from './HevyCsvImport';
 import './profile.css';
 
 type Mode = 'full' | 'basic';
@@ -125,6 +126,7 @@ export default function HevyConnectPage() {
             <p className="rk-note">
               Brío trae lo nuevo de Hevy al abrir la app. Para mandar una rutina, abre una sesión de fuerza de tu plan y pulsa «Enviar rutina a Hevy».
             </p>
+            <HevyCsvImport />
             <button type="button" className="hevy__disconnect" disabled={busy} onClick={() => void disconnect()}>
               Desconectar Hevy
             </button>
@@ -232,6 +234,8 @@ export default function HevyConnectPage() {
           <button type="button" className="rk-btn hevy__connect" disabled={!can || busy} onClick={() => void connect()}>
             {busy ? 'Conectando…' : 'Conectar'}
           </button>
+
+          <HevyCsvImport />
         </div>
       </IonContent>
     </IonPage>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { call, isApiError } from '../api';
+import { getAuthToken } from '@/store/auth.store';
+import { call, isApiError, type RitmoApiError } from '../api';
 
 /** Contrato de `/ritmo/hevy`. La clave solo viaja al conectar y nunca vuelve. */
 
@@ -28,7 +29,45 @@ export interface SentRoutine {
   basedOnDay: string;
 }
 
+/** Resultado de subir el CSV que exporta Hevy. */
+export interface HevyCsvImportResult {
+  imported: number;
+  updated: number;
+  alreadySynced: number;
+  firstDay: string | null;
+  lastDay: string | null;
+  matchedExercises: number;
+  createdExercises: string[];
+  createdTemplates: string[];
+  timeOnlySets: number;
+  badRows: number;
+}
+
+/** Sube el CSV (multipart: el cliente tipado solo manda JSON). */
+async function importCsv(file: File): Promise<HevyCsvImportResult> {
+  const token = getAuthToken();
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/v1/ritmo/hevy/import-csv`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  const body = (await res.json().catch(() => null)) as unknown;
+  if (!res.ok) {
+    const b = body as { code?: string; message?: string } | null;
+    const err: RitmoApiError = {
+      code: b?.code ?? (res.status === 413 ? 'RITMO_HEVY_CSV_TOO_BIG' : 'UNKNOWN'),
+      message: b?.message ?? 'No se pudo importar el archivo.',
+      status: res.status,
+    };
+    throw err;
+  }
+  return body as HevyCsvImportResult;
+}
+
 export const hevyApi = {
+  importCsv,
   status: () => call<HevyStatus>('GET', '/ritmo/hevy'),
   connect: (apiKey: string, importNow: boolean) =>
     call<{ status: HevyStatus; sync: HevySyncResult | null }>('PUT', '/ritmo/hevy', { body: { apiKey, importNow } }),
@@ -46,6 +85,9 @@ const ERROR_TEXT: Record<string, string> = {
   RITMO_HEVY_NO_SOURCE_SESSION: 'Aún no tienes ningún entreno de fuerza con series del que copiar la rutina.',
   RITMO_HEVY_NO_MATCHING_EXERCISES: 'Ninguno de los ejercicios de tu último entreno existe en Hevy.',
   RITMO_PLANNED_SESSION_NOT_FOUND: 'Guarda la sesión antes de enviarla.',
+  RITMO_HEVY_CSV_INVALID: 'Ese archivo no parece el CSV de entrenos de Hevy. Expórtalo desde Hevy: Perfil → Ajustes → Exportar e importar datos → Exportar entrenos.',
+  RITMO_HEVY_CSV_EMPTY: 'El archivo no tiene ningún entreno con series.',
+  RITMO_HEVY_CSV_TOO_BIG: 'El archivo es demasiado grande (máximo 5 MB).',
 };
 
 /** Texto para el usuario de un fallo de la conexión con Hevy. */
@@ -60,6 +102,17 @@ export function syncSummary(r: HevySyncResult): string {
   if (r.imported) parts.push(`${r.imported} ${r.imported === 1 ? 'entreno nuevo' : 'entrenos nuevos'}`);
   if (r.updated) parts.push(`${r.updated} ${r.updated === 1 ? 'actualizado' : 'actualizados'}`);
   if (r.deleted) parts.push(`${r.deleted} ${r.deleted === 1 ? 'borrado' : 'borrados'}`);
+  return parts.length ? parts.join(' · ') : 'No había nada nuevo';
+}
+
+/** "147 entrenos nuevos · 4 plantillas", para el aviso tras importar el CSV. */
+export function csvImportSummary(r: HevyCsvImportResult): string {
+  const parts: string[] = [];
+  if (r.imported) parts.push(`${r.imported} ${r.imported === 1 ? 'entreno nuevo' : 'entrenos nuevos'}`);
+  if (r.updated) parts.push(`${r.updated} ${r.updated === 1 ? 'ya estaba' : 'ya estaban'}`);
+  if (r.alreadySynced) parts.push(`${r.alreadySynced} ya llegaron por la conexión`);
+  if (r.createdTemplates.length)
+    parts.push(`${r.createdTemplates.length} ${r.createdTemplates.length === 1 ? 'plantilla' : 'plantillas'}`);
   return parts.length ? parts.join(' · ') : 'No había nada nuevo';
 }
 

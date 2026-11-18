@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,13 +8,23 @@ import {
   HttpStatus,
   Post,
   Put,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBody,
+  ApiConsumes,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import {
+  ImportHevyCsvUseCase,
+  type HevyCsvImportResult,
+} from '../../application/use-cases/import-hevy-csv.use-case';
+import { MAX_CSV_BYTES } from '../../domain/services/hevy-csv';
 import { type AccessTokenPayload } from '../../../iam/application/ports/token-issuer.port';
 import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator';
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
@@ -41,7 +52,36 @@ export class RitmoHevyController {
     private readonly sync: SyncHevyUseCase,
     private readonly disconnect: DisconnectHevyUseCase,
     private readonly sendRoutine: SendPlannedRoutineToHevyUseCase,
+    private readonly importCsv: ImportHevyCsvUseCase,
   ) {}
+
+  @Post('import-csv')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Importar el CSV de entrenos que exporta Hevy (no hace falta conectar la cuenta).',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiOkResponse({
+    description:
+      'Entrenos importados, ejercicios creados y plantillas nuevas. Volver a subir el mismo archivo no duplica nada.',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_CSV_BYTES, files: 1 } }),
+  )
+  importFromCsv(
+    @CurrentUser() current: AccessTokenPayload,
+    @UploadedFile() file?: Express.Multer.File,
+  ): Promise<HevyCsvImportResult> {
+    if (!file) throw new BadRequestException('RITMO_HEVY_CSV_INVALID');
+    return this.importCsv.execute(current.sub, file.buffer);
+  }
 
   @Get()
   @ApiOperation({ summary: 'Estado de mi conexión con Hevy.' })

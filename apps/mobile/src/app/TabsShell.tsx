@@ -32,6 +32,8 @@ import YearPage from '@/features/ritmo/progress/YearPage';
 import SessionEditPage from '@/features/ritmo/performance/SessionEditPage';
 import HistoryPage from '@/features/ritmo/performance/HistoryPage';
 import ExercisesPage from '@/features/ritmo/performance/ExercisesPage';
+import ExerciseDetailPage from '@/features/ritmo/performance/ExerciseDetailPage';
+import TemplatesPage from '@/features/ritmo/templates/TemplatesPage';
 import PerformancePage from '@/features/ritmo/performance/PerformancePage';
 import StrengthPerfPage from '@/features/ritmo/performance/StrengthPerfPage';
 import MusclesPage from '@/features/ritmo/performance/MusclesPage';
@@ -167,6 +169,8 @@ export default function TabsShell() {
           <Route exact path="/tabs/progress/rendimiento/entrenos" component={HistoryPage} />
           <Route exact path="/tabs/progress/rendimiento/entrenos/:id" component={SessionEditPage} />
           <Route exact path="/tabs/progress/rendimiento/ejercicios" component={ExercisesPage} />
+          <Route exact path="/tabs/progress/rendimiento/ejercicios/:id" component={ExerciseDetailPage} />
+          <Route exact path="/tabs/progress/rendimiento/plantillas" component={TemplatesPage} />
           <Route exact path="/tabs/social" component={FriendsPage} />
           <Route exact path="/tabs/social/retos" component={ChallengesPage} />
           <Route exact path="/tabs/social/amigo/:id" component={FriendPage} />

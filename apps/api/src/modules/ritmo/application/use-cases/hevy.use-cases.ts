@@ -37,6 +37,13 @@ import {
 } from '../ports/ritmo-profile-repository.port';
 import { RefreshDailyLogUseCase } from './refresh-daily-log.use-case';
 
+/** Prefijo del id externo de los entrenos que llegan por el CSV exportado de Hevy. */
+export const CSV_EXTERNAL_PREFIX = 'csv:';
+
+/** Dos entrenos son el mismo si empiezan con menos de 2 minutos de diferencia. */
+export const sameWorkoutStart = (a: Date, b: Date) =>
+  Math.abs(a.getTime() - b.getTime()) < 2 * 60 * 1000;
+
 /** Primera importación: como mucho estos entrenos (10 por página en Hevy). */
 const FIRST_IMPORT_PAGES = 30;
 const MAX_EVENT_PAGES = 30;
@@ -199,12 +206,23 @@ export class SyncHevyUseCase {
         apiKey,
         workouts,
       );
+      // Entrenos que ya se habían subido con el CSV exportado de Hevy: el de
+      // la API es el bueno (trae su id), así que el del CSV sobra.
+      const csvTwins = (await this.repo.importedStarts(userId)).filter((s) =>
+        s.externalId.startsWith(CSV_EXTERNAL_PREFIX),
+      );
 
       for (const w of workouts) {
         const startedAt = new Date(w.start_time);
         if (Number.isNaN(startedAt.getTime())) continue;
         const durationSec = durationSecOf(w);
         const loggedOn = dayInTimezone(startedAt, timezone);
+        for (const twin of csvTwins.filter((t) =>
+          sameWorkoutStart(t.startedAt, startedAt),
+        )) {
+          const day = await this.repo.deleteImported(userId, twin.externalId);
+          if (day) days.add(day);
+        }
         const r = await this.repo.upsertImported(userId, w.id, {
           activityTypeId: type.id,
           startedAt,
