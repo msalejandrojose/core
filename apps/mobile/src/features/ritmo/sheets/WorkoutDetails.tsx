@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon, SearchField, SectionHeader } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { perfApi, type Exercise } from '../performance/perf.api';
@@ -6,8 +6,10 @@ import { NewExerciseForm } from './NewExerciseForm';
 import { usePreviousSets } from './usePreviousSets';
 import {
   EMPTY_SET,
+  bestSetLabel,
   clock,
   exerciseVolume,
+  isExerciseDone,
   previousAsDraft,
   setLabel,
   type DraftCardio,
@@ -106,6 +108,17 @@ export function StrengthEditor({ value, onChange, live, previousBefore = null }:
     value.map((e) => e.exerciseId),
     previousBefore,
   );
+  /** En vivo: ejercicios hechos que se han vuelto a desplegar (por `exerciseId-índice`). */
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const cards = useRef(new Map<number, HTMLElement>());
+  const cardKey = (ex: DraftExercise, i: number) => `${ex.exerciseId}-${i}`;
+  const toggle = (k: string, open: boolean) =>
+    setExpanded((cur) => {
+      const next = new Set(cur);
+      if (open) next.add(k);
+      else next.delete(k);
+      return next;
+    });
 
   useEffect(() => {
     if (picking && catalog === null) {
@@ -124,177 +137,258 @@ export function StrengthEditor({ value, onChange, live, previousBefore = null }:
   const q = query.trim().toLowerCase();
   const matches = (catalog ?? []).filter((e) => e.name.toLowerCase().includes(q)).slice(0, 8);
 
+  const card = (ex: DraftExercise, i: number) => {
+    const prev = previous[ex.exerciseId];
+    const working = ex.sets.filter((s) => !s.warmup).length;
+    const doneCount = ex.sets.filter((s) => s.done && !s.warmup).length;
+    const volume = exerciseVolume(live ? { ...ex, sets: ex.sets.filter((s) => s.done) } : ex);
+    const restSec = ex.rest === '' ? null : Number(ex.rest);
+    const setRest = (sec: number | null) => patch(i, { rest: sec === null ? '' : String(sec) });
+    const meta = [
+      live ? `${doneCount} de ${working} ${working === 1 ? 'serie' : 'series'}` : `${working} ${working === 1 ? 'serie' : 'series'}`,
+      volume > 0 ? kg(volume) : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
+    return (
+      <article
+        key={cardKey(ex, i)}
+        ref={(el) => {
+          if (el) cards.current.set(i, el);
+          else cards.current.delete(i);
+        }}
+        className="lift"
+        aria-labelledby={`lift-${i}`}
+      >
+        <header className="lift__head">
+          <span className="lift__icon" aria-hidden="true">
+            <Icon d={PATHS.strength} size={20} />
+          </span>
+          <span className="lift__title">
+            <h3 id={`lift-${i}`}>{ex.name}</h3>
+            <span className="lift__meta">{meta}</span>
+          </span>
+          {live && isExerciseDone(ex) ? (
+            <button
+              type="button"
+              className="rk-iconbtn lift__fold"
+              aria-label={`Plegar ${ex.name}`}
+              aria-expanded="true"
+              onClick={() => toggle(cardKey(ex, i), false)}
+            >
+              <Icon d={PATHS.forward} size={16} stroke={2.6} />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="rk-iconbtn lift__remove"
+            aria-label={`Quitar ${ex.name}`}
+            onClick={() => onChange(value.filter((_, j) => j !== i))}
+          >
+            <Icon d={PATHS.trash} size={19} />
+          </button>
+        </header>
+
+        <div className="lift__grid lift__grid--head" aria-hidden="true">
+          <span>Serie</span>
+          <span className="lift__prevcol">Anterior</span>
+          <span>{ex.bodyweight ? '+kg' : 'kg'}</span>
+          <span>Reps</span>
+          <span>RIR</span>
+          <span>{live ? <Icon d={PATHS.check} size={16} stroke={2.6} /> : null}</span>
+        </div>
+
+        {ex.sets.map((s, k) => {
+          const set = (changes: Partial<DraftSet>) =>
+            patch(i, { sets: ex.sets.map((x, y) => (y === k ? { ...x, ...changes } : x)) });
+          // Las de calentamiento no llevan número: la numeración es de las series de trabajo.
+          const n = ex.sets.slice(0, k + 1).filter((x) => !x.warmup).length;
+          // Se empareja calentamiento con calentamiento y trabajo con trabajo.
+          const nth = ex.sets.slice(0, k).filter((x) => x.warmup === s.warmup).length;
+          const p = prev?.filter((x) => x.isWarmup === s.warmup)[nth] ?? null;
+          const ref = p ? previousAsDraft(p) : null;
+          // La referencia como placeholder solo en vivo, donde el ✓ la rellena;
+          // al registrar parecería un dato apuntado y no se guardaría.
+          const hint = live ? ref : null;
+          const canDone = (s.reps || ref?.reps || '') !== '';
+          const name = s.warmup ? 'Calentamiento' : `Serie ${n}`;
+          return (
+            <div key={k} className={`lift__grid lift__set${s.done ? ' is-done' : ''}${s.warmup ? ' is-warmup' : ''}`}>
+              <button
+                type="button"
+                className="lift__n"
+                aria-pressed={s.warmup}
+                aria-label={s.warmup ? 'Serie de calentamiento. Toca para contarla como serie de trabajo.' : `Serie ${n}. Toca para marcarla como calentamiento.`}
+                onClick={() => set({ warmup: !s.warmup })}
+              >
+                {s.warmup ? 'C' : n}
+              </button>
+              {p && ref ? (
+                <button
+                  type="button"
+                  className="lift__prev lift__prevcol"
+                  aria-label={`Anterior: ${setLabel(p, ex.bodyweight)}. Toca para copiarla en ${name.toLowerCase()}.`}
+                  onClick={() => set(ref)}
+                >
+                  {setLabel(p, ex.bodyweight)}
+                </button>
+              ) : (
+                <span className="lift__prev lift__prevcol is-empty" aria-hidden="true">
+                  {prev === undefined ? '' : '—'}
+                </span>
+              )}
+              <SetInput label={`${name}, peso en kilos`} value={s.weight} onChange={(v) => set({ weight: v })} placeholder={hint?.weight ?? (ex.bodyweight ? '0' : '—')} decimal done={s.done} />
+              <SetInput label={`${name}, repeticiones`} value={s.reps} onChange={(v) => set({ reps: v })} placeholder={hint?.reps ?? '—'} done={s.done} />
+              <SetInput label={`${name}, repeticiones en reserva`} value={s.rir} onChange={(v) => set({ rir: v })} placeholder={hint?.rir || '—'} done={s.done} />
+              {live ? (
+                <button
+                  type="button"
+                  className="lift__check"
+                  aria-pressed={!!s.done}
+                  aria-label={s.done ? `${name} hecha. Toca para desmarcarla.` : `Marcar ${name.toLowerCase()} como hecha`}
+                  disabled={!s.done && !canDone}
+                  onClick={() => {
+                    if (s.done) return set({ done: false });
+                    // Lo que no se tecleó se toma de la última vez, como en el placeholder.
+                    const filled = {
+                      weight: s.weight || ref?.weight || '',
+                      reps: s.reps || ref?.reps || '',
+                      rir: s.rir || ref?.rir || '',
+                    };
+                    const next = { ...ex, sets: ex.sets.map((x, y) => (y === k ? { ...x, ...filled, done: true } : x)) };
+                    patch(i, { sets: next.sets });
+                    live.onSetDone(next, restSec);
+                    if (isExerciseDone(next)) {
+                      // Hecho: se pliega arriba y la pantalla va al siguiente pendiente.
+                      toggle(cardKey(ex, i), false);
+                      const pending = value.map((_, j) => j).filter((j) => j !== i && !isExerciseDone(value[j]));
+                      const target = pending.find((j) => j > i) ?? pending[0];
+                      if (target !== undefined) {
+                        window.setTimeout(() => cards.current.get(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+                      }
+                    }
+                  }}
+                >
+                  <Icon d={PATHS.check} size={18} stroke={2.6} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="lift__x"
+                  aria-label={`Quitar ${name.toLowerCase()}`}
+                  disabled={ex.sets.length === 1}
+                  onClick={() => patch(i, { sets: ex.sets.filter((_, y) => y !== k) })}
+                >
+                  <Icon d={PATHS.plus} size={16} stroke={2.2} className="lift__x-icon" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        <footer className="lift__foot">
+          <button
+            type="button"
+            className="lift__add"
+            onClick={() => {
+              const last = ex.sets[ex.sets.length - 1];
+              patch(i, { sets: [...ex.sets, { ...last, warmup: false, done: false }] });
+            }}
+          >
+            <Icon d={PATHS.plus} size={16} stroke={2.4} />
+            Añadir serie
+          </button>
+          {live && ex.sets.length > 1 && !ex.sets[ex.sets.length - 1].done ? (
+            <button
+              type="button"
+              className="lift__undo"
+              aria-label="Quitar la última serie"
+              onClick={() => patch(i, { sets: ex.sets.slice(0, -1) })}
+            >
+              −
+            </button>
+          ) : null}
+          <div className="lift__rest" role="group" aria-label="Descanso entre series">
+            <Icon d={PATHS.timer} size={16} />
+            <button
+              type="button"
+              aria-label="Quince segundos menos de descanso"
+              disabled={restSec === null}
+              onClick={() => setRest(restSec !== null && restSec > REST_STEP ? restSec - REST_STEP : null)}
+            >
+              −
+            </button>
+            <span aria-live="polite">{restSec === null ? 'Descanso' : clock(restSec)}</span>
+            <button
+              type="button"
+              aria-label="Quince segundos más de descanso"
+              onClick={() => setRest(restSec === null ? REST_DEFAULT : Math.min(REST_MAX, restSec + REST_STEP))}
+            >
+              +
+            </button>
+          </div>
+        </footer>
+      </article>
+    );
+  };
+
+  /** Fila plegada de un ejercicio hecho: nombre, resumen y su mejor serie. */
+  const folded = (ex: DraftExercise, i: number) => {
+    const working = ex.sets.filter((s) => !s.warmup).length;
+    const volume = exerciseVolume(ex);
+    const best = bestSetLabel(ex);
+    const meta = [`${working} ${working === 1 ? 'serie' : 'series'}`, volume > 0 ? kg(volume) : null, best ? `mejor ${best}` : null]
+      .filter(Boolean)
+      .join(' · ');
+    return (
+      <button
+        key={cardKey(ex, i)}
+        type="button"
+        className="lift-folded"
+        aria-expanded="false"
+        aria-label={`${ex.name}, hecho: ${meta}. Toca para desplegarlo.`}
+        onClick={() => toggle(cardKey(ex, i), true)}
+      >
+        <span className="lift-folded__check" aria-hidden="true">
+          <Icon d={PATHS.check} size={18} stroke={2.8} />
+        </span>
+        <span className="lift-folded__text">
+          <span className="lift-folded__name">{ex.name}</span>
+          <span className="lift-folded__meta">{meta}</span>
+        </span>
+        <Icon d={PATHS.forward} size={14} stroke={2.6} className="lift-folded__chev" />
+      </button>
+    );
+  };
+
+  // En vivo, lo hecho sube arriba (plegado salvo que se despliegue) y lo
+  // pendiente queda debajo. Solo cambia cómo se ve: el orden guardado es el real.
+  const indices = value.map((_, i) => i);
+  const doneIdx = live ? indices.filter((i) => isExerciseDone(value[i])) : [];
+  const todoIdx = live ? indices.filter((i) => !isExerciseDone(value[i])) : indices;
+
   return (
     <section className="rk-section" aria-labelledby="ejercicios">
-      <SectionHeader id="ejercicios">Ejercicios y series</SectionHeader>
+      {doneIdx.length > 0 ? (
+        <>
+          <SectionHeader
+            id="hechos"
+            action={<span className="lift-group__count">{doneIdx.length} de {value.length}</span>}
+          >
+            Hechos
+          </SectionHeader>
+          <div className="lift-group" role="group" aria-labelledby="hechos">
+            {doneIdx.map((i) => (expanded.has(cardKey(value[i], i)) ? card(value[i], i) : folded(value[i], i)))}
+          </div>
+        </>
+      ) : null}
 
-      {value.map((ex, i) => {
-        const prev = previous[ex.exerciseId];
-        const working = ex.sets.filter((s) => !s.warmup).length;
-        const doneCount = ex.sets.filter((s) => s.done && !s.warmup).length;
-        const volume = exerciseVolume(live ? { ...ex, sets: ex.sets.filter((s) => s.done) } : ex);
-        const restSec = ex.rest === '' ? null : Number(ex.rest);
-        const setRest = (sec: number | null) => patch(i, { rest: sec === null ? '' : String(sec) });
-        const meta = [
-          live ? `${doneCount} de ${working} ${working === 1 ? 'serie' : 'series'}` : `${working} ${working === 1 ? 'serie' : 'series'}`,
-          volume > 0 ? kg(volume) : null,
-        ]
-          .filter(Boolean)
-          .join(' · ');
-
-        return (
-          <article key={`${ex.exerciseId}-${i}`} className="lift" aria-labelledby={`lift-${i}`}>
-            <header className="lift__head">
-              <span className="lift__icon" aria-hidden="true">
-                <Icon d={PATHS.strength} size={20} />
-              </span>
-              <span className="lift__title">
-                <h3 id={`lift-${i}`}>{ex.name}</h3>
-                <span className="lift__meta">{meta}</span>
-              </span>
-              <button
-                type="button"
-                className="rk-iconbtn lift__remove"
-                aria-label={`Quitar ${ex.name}`}
-                onClick={() => onChange(value.filter((_, j) => j !== i))}
-              >
-                <Icon d={PATHS.trash} size={19} />
-              </button>
-            </header>
-
-            <div className="lift__grid lift__grid--head" aria-hidden="true">
-              <span>Serie</span>
-              <span className="lift__prevcol">Anterior</span>
-              <span>{ex.bodyweight ? '+kg' : 'kg'}</span>
-              <span>Reps</span>
-              <span>RIR</span>
-              <span>{live ? <Icon d={PATHS.check} size={16} stroke={2.6} /> : null}</span>
-            </div>
-
-            {ex.sets.map((s, k) => {
-              const set = (changes: Partial<DraftSet>) =>
-                patch(i, { sets: ex.sets.map((x, y) => (y === k ? { ...x, ...changes } : x)) });
-              // Las de calentamiento no llevan número: la numeración es de las series de trabajo.
-              const n = ex.sets.slice(0, k + 1).filter((x) => !x.warmup).length;
-              // Se empareja calentamiento con calentamiento y trabajo con trabajo.
-              const nth = ex.sets.slice(0, k).filter((x) => x.warmup === s.warmup).length;
-              const p = prev?.filter((x) => x.isWarmup === s.warmup)[nth] ?? null;
-              const ref = p ? previousAsDraft(p) : null;
-              // La referencia como placeholder solo en vivo, donde el ✓ la rellena;
-              // al registrar parecería un dato apuntado y no se guardaría.
-              const hint = live ? ref : null;
-              const canDone = (s.reps || ref?.reps || '') !== '';
-              const name = s.warmup ? 'Calentamiento' : `Serie ${n}`;
-              return (
-                <div key={k} className={`lift__grid lift__set${s.done ? ' is-done' : ''}${s.warmup ? ' is-warmup' : ''}`}>
-                  <button
-                    type="button"
-                    className="lift__n"
-                    aria-pressed={s.warmup}
-                    aria-label={s.warmup ? 'Serie de calentamiento. Toca para contarla como serie de trabajo.' : `Serie ${n}. Toca para marcarla como calentamiento.`}
-                    onClick={() => set({ warmup: !s.warmup })}
-                  >
-                    {s.warmup ? 'C' : n}
-                  </button>
-                  {p && ref ? (
-                    <button
-                      type="button"
-                      className="lift__prev lift__prevcol"
-                      aria-label={`Anterior: ${setLabel(p, ex.bodyweight)}. Toca para copiarla en ${name.toLowerCase()}.`}
-                      onClick={() => set(ref)}
-                    >
-                      {setLabel(p, ex.bodyweight)}
-                    </button>
-                  ) : (
-                    <span className="lift__prev lift__prevcol is-empty" aria-hidden="true">
-                      {prev === undefined ? '' : '—'}
-                    </span>
-                  )}
-                  <SetInput label={`${name}, peso en kilos`} value={s.weight} onChange={(v) => set({ weight: v })} placeholder={hint?.weight ?? (ex.bodyweight ? '0' : '—')} decimal done={s.done} />
-                  <SetInput label={`${name}, repeticiones`} value={s.reps} onChange={(v) => set({ reps: v })} placeholder={hint?.reps ?? '—'} done={s.done} />
-                  <SetInput label={`${name}, repeticiones en reserva`} value={s.rir} onChange={(v) => set({ rir: v })} placeholder={hint?.rir || '—'} done={s.done} />
-                  {live ? (
-                    <button
-                      type="button"
-                      className="lift__check"
-                      aria-pressed={!!s.done}
-                      aria-label={s.done ? `${name} hecha. Toca para desmarcarla.` : `Marcar ${name.toLowerCase()} como hecha`}
-                      disabled={!s.done && !canDone}
-                      onClick={() => {
-                        if (s.done) return set({ done: false });
-                        // Lo que no se tecleó se toma de la última vez, como en el placeholder.
-                        const filled = {
-                          weight: s.weight || ref?.weight || '',
-                          reps: s.reps || ref?.reps || '',
-                          rir: s.rir || ref?.rir || '',
-                        };
-                        const next = { ...ex, sets: ex.sets.map((x, y) => (y === k ? { ...x, ...filled, done: true } : x)) };
-                        patch(i, { sets: next.sets });
-                        live.onSetDone(next, restSec);
-                      }}
-                    >
-                      <Icon d={PATHS.check} size={18} stroke={2.6} />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="lift__x"
-                      aria-label={`Quitar ${name.toLowerCase()}`}
-                      disabled={ex.sets.length === 1}
-                      onClick={() => patch(i, { sets: ex.sets.filter((_, y) => y !== k) })}
-                    >
-                      <Icon d={PATHS.plus} size={16} stroke={2.2} className="lift__x-icon" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-
-            <footer className="lift__foot">
-              <button
-                type="button"
-                className="lift__add"
-                onClick={() => {
-                  const last = ex.sets[ex.sets.length - 1];
-                  patch(i, { sets: [...ex.sets, { ...last, warmup: false, done: false }] });
-                }}
-              >
-                <Icon d={PATHS.plus} size={16} stroke={2.4} />
-                Añadir serie
-              </button>
-              {live && ex.sets.length > 1 && !ex.sets[ex.sets.length - 1].done ? (
-                <button
-                  type="button"
-                  className="lift__undo"
-                  aria-label="Quitar la última serie"
-                  onClick={() => patch(i, { sets: ex.sets.slice(0, -1) })}
-                >
-                  −
-                </button>
-              ) : null}
-              <div className="lift__rest" role="group" aria-label="Descanso entre series">
-                <Icon d={PATHS.timer} size={16} />
-                <button
-                  type="button"
-                  aria-label="Quince segundos menos de descanso"
-                  disabled={restSec === null}
-                  onClick={() => setRest(restSec !== null && restSec > REST_STEP ? restSec - REST_STEP : null)}
-                >
-                  −
-                </button>
-                <span aria-live="polite">{restSec === null ? 'Descanso' : clock(restSec)}</span>
-                <button
-                  type="button"
-                  aria-label="Quince segundos más de descanso"
-                  onClick={() => setRest(restSec === null ? REST_DEFAULT : Math.min(REST_MAX, restSec + REST_STEP))}
-                >
-                  +
-                </button>
-              </div>
-            </footer>
-          </article>
-        );
-      })}
+      <SectionHeader id="ejercicios">{doneIdx.length > 0 ? 'Por hacer' : 'Ejercicios y series'}</SectionHeader>
+      {todoIdx.map((i) => card(value[i], i))}
+      {live && doneIdx.length > 0 && todoIdx.length === 0 ? (
+        <p className="lift-allset">Todo hecho. Añade otro ejercicio o pulsa Terminar.</p>
+      ) : null}
 
       {creating ? (
         <NewExerciseForm
@@ -327,7 +421,7 @@ export function StrengthEditor({ value, onChange, live, previousBefore = null }:
       )}
       <p className="rk-note">
         {live
-          ? 'Marca cada serie con ✓ al acabarla: arranca el descanso. Si dejas un campo vacío, se usa lo de la última vez. Toca el número para marcarla como calentamiento (C).'
+          ? 'Marca cada serie con ✓ al acabarla: arranca el descanso. Si dejas un campo vacío, se usa lo de la última vez. Al terminar un ejercicio se pliega arriba, en Hechos. Toca el número de una serie para marcarla como calentamiento (C).'
           : 'Opcional. RIR = repeticiones que te quedaban. Toca «Anterior» para copiar lo de la última vez, y el número de una serie para marcarla como calentamiento (C): no cuenta para marcas ni volumen.'}
       </p>
     </section>

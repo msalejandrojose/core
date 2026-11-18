@@ -7,11 +7,13 @@ import {
   cardioBody,
   cardioDraftFromSession,
   cardioPatch,
+  bestSetLabel,
   clock,
   draftsFromSets,
   exerciseVolume,
   exercisesBody,
   finishLiveDrafts,
+  isExerciseDone,
   setLabel,
   type DraftExercise,
   type DraftSet,
@@ -173,5 +175,18 @@ describe('setLabel y clock', () => {
     expect(clock(5)).toBe('0:05');
     expect(clock(245)).toBe('4:05');
     expect(clock(3729)).toBe('1:02:09');
+  });
+});
+
+describe('isExerciseDone y bestSetLabel', () => {
+  const done = (w: string, r: string, warmup = false): DraftSet => ({ ...set(w, r, '', warmup), done: true });
+  it('un ejercicio está hecho solo con todas sus series marcadas', () => {
+    expect(isExerciseDone(ex([done('70', '8'), done('70', '8')]))).toBe(true);
+    expect(isExerciseDone(ex([done('70', '8'), set('70', '8')]))).toBe(false);
+    expect(isExerciseDone(ex([]))).toBe(false);
+  });
+  it('la mejor serie es la más pesada hecha, sin calentamiento', () => {
+    expect(bestSetLabel(ex([done('100', '3', true), done('70', '8'), done('72,5', '6'), done('72,5', '7'), set('90', '5')]))).toBe('72,5 × 7');
+    expect(bestSetLabel(ex([set('70', '8')]))).toBeNull();
   });
 });

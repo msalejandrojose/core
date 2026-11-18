@@ -122,6 +122,24 @@ export function finishLiveDrafts(drafts: DraftExercise[]): DraftExercise[] {
     .filter((e) => e.sets.length > 0);
 }
 
+/** En vivo: todas sus series marcadas como hechas (y al menos una). */
+export function isExerciseDone(ex: DraftExercise): boolean {
+  return ex.sets.length > 0 && ex.sets.every((s) => s.done);
+}
+
+/** La serie de trabajo hecha más pesada (a igual peso, más reps), como "72,5 × 8". */
+export function bestSetLabel(ex: DraftExercise): string | null {
+  let best: { weightKg: number; reps: number } | null = null;
+  for (const s of ex.sets) {
+    if (s.warmup || !s.done) continue;
+    const w = num(s.weight) ?? (ex.bodyweight ? 0 : null);
+    const r = num(s.reps);
+    if (w === null || r === null || r < 1) continue;
+    if (!best || w > best.weightKg || (w === best.weightKg && r > best.reps)) best = { weightKg: w, reps: r };
+  }
+  return best ? setLabel(best, ex.bodyweight) : null;
+}
+
 /** "80 × 8" de una serie guardada, con coma decimal. */
 export function setLabel(s: { weightKg: number; reps: number }, bodyweight: boolean): string {
   if (bodyweight && s.weightKg === 0) return `${s.reps} reps`;

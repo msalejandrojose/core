@@ -1215,3 +1215,118 @@ ion-modal.rk-modal-live ion-content {
     animation: none;
   }
 }
+
+/* ---- En vivo: ejercicios hechos, plegados arriba ----
+ * Una fila compacta por ejercicio terminado (≈60px frente a los ~400 de la
+ * tarjeta) para que lo pendiente quede a mano sin hacer scroll. */
+.lift-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lift-group__count {
+  padding-right: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ritmo-activity-ink);
+  font-variant-numeric: tabular-nums;
+}
+.lift-group > .lift + .lift-folded,
+.lift-group > .lift-folded + .lift,
+.lift-group > .lift + .lift {
+  margin-top: 4px;
+}
+.lift-folded {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--ritmo-row-l);
+  padding: 8px 14px 8px 12px;
+  border: 0;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  animation: lift-fold-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.lift-folded:active {
+  background: var(--ritmo-surface-fill-2);
+}
+@keyframes lift-fold-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+.lift-folded__check {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ritmo-radius-pill);
+  background: var(--ritmo-activity);
+  color: var(--ritmo-on-tint);
+}
+.lift-folded__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.lift-folded__name {
+  font-size: 16px;
+  line-height: 21px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lift-folded__meta {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ritmo-ink-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Chevron hacia abajo (desplegar) y hacia arriba en la tarjeta (plegar). */
+.lift-folded__chev {
+  flex: none;
+  color: var(--ritmo-chevron);
+  transform: rotate(90deg);
+}
+.lift__fold {
+  color: var(--ritmo-ink-muted);
+  margin-right: -10px;
+}
+.lift__fold svg {
+  transform: rotate(-90deg);
+}
+.lift-allset {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--ritmo-radius-2xl);
+  background: var(--ritmo-activity-soft);
+  color: var(--ritmo-activity-ink);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+}
+/* Al saltar al siguiente ejercicio, que no quede pegado al borde. */
+.live .lift {
+  scroll-margin-top: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lift-folded {
+    animation: none;
+  }
+}
+.lift-group + .rk-sechead {
+  margin-top: var(--ritmo-space-l);
+}
