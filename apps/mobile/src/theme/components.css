@@ -394,3 +394,17 @@ ion-segment.core-segment ion-segment-button.segment-button-checked {
     animation: none;
   }
 }
+
+/* Toasts (Sileo): la librería pone los títulos en mayúscula cada palabra
+   («Falta Tu Peso»). En español va solo la inicial, como el resto de la app.
+   Especificidad doble porque sileo/styles.css se carga después. */
+:root [data-sileo-title] {
+  text-transform: none;
+}
+
+/* Los toasts viven dentro de ion-app con z-index 50, y los overlays de Ionic
+   (hojas, alertas) se apilan desde 20000: un aviso lanzado desde una hoja
+   («Falta tu peso» al guardar un entreno) quedaba tapado por ella. */
+:root [data-sileo-viewport] {
+  z-index: 40000;
+}
