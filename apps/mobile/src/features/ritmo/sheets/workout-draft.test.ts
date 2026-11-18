@@ -7,8 +7,14 @@ import {
   cardioBody,
   cardioDraftFromSession,
   cardioPatch,
+  bestSetLabel,
+  clock,
   draftsFromSets,
+  exerciseVolume,
   exercisesBody,
+  finishLiveDrafts,
+  isExerciseDone,
+  setLabel,
   type DraftExercise,
   type DraftSet,
 } from './workout-draft';
@@ -134,5 +140,53 @@ describe('editar el cardio de un entreno', () => {
   it('lo que se vacía se manda como null para borrarlo', () => {
     const draft = { ...cardioDraftFromSession(saved), distanceKm: '', zones: ['', '', '', '', ''] };
     expect(cardioPatch(draft)).toMatchObject({ distanceM: null, zoneSeconds: null, avgHeartRate: 150 });
+  });
+});
+
+describe('exerciseVolume', () => {
+  it('suma peso × reps de las series de trabajo, sin calentamiento ni incompletas', () => {
+    expect(exerciseVolume(ex([set('40', '10', '', true), set('70', '8'), set('67,5', '8'), set('70', '')]))).toBe(1100);
+  });
+  it('en ejercicios de peso corporal cuenta solo el lastre', () => {
+    expect(exerciseVolume(ex([set('', '10'), set('10', '5')], { bodyweight: true }))).toBe(50);
+  });
+});
+
+describe('finishLiveDrafts', () => {
+  it('guarda solo las series hechas y quita la marca', () => {
+    const out = finishLiveDrafts([
+      ex([{ ...set('70', '8'), done: true }, set('70', '8')]),
+      ex([set('90', '5')], { exerciseId: 'squat' }),
+    ]);
+    expect(out).toEqual([ex([set('70', '8')])]);
+    expect('done' in out[0].sets[0]).toBe(false);
+  });
+  it('si no se marcó ninguna, respeta todo lo apuntado', () => {
+    expect(finishLiveDrafts([ex([set('70', '8'), set('70', '7')])])).toEqual([ex([set('70', '8'), set('70', '7')])]);
+  });
+});
+
+describe('setLabel y clock', () => {
+  it('formatea la serie anterior', () => {
+    expect(setLabel({ weightKg: 67.5, reps: 8 }, false)).toBe('67,5 × 8');
+    expect(setLabel({ weightKg: 0, reps: 12 }, true)).toBe('12 reps');
+  });
+  it('formatea el cronómetro', () => {
+    expect(clock(5)).toBe('0:05');
+    expect(clock(245)).toBe('4:05');
+    expect(clock(3729)).toBe('1:02:09');
+  });
+});
+
+describe('isExerciseDone y bestSetLabel', () => {
+  const done = (w: string, r: string, warmup = false): DraftSet => ({ ...set(w, r, '', warmup), done: true });
+  it('un ejercicio está hecho solo con todas sus series marcadas', () => {
+    expect(isExerciseDone(ex([done('70', '8'), done('70', '8')]))).toBe(true);
+    expect(isExerciseDone(ex([done('70', '8'), set('70', '8')]))).toBe(false);
+    expect(isExerciseDone(ex([]))).toBe(false);
+  });
+  it('la mejor serie es la más pesada hecha, sin calentamiento', () => {
+    expect(bestSetLabel(ex([done('100', '3', true), done('70', '8'), done('72,5', '6'), done('72,5', '7'), set('90', '5')]))).toBe('72,5 × 7');
+    expect(bestSetLabel(ex([set('70', '8')]))).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
 /**
  * Confirmación háptica ligera al guardar un registro (DS §1b: la háptica es
@@ -13,5 +13,14 @@ export async function tapSuccess(): Promise<void> {
     await Haptics.impact({ style: ImpactStyle.Light });
   } catch {
     // Plataforma sin háptica: no es un error que deba ver el usuario.
+  }
+}
+
+/** Fin del descanso en el entreno en vivo: aviso más marcado que un toque. */
+export async function tapRestOver(): Promise<void> {
+  try {
+    await Haptics.notification({ type: NotificationType.Success });
+  } catch {
+    // Sin háptica (web): el aviso visual de la barra basta.
   }
 }

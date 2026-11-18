@@ -12,6 +12,8 @@ export const PATHS = {
   book: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11M9 8h6',
   info: 'M12 3a9 9 0 1 0 .01 0M12 11v5M12 8h.01',
   check: 'M7 12.5l3.2 3.2L17 9',
+  trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
+  timer: 'M10 2h4M12 5a8 8 0 1 0 .01 0M12 9v4l2.5 2',
   sync: 'M20 12a8 8 0 0 1-14 5.3M4 12a8 8 0 0 1 14-5.3M18 3v4h-4M6 21v-4h4',
   fork: 'M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2 0-3 2-3 6s1 4 3 4',
   camera: 'M4 8h3l2-3h6l2 3h3v11H4zM12 10a3 3 0 1 0 .01 0',
