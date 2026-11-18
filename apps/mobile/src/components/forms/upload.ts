@@ -1,7 +1,8 @@
 import type { FileRef } from '@core/forms';
+import { API_BASE_URL } from '@/api/config';
 import { getAuthToken } from '@/store/auth.store';
 
-const baseUrl = `${import.meta.env.VITE_API_URL}/v1`;
+const baseUrl = API_BASE_URL;
 
 interface StoredFileResponse {
   id: string;

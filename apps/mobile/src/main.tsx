@@ -2,6 +2,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { setupIonicReact } from '@ionic/react';
 import App from './App';
+import { apiConfigured } from './api/config';
+import { MissingApiUrl } from './app/MissingApiUrl';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { installSessionReset } from './features/brio/session-reset';
 import './i18n';
@@ -32,8 +34,13 @@ if (!container) throw new Error('No se encontró el elemento #root');
 
 createRoot(container).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    {apiConfigured ? (
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    ) : (
+      // Build sin VITE_API_URL: antes la app se quedaba en blanco.
+      <MissingApiUrl />
+    )}
   </React.StrictMode>,
 );
