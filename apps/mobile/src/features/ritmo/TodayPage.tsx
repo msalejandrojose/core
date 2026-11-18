@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, Redirect } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import {
   IonContent,
   IonPage,
@@ -122,6 +122,7 @@ export default function TodayPage() {
   const loadHabits = useHabitsStore((s) => s.load);
   const invalidateHabits = useHabitsStore((s) => s.invalidate);
   const unread = useUnreadStore((s) => s.unread);
+  const history = useHistory();
   const [showDone, setShowDone] = useState(false);
   const [logging, setLogging] = useState(false);
 
@@ -131,6 +132,14 @@ export default function TodayPage() {
   useEffect(() => {
     if (profileStatus === 'idle') void loadProfile();
   }, [profileStatus, loadProfile]);
+
+  // Sin perfil → alta. Se navega desde un efecto y la página sigue pintando su
+  // IonPage: un <Redirect> en lugar de la página deja al router de Ionic sin
+  // elemento de página (falla `isViewVisible`) y la pila acaba descolocada.
+  const toOnboarding = profileStatus === 'ready' && needsOnboarding;
+  useEffect(() => {
+    if (toOnboarding) history.replace('/alta/perfil');
+  }, [toOnboarding, history]);
 
   useEffect(() => {
     if (profileStatus === 'ready' && !needsOnboarding && dayStatus === 'idle') {
@@ -160,8 +169,12 @@ export default function TodayPage() {
     for (const type of pending) void loadHabits(type);
   }, [pending, loadHabits]);
 
-  if (profileStatus === 'ready' && needsOnboarding) {
-    return <Redirect to="/alta/perfil" />;
+  if (toOnboarding) {
+    return (
+      <IonPage>
+        <IonContent />
+      </IonPage>
+    );
   }
 
   const suggestion = next ? suggestionFor(next, habitsByMeal[next]) : null;
