@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import type { MyProfile } from '../../../application/use-cases/get-my-profile.use-case';
 import type {
   ActivityLevel,
@@ -8,41 +8,61 @@ import type {
 
 export class ProfileResponseDto {
   @ApiProperty() id: string;
-  @ApiPropertyOptional({ enum: ['MALE', 'FEMALE', 'OTHER'] }) sex: Sex | null;
-  @ApiPropertyOptional({ example: '1996-11-10' }) birthDate: string | null;
-  @ApiPropertyOptional({ example: 178 }) heightCm: number | null;
+  @ApiProperty({ nullable: true, enum: ['MALE', 'FEMALE', 'OTHER'] })
+  sex: Sex | null;
+  @ApiProperty({ type: String, nullable: true, example: '1996-11-10' })
+  birthDate: string | null;
+  @ApiProperty({ type: Number, nullable: true, example: 178 })
+  heightCm: number | null;
   @ApiProperty({
     enum: ['SEDENTARY', 'LIGHT', 'MODERATE', 'ACTIVE', 'VERY_ACTIVE'],
   })
   activityLevel: ActivityLevel;
   @ApiProperty({ enum: ['LOSE_WEIGHT', 'MAINTAIN', 'GAIN_MUSCLE'] })
   goalType: GoalType;
-  @ApiPropertyOptional({ example: 75 }) targetWeightKg: number | null;
-  @ApiPropertyOptional({ example: -0.5 }) weeklyWeightChangeKg: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 75 })
+  targetWeightKg: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: -0.5 })
+  weeklyWeightChangeKg: number | null;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
+    type: Number,
+    nullable: true,
     example: 1780,
     description: 'Metabolismo basal estimado (Mifflin-St Jeor).',
   })
   bmrKcal: number | null;
-  @ApiPropertyOptional({
+  @ApiProperty({
+    type: Number,
+    nullable: true,
     example: 2759,
     description: 'Gasto diario total estimado.',
   })
   tdeeKcal: number | null;
-  @ApiPropertyOptional({ example: 2209, description: 'kcal diarias objetivo.' })
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    example: 2209,
+    description: 'kcal diarias objetivo.',
+  })
   dailyKcalTarget: number | null;
-  @ApiPropertyOptional({ example: 160 }) proteinTargetG: number | null;
-  @ApiPropertyOptional({ example: 214 }) carbsTargetG: number | null;
-  @ApiPropertyOptional({ example: 56 }) fatTargetG: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 160 })
+  proteinTargetG: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 214 })
+  carbsTargetG: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 56 })
+  fatTargetG: number | null;
 
   @ApiProperty({ example: 'Europe/Madrid' }) timezone: string;
-  @ApiPropertyOptional({
+  @ApiProperty({
+    type: Number,
+    nullable: true,
     example: 80.4,
     description: 'Último peso registrado.',
   })
   currentWeightKg: number | null;
-  @ApiPropertyOptional() onboardedAt: Date | null;
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
+  onboardedAt: Date | null;
 
   static from({ profile, currentWeightKg }: MyProfile): ProfileResponseDto {
     const dto = new ProfileResponseDto();

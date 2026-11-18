@@ -1,246 +1,47 @@
+import type { components } from '@core/api-client';
 import { apiClient } from '@/api/client';
 
 /**
  * Capa de acceso a los endpoints de Ritmo (`/ritmo/*`).
  *
- * El schema OpenAPI tipado de `@core/api-client` se genera contra una API
- * levantada, así que todavía no incluye estas rutas (igual que pasa con las de
- * dashboard — ver `features/home/use-dashboard-summary.ts`). Hasta que se
- * regenere, el cliente se usa con un cast puntual y los tipos del contrato se
- * declaran aquí a mano, en UN solo sitio: así las pantallas siguen tipadas y
- * cuando se regenere el schema solo cambia este archivo.
+ * Los tipos salen del schema OpenAPI generado de `@core/api-client`
+ * (`pnpm --filter @core/api-client generate:offline`, sin API ni BBDD), y las
+ * rutas del núcleo (`ritmoApi`) usan el cliente tipado por ruta: si un DTO
+ * cambia en la API, el typecheck lo detecta.
+ *
+ * `call` (sin tipar) queda solo para módulos cuyas rutas aún no declaran el
+ * DTO de respuesta en la API (`@ApiOkResponse({ type })`): plan, rendimiento,
+ * social, Hevy, Garmin, plantillas y recuperación. Al añadírselo, se pasan a
+ * `apiClient` igual que aquí.
  */
 
-export type Sex = 'MALE' | 'FEMALE' | 'OTHER';
-export type ActivityLevel =
-  | 'SEDENTARY'
-  | 'LIGHT'
-  | 'MODERATE'
-  | 'ACTIVE'
-  | 'VERY_ACTIVE';
-export type GoalType = 'LOSE_WEIGHT' | 'MAINTAIN' | 'GAIN_MUSCLE';
-export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
-export type Effort = 'LIGHT' | 'MODERATE' | 'VIGOROUS';
+// Tipos del contrato, sacados del schema OpenAPI generado (`@core/api-client`).
+// Si un DTO cambia en la API, el typecheck de la app lo detecta.
+type Schemas = components['schemas'];
 
-export interface RitmoProfile {
-  id: string;
-  sex: Sex | null;
-  birthDate: string | null;
-  heightCm: number | null;
-  activityLevel: ActivityLevel;
-  goalType: GoalType;
-  targetWeightKg: number | null;
-  weeklyWeightChangeKg: number | null;
-  bmrKcal: number | null;
-  tdeeKcal: number | null;
-  dailyKcalTarget: number | null;
-  proteinTargetG: number | null;
-  carbsTargetG: number | null;
-  fatTargetG: number | null;
-  timezone: string;
-  currentWeightKg: number | null;
-  onboardedAt: string | null;
-}
-
-export interface SaveProfileBody {
-  sex?: Sex;
-  birthDate?: string;
-  heightCm?: number;
-  activityLevel: ActivityLevel;
-  goalType: GoalType;
-  targetWeightKg?: number;
-  weeklyWeightChangeKg?: number;
-  timezone?: string;
-}
-
-export interface ActivityType {
-  id: string;
-  code: string | null;
-  name: string;
-  met: number;
-  /** Disciplina: STRENGTH admite series; RUN, CYCLE… son cardio. */
-  kind: string;
-  icon: string | null;
-  isCustom: boolean;
-}
-
-export interface ActivitySession {
-  id: string;
-  activityTypeId: string;
-  activityTypeName: string;
-  startedAt: string;
-  loggedOn: string;
-  durationSec: number;
-  distanceM: number | null;
-  avgHeartRate: number | null;
-  maxHeartRate?: number | null;
-  elevationGainM?: number | null;
-  cadence?: number | null;
-  /** Esfuerzo percibido CR10 (1–10). */
-  rpe?: number | null;
-  /** Segundos en Z1..Z5. */
-  zoneSeconds?: number[] | null;
-  /** Disciplina del tipo de actividad (STRENGTH, RUN…). */
-  kind?: string;
-  /** Series de fuerza, en orden. */
-  sets?: {
-    exerciseId: string;
-    exerciseOrder: number;
-    setOrder: number;
-    weightKg: number;
-    reps: number;
-    rir: number | null;
-    restSec: number | null;
-    isWarmup: boolean;
-  }[];
-  effort: Effort | null;
-  kcalBurned: number;
-  notes: string | null;
-  source: string;
-}
-
-export interface FoodServing {
-  id: string;
-  label: string;
-  grams: number;
-  isDefault: boolean;
-}
-
-export interface Food {
-  id: string;
-  name: string;
-  brand: string | null;
-  barcode: string | null;
-  isVerified: boolean;
-  isLiquid: boolean;
-  kcalPer100: number;
-  proteinPer100G: number;
-  carbsPer100G: number;
-  fatPer100G: number;
-  servings: FoodServing[];
-}
-
-export interface MealEntry {
-  id: string;
-  loggedOn: string;
-  mealType: MealType;
-  name: string;
-  foodId: string | null;
-  servingId: string | null;
-  quantityG: number;
-  kcal: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-}
-
-export interface DayTotals {
-  kcalIn: number;
-  kcalBurned: number;
-  /** Parte del gasto que cuenta para el día, según Conexiones. */
-  kcalBurnedCounted: number;
-  kcalTarget: number | null;
-  kcalRemaining: number | null;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  weightKg: number | null;
-}
-
-export interface DaySummary {
-  day: string;
-  totals: DayTotals;
-  meals: MealEntry[];
-  sessions: ActivitySession[];
-}
-
-export interface Progress {
-  from: string;
-  to: string;
-  weights: { day: string; weightKg: number; bodyFatPct: number | null }[];
-  days: {
-    day: string;
-    kcalIn: number;
-    kcalBurned: number;
-    kcalTarget: number | null;
-    proteinG: number;
-    /** Entrenos registrados ese día. */
-    sessions: number;
-    /** Minutos de entreno ese día. */
-    activeMinutes: number;
-    /** Momentos del día (desayuno, comida…) con algo registrado. */
-    mealsLogged: number;
-  }[];
-}
-
-export interface LogMealBody {
-  mealType: MealType;
-  loggedOn?: string;
-  foodId?: string;
-  servingId?: string;
-  quantity: number;
-  customName?: string;
-  kcal?: number;
-  proteinG?: number;
-  carbsG?: number;
-  fatG?: number;
-}
-
+export type RitmoProfile = Schemas['ProfileResponseDto'];
+export type SaveProfileBody = Schemas['SaveProfileDto'];
+export type Sex = NonNullable<RitmoProfile['sex']>;
+export type ActivityLevel = RitmoProfile['activityLevel'];
+export type GoalType = RitmoProfile['goalType'];
+export type ActivityType = Schemas['ActivityTypeResponseDto'];
+export type ActivitySession = Schemas['ActivitySessionResponseDto'];
+export type Effort = NonNullable<ActivitySession['effort']>;
+export type LogActivityBody = Schemas['LogActivityDto'];
+export type FoodServing = Schemas['FoodServingResponseDto'];
+export type Food = Schemas['FoodResponseDto'];
+export type MealEntry = Schemas['MealEntryResponseDto'];
+export type MealType = MealEntry['mealType'];
+export type LogMealBody = Schemas['LogMealDto'];
+export type DayTotals = Schemas['DayTotalsDto'];
+export type DaySummary = Schemas['DaySummaryResponseDto'];
+export type Progress = Schemas['ProgressResponseDto'];
 /** Un alimento tal y como se volvería a registrar (su última cantidad). */
-export interface HabitItem {
-  key: string;
-  foodId: string | null;
-  name: string;
-  quantityG: number;
-  kcal: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  count: number;
-  lastOn: string;
-}
-
-export interface HabitCombo {
-  items: HabitItem[];
-  count: number;
-  kcal: number;
-}
-
+export type HabitItem = Schemas['HabitItemResponseDto'];
+export type HabitCombo = Schemas['HabitComboResponseDto'];
 /** Lo de siempre, frecuentes y recientes de un momento del día. */
-export interface MealHabits {
-  combos: HabitCombo[];
-  frequent: HabitItem[];
-  recent: HabitItem[];
-}
-
-export interface LogActivityBody {
-  activityTypeId: string;
-  startedAt: string;
-  durationSec: number;
-  distanceM?: number;
-  avgHeartRate?: number;
-  maxHeartRate?: number;
-  elevationGainM?: number;
-  cadence?: number;
-  /** Esfuerzo percibido CR10 (1–10). */
-  rpe?: number;
-  exercises?: {
-    exerciseId: string;
-    sets: { weightKg: number; reps: number; rir?: number; restSec?: number; isWarmup?: boolean }[];
-  }[];
-  /** Segundos en cada zona cardíaca, Z1 a Z5. */
-  zoneSeconds?: number[];
-  effort?: Effort;
-  notes?: string;
-}
-
-export interface LogWeightBody {
-  weightKg: number;
-  measuredOn?: string;
-  bodyFatPct?: number;
-  waistCm?: number;
-  notes?: string;
-}
+export type MealHabits = Schemas['MealHabitsResponseDto'];
+export type LogWeightBody = Schemas['LogWeightDto'];
 
 /** Error de la API con su código del catálogo, para distinguir casos. */
 export interface RitmoApiError {
@@ -291,36 +92,42 @@ export function isApiError(e: unknown): e is RitmoApiError {
   return typeof e === 'object' && e !== null && 'code' in e && 'status' in e;
 }
 
+/** Desenvuelve una llamada del cliente tipado: datos o `RitmoApiError`. */
+async function typed<T>(
+  p: Promise<{ data?: T; error?: unknown; response: Response }>,
+): Promise<T> {
+  const { data, error, response } = await p;
+  if (error !== undefined || response.status >= 400) {
+    throw toApiError(error, response.status);
+  }
+  return data as T;
+}
+
+/** Rutas del núcleo de Ritmo, tipadas de punta a punta por el schema. */
 export const ritmoApi = {
-  getProfile: () => call<RitmoProfile>('GET', '/ritmo/profile'),
+  getProfile: () => typed(apiClient.GET('/ritmo/profile')),
   saveProfile: (body: SaveProfileBody) =>
-    call<RitmoProfile>('PUT', '/ritmo/profile', { body }),
+    typed(apiClient.PUT('/ritmo/profile', { body })),
   logWeight: (body: LogWeightBody) =>
-    call<unknown>('POST', '/ritmo/weight', { body }),
+    typed(apiClient.POST('/ritmo/weight', { body })),
   getDay: (day?: string) =>
-    call<DaySummary>('GET', '/ritmo/day', {
-      params: { query: day ? { day } : {} },
-    }),
+    typed(apiClient.GET('/ritmo/day', { params: { query: day ? { day } : {} } })),
   getProgress: (days: number) =>
-    call<Progress>('GET', '/ritmo/progress', {
-      params: { query: { days } },
-    }),
-  activityTypes: () => call<ActivityType[]>('GET', '/ritmo/activity-types'),
+    typed(apiClient.GET('/ritmo/progress', { params: { query: { days } } })),
+  activityTypes: () => typed(apiClient.GET('/ritmo/activity-types')),
   logActivity: (body: LogActivityBody) =>
-    call<ActivitySession>('POST', '/ritmo/activities', { body }),
+    typed(apiClient.POST('/ritmo/activities', { body })),
   deleteActivity: (id: string) =>
-    call<void>('DELETE', `/ritmo/activities/${id}`),
+    typed(apiClient.DELETE('/ritmo/activities/{id}', { params: { path: { id } } })),
   searchFoods: (q: string) =>
-    call<Food[]>('GET', '/ritmo/foods', { params: { query: { q } } }),
-  logMeal: (body: LogMealBody) =>
-    call<MealEntry>('POST', '/ritmo/meals', { body }),
-  deleteMeal: (id: string) => call<void>('DELETE', `/ritmo/meals/${id}`),
+    typed(apiClient.GET('/ritmo/foods', { params: { query: { q } } })),
+  logMeal: (body: LogMealBody) => typed(apiClient.POST('/ritmo/meals', { body })),
+  deleteMeal: (id: string) =>
+    typed(apiClient.DELETE('/ritmo/meals/{id}', { params: { path: { id } } })),
   /** Volcado de todo lo guardado en Ritmo (Perfil › Descargar mis datos). */
   exportMyData: () => call<unknown>('GET', '/ritmo/account/export'),
   /** Borrado definitivo de la cuenta y de todos sus datos. */
-  deleteAccount: () => call<void>('DELETE', '/ritmo/account'),
+  deleteAccount: () => typed(apiClient.DELETE('/ritmo/account')),
   mealHabits: (mealType: MealType) =>
-    call<MealHabits>('GET', '/ritmo/meals/habits', {
-      params: { query: { mealType } },
-    }),
+    typed(apiClient.GET('/ritmo/meals/habits', { params: { query: { mealType } } })),
 };

@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import type { Food, FoodSource } from '../../../domain/entities/food.entity';
 
 export class FoodServingResponseDto {
@@ -11,8 +11,14 @@ export class FoodServingResponseDto {
 export class FoodResponseDto {
   @ApiProperty() id: string;
   @ApiProperty({ example: 'Arroz blanco cocido' }) name: string;
-  @ApiPropertyOptional({ example: 'Hacendado' }) brand: string | null;
-  @ApiPropertyOptional({ example: '8480000123456' }) barcode: string | null;
+  @ApiProperty({ type: String, nullable: true, example: 'Hacendado' })
+  brand: string | null;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: '8480000123456',
+  })
+  barcode: string | null;
   @ApiProperty({ enum: ['CURATED', 'OPEN_FOOD_FACTS', 'USER'] })
   source: FoodSource;
   @ApiProperty({ description: 'Revisado por nosotros.' }) isVerified: boolean;

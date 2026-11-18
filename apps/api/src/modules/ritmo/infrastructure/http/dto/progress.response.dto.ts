@@ -1,17 +1,19 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import type { Progress } from '../../../application/use-cases/get-progress.use-case';
 
 export class ProgressWeightPointDto {
   @ApiProperty({ example: '2026-11-10' }) day: string;
   @ApiProperty({ example: 80.4 }) weightKg: number;
-  @ApiPropertyOptional({ example: 18.5 }) bodyFatPct: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 18.5 })
+  bodyFatPct: number | null;
 }
 
 export class ProgressDayPointDto {
   @ApiProperty({ example: '2026-11-10' }) day: string;
   @ApiProperty({ example: 1840 }) kcalIn: number;
   @ApiProperty({ example: 336 }) kcalBurned: number;
-  @ApiPropertyOptional({ example: 2209 }) kcalTarget: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 2209 })
+  kcalTarget: number | null;
   @ApiProperty({ example: 132.5 }) proteinG: number;
   @ApiProperty({ example: 1, description: 'Entrenos registrados ese día.' })
   sessions: number;
