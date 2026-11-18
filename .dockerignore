@@ -33,3 +33,6 @@ Thumbs.db
 # Docker tooling no se necesita dentro del build context de la app
 docker/
 run.sh
+
+# Secretos de despliegue
+**/.env.cloudrun

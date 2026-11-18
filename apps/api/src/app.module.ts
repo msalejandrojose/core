@@ -33,7 +33,9 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
       // los defaults de `.env.local` (committed).
       // En producción ninguno de los dos existirá dentro del contenedor;
       // las variables vendrán inyectadas por el proveedor cloud.
-      envFilePath: ['.env', '.env.local'],
+      // En Cloud Run los secretos llegan como un único `.env` montado desde
+      // Secret Manager (ENV_FILE=/secrets/.env); si existe, manda sobre el resto.
+      envFilePath: [...(process.env.ENV_FILE ? [process.env.ENV_FILE] : []), '.env', '.env.local'],
     }),
     // Necesario para el script `sync:sections`, que recorre los handlers
     // buscando metadatos `@RequiresPermission`. Pesa cero en runtime.

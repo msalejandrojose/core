@@ -29,6 +29,8 @@ COPY apps/api/prisma ./apps/api/prisma
 #    "Cannot find module '@core/shared-types'". Van enteros (manifest y fuente)
 #    porque son paquetes pequeños y hay que compilarlos igual.
 COPY packages/ ./packages/
+# pnpm valida los parches del workspace (patchedDependencies) aunque no toquen a la API.
+COPY patches/ ./patches/
 
 # 2) Instalamos dependencias del workspace de la api (incluye dev, las
 #    necesitamos para `nest build`). --frozen-lockfile = imagen reproducible.

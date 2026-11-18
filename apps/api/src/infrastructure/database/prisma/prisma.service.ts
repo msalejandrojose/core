@@ -20,6 +20,10 @@ function buildAdapter(): PrismaMariaDb {
     // MySQL 8 usa caching_sha2_password por defecto; sin SSL el driver mariadb
     // necesita poder recuperar la public key del servidor para el handshake.
     allowPublicKeyRetrieval: true,
+    // El driver espera 1 s por defecto: corto para una base de datos en otra región.
+    connectTimeout: 10_000,
+    // Bases de datos gestionadas (TiDB Cloud) exigen TLS: DB_SSL=true.
+    ...(process.env.DB_SSL === 'true' ? { ssl: { rejectUnauthorized: true } } : {}),
   });
 }
 
