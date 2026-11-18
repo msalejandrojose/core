@@ -1,3 +1,6 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# El parche de la app móvil no aplica al instalar solo la API (Docker): que no falle.
+allowUnusedPatches: true

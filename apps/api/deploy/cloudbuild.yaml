@@ -1,0 +1,9 @@
+# Construye la imagen de la API (contexto = raíz del monorepo) y la sube a
+# Artifact Registry. La lanza deploy/deploy.sh con `gcloud builds submit`.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'apps/api/Dockerfile', '-t', '${_IMAGE}', '.']
+images:
+  - '${_IMAGE}'
+options:
+  logging: CLOUD_LOGGING_ONLY
