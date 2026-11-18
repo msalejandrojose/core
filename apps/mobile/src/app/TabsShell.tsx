@@ -7,7 +7,8 @@ import {
   IonTabButton,
   IonTabs,
 } from '@ionic/react';
-import { Redirect, Route, useLocation } from 'react-router-dom';
+import { Route, useLocation } from 'react-router-dom';
+import { RedirectPage } from './RedirectPage';
 import {
   add,
   barChart,
@@ -187,9 +188,9 @@ export default function TabsShell() {
             component={ChangePasswordPage}
           />
           <Route exact path="/tabs">
-            <Redirect to="/tabs/today" />
+            <RedirectPage to="/tabs/today" />
           </Route>
-          <Route render={() => <Redirect to="/tabs/today" />} />
+          <Route render={() => <RedirectPage to="/tabs/today" />} />
         </IonRouterOutlet>
 
         <IonTabBar slot="bottom">

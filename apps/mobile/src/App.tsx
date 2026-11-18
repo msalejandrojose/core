@@ -1,6 +1,7 @@
 import { IonApp, IonRouterOutlet, IonSpinner } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { Redirect, Route } from 'react-router-dom';
+import { Route } from 'react-router-dom';
+import { RedirectPage } from './app/RedirectPage';
 import { Toaster } from 'sileo';
 import { useAuthStore } from '@/store/auth.store';
 import { useThemeStore } from '@/store/theme.store';
@@ -63,14 +64,14 @@ export default function App() {
               exact
               path="/login"
               render={() =>
-                isAuthenticated ? <Redirect to={home} /> : <LoginPage />
+                isAuthenticated ? <RedirectPage to={home} /> : <LoginPage />
               }
             />
             <Route
               exact
               path="/correo"
               render={() =>
-                isAuthenticated ? <Redirect to={home} /> : <EmailAuthPage />
+                isAuthenticated ? <RedirectPage to={home} /> : <EmailAuthPage />
               }
             />
             <Route
@@ -78,7 +79,7 @@ export default function App() {
               path="/forgot"
               render={() =>
                 isAuthenticated ? (
-                  <Redirect to={home} />
+                  <RedirectPage to={home} />
                 ) : (
                   <ForgotPasswordPage />
                 )
@@ -90,14 +91,14 @@ export default function App() {
               exact
               path="/alta/perfil"
               render={() =>
-                isAuthenticated ? <SignupProfilePage /> : <Redirect to="/login" />
+                isAuthenticated ? <SignupProfilePage /> : <RedirectPage to="/login" />
               }
             />
             <Route
               exact
               path="/alta/conectar"
               render={() =>
-                isAuthenticated ? <ConnectPage /> : <Redirect to="/login" />
+                isAuthenticated ? <ConnectPage /> : <RedirectPage to="/login" />
               }
             />
 
@@ -105,7 +106,7 @@ export default function App() {
             <Route
               path="/tabs"
               render={() =>
-                isAuthenticated ? <TabsShell /> : <Redirect to="/login" />
+                isAuthenticated ? <TabsShell /> : <RedirectPage to="/login" />
               }
             />
 
@@ -113,10 +114,10 @@ export default function App() {
             <Route
               exact
               path="/"
-              render={() => <Redirect to={isAuthenticated ? home : '/login'} />}
+              render={() => <RedirectPage to={isAuthenticated ? home : '/login'} />}
             />
             <Route
-              render={() => <Redirect to={isAuthenticated ? home : '/login'} />}
+              render={() => <RedirectPage to={isAuthenticated ? home : '/login'} />}
             />
           </IonRouterOutlet>
         </IonReactRouter>

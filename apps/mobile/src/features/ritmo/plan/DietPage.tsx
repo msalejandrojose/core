@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
-import { isApiError, type GoalType } from '../api';
-import { useRitmoStore } from '../ritmo.store';
-import { profileBody } from '../profile/profile-body';
+import { isApiError, type RitmoProfile } from '../api';
 import { formatNumber } from '../format';
-import { BackLink, NavRow, Segmented } from '../ui/kit';
+import { dailyDeltaKcal, etaLabel, goalSummary } from '../progress/weight-goal';
+import { BackLink, Chevron, Icon, NavRow } from '../ui/kit';
+import { PATHS } from '../ui/paths';
 import { MEAL_LABEL, menuApi, type Meal, type MenuWeek } from './menu.api';
 import { usePlanWeekData, type PlanLoad } from './plan.api';
 import { LOAD_CLASS, LOAD_LABEL, dayFull, dayLetter, dayNumber, fmtMinutes } from './plan-labels';
@@ -21,24 +21,68 @@ const BAR: Record<PlanLoad, string> = {
   LOW: 'var(--ritmo-info)',
   REST: 'var(--ritmo-border-strong)',
 };
-const GOAL_OF: Record<GoalType, 'perder' | 'mantener' | 'ganar'> = {
-  LOSE_WEIGHT: 'perder',
-  MAINTAIN: 'mantener',
-  GAIN_MUSCLE: 'ganar',
-};
-const GOAL_API = { perder: 'LOSE_WEIGHT', mantener: 'MAINTAIN', ganar: 'GAIN_MUSCLE' } as const;
+/**
+ * De dónde salen las calorías: tu objetivo de peso (peso meta + ritmo). No se
+ * elige aquí: se fija en Progreso → Objetivos y esta tarjeta lleva allí.
+ */
+function GoalCard({ profile }: { profile: RitmoProfile | null }) {
+  if (!profile) return null;
+  const g = goalSummary(profile);
+  const tdee = profile.tdeeKcal;
+  const delta = g.deltaKcal ?? dailyDeltaKcal(g.weeklyKg);
+  const kg = (n: number) => formatNumber(n, Number.isInteger(n) ? 0 : 1);
+  const pace = `${g.weeklyKg < 0 ? '−' : '+'}${formatNumber(Math.abs(g.weeklyKg), 2)} kg/semana`;
+  const vsTdee =
+    tdee === null
+      ? null
+      : delta === 0
+        ? `Comes lo que gastas: ${kcal(tdee)} kcal.`
+        : `${kcal(Math.abs(delta))} kcal/día ${delta < 0 ? 'por debajo' : 'por encima'} de tu gasto (${kcal(tdee)}).`;
+
+  const title =
+    g.kind === 'none'
+      ? 'Sin objetivo de peso'
+      : g.kind === 'maintain'
+        ? `Mantener ${kg(g.targetKg ?? 0)} kg`
+        : `${g.kind === 'lose' ? 'Bajar' : 'Subir'} a ${kg(g.targetKg ?? 0)} kg`;
+  const sub =
+    g.kind === 'none'
+      ? 'Comes para mantener tu peso. Fija un peso objetivo y las calorías se ajustan solas.'
+      : g.kind === 'maintain' || g.weeklyKg === 0
+        ? (vsTdee ?? 'Comes lo que gastas.')
+        : [[pace, g.etaWeeks ? `llegas hacia el ${etaLabel(g.etaWeeks)}` : null].filter(Boolean).join(' · '), vsTdee]
+            .filter(Boolean)
+            .join('\n');
+
+  return (
+    <Link
+      to="/tabs/progress/objetivos/nuevo"
+      className={`diet__goal${g.kind === 'none' ? ' is-empty' : ''}`}
+      aria-label={`Tu objetivo: ${title}. ${sub.replace('\n', ' ')} ${g.kind === 'none' ? 'Fijar objetivo' : 'Cambiar objetivo'}`}
+    >
+      <span className="diet__goal-icon" aria-hidden="true">
+        <Icon d={PATHS.scale} size={20} />
+      </span>
+      <span className="rk-row__main">
+        <span className="diet__goal-label">Tu objetivo</span>
+        <span className="diet__goal-title">{title}</span>
+        <span className="diet__goal-sub">{sub}</span>
+      </span>
+      {g.kind === 'none' ? <span className="diet__goal-action">Fijar</span> : null}
+      <Chevron />
+    </Link>
+  );
+}
 
 /**
- * Dieta y menú (lienzo "Dieta y menú"). El objetivo (perder/mantener/ganar) es
- * el real de tu perfil y «Aplicar» lo guarda; las calorías de cada día salen de
- * la carga de tu plan y el menú se ajusta a ellas.
+ * Dieta y menú (lienzo "Dieta y menú"). Las calorías de cada día salen de tu
+ * objetivo de peso (arriba, se cambia en Objetivos) y de la carga de tu plan;
+ * el menú se ajusta a ellas.
  */
 export default function DietPage() {
   const { profile } = usePlanWeek();
   const { data } = usePlanWeekData();
-  const saveProfile = useRitmoStore((s) => s.saveProfile);
   const [selDay, setSelDay] = useState<string | null>(null);
-  const [goal, setGoal] = useState<'perder' | 'mantener' | 'ganar'>(profile ? GOAL_OF[profile.goalType] : 'mantener');
   const [menu, setMenu] = useState<MenuWeek | null>(null);
 
   useEffect(() => {
@@ -51,34 +95,14 @@ export default function DietPage() {
       alive = false;
     };
   }, []);
-  const [saving, setSaving] = useState(false);
 
-  const savedGoal = profile ? GOAL_OF[profile.goalType] : 'mantener';
-  // El objetivo del perfil ya incluye el déficit o superávit; si eliges otro aquí, se previsualiza.
-  const shift = { perder: -400, mantener: 0, ganar: 300 };
-  const delta = shift[goal] - shift[savedGoal];
   const prot = profile?.proteinTargetG ?? 150;
   const days = (data?.days ?? []).map((d, i) => {
     const diet = data?.diet?.[i];
     const load: PlanLoad = diet?.load ?? d.planned?.load ?? 'REST';
-    const k = (diet?.kcalTarget ?? profile?.dailyKcalTarget ?? 2400) + delta;
+    const k = diet?.kcalTarget ?? profile?.dailyKcalTarget ?? 2400;
     return { date: d.day, n: dayNumber(d.day), letter: dayLetter(d.day), full: dayFull(d.day), load, k, planned: d.planned };
   });
-  const changed = goal !== savedGoal;
-
-  async function apply() {
-    if (!profile || !changed) return;
-    setSaving(true);
-    try {
-      await saveProfile(profileBody(profile, { goalType: GOAL_API[goal] }));
-      toast.success('Objetivo aplicado', 'Tus calorías de cada día ya siguen este objetivo.');
-    } catch (e) {
-      toast.error('No se pudo aplicar', isApiError(e) ? e.message : undefined);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   if (!days.length) {
     return (
       <IonPage>
@@ -98,7 +122,6 @@ export default function DietPage() {
   const cur = days[sel];
   const max = Math.max(...days.map((d) => d.k));
   const min = Math.min(...days.map((d) => d.k)) - 400;
-  // El menú viene ajustado al objetivo guardado; si previsualizas otro objetivo, la diferencia se ve en «de X kcal».
   const meals = menu?.days?.find((d) => d.day === cur.date)?.meals ?? [];
 
   async function swap(meal: Meal) {
@@ -133,34 +156,17 @@ export default function DietPage() {
                     <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6M10 21h.01M17 21h.01" />
                   </svg>
                 </Link>
-                <button
-                  type="button"
-                  className="rk-textbtn rk-textbtn--strong"
-                  disabled={!changed || saving}
-                  onClick={() => void apply()}
-                >
-                  {changed ? 'Aplicar' : 'Aplicada'}
-                </button>
               </>
             }
           />
           <header className="rk-title">
             <h1>Dieta y menú</h1>
             <span className="rk-title__sub plan__sub">
-              Semana del {days[0].n} al {days[6].n} · calorías según la carga de tu plan
+              Semana del {days[0].n} al {days[6].n} · calorías según tu objetivo y la carga de tu plan
             </span>
           </header>
 
-          <Segmented
-            label="Objetivo"
-            options={[
-              { value: 'perder', label: 'Perder' },
-              { value: 'mantener', label: 'Mantener' },
-              { value: 'ganar', label: 'Ganar' },
-            ]}
-            value={goal}
-            onChange={setGoal}
-          />
+          <GoalCard profile={profile} />
 
           <section aria-label="Calorías por día" className="diet__chart">
             <div role="tablist" aria-label="Días" className="diet__days">

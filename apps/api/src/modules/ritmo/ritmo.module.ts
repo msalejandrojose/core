@@ -1,6 +1,7 @@
 import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IamModule } from '../iam/iam.module';
+import { RitmoMcpController } from './infrastructure/mcp/ritmo-mcp.controller';
 import { RITMO_ACCOUNT_REPOSITORY } from './application/ports/ritmo-account-repository.port';
 import { RITMO_ACTIVITY_REPOSITORY } from './application/ports/ritmo-activity-repository.port';
 import { RITMO_BODY_REPOSITORY } from './application/ports/ritmo-body-repository.port';
@@ -147,6 +148,8 @@ import { RitmoProfileController } from './infrastructure/http/ritmo-profile.cont
 @Module({
   imports: [IamModule],
   controllers: [
+    // Conector MCP (TASK-192): autentica con OAuth de IamModule.
+    RitmoMcpController,
     RitmoProfileController,
     RitmoActivityController,
     RitmoNutritionController,

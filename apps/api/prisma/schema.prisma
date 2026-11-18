@@ -248,6 +248,8 @@ model User {
   storedFiles               StoredFile[]
   posts                     Post[]
   sectionAccess             UserSectionAccess[]
+  oauthCodes                OAuthAuthorizationCode[]
+  oauthTokens               OAuthToken[]
   dashboards                Dashboard[]
   notifications             UserNotification[]
   devices                   Device[]
@@ -480,6 +482,72 @@ model GoogleAuthSession {
 
   @@index([expiresAt])
   @@map("google_auth_session")
+}
+
+// ---------------------------------------------------------------------------
+// OAuth 2.1 (módulo `iam`): servidor de autorización para clientes externos
+// (conectores MCP como Claude). Los secretos (códigos y tokens) se guardan
+// solo como hash SHA-256: una fuga de la BBDD no da acceso.
+// ---------------------------------------------------------------------------
+
+/// Cliente registrado por registro dinámico (RFC 7591). Son clientes públicos
+/// (sin secreto): la protección es PKCE + redirect URIs exactas.
+model OAuthClient {
+  id           String   @id @default(uuid()) @db.Char(36)
+  clientId     String   @unique @map("client_id") @db.VarChar(64)
+  name         String   @db.VarChar(200)
+  /// JSON: lista de redirect URIs permitidas (comparación exacta).
+  redirectUris Json     @map("redirect_uris")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  codes  OAuthAuthorizationCode[]
+  tokens OAuthToken[]
+
+  @@map("oauth_client")
+}
+
+/// Código de autorización: vive minutos y se canjea una sola vez (`usedAt`).
+model OAuthAuthorizationCode {
+  id            String    @id @default(uuid()) @db.Char(36)
+  codeHash      String    @unique @map("code_hash") @db.Char(64)
+  clientId      String    @map("client_id") @db.VarChar(64)
+  userId        String    @map("user_id") @db.Char(36)
+  redirectUri   String    @map("redirect_uri") @db.VarChar(2048)
+  codeChallenge String    @map("code_challenge") @db.VarChar(128)
+  scope         String    @db.VarChar(255)
+  resource      String?   @db.VarChar(2048)
+  expiresAt     DateTime  @map("expires_at")
+  usedAt        DateTime? @map("used_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("oauth_authorization_code")
+}
+
+/// Par access/refresh de un cliente para un usuario. Revocable (`revokedAt`):
+/// al refrescar se rota (el par viejo queda revocado).
+model OAuthToken {
+  id               String    @id @default(uuid()) @db.Char(36)
+  accessTokenHash  String    @unique @map("access_token_hash") @db.Char(64)
+  refreshTokenHash String    @unique @map("refresh_token_hash") @db.Char(64)
+  clientId         String    @map("client_id") @db.VarChar(64)
+  userId           String    @map("user_id") @db.Char(36)
+  scope            String    @db.VarChar(255)
+  resource         String?   @db.VarChar(2048)
+  accessExpiresAt  DateTime  @map("access_expires_at")
+  refreshExpiresAt DateTime  @map("refresh_expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  lastUsedAt       DateTime? @map("last_used_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  client OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("oauth_token")
 }
 
 // ---------------------------------------------------------------------------
