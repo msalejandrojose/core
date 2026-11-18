@@ -16,6 +16,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiProperty,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
@@ -40,6 +41,16 @@ import {
   renderOAuthErrorPage,
 } from './oauth-authorize-page';
 import { publicBaseUrl } from './oauth-urls';
+
+/** Una aplicación con acceso (p. ej. Claude), para listarla y desconectarla. */
+class OAuthConnectionResponseDto {
+  @ApiProperty() clientId!: string;
+  @ApiProperty({ example: 'Claude' }) clientName!: string;
+  @ApiProperty({ example: 'ritmo' }) scope!: string;
+  @ApiProperty({ type: String, format: 'date-time' }) connectedAt!: Date;
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
+  lastUsedAt!: Date | null;
+}
 
 const OAUTH_THROTTLE = { default: { limit: 20, ttl: 60_000 } };
 
@@ -262,7 +273,10 @@ export class OAuthController {
   @ApiOperation({
     summary: 'Mis aplicaciones conectadas por OAuth (p. ej. Claude).',
   })
-  @ApiOkResponse({ description: 'Una por cliente con acceso vivo.' })
+  @ApiOkResponse({
+    type: [OAuthConnectionResponseDto],
+    description: 'Una por cliente con acceso vivo.',
+  })
   list(@CurrentUser() current: AccessTokenPayload): Promise<OAuthConnection[]> {
     return this.connections.list(current.sub);
   }
