@@ -122,6 +122,10 @@ export interface RitmoHevyRepositoryPort {
     externalId: string,
     data: ImportedSessionData,
   ): Promise<{ created: boolean; previousDay: string | null }>;
+  /** Inicio y id externo de los entrenos que vienen de Hevy (API o CSV). */
+  importedStarts(
+    userId: string,
+  ): Promise<{ externalId: string; startedAt: Date }[]>;
   /** Borra el entreno importado; devuelve su día, o null si no estaba. */
   deleteImported(userId: string, externalId: string): Promise<string | null>;
 

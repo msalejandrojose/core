@@ -1,0 +1,192 @@
+/* Animación y ficha de un ejercicio de fuerza. */
+
+.exanim {
+  display: flex;
+  justify-content: center;
+  background: var(--ritmo-bg);
+  border-radius: var(--ritmo-radius-2xl);
+  overflow: hidden;
+}
+.exanim__stage {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  padding: 8px 12px 4px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.exanim__paused {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 2px 8px;
+  border-radius: var(--ritmo-radius-pill);
+  background: var(--ritmo-surface);
+  color: var(--ritmo-ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.exanim--still {
+  gap: 4px;
+  padding: 8px;
+}
+.exanim--still figure {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+}
+.exanim--still figcaption {
+  font-size: 12px;
+  color: var(--ritmo-ink-muted);
+}
+
+.exfig {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 200 / 198;
+}
+.exfig__seg {
+  stroke: var(--ritmo-ink-2);
+  stroke-linecap: round;
+}
+.exfig__seg.is-far {
+  stroke: var(--ritmo-chevron);
+}
+.exfig__seg.is-hot {
+  stroke: var(--ritmo-activity);
+}
+.exfig__seg.is-hot.is-far {
+  stroke: var(--ritmo-activity);
+  opacity: 0.45;
+}
+.exfig__head {
+  fill: var(--ritmo-ink-2);
+}
+.exfig__dot {
+  fill: var(--ritmo-activity);
+}
+.exfig__ground {
+  stroke: var(--ritmo-border);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.exfig__fixture {
+  stroke: var(--ritmo-border-strong);
+  stroke-linecap: round;
+}
+.exfig__fixture-fill {
+  fill: var(--ritmo-border-strong);
+}
+.exfig__gear {
+  fill: var(--ritmo-ink-muted);
+}
+.exfig__plate {
+  fill: var(--ritmo-surface);
+  stroke: var(--ritmo-ink-muted);
+  stroke-width: 3.5;
+}
+.exfig__cable {
+  stroke: var(--ritmo-ink-muted);
+  stroke-width: 1.5;
+}
+.exfig__bar {
+  stroke: var(--ritmo-ink-muted);
+  stroke-linecap: round;
+}
+
+/* Ficha */
+.exguide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.exguide__desc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ritmo-ink);
+}
+.exguide__steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: exstep;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.exguide__steps li {
+  counter-increment: exstep;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ritmo-ink);
+}
+.exguide__steps li::before {
+  content: counter(exstep);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ritmo-activity-soft);
+  color: var(--ritmo-activity-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.exguide__h {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ritmo-ink-muted);
+}
+.exguide__muscles {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ritmo-ink);
+}
+.exguide__legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ritmo-ink-muted);
+}
+.exguide__legend::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ritmo-activity);
+}
+.exguide__empty {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ritmo-ink-muted);
+}
+
+.exdetail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.exguide__sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 24px;
+}

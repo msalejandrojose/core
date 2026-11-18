@@ -297,6 +297,7 @@ model User {
   ritmoDailyHealth      RitmoDailyHealth[]
   ritmoConnectionPrefs  RitmoConnectionPrefs?
   ritmoHevyLinks        RitmoHevyExerciseLink[]
+  ritmoWorkoutTemplates RitmoWorkoutTemplate[]
 
   @@map("user")
 }
@@ -2727,17 +2728,22 @@ model RitmoExercise {
   /// Sin carga externa por defecto (dominadas, fondos): el volumen usa el
   /// peso corporal más el lastre.
   isBodyweight Boolean @default(false) @map("is_bodyweight")
+  /// Qué es el ejercicio y qué trabaja, en una o dos frases para la ficha.
+  description  String? @db.Text
+  /// Técnica paso a paso: array JSON de frases cortas, en orden.
+  steps        Json?
   ownerUserId  String? @map("owner_user_id") @db.Char(36)
   isArchived   Boolean @default(false) @map("is_archived")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner     User?                         @relation("RitmoExerciseOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  muscles   RitmoExerciseMuscle[]
-  overrides RitmoExerciseMuscleOverride[]
-  sets      RitmoStrengthSet[]
-  hevyLinks RitmoHevyExerciseLink[]
+  owner         User?                          @relation("RitmoExerciseOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  muscles       RitmoExerciseMuscle[]
+  overrides     RitmoExerciseMuscleOverride[]
+  sets          RitmoStrengthSet[]
+  hevyLinks     RitmoHevyExerciseLink[]
+  templateItems RitmoWorkoutTemplateExercise[]
 
   @@index([ownerUserId])
   @@map("ritmo_exercise")
@@ -3023,6 +3029,44 @@ model RitmoHevyExerciseLink {
   @@id([userId, templateId])
   @@index([userId, exerciseId])
   @@map("ritmo_hevy_exercise_link")
+}
+
+/// Plantilla de entreno de fuerza ("Pecho + Hombro", "Piernas"): los ejercicios
+/// en orden con las series previstas, para empezar un entreno sin apuntarlos uno
+/// a uno. El nombre es único por usuario.
+model RitmoWorkoutTemplate {
+  id     String @id @default(uuid()) @db.Char(36)
+  userId String @map("user_id") @db.Char(36)
+  name   String @db.VarChar(120)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises RitmoWorkoutTemplateExercise[]
+
+  @@unique([userId, name])
+  @@map("ritmo_workout_template")
+}
+
+/// Un ejercicio de una plantilla. Si se borra el ejercicio (uno propio), sale
+/// de la plantilla.
+model RitmoWorkoutTemplateExercise {
+  templateId String   @map("template_id") @db.Char(36)
+  position   Int      @db.SmallInt
+  exerciseId String   @map("exercise_id") @db.Char(36)
+  /// Series de trabajo previstas.
+  sets       Int      @db.SmallInt
+  /// Repeticiones y carga de referencia (las de la última vez), si las hay.
+  reps       Int?     @db.SmallInt
+  weightKg   Decimal? @map("weight_kg") @db.Decimal(6, 2)
+
+  template RitmoWorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exercise RitmoExercise        @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@id([templateId, position])
+  @@index([exerciseId])
+  @@map("ritmo_workout_template_exercise")
 }
 
 /// Conexión del usuario con Garmin por su clave personal (Garmin Connect

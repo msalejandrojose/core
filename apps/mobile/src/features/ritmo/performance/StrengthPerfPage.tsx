@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatNumber } from '../format';
 import { SectionHeader, Segmented } from '../ui/kit';
 import { PERIOD_OPTIONS, PERIOD_TEXT, SIGNAL_LABEL, STATUS_LABEL, STATUS_TONE, pct, shortDay } from './labels';
@@ -98,6 +99,9 @@ function ExerciseCard({ ex }: { ex: ExerciseAnalysis }) {
           {ex.rirCoverage < 0.5 ? (
             <p className="rk-row__sub perf__wrap">Pocas series con RIR: el 1RM asume que fueron al fallo y queda por debajo del real.</p>
           ) : null}
+          <Link to={`/tabs/progress/rendimiento/ejercicios/${ex.exerciseId}`} className="rk-textbtn">
+            Ver la evolución y cómo se hace
+          </Link>
         </div>
       ) : null}
     </article>

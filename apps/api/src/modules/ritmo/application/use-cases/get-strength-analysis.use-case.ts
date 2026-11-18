@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { RitmoExerciseNotFoundError } from '../../domain/errors/ritmo-exercise-not-found.error';
 import { dayInTimezone } from '../../domain/services/calendar';
 import {
   analyzeStrength,
+  type ExerciseAnalysis,
   type StrengthAnalysis,
 } from '../../domain/services/performance/strength-engine';
 import {
@@ -24,6 +26,14 @@ import {
 
 /** Máximo de sesiones por ejercicio que se devuelven (las más recientes). */
 const MAX_HISTORY_POINTS = 120;
+/** En la ficha de un solo ejercicio caben más: un año entrenándolo a diario. */
+const MAX_EXERCISE_HISTORY_POINTS = 400;
+
+export interface ExerciseHistory {
+  exerciseId: string;
+  /** null si todavía no hay ninguna serie de este ejercicio. */
+  analysis: ExerciseAnalysis | null;
+}
 
 /**
  * Progresión de fuerza por ejercicio. Se calcula al vuelo sobre el historial
@@ -40,9 +50,28 @@ export class GetStrengthAnalysisUseCase {
     private readonly profiles: RitmoProfileRepositoryPort,
   ) {}
 
+  /** La progresión de un solo ejercicio, para su ficha. */
+  async forExercise(
+    userId: string,
+    exerciseId: string,
+    period: PerformancePeriod = '6m',
+  ): Promise<ExerciseHistory> {
+    const missing = await this.performance.missingExercises(
+      [exerciseId],
+      userId,
+    );
+    if (missing.length) throw new RitmoExerciseNotFoundError(exerciseId);
+    const all = await this.execute(userId, period, MAX_EXERCISE_HISTORY_POINTS);
+    return {
+      exerciseId,
+      analysis: all.exercises.find((e) => e.exerciseId === exerciseId) ?? null,
+    };
+  }
+
   async execute(
     userId: string,
     period: PerformancePeriod = 'all',
+    maxPoints = MAX_HISTORY_POINTS,
   ): Promise<StrengthAnalysis> {
     const [sessions, exercises, bodyWeightKg, profile] = await Promise.all([
       this.performance.trainingHistory(userId, null),
@@ -69,7 +98,7 @@ export class GetStrengthAnalysisUseCase {
         ...e,
         history: e.history
           .filter((p) => days === null || daysBetween(p.day, today) < days)
-          .slice(-MAX_HISTORY_POINTS),
+          .slice(-maxPoints),
       })),
     };
   }
