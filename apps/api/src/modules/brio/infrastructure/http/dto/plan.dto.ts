@@ -31,13 +31,13 @@ export class SavePlanDto {
   @MaxLength(120)
   name!: string;
 
-  @ApiPropertyOptional({ example: '2027-03-22', nullable: true })
+  @ApiPropertyOptional({ type: String, example: '2027-03-22', nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @Matches(DAY_PATTERN, { message: 'raceDate debe tener formato YYYY-MM-DD.' })
   raceDate?: string | null;
 
-  @ApiPropertyOptional({ example: 21097, nullable: true })
+  @ApiPropertyOptional({ type: Number, example: 21097, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsInt()
@@ -46,6 +46,7 @@ export class SavePlanDto {
   raceDistanceM?: number | null;
 
   @ApiPropertyOptional({
+    type: Number,
     example: 6300,
     nullable: true,
     description: 'Tiempo objetivo en segundos.',
@@ -57,7 +58,7 @@ export class SavePlanDto {
   @Max(360_000)
   targetTimeSec?: number | null;
 
-  @ApiPropertyOptional({ maxLength: 500, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 500, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsString()
@@ -104,7 +105,7 @@ export class SetPlannedDayDto {
   })
   startTime?: string | null;
 
-  @ApiPropertyOptional({ example: 55, nullable: true })
+  @ApiPropertyOptional({ type: Number, example: 55, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsInt()
@@ -112,7 +113,7 @@ export class SetPlannedDayDto {
   @Max(720)
   plannedDurationMin?: number | null;
 
-  @ApiPropertyOptional({ example: 10000, nullable: true })
+  @ApiPropertyOptional({ type: Number, example: 10000, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsInt()
@@ -121,6 +122,7 @@ export class SetPlannedDayDto {
   plannedDistanceM?: number | null;
 
   @ApiPropertyOptional({
+    type: Number,
     example: 270,
     nullable: true,
     description: 'Ritmo objetivo, s/km.',
@@ -133,6 +135,8 @@ export class SetPlannedDayDto {
   targetPaceSecPerKm?: number | null;
 
   @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true,
     example: { reps: 6, repDistanceM: 800 },
     nullable: true,
   })
@@ -141,7 +145,7 @@ export class SetPlannedDayDto {
   @IsObject()
   structure?: Record<string, unknown> | null;
 
-  @ApiPropertyOptional({ maxLength: 500, nullable: true })
+  @ApiPropertyOptional({ type: String, maxLength: 500, nullable: true })
   @IsOptional()
   @ValidateIf(notNull)
   @IsString()
@@ -160,6 +164,7 @@ export class CompleteDayDto {
   skipped?: boolean;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Entreno real con el que se cumplió.',
     nullable: true,
   })
@@ -169,6 +174,7 @@ export class CompleteDayDto {
   sessionId?: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     example: '8,2 km a 5:10, buenas sensaciones',
     nullable: true,
   })

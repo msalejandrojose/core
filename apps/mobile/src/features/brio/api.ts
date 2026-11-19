@@ -1,3 +1,4 @@
+import type { components } from '@core/api-client';
 import { apiClient } from '@/api/client';
 
 /**
@@ -11,277 +12,44 @@ import { apiClient } from '@/api/client';
  * cuando se regenere el schema solo cambia este archivo.
  */
 
-export type Sex = 'MALE' | 'FEMALE' | 'OTHER';
-export type ActivityLevel =
-  | 'SEDENTARY'
-  | 'LIGHT'
-  | 'MODERATE'
-  | 'ACTIVE'
-  | 'VERY_ACTIVE';
-export type GoalType = 'LOSE_WEIGHT' | 'MAINTAIN' | 'GAIN_MUSCLE';
-export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
-export type Effort = 'LIGHT' | 'MODERATE' | 'VIGOROUS';
+// Tipos del contrato, sacados del schema OpenAPI generado (`@core/api-client`).
+// Si un DTO cambia en la API, el typecheck de la app lo detecta.
+type Schemas = components['schemas'];
 
-export interface BrioProfile {
-  id: string;
-  sex: Sex | null;
-  birthDate: string | null;
-  heightCm: number | null;
-  activityLevel: ActivityLevel;
-  goalType: GoalType;
-  targetWeightKg: number | null;
-  weeklyWeightChangeKg: number | null;
-  bmrKcal: number | null;
-  tdeeKcal: number | null;
-  dailyKcalTarget: number | null;
-  proteinTargetG: number | null;
-  carbsTargetG: number | null;
-  fatTargetG: number | null;
-  timezone: string;
-  currentWeightKg: number | null;
-  onboardedAt: string | null;
-}
+export type BrioProfile = Schemas['ProfileResponseDto'];
+export type SaveProfileBody = Schemas['SaveProfileDto'];
+export type Sex = NonNullable<BrioProfile['sex']>;
+export type ActivityLevel = BrioProfile['activityLevel'];
+export type GoalType = BrioProfile['goalType'];
+export type ActivityType = Schemas['ActivityTypeResponseDto'];
+export type ActivitySession = Schemas['ActivitySessionResponseDto'];
+export type Effort = NonNullable<ActivitySession['effort']>;
+export type LogActivityBody = Schemas['LogActivityDto'];
+export type FoodServing = Schemas['FoodServingResponseDto'];
+export type Food = Schemas['FoodResponseDto'];
+export type CreateFoodBody = Schemas['CreateFoodDto'];
+export type CreateRecipeBody = Schemas['CreateRecipeDto'];
+export type MealEntry = Schemas['MealEntryResponseDto'];
+export type MealType = MealEntry['mealType'];
+export type LogMealBody = Schemas['LogMealDto'];
+export type UpdateMealBody = Schemas['UpdateMealDto'];
+export type DayTotals = Schemas['DayTotalsDto'];
+export type DaySummary = Schemas['DaySummaryResponseDto'];
+export type Progress = Schemas['ProgressResponseDto'];
+/** Un alimento tal y como se volvería a registrar (su última cantidad). */
+export type HabitItem = Schemas['HabitItemResponseDto'];
+export type HabitCombo = Schemas['HabitComboResponseDto'];
+/** Lo de siempre, frecuentes y recientes de un momento del día. */
+export type MealHabits = Schemas['MealHabitsResponseDto'];
+export type LogWeightBody = Schemas['LogWeightDto'];
 
-export interface SaveProfileBody {
-  sex?: Sex;
-  birthDate?: string;
-  heightCm?: number;
-  activityLevel: ActivityLevel;
-  goalType: GoalType;
-  targetWeightKg?: number;
-  weeklyWeightChangeKg?: number;
-  timezone?: string;
-}
-
-export interface ActivityType {
-  id: string;
-  code: string | null;
-  name: string;
-  met: number;
-  /** Disciplina: STRENGTH admite series; RUN, CYCLE… son cardio. */
-  kind: string;
-  icon: string | null;
-  isCustom: boolean;
-  /** Sesiones tuyas de este tipo en los últimos 120 días (para «tus deportes»). */
-  myUses?: number;
-}
-
-export interface ActivitySession {
-  id: string;
-  activityTypeId: string;
-  activityTypeName: string;
-  startedAt: string;
-  loggedOn: string;
-  durationSec: number;
-  distanceM: number | null;
-  avgHeartRate: number | null;
-  maxHeartRate?: number | null;
-  elevationGainM?: number | null;
-  cadence?: number | null;
-  /** Esfuerzo percibido CR10 (1–10). */
-  rpe?: number | null;
-  /** Segundos en Z1..Z5. */
-  zoneSeconds?: number[] | null;
-  /** Disciplina del tipo de actividad (STRENGTH, RUN…). */
-  kind?: string;
-  /** Series de fuerza, en orden. */
-  sets?: {
-    exerciseId: string;
-    exerciseOrder: number;
-    setOrder: number;
-    weightKg: number;
-    reps: number;
-    rir: number | null;
-    restSec: number | null;
-    isWarmup: boolean;
-  }[];
-  effort: Effort | null;
-  kcalBurned: number;
-  notes: string | null;
-  source: string;
-}
-
-export interface FoodServing {
-  id: string;
-  label: string;
-  grams: number;
-  isDefault: boolean;
-}
-
-export interface Food {
-  id: string;
-  name: string;
-  brand: string | null;
-  barcode: string | null;
-  isVerified: boolean;
-  isLiquid: boolean;
-  kcalPer100: number;
-  proteinPer100G: number;
-  carbsPer100G: number;
-  fatPer100G: number;
-  servings: FoodServing[];
-}
-
-/** Nueva receta (POST /brio/recipes): se guarda como alimento propio. */
-export interface CreateRecipeBody {
-  name: string;
-  servings: number;
-  ingredients: { foodId: string; grams: number }[];
-}
-
-/** Corrección de una entrada (PATCH /brio/meals/:id). */
-export interface UpdateMealBody {
-  mealType?: MealType;
-  quantityG?: number;
-  name?: string;
-  kcal?: number;
-}
-
-/** Alimento propio (POST /brio/foods). Valores por 100 g/ml. */
-export interface CreateFoodBody {
-  name: string;
-  brand?: string;
-  isLiquid?: boolean;
-  kcalPer100: number;
-  proteinPer100G: number;
-  carbsPer100G: number;
-  fatPer100G: number;
-  servings?: { label: string; grams: number; isDefault?: boolean   /** EAN/UPC si se creó tras escanear un envase que no conocíamos. */
-  barcode?: string;
-}[];
-}
-
-/** Sección de lo típico de un momento del día (café, tostadas…), con su dibujo. */
+/** `GET /brio/foods/typical` aún no declara su DTO de respuesta: tipo a mano. */
 export interface FoodSection {
   code: string;
   label: string;
   /** Clave de la ilustración (ui/food-icons.data.ts). */
   icon: string;
   foods: Food[];
-}
-
-export interface MealEntry {
-  id: string;
-  loggedOn: string;
-  mealType: MealType;
-  name: string;
-  foodId: string | null;
-  servingId: string | null;
-  quantityG: number;
-  kcal: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-}
-
-export interface DayTotals {
-  kcalIn: number;
-  kcalBurned: number;
-  /** Parte del gasto que cuenta para el día, según Conexiones. */
-  kcalBurnedCounted: number;
-  kcalTarget: number | null;
-  kcalRemaining: number | null;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  weightKg: number | null;
-}
-
-export interface DaySummary {
-  day: string;
-  totals: DayTotals;
-  meals: MealEntry[];
-  sessions: ActivitySession[];
-}
-
-export interface Progress {
-  from: string;
-  to: string;
-  weights: { day: string; weightKg: number; bodyFatPct: number | null }[];
-  days: {
-    day: string;
-    kcalIn: number;
-    kcalBurned: number;
-    kcalTarget: number | null;
-    proteinG: number;
-    /** Entrenos registrados ese día. */
-    sessions: number;
-    /** Minutos de entreno ese día. */
-    activeMinutes: number;
-    /** Momentos del día (desayuno, comida…) con algo registrado. */
-    mealsLogged: number;
-  }[];
-}
-
-export interface LogMealBody {
-  mealType: MealType;
-  loggedOn?: string;
-  foodId?: string;
-  servingId?: string;
-  quantity: number;
-  customName?: string;
-  kcal?: number;
-  proteinG?: number;
-  carbsG?: number;
-  fatG?: number;
-}
-
-/** Un alimento tal y como se volvería a registrar (su última cantidad). */
-export interface HabitItem {
-  key: string;
-  foodId: string | null;
-  name: string;
-  quantityG: number;
-  kcal: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  count: number;
-  lastOn: string;
-}
-
-export interface HabitCombo {
-  items: HabitItem[];
-  count: number;
-  kcal: number;
-}
-
-/** Lo de siempre, frecuentes y recientes de un momento del día. */
-export interface MealHabits {
-  combos: HabitCombo[];
-  frequent: HabitItem[];
-  recent: HabitItem[];
-}
-
-export interface LogActivityBody {
-  activityTypeId: string;
-  /** Rutina guardada con la que se ha hecho. */
-  routineId?: string;
-  startedAt: string;
-  durationSec: number;
-  distanceM?: number;
-  avgHeartRate?: number;
-  maxHeartRate?: number;
-  elevationGainM?: number;
-  cadence?: number;
-  /** Esfuerzo percibido CR10 (1–10). */
-  rpe?: number;
-  exercises?: {
-    exerciseId: string;
-    sets: { weightKg: number; reps: number; rir?: number; restSec?: number; isWarmup?: boolean }[];
-  }[];
-  /** Segundos en cada zona cardíaca, Z1 a Z5. */
-  zoneSeconds?: number[];
-  effort?: Effort;
-  notes?: string;
-}
-
-export interface LogWeightBody {
-  weightKg: number;
-  measuredOn?: string;
-  bodyFatPct?: number;
-  waistCm?: number;
-  notes?: string;
 }
 
 /** Error de la API con su código del catálogo, para distinguir casos. */
@@ -333,50 +101,46 @@ export function isApiError(e: unknown): e is BrioApiError {
   return typeof e === 'object' && e !== null && 'code' in e && 'status' in e;
 }
 
+/** Desenvuelve una llamada del cliente tipado: datos o `BrioApiError`. */
+async function typed<T>(
+  p: Promise<{ data?: T; error?: unknown; response: Response }>,
+): Promise<T> {
+  const { data, error, response } = await p;
+  if (error !== undefined || response.status >= 400) {
+    throw toApiError(error, response.status);
+  }
+  return data as T;
+}
+
+const byId = (id: string) => ({ params: { path: { id } } });
+
+/** Rutas del núcleo de Brío, tipadas de punta a punta por el schema. */
 export const brioApi = {
-  getProfile: () => call<BrioProfile>('GET', '/brio/profile'),
-  saveProfile: (body: SaveProfileBody) =>
-    call<BrioProfile>('PUT', '/brio/profile', { body }),
-  logWeight: (body: LogWeightBody) =>
-    call<unknown>('POST', '/brio/weight', { body }),
-  getDay: (day?: string) =>
-    call<DaySummary>('GET', '/brio/day', {
-      params: { query: day ? { day } : {} },
-    }),
-  getProgress: (days: number) =>
-    call<Progress>('GET', '/brio/progress', {
-      params: { query: { days } },
-    }),
-  activityTypes: () => call<ActivityType[]>('GET', '/brio/activity-types'),
-  logActivity: (body: LogActivityBody) =>
-    call<ActivitySession>('POST', '/brio/activities', { body }),
-  deleteActivity: (id: string) =>
-    call<void>('DELETE', `/brio/activities/${id}`),
-  searchFoods: (q: string) =>
-    call<Food[]>('GET', '/brio/foods', { params: { query: { q } } }),
+  getProfile: () => typed(apiClient.GET('/brio/profile')),
+  saveProfile: (body: SaveProfileBody) => typed(apiClient.PUT('/brio/profile', { body })),
+  logWeight: (body: LogWeightBody) => typed(apiClient.POST('/brio/weight', { body })),
+  getDay: (day?: string) => typed(apiClient.GET('/brio/day', { params: { query: day ? { day } : {} } })),
+  getProgress: (days: number) => typed(apiClient.GET('/brio/progress', { params: { query: { days } } })),
+  activityTypes: () => typed(apiClient.GET('/brio/activity-types')),
+  logActivity: (body: LogActivityBody) => typed(apiClient.POST('/brio/activities', { body })),
+  deleteActivity: (id: string) => typed(apiClient.DELETE('/brio/activities/{id}', byId(id))),
+  searchFoods: (q: string) => typed(apiClient.GET('/brio/foods', { params: { query: { q } } })),
   /** Por código de barras: el nuestro o, si no lo tenemos, el de Open Food Facts. */
   foodByBarcode: (barcode: string) =>
-    call<Food[]>('GET', '/brio/foods', { params: { query: { barcode } } }).then((r) => r[0] ?? null),
-  logMeal: (body: LogMealBody) =>
-    call<MealEntry>('POST', '/brio/meals', { body }),
-  updateMeal: (id: string, body: UpdateMealBody) =>
-    call<MealEntry>('PATCH', `/brio/meals/${id}`, { body }),
-  deleteMeal: (id: string) => call<void>('DELETE', `/brio/meals/${id}`),
-  createFood: (body: CreateFoodBody) =>
-    call<Food>('POST', '/brio/foods', { body }),
+    typed(apiClient.GET('/brio/foods', { params: { query: { barcode } } })).then((r) => r[0] ?? null),
+  logMeal: (body: LogMealBody) => typed(apiClient.POST('/brio/meals', { body })),
+  updateMeal: (id: string, body: UpdateMealBody) => typed(apiClient.PATCH('/brio/meals/{id}', { ...byId(id), body })),
+  deleteMeal: (id: string) => typed(apiClient.DELETE('/brio/meals/{id}', byId(id))),
+  createFood: (body: CreateFoodBody) => typed(apiClient.POST('/brio/foods', { body })),
   /** Mis recetas (alimentos propios con su «1 ración»), las más nuevas primero. */
-  recipes: () => call<Food[]>('GET', '/brio/recipes'),
-  createRecipe: (body: CreateRecipeBody) =>
-    call<Food>('POST', '/brio/recipes', { body }),
+  recipes: () => typed(apiClient.GET('/brio/recipes')),
+  createRecipe: (body: CreateRecipeBody) => typed(apiClient.POST('/brio/recipes', { body })),
   /** Volcado de todo lo guardado en Brío (Perfil › Descargar mis datos). */
   exportMyData: () => call<unknown>('GET', '/brio/account/export'),
   /** Borrado definitivo de la cuenta y de todos sus datos. */
-  deleteAccount: () => call<void>('DELETE', '/brio/account'),
+  deleteAccount: () => typed(apiClient.DELETE('/brio/account')),
   /** Comidas típicas de un momento del día, para apuntar sin buscar. */
   typicalFoods: (mealType: MealType) =>
     call<FoodSection[]>('GET', '/brio/foods/typical', { params: { query: { mealType } } }),
-  mealHabits: (mealType: MealType) =>
-    call<MealHabits>('GET', '/brio/meals/habits', {
-      params: { query: { mealType } },
-    }),
+  mealHabits: (mealType: MealType) => typed(apiClient.GET('/brio/meals/habits', { params: { query: { mealType } } })),
 };

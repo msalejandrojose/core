@@ -1,4 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ACTIVITY_KINDS } from '../../../domain/entities/performance.entity';
+import { ApiProperty } from '@nestjs/swagger';
 import type {
   ActivitySession,
   ActivitySource,
@@ -9,37 +10,78 @@ import type {
   StrengthSet,
 } from '../../../domain/entities/performance.entity';
 
+/** Una serie de fuerza tal como la devuelve la API. */
+export class StrengthSetResponseDto {
+  @ApiProperty({ format: 'uuid' }) exerciseId!: string;
+  @ApiProperty({ example: 0 }) exerciseOrder!: number;
+  @ApiProperty({ example: 1 }) setOrder!: number;
+  @ApiProperty({
+    example: 80,
+    description: 'Carga externa en kg (0 = solo peso corporal).',
+  })
+  weightKg!: number;
+  @ApiProperty({ example: 8 }) reps!: number;
+  @ApiProperty({ type: Number, nullable: true, example: 2 }) rir!:
+    | number
+    | null;
+  @ApiProperty({ type: Number, nullable: true, example: 120 })
+  restSec!: number | null;
+  @ApiProperty() isWarmup!: boolean;
+}
+
 export class ActivitySessionResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() activityTypeId: string;
   @ApiProperty({ example: 'Correr' }) activityTypeName: string;
-  @ApiProperty() startedAt: Date;
+  @ApiProperty({ type: String, format: 'date-time' }) startedAt: Date;
   @ApiProperty({ example: '2026-11-10' }) loggedOn: string;
   @ApiProperty({ example: 1800 }) durationSec: number;
-  @ApiPropertyOptional({ example: 5200 }) distanceM: number | null;
-  @ApiPropertyOptional({ example: 148 }) avgHeartRate: number | null;
-  @ApiPropertyOptional({ example: 176 }) maxHeartRate: number | null;
-  @ApiPropertyOptional({ example: 140 }) elevationGainM: number | null;
-  @ApiPropertyOptional({ example: 172 }) cadence: number | null;
-  @ApiPropertyOptional({ example: 7, description: 'CR10 (1–10).' })
+  @ApiProperty({ type: Number, nullable: true, example: 5200 })
+  distanceM: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 148 })
+  avgHeartRate: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 176 })
+  maxHeartRate: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 140 })
+  elevationGainM: number | null;
+  @ApiProperty({ type: Number, nullable: true, example: 172 }) cadence:
+    | number
+    | null;
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    example: 7,
+    description: 'CR10 (1–10).',
+  })
   rpe: number | null;
-  @ApiPropertyOptional({ type: [Number], description: 'Segundos en Z1..Z5.' })
+  @ApiProperty({
+    nullable: true,
+    type: [Number],
+    description: 'Segundos en Z1..Z5.',
+  })
   zoneSeconds: number[] | null;
   @ApiProperty({
+    enum: ACTIVITY_KINDS,
     example: 'RUN',
     description: 'Disciplina del tipo de actividad.',
   })
   kind: ActivityKind;
-  @ApiProperty({ description: 'Series de fuerza, en orden. Vacío en cardio.' })
+  @ApiProperty({
+    type: () => [StrengthSetResponseDto],
+    description: 'Series de fuerza, en orden. Vacío en cardio.',
+  })
   sets: StrengthSet[];
-  @ApiPropertyOptional({ enum: ['LIGHT', 'MODERATE', 'VIGOROUS'] })
+  @ApiProperty({
+    nullable: true,
+    enum: ['LIGHT', 'MODERATE', 'VIGOROUS'],
+  })
   effort: Effort | null;
   @ApiProperty({
     example: 336,
     description: 'kcal estimadas al registrar (snapshot, no se recalcula).',
   })
   kcalBurned: number;
-  @ApiPropertyOptional() notes: string | null;
+  @ApiProperty({ type: String, nullable: true }) notes: string | null;
   @ApiProperty({
     enum: ['MANUAL', 'HEALTHKIT', 'GOOGLE_FIT', 'STRAVA', 'GARMIN'],
     description: 'Origen del registro.',

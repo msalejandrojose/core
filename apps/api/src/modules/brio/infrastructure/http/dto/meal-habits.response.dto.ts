@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import type {
   HabitCombo,
   HabitItem,
@@ -8,7 +8,7 @@ import type {
 export class HabitItemResponseDto {
   @ApiProperty({ description: 'foodId, o "text:<nombre>" si es texto libre.' })
   key: string;
-  @ApiPropertyOptional() foodId: string | null;
+  @ApiProperty({ type: String, nullable: true }) foodId: string | null;
   @ApiProperty({ example: 'Tortilla francesa' }) name: string;
   @ApiProperty({ example: 120, description: 'Última cantidad registrada.' })
   quantityG: number;
