@@ -5,10 +5,19 @@ import {
   isApiError,
   brioApi,
   type ActivityLevel,
-  type GoalType,
   type Sex,
 } from '../api';
 import { formatNumber } from '../format';
+import {
+  PACES,
+  dailyDeltaKcal,
+  direction,
+  etaLabel,
+  goalTypeOf,
+  signedWeekly,
+  weeksToGoal,
+  type PaceId,
+} from '../progress/weight-goal';
 import { useBrioStore } from '../brio.store';
 import { Chevron, Icon, Segmented, SectionHeader } from '../ui/kit';
 import { PATHS } from '../ui/paths';
@@ -41,15 +50,6 @@ const LEVELS: { value: ActivityLevel; short: string; label: string }[] = [
   },
 ];
 
-/** Lo que hace cada objetivo, con las cifras que usa la API (energy.ts). */
-const GOAL_HINT: Record<GoalType, string> = {
-  LOSE_WEIGHT:
-    'Empezamos con un déficit suave: medio kilo a la semana como mucho.',
-  MAINTAIN:
-    'Ajustamos las kcal a lo que gastas, y sumamos lo que entrenes cada día.',
-  GAIN_MUSCLE: 'Sumamos un cuarto de kilo a la semana, con más proteína.',
-};
-
 function formatBirth(day: string): string {
   const [y, m, d] = day.split('-');
   return `${d}/${m}/${y}`;
@@ -77,11 +77,20 @@ export default function SignupProfilePage() {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [level, setLevel] = useState<ActivityLevel>('MODERATE');
-  const [goal, setGoal] = useState<GoalType>('LOSE_WEIGHT');
+  /** Peso objetivo (opcional): sin él se come para mantener. */
+  const [target, setTarget] = useState('');
+  const [pace, setPace] = useState<PaceId>('normal');
   const [saving, setSaving] = useState(false);
 
   const heightNum = Number(height.replace(',', '.'));
   const weightNum = Number(weight.replace(',', '.'));
+  const targetNum = Number(target.replace(',', '.'));
+  const hasTarget = target.trim() !== '' && targetNum >= 25 && targetNum <= 400;
+  const dir = hasTarget && weightNum > 0 ? direction(weightNum, targetNum) : 'maintain';
+  const paceKg = dir === 'maintain' ? 0 : PACES[dir].find((p) => p.id === pace)!.kg;
+  const weekly = signedWeekly(dir, paceKg);
+  const weeks = hasTarget ? weeksToGoal(weightNum, targetNum, weekly) : null;
+  const delta = dailyDeltaKcal(weekly);
   const valid =
     sex !== null &&
     /^\d{4}-\d{2}-\d{2}$/.test(birthDate) &&
@@ -107,7 +116,9 @@ export default function SignupProfilePage() {
           birthDate,
           heightCm: heightNum,
           activityLevel: level,
-          goalType: goal,
+          goalType: goalTypeOf(dir),
+          ...(hasTarget ? { targetWeightKg: targetNum } : {}),
+          weeklyWeightChangeKg: weekly,
           timezone,
         });
         await brioApi.logWeight({ weightKg: weightNum });
@@ -274,17 +285,43 @@ export default function SignupProfilePage() {
 
           <section className="rk-section" aria-labelledby="obj">
             <SectionHeader id="obj">Tu objetivo</SectionHeader>
-            <Segmented
-              label="Objetivo"
-              value={goal}
-              onChange={setGoal}
-              options={[
-                { value: 'LOSE_WEIGHT', label: 'Perder' },
-                { value: 'MAINTAIN', label: 'Mantener' },
-                { value: 'GAIN_MUSCLE', label: 'Ganar' },
-              ]}
-            />
-            <p className="rk-note">{GOAL_HINT[goal]}</p>
+            <div className="rk-list">
+              <label className="rk-row signup__row">
+                <span className="rk-row__main rk-row__title">Peso objetivo</span>
+                <input
+                  className="signup__num"
+                  inputMode="decimal"
+                  placeholder={weightNum > 0 ? formatNumber(weightNum, 1) : '72'}
+                  aria-label="Peso objetivo en kilos (opcional)"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  onBlur={() => hasTarget && setTarget(formatNumber(targetNum, 1))}
+                />
+                <span className="rk-row__value">kg</span>
+              </label>
+            </div>
+            {dir !== 'maintain' ? (
+              <Segmented
+                label="Ritmo"
+                value={pace}
+                onChange={setPace}
+                options={PACES[dir].map((p) => ({
+                  value: p.id,
+                  label: `${p.label} · ${formatNumber(p.kg, 2)}`,
+                }))}
+              />
+            ) : null}
+            <p className="rk-note">
+              {dir === 'maintain'
+                ? hasTarget
+                  ? 'Ya estás en tu peso: comerás lo que gastas, más lo que entrenes cada día.'
+                  : 'Opcional. Sin peso objetivo comerás para mantener tu peso. Puedes fijarlo luego en Progreso → Objetivos.'
+                : `${dir === 'lose' ? 'Bajas' : 'Subes'} ${formatNumber(paceKg, 2)} kg por semana${
+                    weeks ? ` y llegas hacia el ${etaLabel(weeks)}` : ''
+                  }: unas ${formatNumber(Math.abs(delta))} kcal al día ${dir === 'lose' ? 'menos' : 'más'} de lo que gastas.${
+                    pace === 'rapido' && dir === 'lose' ? ' Es un ritmo exigente: cuesta más no perder músculo.' : ''
+                  }`}
+            </p>
           </section>
 
           <button
