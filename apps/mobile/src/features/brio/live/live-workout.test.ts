@@ -14,6 +14,9 @@ import {
   previousAsSet,
   previousSetAt,
   previousSetLabel,
+  removeLastSet,
+  toggleWarmup,
+  workNumber,
   editSet,
   previousLine,
   progress,
@@ -224,6 +227,43 @@ describe('live-workout', () => {
     w = editSet(w, 0, 2, { weight: '75', reps: '7' });
     for (let k = 0; k < 3; k++) w = toggleSet(w, 0, k, T0);
     expect(doneSummary(w.exercises[0])).toBe('3 series · mejor 75 kg × 7');
+  });
+
+  it('calentamiento: sin número, empareja «Anterior» con las de trabajo y no cuenta para volumen ni rutina', () => {
+    let w = startFromRoutine(routine, previous, (m) => m, T0);
+    w = addSet(w, 0); // 4 series; la primera será calentamiento
+    w = toggleWarmup(w, 0, 0);
+    w = editSet(w, 0, 0, { weight: '40', reps: '10' });
+    const bench = w.exercises[0];
+    expect([0, 1, 2, 3].map((k) => workNumber(bench, k))).toEqual([null, 1, 2, 3]);
+    expect(previousSetAt(bench, 0)).toBeNull();
+    expect(previousSetAt(bench, 1)).toEqual({ weightKg: 70, reps: 8 });
+    // Marcar el calentamiento no arrastra su peso a las de trabajo vacías.
+    w = editSet(w, 0, 1, { weight: '' });
+    w = toggleSet(w, 0, 0, T0);
+    expect(w.exercises[0].sets[1].weight).toBe('');
+    w = editSet(w, 0, 1, { weight: '70', reps: '8', rir: '2' });
+    w = toggleSet(w, 0, 1, T0);
+    expect(progress(w).volumeKg).toBe(560);
+    const body = toLogBody(w, 'strength', 'MODERATE', T0 + 60_000);
+    expect(body.exercises?.[0].sets).toEqual([
+      { weightKg: 40, reps: 10, isWarmup: true },
+      { weightKg: 70, reps: 8, rir: 2, restSec: 120 },
+    ]);
+    expect(routineWithTodayWeights(routine, w).exercises[0].weightKg).toBe(70);
+    expect(doneSummary({ ...w.exercises[0], sets: w.exercises[0].sets.slice(0, 2) })).toBe('1 serie · mejor 70 kg × 8');
+  });
+
+  it('quitar la última serie solo si no está hecha y queda alguna', () => {
+    let w = startFromRoutine(routine, previous, (m) => m, T0);
+    w = removeLastSet(w, 0);
+    expect(w.exercises[0].sets).toHaveLength(2);
+    w = toggleSet(w, 0, 1, T0);
+    expect(removeLastSet(w, 0).exercises[0].sets).toHaveLength(2);
+    // Una serie añadida no hereda el calentamiento ni el RIR.
+    w = toggleWarmup(editSet(w, 0, 1, { rir: '1' }), 0, 1);
+    const added = addSet(w, 0).exercises[0].sets[2];
+    expect(added).toMatchObject({ warmup: false, rir: '', done: false });
   });
 });
 

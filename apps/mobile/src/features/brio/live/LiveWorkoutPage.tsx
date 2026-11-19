@@ -27,11 +27,13 @@ import {
   previousSetLabel,
   progress,
   removeExercise,
-  removeSet,
+  removeLastSet,
   routineWithTodayWeights,
   skipRest,
   toLogBody,
   toggleSet,
+  toggleWarmup,
+  workNumber,
 } from './live-workout';
 import { REST_OPTIONS, closesRound, linkedWithNext, restLabel, supersetLetter } from '../routines/supersets';
 import type { Measure } from '../performance/perf.api';
@@ -268,9 +270,12 @@ export default function LiveWorkoutPage() {
     const firstOfGroup = e.group != null && (shownBefore === null || groups[shownBefore] !== e.group);
     const members = e.group != null ? workout.exercises.filter((x) => x.group === e.group).map((x) => x.name) : [];
     const cols = columnsFor(e.measure, e.bodyweight);
+    // RIR solo en lo que va por repeticiones.
+    const withRir = e.measure === 'REPS';
     const grid = {
-      gridTemplateColumns: `36px ${hasPrev ? '64px ' : ''}repeat(${cols.length}, minmax(0, 1fr)) 48px`,
+      gridTemplateColumns: `32px ${hasPrev ? '58px ' : ''}repeat(${cols.length}, minmax(0, 1fr)) ${withRir ? '42px ' : ''}44px`,
     };
+    const last = e.sets[e.sets.length - 1];
     return (
       <div
         key={cardKey(i)}
@@ -308,21 +313,27 @@ export default function LiveWorkoutPage() {
             {cols.map((c) => (
               <span key={c}>{c === 'weight' && e.bodyweight ? 'Lastre' : COLUMN_LABEL[c]}</span>
             ))}
+            {withRir ? <span>RIR</span> : null}
             <span />
           </div>
           {e.sets.map((s, k) => {
             const p = previousSetAt(e, k);
             const prevText = p ? previousSetLabel(p, e.measure, e.bodyweight) : null;
+            const n = workNumber(e, k);
+            const name = n === null ? 'Calentamiento' : `Serie ${n}`;
             return (
-              <div key={k} className={`live__set${s.done ? ' is-done' : ''}`} style={grid}>
+              <div key={k} className={`live__set${s.done ? ' is-done' : ''}${s.warmup ? ' is-warmup' : ''}`} style={grid}>
                 <button
                   type="button"
                   className="live__set-n"
-                  aria-label={`Quitar la serie ${k + 1}`}
-                  disabled={e.sets.length === 1 || s.done}
-                  onClick={() => update((w) => removeSet(w, i, k))}
+                  aria-pressed={!!s.warmup}
+                  aria-label={
+                    s.warmup ? 'Serie de calentamiento. Toca para contarla como serie de trabajo.' : `Serie ${n}. Toca para marcarla como calentamiento.`
+                  }
+                  disabled={s.done}
+                  onClick={() => update((w) => toggleWarmup(w, i, k))}
                 >
-                  {k + 1}
+                  {n ?? 'C'}
                 </button>
                 {hasPrev ? (
                   p && prevText ? (
@@ -330,7 +341,7 @@ export default function LiveWorkoutPage() {
                       type="button"
                       className="live__prev"
                       disabled={s.done}
-                      aria-label={`La última vez: ${prevText}. Toca para copiarlo en la serie ${k + 1}.`}
+                      aria-label={`La última vez: ${prevText}. Toca para copiarlo en ${name.toLowerCase()}.`}
                       onClick={() => update((w) => editSet(w, i, k, previousAsSet(p, e.measure)))}
                     >
                       {prevText}
@@ -344,7 +355,7 @@ export default function LiveWorkoutPage() {
                 {cols.map((c) => (
                   <Num
                     key={c}
-                    label={`Serie ${k + 1}, ${COLUMN_LABEL[c]}`}
+                    label={`${name}, ${COLUMN_LABEL[c]}`}
                     value={s[c]}
                     decimal={c === 'weight'}
                     time={c === 'time'}
@@ -352,11 +363,14 @@ export default function LiveWorkoutPage() {
                     onChange={(v) => update((w) => editSet(w, i, k, { [c]: v }))}
                   />
                 ))}
+                {withRir ? (
+                  <Num label={`${name}, repeticiones en reserva`} value={s.rir ?? ''} onChange={(v) => update((w) => editSet(w, i, k, { rir: v.replace(/[.,]/g, '') }))} />
+                ) : null}
                 <button
                   type="button"
                   className="live__check"
                   aria-pressed={s.done}
-                  aria-label={s.done ? `Serie ${k + 1} hecha. Toca para desmarcarla.` : `Marcar la serie ${k + 1} como hecha`}
+                  aria-label={s.done ? `${name} hecha. Toca para desmarcarla.` : `Marcar ${name.toLowerCase()} como hecha`}
                   onClick={() => toggle(i, k)}
                 >
                   ✓
@@ -365,9 +379,16 @@ export default function LiveWorkoutPage() {
             );
           })}
           <div className="live__ex-foot">
-            <button type="button" className="rk-textbtn" onClick={() => update((w) => addSet(w, i))}>
-              Añadir serie
-            </button>
+            <span className="live__sets-btns">
+              <button type="button" className="rk-textbtn" onClick={() => update((w) => addSet(w, i))}>
+                Añadir serie
+              </button>
+              {e.sets.length > 1 && !last.done ? (
+                <button type="button" className="live__minus" aria-label="Quitar la última serie" onClick={() => update((w) => removeLastSet(w, i))}>
+                  −
+                </button>
+              ) : null}
+            </span>
             {closesRound(groups, i) ? (
               <button
                 type="button"

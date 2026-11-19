@@ -17,6 +17,10 @@ export interface LiveSet {
   distance: string;
   time: string;
   cal: string;
+  /** Repeticiones en reserva (texto, como el resto); vacío si no se apunta. */
+  rir?: string;
+  /** Calentamiento: no lleva número, ni cuenta para el volumen ni para el peso de la rutina. */
+  warmup?: boolean;
   done: boolean;
 }
 
@@ -141,7 +145,8 @@ export function toggleSet(w: LiveWorkout, i: number, k: number, now = Date.now()
     ...e,
     sets: e.sets.map((s, y) => {
       if (y === k) return { ...s, done };
-      if (done && y > k && !s.done && !s.weight.trim()) return { ...s, weight: set.weight };
+      // El peso del calentamiento no se arrastra a las series de trabajo.
+      if (done && !set.warmup && y > k && !s.done && !s.warmup && !s.weight.trim()) return { ...s, weight: set.weight };
       return s;
     }),
   }));
@@ -160,8 +165,26 @@ export function toggleSet(w: LiveWorkout, i: number, k: number, now = Date.now()
 export function addSet(w: LiveWorkout, i: number): LiveWorkout {
   return mapExercise(w, i, (e) => {
     const last = e.sets[e.sets.length - 1];
-    return { ...e, sets: [...e.sets, { ...EMPTY_LIVE_SET, ...(last ?? {}), done: false }] };
+    return { ...e, sets: [...e.sets, { ...EMPTY_LIVE_SET, ...(last ?? {}), rir: '', warmup: false, done: false }] };
   });
+}
+
+/** Marca (o desmarca) una serie como calentamiento. */
+export function toggleWarmup(w: LiveWorkout, i: number, k: number): LiveWorkout {
+  return mapExercise(w, i, (e) => ({ ...e, sets: e.sets.map((s, y) => (y === k ? { ...s, warmup: !s.warmup } : s)) }));
+}
+
+/** Quita la última serie si aún no está hecha (y queda al menos una). */
+export function removeLastSet(w: LiveWorkout, i: number): LiveWorkout {
+  const e = w.exercises[i];
+  if (!e || e.sets.length < 2 || e.sets[e.sets.length - 1].done) return w;
+  return removeSet(w, i, e.sets.length - 1);
+}
+
+/** Número de la serie entre las de trabajo (las de calentamiento no cuentan); null si es calentamiento. */
+export function workNumber(e: LiveExercise, k: number): number | null {
+  if (e.sets[k]?.warmup) return null;
+  return e.sets.slice(0, k + 1).filter((s) => !s.warmup).length;
 }
 
 export function removeSet(w: LiveWorkout, i: number, k: number): LiveWorkout {
@@ -227,30 +250,37 @@ interface DoneSet {
   distanceM?: number;
   durationSec?: number;
   calories?: number;
+  rir?: number;
+  isWarmup?: boolean;
 }
 
 /** Series válidas hechas, según cómo se mide el ejercicio. */
 function doneSets(e: LiveExercise): DoneSet[] {
-  return e.sets.flatMap((s) => {
+  return e.sets.flatMap((s): DoneSet[] => {
     if (!s.done) return [];
     const weight = Math.round((num(s.weight) ?? 0) * 100) / 100;
     if (weight < 0) return [];
     const time = parseTime(s.time);
-    const extra = time ? { durationSec: time } : {};
+    const rir = num(s.rir ?? '');
+    const tags = {
+      ...(s.warmup ? { isWarmup: true } : {}),
+      ...(rir !== null && rir >= 0 ? { rir: Math.min(10, Math.round(rir)) } : {}),
+    };
+    const extra = { ...(time ? { durationSec: time } : {}), ...tags };
     switch (e.measure) {
       case 'DISTANCE': {
         const m = num(s.distance);
         return m && m > 0 ? [{ weightKg: weight, reps: 0, distanceM: Math.round(m), ...extra }] : [];
       }
       case 'TIME':
-        return time ? [{ weightKg: weight, reps: 0, durationSec: time }] : [];
+        return time ? [{ weightKg: weight, reps: 0, durationSec: time, ...tags }] : [];
       case 'CALORIES': {
         const c = num(s.cal);
         return c && c > 0 ? [{ weightKg: weight, reps: 0, calories: Math.round(c), ...extra }] : [];
       }
       default: {
         const reps = num(s.reps);
-        return reps !== null && reps >= 1 ? [{ weightKg: weight, reps: Math.round(reps) }] : [];
+        return reps !== null && reps >= 1 ? [{ weightKg: weight, reps: Math.round(reps), ...tags }] : [];
       }
     }
   });
@@ -268,7 +298,7 @@ export function progress(w: LiveWorkout): { done: number; total: number; volumeK
     total += e.sets.length;
     for (const s of doneSets(e)) {
       done += 1;
-      volumeKg += s.weightKg * s.reps;
+      if (!s.isWarmup) volumeKg += s.weightKg * s.reps;
       distanceM += s.distanceM ?? 0;
     }
   }
@@ -313,7 +343,7 @@ export function routineWithTodayWeights(r: Routine, w: LiveWorkout): SaveRoutine
     plannedDurationMin: r.plannedDurationMin,
     exercises: r.exercises.map((e) => {
       const live = w.exercises.find((x) => x.exerciseId === e.exerciseId);
-      const sets = live ? doneSets(live) : [];
+      const sets = live ? doneSets(live).filter((s) => !s.isWarmup) : [];
       const top = sets.length ? Math.max(...sets.map((s) => s.weightKg)) : null;
       return {
         exerciseId: e.exerciseId,
@@ -372,8 +402,12 @@ export function nextPending(w: LiveWorkout, from: number): number | null {
 
 type PrevSet = PreviousSets['sets'][number];
 
-/** La serie de la última vez que va con la serie `k` de hoy (por orden). */
-export const previousSetAt = (e: LiveExercise, k: number): PrevSet | null => e.previous?.sets[k] ?? null;
+/** La serie de la última vez que va con la serie `k` de hoy (por orden, sin calentamientos). */
+export function previousSetAt(e: LiveExercise, k: number): PrevSet | null {
+  // La última vez solo trae series de trabajo: se emparejan con las de trabajo de hoy.
+  const n = workNumber(e, k);
+  return n === null ? null : (e.previous?.sets[n - 1] ?? null);
+}
 
 /** Texto corto de una serie anterior para la columna «Anterior»: «80×8», «1000 m», «1:30»… */
 export function previousSetLabel(p: PrevSet, measure: Measure, bodyweight: boolean): string {
@@ -408,7 +442,10 @@ export function previousAsSet(p: PrevSet, measure: Measure): Partial<Omit<LiveSe
 
 /** Resumen de un ejercicio hecho, para su fila plegada: «3 series · mejor 82,5 kg × 8». */
 export function doneSummary(e: LiveExercise): string {
-  const done = e.sets.filter((s) => s.done);
+  const all = e.sets.filter((s) => s.done);
+  // El resumen es de las series de trabajo; si todo fue calentamiento, de todas.
+  const work = all.filter((s) => !s.warmup);
+  const done = work.length ? work : all;
   const count = `${done.length} ${done.length === 1 ? 'serie' : 'series'}`;
   if (e.measure !== 'REPS') {
     const first = done[0];
