@@ -360,3 +360,75 @@ export const clock = (ms: number) => {
   const s = String(total % 60).padStart(2, '0');
   return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
 };
+
+/** Ejercicio con todas sus series hechas: en vivo se pliega arriba. */
+export const isExerciseDone = (e: LiveExercise) => e.sets.length > 0 && e.sets.every((s) => s.done);
+
+/** Siguiente ejercicio pendiente después de `from` (vuelve al principio si no hay más abajo). */
+export function nextPending(w: LiveWorkout, from: number): number | null {
+  const pending = w.exercises.map((_, j) => j).filter((j) => j !== from && !isExerciseDone(w.exercises[j]));
+  return pending.find((j) => j > from) ?? pending[0] ?? null;
+}
+
+type PrevSet = PreviousSets['sets'][number];
+
+/** La serie de la última vez que va con la serie `k` de hoy (por orden). */
+export const previousSetAt = (e: LiveExercise, k: number): PrevSet | null => e.previous?.sets[k] ?? null;
+
+/** Texto corto de una serie anterior para la columna «Anterior»: «80×8», «1000 m», «1:30»… */
+export function previousSetLabel(p: PrevSet, measure: Measure, bodyweight: boolean): string {
+  const kg = p.weightKg ? `${fmt(p.weightKg)}` : '';
+  switch (measure) {
+    case 'DISTANCE':
+      return formatDistance(p.distanceM) || formatTime(p.durationSec) || '—';
+    case 'TIME':
+      return formatTime(p.durationSec) || '—';
+    case 'CALORIES':
+      return p.calories ? `${p.calories} cal` : '—';
+    default:
+      // Con peso corporal, el «kg» es lastre: si no hubo, solo cuentan las reps.
+      return kg ? `${bodyweight ? '+' : ''}${kg}×${p.reps}` : `${p.reps} reps`;
+  }
+}
+
+/** Lo de la última vez convertido en valores de la serie, para copiarlo con un toque. */
+export function previousAsSet(p: PrevSet, measure: Measure): Partial<Omit<LiveSet, 'done'>> {
+  const weight = p.weightKg ? fmt(p.weightKg) : '';
+  switch (measure) {
+    case 'DISTANCE':
+      return { weight, distance: p.distanceM ? String(p.distanceM) : '', time: formatTime(p.durationSec) };
+    case 'TIME':
+      return { weight, time: formatTime(p.durationSec) };
+    case 'CALORIES':
+      return { cal: p.calories ? String(p.calories) : '', time: formatTime(p.durationSec) };
+    default:
+      return { weight, reps: String(p.reps) };
+  }
+}
+
+/** Resumen de un ejercicio hecho, para su fila plegada: «3 series · mejor 82,5 kg × 8». */
+export function doneSummary(e: LiveExercise): string {
+  const done = e.sets.filter((s) => s.done);
+  const count = `${done.length} ${done.length === 1 ? 'serie' : 'series'}`;
+  if (e.measure !== 'REPS') {
+    const first = done[0];
+    if (!first) return count;
+    const what =
+      e.measure === 'DISTANCE'
+        ? formatDistance(num(first.distance))
+        : e.measure === 'CALORIES'
+          ? first.cal && `${first.cal} cal`
+          : '';
+    const time = first.time && (what ? `en ${first.time}` : first.time);
+    const detail = [what, time].filter(Boolean).join(' ');
+    return detail ? `${count} · ${detail}` : count;
+  }
+  const best = done.reduce<LiveSet | null>((b, s) => {
+    if (!b) return s;
+    const [bw, sw] = [num(b.weight) ?? 0, num(s.weight) ?? 0];
+    return sw > bw || (sw === bw && (num(s.reps) ?? 0) > (num(b.reps) ?? 0)) ? s : b;
+  }, null);
+  if (!best) return count;
+  const w = num(best.weight);
+  return `${count} · mejor ${w ? `${fmt(w)} kg × ` : ''}${best.reps}${w ? '' : ' reps'}`;
+}

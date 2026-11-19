@@ -8,6 +8,12 @@ import {
   addRest,
   addSet,
   clock,
+  doneSummary,
+  isExerciseDone,
+  nextPending,
+  previousAsSet,
+  previousSetAt,
+  previousSetLabel,
   editSet,
   previousLine,
   progress,
@@ -182,4 +188,42 @@ describe('live-workout', () => {
       'La última vez: 1 km en 4:05',
     );
   });
+
+  it('un ejercicio con todas sus series hechas cuenta como hecho y se salta al siguiente pendiente', () => {
+    let w = startFromRoutine(routine, previous, (m) => m, T0);
+    expect(isExerciseDone(w.exercises[0])).toBe(false);
+    for (let k = 0; k < 3; k++) w = toggleSet(w, 0, k, T0);
+    expect(isExerciseDone(w.exercises[0])).toBe(true);
+    expect(nextPending(w, 0)).toBe(1);
+    // Hecho el último, vuelve al primero que quede.
+    w = startFromRoutine(routine, previous, (m) => m, T0);
+    for (let k = 0; k < 2; k++) w = toggleSet(w, 1, k, T0);
+    expect(nextPending(w, 1)).toBe(0);
+    for (let k = 0; k < 3; k++) w = toggleSet(w, 0, k, T0);
+    expect(nextPending(w, 0)).toBeNull();
+  });
+
+  it('columna «Anterior»: la serie de la última vez por orden, en corto y copiable', () => {
+    const w = startFromRoutine(routine, previous, (m) => m, T0);
+    const bench = w.exercises[0];
+    expect(previousSetAt(bench, 1)).toEqual({ weightKg: 72.5, reps: 6 });
+    expect(previousSetAt(bench, 2)).toBeNull();
+    expect(previousSetLabel({ weightKg: 72.5, reps: 6 }, 'REPS', false)).toBe('72,5×6');
+    expect(previousSetLabel({ weightKg: 0, reps: 12 }, 'REPS', true)).toBe('12 reps');
+    expect(previousSetLabel({ weightKg: 10, reps: 8 }, 'REPS', true)).toBe('+10×8');
+    expect(previousSetLabel({ weightKg: 0, reps: 0, distanceM: 1000, durationSec: 245 }, 'DISTANCE', false)).toBe('1 km');
+    expect(previousSetLabel({ weightKg: 0, reps: 0, durationSec: 90 }, 'TIME', false)).toBe('1:30');
+    expect(previousAsSet({ weightKg: 72.5, reps: 6 }, 'REPS')).toEqual({ weight: '72,5', reps: '6' });
+    const copied = editSet(w, 0, 0, previousAsSet({ weightKg: 72.5, reps: 6 }, 'REPS'));
+    expect(copied.exercises[0].sets[0]).toMatchObject({ weight: '72,5', reps: '6', done: false });
+  });
+
+  it('resumen del ejercicio hecho: series y la mejor', () => {
+    let w = startFromRoutine(routine, previous, (m) => m, T0);
+    w = editSet(w, 0, 1, { weight: '75', reps: '6' });
+    w = editSet(w, 0, 2, { weight: '75', reps: '7' });
+    for (let k = 0; k < 3; k++) w = toggleSet(w, 0, k, T0);
+    expect(doneSummary(w.exercises[0])).toBe('3 series · mejor 75 kg × 7');
+  });
 });
+
