@@ -188,5 +188,6 @@ export const PERIOD_TEXT: Record<string, string> = {
   '30d': 'últimos 30 días',
   '90d': 'últimos 90 días',
   '6m': 'últimos 6 meses',
+  '1y': 'último año',
   all: 'todo el historial',
 };

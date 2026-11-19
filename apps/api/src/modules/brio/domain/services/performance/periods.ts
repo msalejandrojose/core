@@ -1,5 +1,12 @@
 /** Periodos que se pueden pedir a los motores de rendimiento. */
-export const PERFORMANCE_PERIODS = ['7d', '30d', '90d', '6m', 'all'] as const;
+export const PERFORMANCE_PERIODS = [
+  '7d',
+  '30d',
+  '90d',
+  '6m',
+  '1y',
+  'all',
+] as const;
 export type PerformancePeriod = (typeof PERFORMANCE_PERIODS)[number];
 
 const DAYS: Record<PerformancePeriod, number | null> = {
@@ -7,6 +14,7 @@ const DAYS: Record<PerformancePeriod, number | null> = {
   '30d': 30,
   '90d': 90,
   '6m': 182,
+  '1y': 365,
   all: null,
 };
 

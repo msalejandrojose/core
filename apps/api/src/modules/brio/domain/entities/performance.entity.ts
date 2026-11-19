@@ -67,6 +67,10 @@ export interface Exercise {
   isBodyweight: boolean;
   /** Cómo se mide: repeticiones, metros, tiempo o calorías. */
   measure?: ExerciseMeasure;
+  /** Qué es y qué trabaja; null si nadie la ha escrito (los propios, casi siempre). */
+  description?: string | null;
+  /** Técnica paso a paso, en orden. Vacío si no hay. */
+  steps?: string[];
   ownerUserId: string | null;
   muscles: MuscleWeight[];
   /** true si el usuario ha cambiado los pesos por músculo de un ejercicio del catálogo. */

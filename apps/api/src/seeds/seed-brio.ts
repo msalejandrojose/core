@@ -307,6 +307,10 @@ async function main(): Promise<void> {
       isCompound: ex.compound ?? false,
       isBodyweight: ex.bodyweight ?? false,
       measure: ex.measure ?? 'REPS',
+      // La ficha solo se escribe si el catálogo la trae: no borra una escrita a mano.
+      ...(ex.description
+        ? { description: ex.description, steps: ex.steps ?? [] }
+        : {}),
     };
     const row = await prisma.brioExercise.upsert({
       where: { code: ex.code },

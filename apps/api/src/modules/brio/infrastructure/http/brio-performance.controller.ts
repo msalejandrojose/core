@@ -4,6 +4,8 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Put,
   Query,
 } from '@nestjs/common';
@@ -32,7 +34,10 @@ import {
 } from '../../application/use-cases/get-recommendations.use-case';
 import { SetRecommendationStatusUseCase } from '../../application/use-cases/set-recommendation-status.use-case';
 import { GetMuscleAnalysisUseCase } from '../../application/use-cases/get-muscle-analysis.use-case';
-import { GetStrengthAnalysisUseCase } from '../../application/use-cases/get-strength-analysis.use-case';
+import {
+  GetStrengthAnalysisUseCase,
+  type ExerciseHistory,
+} from '../../application/use-cases/get-strength-analysis.use-case';
 import {
   PerformancePeriodQueryDto,
   RecommendationStatusDto,
@@ -67,6 +72,27 @@ export class BrioPerformanceController {
     @Query() query: PerformancePeriodQueryDto,
   ): Promise<StrengthAnalysis> {
     return this.strengthAnalysis.execute(current.sub, query.period ?? 'all');
+  }
+
+  @Get('strength/exercises/:id')
+  @ApiOperation({
+    summary:
+      'Progresión de un ejercicio: por sesión, carga más alta, repeticiones, volumen y e1RM.',
+  })
+  @ApiOkResponse({
+    description:
+      'Historial del ejercicio en el periodo; `analysis` es null si aún no hay series.',
+  })
+  strengthOfExercise(
+    @CurrentUser() current: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: PerformancePeriodQueryDto,
+  ): Promise<ExerciseHistory> {
+    return this.strengthAnalysis.forExercise(
+      current.sub,
+      id,
+      query.period ?? '6m',
+    );
   }
 
   @Get('muscles')
