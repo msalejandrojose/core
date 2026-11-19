@@ -1,15 +1,48 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
-import type { MuscleWeight } from '../../domain/entities/performance.entity';
+import type {
+  MuscleWeight,
+  StrengthSet,
+} from '../../domain/entities/performance.entity';
 import type {
   HevyConnection,
-  ImportedSessionData,
+  ImportedWorkoutItem,
+  ImportedWorkoutOutcome,
   PlannedForHevy,
   BrioHevyRepositoryPort,
   StrengthSessionWithSets,
 } from '../../application/ports/hevy.port';
 import { toDateOnly, toDay } from './brio.mapper';
+
+/** Entrenos por tanda al importar (una transacción corta por tanda). */
+const IMPORT_CHUNK = 50;
+
+type StoredSet = Omit<StrengthSet, 'weightKg'> & { weightKg: Prisma.Decimal };
+
+/** ¿Las series guardadas son las mismas que las que llegan? */
+function sameSets(stored: StoredSet[], incoming: StrengthSet[]): boolean {
+  if (stored.length !== incoming.length) return false;
+  const norm = (s: StrengthSet | StoredSet) =>
+    [
+      s.exerciseId,
+      s.exerciseOrder,
+      s.setOrder,
+      Number(s.weightKg).toFixed(2),
+      s.reps,
+      s.rir ?? null,
+      s.restSec ?? null,
+      s.isWarmup,
+      s.distanceM ?? null,
+      s.durationSec ?? null,
+      s.calories ?? null,
+    ].join('|');
+  const sorted = [...incoming].sort(
+    (a, b) => a.exerciseOrder - b.exerciseOrder || a.setOrder - b.setOrder,
+  );
+  return stored.every((s, i) => norm(s) === norm(sorted[i]));
+}
 
 @Injectable()
 export class PrismaBrioHevyRepository implements BrioHevyRepositoryPort {
@@ -135,44 +168,149 @@ export class PrismaBrioHevyRepository implements BrioHevyRepositoryPort {
     return row ? { id: row.id, met: Number(row.met) } : null;
   }
 
-  async upsertImported(
+  async upsertImportedMany(
     userId: string,
-    externalId: string,
-    data: ImportedSessionData,
-  ): Promise<{ created: boolean; previousDay: string | null }> {
-    const { sets, loggedOn, ...session } = data;
-    const fields = { ...session, loggedOn: toDateOnly(loggedOn) };
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.brioActivitySession.findUnique({
-        where: { source_externalId: { source: 'HEVY', externalId } },
-        select: { id: true, userId: true, loggedOn: true },
-      });
-      // El id de Hevy es global: si ya lo importó otra cuenta, no se toca.
-      if (existing && existing.userId !== userId)
-        return { created: false, previousDay: null };
+    items: ImportedWorkoutItem[],
+  ): Promise<ImportedWorkoutOutcome[]> {
+    const out: ImportedWorkoutOutcome[] = [];
+    // Por tandas: pocas consultas por tanda, y ninguna transacción enorme.
+    for (let i = 0; i < items.length; i += IMPORT_CHUNK)
+      out.push(
+        ...(await this.upsertChunk(userId, items.slice(i, i + IMPORT_CHUNK))),
+      );
+    return out;
+  }
 
+  private async upsertChunk(
+    userId: string,
+    items: ImportedWorkoutItem[],
+  ): Promise<ImportedWorkoutOutcome[]> {
+    const existing = await this.prisma.brioActivitySession.findMany({
+      where: {
+        source: 'HEVY',
+        externalId: { in: items.map((it) => it.externalId) },
+      },
+      select: {
+        id: true,
+        userId: true,
+        externalId: true,
+        activityTypeId: true,
+        startedAt: true,
+        loggedOn: true,
+        durationSec: true,
+        kcalBurned: true,
+        notes: true,
+        routineId: true,
+        strengthSets: {
+          orderBy: [{ exerciseOrder: 'asc' }, { setOrder: 'asc' }],
+          select: {
+            exerciseId: true,
+            exerciseOrder: true,
+            setOrder: true,
+            weightKg: true,
+            reps: true,
+            rir: true,
+            restSec: true,
+            isWarmup: true,
+            distanceM: true,
+            durationSec: true,
+            calories: true,
+          },
+        },
+      },
+    });
+    const byExternalId = new Map(existing.map((e) => [e.externalId!, e]));
+
+    const newSessions: Prisma.BrioActivitySessionCreateManyInput[] = [];
+    const replacedSetsOf: string[] = [];
+    const newSets: Prisma.BrioStrengthSetCreateManyInput[] = [];
+    const updates: Prisma.PrismaPromise<unknown>[] = [];
+    const out: ImportedWorkoutOutcome[] = [];
+
+    for (const { externalId, data, routineId } of items) {
+      const { sets, loggedOn, ...session } = data;
+      const fields = { ...session, loggedOn: toDateOnly(loggedOn) };
+      const row = byExternalId.get(externalId);
       const setRows = (sessionId: string) =>
         sets.map((s) => ({ ...s, sessionId, userId }));
-      if (existing) {
-        await tx.brioActivitySession.update({
-          where: { id: existing.id },
-          data: fields,
+
+      if (!row) {
+        const id = randomUUID();
+        newSessions.push({
+          id,
+          userId,
+          source: 'HEVY',
+          externalId,
+          routineId,
+          ...fields,
         });
-        await tx.brioStrengthSet.deleteMany({
-          where: { sessionId: existing.id },
+        newSets.push(...setRows(id));
+        // Por si el archivo trae el mismo entreno dos veces.
+        byExternalId.set(externalId, {
+          id,
+          userId,
+          externalId,
+          ...fields,
+          routineId,
+          strengthSets: sets.map((s) => ({
+            ...s,
+            weightKg: new Prisma.Decimal(s.weightKg),
+            distanceM: s.distanceM ?? null,
+            durationSec: s.durationSec ?? null,
+            calories: s.calories ?? null,
+          })),
         });
-        if (sets.length)
-          await tx.brioStrengthSet.createMany({ data: setRows(existing.id) });
-        return { created: false, previousDay: toDay(existing.loggedOn) };
+        out.push({ created: true, changed: false, previousDay: null });
+        continue;
       }
-      const row = await tx.brioActivitySession.create({
-        data: { userId, source: 'HEVY', externalId, ...fields },
-        select: { id: true },
+      // El id de Hevy es global: si ya lo importó otra cuenta, no se toca.
+      if (row.userId !== userId) {
+        out.push({ created: false, changed: false, previousDay: null });
+        continue;
+      }
+      const sessionChanged =
+        row.activityTypeId !== fields.activityTypeId ||
+        row.startedAt.getTime() !== fields.startedAt.getTime() ||
+        toDay(row.loggedOn) !== loggedOn ||
+        row.durationSec !== fields.durationSec ||
+        row.kcalBurned !== fields.kcalBurned ||
+        (row.notes ?? null) !== (fields.notes ?? null);
+      const setsChanged = !sameSets(row.strengthSets, sets);
+      const link = !row.routineId && routineId ? { routineId } : {};
+      if (sessionChanged || 'routineId' in link)
+        updates.push(
+          this.prisma.brioActivitySession.update({
+            where: { id: row.id },
+            data: { ...fields, ...link },
+          }),
+        );
+      if (setsChanged) {
+        replacedSetsOf.push(row.id);
+        newSets.push(...setRows(row.id));
+      }
+      out.push({
+        created: false,
+        changed: sessionChanged || setsChanged || 'routineId' in link,
+        previousDay: toDay(row.loggedOn),
       });
-      if (sets.length)
-        await tx.brioStrengthSet.createMany({ data: setRows(row.id) });
-      return { created: true, previousDay: null };
-    });
+    }
+
+    const writes: Prisma.PrismaPromise<unknown>[] = [];
+    if (newSessions.length)
+      writes.push(
+        this.prisma.brioActivitySession.createMany({ data: newSessions }),
+      );
+    if (replacedSetsOf.length)
+      writes.push(
+        this.prisma.brioStrengthSet.deleteMany({
+          where: { sessionId: { in: replacedSetsOf } },
+        }),
+      );
+    writes.push(...updates);
+    if (newSets.length)
+      writes.push(this.prisma.brioStrengthSet.createMany({ data: newSets }));
+    if (writes.length) await this.prisma.$transaction(writes);
+    return out;
   }
 
   async deleteImported(

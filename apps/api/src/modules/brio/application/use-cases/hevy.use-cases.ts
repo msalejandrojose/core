@@ -25,6 +25,7 @@ import {
   BRIO_SECRET_CIPHER,
   type HevyClientPort,
   type BrioHevyRepositoryPort,
+  type ImportedWorkoutItem,
   type SecretCipher,
 } from '../ports/hevy.port';
 import {
@@ -49,6 +50,31 @@ const MAX_EVENT_PAGES = 30;
 const MAX_TEMPLATE_PAGES = 20;
 /** Peso de referencia para estimar kcal si el usuario aún no ha apuntado el suyo. */
 const DEFAULT_WEIGHT_KG = 70;
+/**
+ * Consultas a la vez al importar. La base de datos está en otra región: ir de
+ * una en una suma el retardo de cada ida y vuelta (un historial largo pasaba
+ * del minuto y la app dejaba de esperar).
+ */
+const DB_CONCURRENCY = 6;
+
+/** Ejecuta `fn` sobre cada elemento, como mucho `limit` a la vez. */
+async function forEachLimited<T>(
+  list: T[],
+  limit: number,
+  fn: (item: T) => Promise<unknown>,
+): Promise<void> {
+  let next = 0;
+  const worker = async () => {
+    while (next < list.length) {
+      const item = list[next];
+      next += 1;
+      await fn(item);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(limit, list.length) }, worker),
+  );
+}
 
 export interface HevyStatus {
   connected: boolean;
@@ -198,7 +224,7 @@ export class SyncHevyUseCase {
     for (const d of saved.days) days.add(d);
     const { imported, updated } = saved;
 
-    for (const day of days) await this.refreshDailyLog.execute(userId, day);
+    await this.refreshDays(userId, days);
     return { imported, updated, deleted, truncated };
   }
 
@@ -236,43 +262,58 @@ export class SyncHevyUseCase {
         (r) => r.kind === 'STRENGTH',
       );
 
+      const items: ImportedWorkoutItem[] = [];
       for (const w of workouts) {
         const startedAt = new Date(w.start_time);
         if (Number.isNaN(startedAt.getTime())) continue;
         const durationSec = durationSecOf(w);
-        const loggedOn = dayInTimezone(startedAt, timezone);
-        const r = await this.repo.upsertImported(userId, w.id, {
-          activityTypeId: type.id,
-          startedAt,
-          loggedOn,
-          durationSec,
-          kcalBurned: sessionKcal({
-            met: type.met,
-            weightKg: weight ?? DEFAULT_WEIGHT_KG,
+        items.push({
+          externalId: w.id,
+          data: {
+            activityTypeId: type.id,
+            startedAt,
+            loggedOn: dayInTimezone(startedAt, timezone),
             durationSec,
-            effort: null,
-          }),
-          notes:
-            [w.title, w.description]
-              .filter(Boolean)
-              .join(' · ')
-              .slice(0, 500) || null,
-          sets: setsFrom(w, (id) => exerciseIdOf.get(id)),
+            kcalBurned: sessionKcal({
+              met: type.met,
+              weightKg: weight ?? DEFAULT_WEIGHT_KG,
+              durationSec,
+              effort: null,
+            }),
+            notes:
+              [w.title, w.description]
+                .filter(Boolean)
+                .join(' · ')
+                .slice(0, 500) || null,
+            sets: setsFrom(w, (id) => exerciseIdOf.get(id)),
+          },
+          routineId:
+            routineForHevyWorkout(myRoutines, {
+              routineId: w.routine_id ?? null,
+              title: w.title,
+            })?.id ?? null,
         });
-        const routine = routineForHevyWorkout(myRoutines, {
-          routineId: w.routine_id ?? null,
-          title: w.title,
-        });
-        if (routine)
-          await this.routines.linkImported(userId, 'HEVY', w.id, routine.id);
-        days.add(loggedOn);
+      }
+
+      const outcomes = await this.repo.upsertImportedMany(userId, items);
+      outcomes.forEach((r, i) => {
+        // Lo que ya estaba igual no cuenta ni obliga a recalcular su día.
+        if (!r.created && !r.changed) return;
+        days.add(items[i].data.loggedOn);
         if (r.previousDay) days.add(r.previousDay);
         if (r.created) imported += 1;
         else updated += 1;
-      }
+      });
     }
 
     return { imported, updated, days };
+  }
+
+  /** Recalcula el resumen de cada día tocado, unos pocos a la vez. */
+  private async refreshDays(userId: string, days: Set<string>): Promise<void> {
+    await forEachLimited([...days], DB_CONCURRENCY, (day) =>
+      this.refreshDailyLog.execute(userId, day),
+    );
   }
 
   private async resolveExercises(
@@ -298,19 +339,36 @@ export class SyncHevyUseCase {
     const codes = new Set(byCode.keys());
     const templateById = new Map(templates.map((t) => [t.id, t]));
 
-    for (const [templateId, title] of titles) {
-      const template = templateById.get(templateId);
-      const code = template?.is_custom ? null : catalogCodeFor(title, codes);
-      const exerciseId = code
-        ? byCode.get(code)!
-        : await this.repo.ensureOwnExercise(userId, {
-            name: title,
-            isBodyweight: template ? isBodyweightType(template.type) : false,
-            muscles: template ? musclesFor(template) : [],
-          });
-      await this.repo.saveLink(userId, templateId, exerciseId);
-      known.set(templateId, exerciseId);
+    // Varios a la vez, pero los que darían el mismo ejercicio propio (mismo
+    // nombre salvo mayúsculas) en fila, para que el segundo encuentre al primero.
+    const groups = new Map<string, [string, string][]>();
+    for (const entry of titles) {
+      const key = entry[1].trim().toLowerCase();
+      groups.set(key, [...(groups.get(key) ?? []), entry]);
     }
+    await forEachLimited(
+      [...groups.values()],
+      DB_CONCURRENCY,
+      async (group) => {
+        for (const [templateId, title] of group) {
+          const template = templateById.get(templateId);
+          const code = template?.is_custom
+            ? null
+            : catalogCodeFor(title, codes);
+          const exerciseId = code
+            ? byCode.get(code)!
+            : await this.repo.ensureOwnExercise(userId, {
+                name: title,
+                isBodyweight: template
+                  ? isBodyweightType(template.type)
+                  : false,
+                muscles: template ? musclesFor(template) : [],
+              });
+          await this.repo.saveLink(userId, templateId, exerciseId);
+          known.set(templateId, exerciseId);
+        }
+      },
+    );
     return known;
   }
 }
@@ -347,13 +405,12 @@ export class ImportHevyCsvUseCase {
     }
     if (!parsed.workouts.length)
       throw new BadRequestException('BRIO_HEVY_CSV_EMPTY');
-    const saved = await this.sync.importWorkouts(
-      userId,
-      parsed.workouts,
-      async () => [],
+    const saved = await this.sync.importWorkouts(userId, parsed.workouts, () =>
+      Promise.resolve([]),
     );
-    for (const day of saved.days)
-      await this.refreshDailyLog.execute(userId, day);
+    await forEachLimited([...saved.days], DB_CONCURRENCY, (day) =>
+      this.refreshDailyLog.execute(userId, day),
+    );
     return {
       imported: saved.imported,
       updated: saved.updated,
