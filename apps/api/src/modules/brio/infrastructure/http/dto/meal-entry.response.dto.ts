@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import type {
   MealEntry,
   MealType,
@@ -10,8 +10,8 @@ export class MealEntryResponseDto {
   @ApiProperty({ enum: ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] })
   mealType: MealType;
   @ApiProperty({ example: 'Arroz blanco cocido (Hacendado)' }) name: string;
-  @ApiPropertyOptional() foodId: string | null;
-  @ApiPropertyOptional() servingId: string | null;
+  @ApiProperty({ type: String, nullable: true }) foodId: string | null;
+  @ApiProperty({ type: String, nullable: true }) servingId: string | null;
   @ApiProperty({ example: 150 }) quantityG: number;
   @ApiProperty({ example: 195 }) kcal: number;
   @ApiProperty({ example: 4.1 }) proteinG: number;
