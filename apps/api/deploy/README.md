@@ -2,7 +2,7 @@
 
 | Pieza | Dónde | Plan |
 |---|---|---|
-| API | Cloud Run `brio-api`, proyecto `core-502518`, `europe-west1` | Gratuito (2 M peticiones/mes); escala a 0, máx. 2 instancias |
+| API | Cloud Run `brio-api`, proyecto `core-502518`, `europe-west1` | Gratuito (2 M peticiones/mes); escala a 0, máx. 1 instancia |
 | Base de datos | TiDB Cloud Starter `brio` (MySQL compatible), AWS Frankfurt | Gratuito (5 GiB), límite de gasto 0 $ |
 | Fotos y archivos | Cloudflare R2, bucket privado `brio-fotos` | Gratuito (10 GB/mes) |
 | Secretos | Secret Manager `brio-api-env` (un único `.env`) | Gratuito |

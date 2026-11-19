@@ -56,7 +56,7 @@ deploy() {
     --set-secrets "/secrets/.env=${SECRET}:latest" \
     --allow-unauthenticated \
     --cpu 1 --memory 512Mi --cpu-boost \
-    --min-instances 0 --max-instances 2 \
+    --min-instances 0 --max-instances 1 \
     --concurrency 40 --timeout 120
 }
 
