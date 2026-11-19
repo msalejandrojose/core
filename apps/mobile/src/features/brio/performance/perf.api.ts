@@ -6,7 +6,7 @@ import { call, type ActivitySession, type LogActivityBody } from '../api';
  * `../api.ts`: solo lo que las pantallas usan.
  */
 
-export type Period = '7d' | '30d' | '90d' | '6m' | 'all';
+export type Period = '7d' | '30d' | '90d' | '6m' | '1y' | 'all';
 export type Status = 'PROGRESSING' | 'POTENTIAL_PLATEAU' | 'REGRESSION' | 'INSUFFICIENT_DATA';
 export type Trend = 'UP' | 'STABLE' | 'DOWN' | 'INSUFFICIENT_DATA';
 
@@ -24,6 +24,10 @@ export interface Exercise {
   /** true si el usuario ha ajustado los pesos de un ejercicio del catálogo. */
   customized: boolean;
   muscles: { muscle: string; weight: number }[];
+  /** Qué es y qué trabaja; null o ausente si no hay ficha escrita. */
+  description?: string | null;
+  /** Técnica paso a paso, en orden. */
+  steps?: string[];
 }
 
 export interface HeartConfig {
@@ -115,7 +119,15 @@ export interface BestSet {
 export interface ExerciseAnalysis {
   exerciseId: string;
   name: string;
-  history: { day: string; e1rm: number | null; volumeKg: number; topWeightKg: number; maxReps: number; workingSets: number }[];
+  history: {
+    day: string;
+    e1rm: number | null;
+    volumeKg: number;
+    topWeightKg: number;
+    maxReps: number;
+    totalReps: number;
+    workingSets: number;
+  }[];
   sessions: number;
   lastDay: string | null;
   bestE1rm: { value: number; day: string } | null;
@@ -320,6 +332,13 @@ export const perfApi = {
   restore: (id: string) =>
     call<void>('PUT', '/brio/performance/recommendations/status', { body: { id, status: 'ACTIVE' } }),
   strength: (period: Period) => call<StrengthAnalysis>('GET', '/brio/performance/strength', q(period)),
+  /** Progresión de un ejercicio; `analysis` es null si aún no hay series. */
+  exerciseHistory: (id: string, period: Period) =>
+    call<{ exerciseId: string; analysis: ExerciseAnalysis | null }>(
+      'GET',
+      `/brio/performance/strength/exercises/${id}`,
+      q(period),
+    ),
   muscles: (period: Period) => call<MuscleResult>('GET', '/brio/performance/muscles', q(period)),
   cardio: (period: Period) => call<CardioAnalysis>('GET', '/brio/performance/cardio', q(period)),
   fatigue: (period: Period) => call<FatigueAnalysis>('GET', '/brio/performance/fatigue', q(period)),

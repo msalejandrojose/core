@@ -2824,6 +2824,10 @@ model BrioExercise {
   isBodyweight Boolean             @default(false) @map("is_bodyweight")
   /// Cómo se mide (reps, metros, tiempo o calorías).
   measure      BrioExerciseMeasure @default(REPS)
+  /// Qué es el ejercicio y qué trabaja, en una o dos frases para la ficha.
+  description  String?             @db.Text
+  /// Técnica paso a paso: array JSON de frases cortas, en orden.
+  steps        Json?
   ownerUserId  String?             @map("owner_user_id") @db.Char(36)
   isArchived   Boolean             @default(false) @map("is_archived")
 

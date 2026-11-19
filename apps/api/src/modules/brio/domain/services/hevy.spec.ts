@@ -47,6 +47,15 @@ describe('hevy: nombres de ejercicio', () => {
     expect(catalogCodeFor('Leg Press (Machine)', CODES)).toBe('leg_press');
   });
 
+  it('reconoce el good morning en inglés y en español, con o sin tildes', () => {
+    const codes = new Set(['good_morning']);
+    expect(catalogCodeFor('Good Morning (Barbell)', codes)).toBe(
+      'good_morning',
+    );
+    expect(catalogCodeFor('Buenos Días (Barra)', codes)).toBe('good_morning');
+    expect(catalogCodeFor('Buenos dias', codes)).toBe('good_morning');
+  });
+
   it('no inventa equivalencias', () => {
     expect(catalogCodeFor('Zottman Curl (Dumbbell)', CODES)).toBeNull();
     expect(catalogCodeFor('Bench Press (Barbell)', new Set())).toBeNull();

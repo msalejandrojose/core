@@ -33,6 +33,7 @@ import YearPage from '@/features/brio/progress/YearPage';
 import SessionEditPage from '@/features/brio/performance/SessionEditPage';
 import HistoryPage from '@/features/brio/performance/HistoryPage';
 import ExercisesPage from '@/features/brio/performance/ExercisesPage';
+import ExerciseDetailPage from '@/features/brio/performance/ExerciseDetailPage';
 import PerformancePage from '@/features/brio/performance/PerformancePage';
 import StrengthPerfPage from '@/features/brio/performance/StrengthPerfPage';
 import MusclesPage from '@/features/brio/performance/MusclesPage';
@@ -180,6 +181,7 @@ export default function TabsShell() {
           <Route exact path="/tabs/progress/rendimiento/entrenos" component={HistoryPage} />
           <Route exact path="/tabs/progress/rendimiento/entrenos/:id" component={SessionEditPage} />
           <Route exact path="/tabs/progress/rendimiento/ejercicios" component={ExercisesPage} />
+          <Route exact path="/tabs/progress/rendimiento/ejercicios/:id" component={ExerciseDetailPage} />
           <Route exact path="/tabs/social" component={FriendsPage} />
           <Route exact path="/tabs/social/retos" component={ChallengesPage} />
           <Route exact path="/tabs/social/amigo/:id" component={FriendPage} />

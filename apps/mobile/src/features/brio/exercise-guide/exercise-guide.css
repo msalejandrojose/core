@@ -1,0 +1,192 @@
+/* Animación y ficha de un ejercicio de fuerza. */
+
+.exanim {
+  display: flex;
+  justify-content: center;
+  background: var(--brio-bg);
+  border-radius: var(--brio-radius-2xl);
+  overflow: hidden;
+}
+.exanim__stage {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  padding: 8px 12px 4px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.exanim__paused {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 2px 8px;
+  border-radius: var(--brio-radius-pill);
+  background: var(--brio-surface);
+  color: var(--brio-ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.exanim--still {
+  gap: 4px;
+  padding: 8px;
+}
+.exanim--still figure {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+}
+.exanim--still figcaption {
+  font-size: 12px;
+  color: var(--brio-ink-muted);
+}
+
+.exfig {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 200 / 198;
+}
+.exfig__seg {
+  stroke: var(--brio-ink-2);
+  stroke-linecap: round;
+}
+.exfig__seg.is-far {
+  stroke: var(--brio-chevron);
+}
+.exfig__seg.is-hot {
+  stroke: var(--brio-activity);
+}
+.exfig__seg.is-hot.is-far {
+  stroke: var(--brio-activity);
+  opacity: 0.45;
+}
+.exfig__head {
+  fill: var(--brio-ink-2);
+}
+.exfig__dot {
+  fill: var(--brio-activity);
+}
+.exfig__ground {
+  stroke: var(--brio-border);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.exfig__fixture {
+  stroke: var(--brio-border-strong);
+  stroke-linecap: round;
+}
+.exfig__fixture-fill {
+  fill: var(--brio-border-strong);
+}
+.exfig__gear {
+  fill: var(--brio-ink-muted);
+}
+.exfig__plate {
+  fill: var(--brio-surface);
+  stroke: var(--brio-ink-muted);
+  stroke-width: 3.5;
+}
+.exfig__cable {
+  stroke: var(--brio-ink-muted);
+  stroke-width: 1.5;
+}
+.exfig__bar {
+  stroke: var(--brio-ink-muted);
+  stroke-linecap: round;
+}
+
+/* Ficha */
+.exguide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.exguide__desc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--brio-ink);
+}
+.exguide__steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: exstep;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.exguide__steps li {
+  counter-increment: exstep;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--brio-ink);
+}
+.exguide__steps li::before {
+  content: counter(exstep);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--brio-activity-soft);
+  color: var(--brio-activity-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.exguide__h {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--brio-ink-muted);
+}
+.exguide__muscles {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--brio-ink);
+}
+.exguide__legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--brio-ink-muted);
+}
+.exguide__legend::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--brio-activity);
+}
+.exguide__empty {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--brio-ink-muted);
+}
+
+.exdetail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.exguide__sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 24px;
+}
