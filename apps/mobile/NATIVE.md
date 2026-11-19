@@ -166,6 +166,22 @@ el estado pendiente, que la web recoge (`takeChanges`) al instante si está viva
 o al volver a la app. Con la cuenta gratuita de Apple funciona igual (no usa
 App Groups ni push).
 
+## Instalar la app normal (contra la API de Cloud Run)
+
+```bash
+pnpm --filter @core/mobile ios:prod
+```
+
+Compila la web contra la API de producción
+(`https://brio-api-653444001481.europe-west1.run.app`) y hace `cap sync ios`
+sin el modo «conectada al Mac», aunque `.env.production.local` tenga
+`CAP_SERVER_URL` o una `VITE_API_URL` de pruebas (el resto de ese archivo, como
+los client IDs de Google, se sigue usando). Después compila e instala con Forja
+o Xcode. La app así instalada funciona sin el Mac.
+
+`.env.production` (en git) ya lleva esa `VITE_API_URL`, así que un `vite build`
+sin `.env.production.local` también apunta a producción.
+
 ## App conectada al Mac por ZeroTier (probar sin reinstalar)
 
 Con la cuenta gratuita, Xcode solo instala por cable o en la misma Wi-Fi. Para
@@ -187,7 +203,7 @@ probar cambios de web desde cualquier sitio, la app puede cargar la web del Mac:
    abrir la app. Los cambios nativos (plugins, permisos) y la firma de 7 días
    siguen pidiendo reinstalar en casa.
 
-Para volver al build normal, quita `CAP_SERVER_URL` y reinstala.
+Para volver al build normal: `pnpm --filter @core/mobile ios:prod` y reinstala (o quita `CAP_SERVER_URL` de `.env.production.local`).
 
 Desde Capacitor 8, `cap sync ios` sigue usando CocoaPods si `ios/` ya existía
 con Podfile. Si regeneras la carpeta, usa `npx cap add ios --packagemanager CocoaPods`
