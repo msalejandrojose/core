@@ -7,7 +7,8 @@ import {
   IonTabButton,
   IonTabs,
 } from '@ionic/react';
-import { Redirect, Route, useLocation } from 'react-router-dom';
+import { Route, useLocation } from 'react-router-dom';
+import { RedirectPage } from './RedirectPage';
 import {
   barChart,
   barChartOutline,
@@ -144,17 +145,17 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/plan" component={PlanPage} />
           {/* Rutas de antes (Plan era una pestaña): siguen funcionando en enlaces y avisos. */}
           <Route exact path="/tabs/plan">
-            <Redirect to="/tabs/today/plan" />
+            <RedirectPage to="/tabs/today/plan" />
           </Route>
-          <Route exact path="/tabs/plan/sesion/:day" render={({ match }) => <Redirect to={`/tabs/today/plan/sesion/${match.params.day}`} />} />
+          <Route exact path="/tabs/plan/sesion/:day" render={({ match }) => <RedirectPage to={`/tabs/today/plan/sesion/${match.params.day}`} />} />
           <Route exact path="/tabs/plan/dieta">
-            <Redirect to="/tabs/comida" />
+            <RedirectPage to="/tabs/comida" />
           </Route>
           <Route exact path="/tabs/plan/compra">
-            <Redirect to="/tabs/comida/compra" />
+            <RedirectPage to="/tabs/comida/compra" />
           </Route>
           <Route exact path="/tabs/today/recetas">
-            <Redirect to="/tabs/comida/recetas" />
+            <RedirectPage to="/tabs/comida/recetas" />
           </Route>
           <Route exact path="/tabs/today/plan/sesion/:day" component={EditSessionPage} />
           <Route exact path="/tabs/comida" component={DietPage} />
@@ -195,9 +196,9 @@ export default function TabsShell() {
             component={ChangePasswordPage}
           />
           <Route exact path="/tabs">
-            <Redirect to="/tabs/today" />
+            <RedirectPage to="/tabs/today" />
           </Route>
-          <Route render={() => <Redirect to="/tabs/today" />} />
+          <Route render={() => <RedirectPage to="/tabs/today" />} />
         </IonRouterOutlet>
 
         <IonTabBar

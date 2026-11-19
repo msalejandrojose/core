@@ -107,7 +107,11 @@ export default function ProgressPage() {
               <span className="rk-row__main">
                 <span className="rk-row__title">Objetivos</span>
                 <span className="rk-row__sub">
-                  {goal ? `${formatNumber(goal.target, 1)} kg · ${goal.etaLabel}` : 'Fija tu peso objetivo'}
+                  {goal
+                    ? `${formatNumber(goal.target, 1)} kg · ${goal.etaLabel}`
+                    : profileStatus === 'error'
+                      ? 'Sin conexión'
+                      : 'Fija tu peso objetivo'}
                 </span>
               </span>
               {goal ? <span className="rk-row__value">{goal.pct} %</span> : null}
