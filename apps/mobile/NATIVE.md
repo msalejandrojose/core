@@ -179,6 +179,10 @@ sin el modo «conectada al Mac», aunque `.env.production.local` tenga
 los client IDs de Google, se sigue usando). Después compila e instala con Forja
 o Xcode. La app así instalada funciona sin el Mac.
 
+`pnpm build:mobile` (lo que lanza Forja) e `ios:prod` regeneran antes el cliente
+tipado (`packages/api-client/src/generated/schema.d.ts`, que no está en git) a partir
+de la API del repo, sin base de datos: así un cliente viejo en el Mac no rompe `tsc`.
+
 `.env.production` (en git) ya lleva esa `VITE_API_URL`, así que un `vite build`
 sin `.env.production.local` también apunta a producción.
 
