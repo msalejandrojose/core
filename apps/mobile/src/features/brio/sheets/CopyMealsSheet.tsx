@@ -101,6 +101,7 @@ export function CopyMealsSheet({ isOpen, onClose }: CopyMealsSheetProps) {
           await deleteEntries(created.map((c) => c.id));
           await refreshDay();
         },
+        { tone: 'food', icon: 'food', undone: 'Copia deshecha' },
       );
       onClose();
     } catch {

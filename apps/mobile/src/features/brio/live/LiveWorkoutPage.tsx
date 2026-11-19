@@ -160,6 +160,8 @@ export default function LiveWorkoutPage() {
   async function finish() {
     if (!workout) return;
     setSaving(true);
+    // La misma píldora pasa de «Guardando…» al resultado.
+    const t = toast.progress('Guardando entreno…', `${workout.name} · ${p.done} ${p.done === 1 ? 'serie' : 'series'}`);
     try {
       const types = await brioApi.activityTypes();
       // Con carrera, remo, trineo… cuenta como híbrido (más gasto que pesas).
@@ -181,13 +183,16 @@ export default function LiveWorkoutPage() {
       void cancelRestEnd();
       await refreshDay();
       void tapSuccess();
-      toast.success('Entreno guardado', `${p.done} series · ${formatKcal(session.kcalBurned)} kcal`);
+      t.success('Entreno guardado', `${p.done} series · ${formatKcal(session.kcalBurned)} kcal`, { tone: 'activity', icon: 'dumbbell' });
       history.replace('/tabs/today');
     } catch (e) {
       if (isApiError(e) && e.code === 'BRIO_WEIGHT_UNKNOWN') {
+        toast.dismiss(t.id);
         toast.warning('Falta tu peso', 'Regístralo para poder calcular las calorías del entreno.');
       } else {
-        toast.error('No se pudo guardar', isApiError(e) ? e.message : undefined);
+        t.error('No se pudo guardar', isApiError(e) ? e.message : 'Tus series siguen aquí.', {
+          action: { label: 'Reintentar', run: () => void finish() },
+        });
       }
     } finally {
       setSaving(false);

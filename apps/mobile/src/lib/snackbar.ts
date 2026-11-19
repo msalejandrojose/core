@@ -1,42 +1,31 @@
-import { create } from 'zustand';
+import { toast, type ToastOptions } from './toast';
 
-/** Cuánto se queda visible por defecto (DS Snackbar: unos 5 segundos). */
+/** Ventana de «Deshacer» (DS: unos 5 segundos). */
 export const SNACKBAR_MS = 5000;
 
-export interface SnackbarMessage {
-  id: number;
-  text: string;
-  /** Acción única, normalmente "Deshacer". Sin ella es un aviso informativo. */
-  action?: { label: string; run: () => void | Promise<void> };
-}
-
-interface SnackbarState {
-  current: SnackbarMessage | null;
-  show: (text: string, action?: SnackbarMessage['action']) => void;
-  dismiss: (id?: number) => void;
-}
-
-let nextId = 1;
+type Extra = Pick<ToastOptions, 'icon' | 'tone'> & { undone?: string };
 
 /**
- * Aviso breve tras una acción de un toque (Brío DS · Snackbar). Hay UNO a la
- * vez: mostrar otro sustituye al anterior en vez de apilarlos. Los errores que
- * exigen decidir algo no van aquí, sino en un toast o una alerta.
+ * «Primera parte · resto» → título y descripción: «Almuerzo apuntado · 540
+ * kcal» sale como título «Almuerzo apuntado» y debajo «540 kcal».
  */
-export const useSnackbarStore = create<SnackbarState>((set, get) => ({
-  current: null,
-  show: (text, action) => set({ current: { id: nextId++, text, action } }),
-  dismiss: (id) => {
-    const current = get().current;
-    if (!current || (id !== undefined && current.id !== id)) return;
-    set({ current: null });
-  },
-}));
+export function splitMessage(text: string): { title: string; description?: string } {
+  const at = text.indexOf(' · ');
+  if (at < 0) return { title: text };
+  return { title: text.slice(0, at), description: text.slice(at + 3) };
+}
 
-/** Atajo para llamar desde fuera de React (sheets, stores). */
+/**
+ * Aviso breve tras una acción de un toque. Antes era una barra sobre las
+ * pestañas; ahora sale de la isla (ver `toast.undo`), con el mismo uso.
+ */
 export const snackbar = {
-  show: (text: string, action?: SnackbarMessage['action']) =>
-    useSnackbarStore.getState().show(text, action),
-  undo: (text: string, run: () => void | Promise<void>) =>
-    useSnackbarStore.getState().show(text, { label: 'Deshacer', run }),
+  show: (text: string, action?: ToastOptions['action'], extra: Extra = {}) => {
+    const { title, description } = splitMessage(text);
+    return toast.success(title, description, { ...extra, action });
+  },
+  undo: (text: string, run: () => void | Promise<void>, extra: Extra = {}) => {
+    const { title, description } = splitMessage(text);
+    return toast.undo(title, description, run, { duration: SNACKBAR_MS, ...extra });
+  },
 };

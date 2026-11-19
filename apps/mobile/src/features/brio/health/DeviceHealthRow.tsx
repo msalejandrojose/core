@@ -51,13 +51,14 @@ export function DeviceHealthRow() {
 
   async function sync() {
     setBusy(true);
+    const t = toast.progress('Sincronizando', 'Leyendo la salud del teléfono…');
     try {
       const r = await syncDeviceHealth(status?.lastSyncAt ?? null);
       setStatus(r.status);
       void refreshDay();
-      toast.success('Sincronizado', deviceSyncSummary(r.sync));
+      t.success('Sincronizado', deviceSyncSummary(r.sync), { icon: 'sync' });
     } catch (e) {
-      toast.error('No se pudo sincronizar', isApiError(e) ? e.message : undefined);
+      t.error('No se pudo sincronizar', isApiError(e) ? e.message : undefined, { action: { label: 'Reintentar', run: sync } });
     } finally {
       setBusy(false);
     }

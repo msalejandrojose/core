@@ -79,7 +79,7 @@ export default function DigestionPage() {
       snackbar.undo(`Apuntado · tipo ${type}, ${BRISTOL_LABELS[type].toLowerCase()}`, async () => {
         await digestionApi.remove(created.id);
         await load(period);
-      });
+      }, { tone: 'digestion', icon: 'leaf', undone: 'Registro quitado' });
     } catch {
       toast.error('No se pudo registrar');
     } finally {

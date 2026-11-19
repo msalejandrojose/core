@@ -80,7 +80,7 @@ export function RegisterSheets() {
         await deleteEntries(created.map((c) => c.id));
         await refreshDay();
         invalidateHabits();
-      });
+      }, { tone: 'food', icon: 'food', undone: 'Comida quitada' });
     } catch {
       toast.error('No se pudo registrar');
     } finally {

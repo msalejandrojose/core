@@ -51,6 +51,7 @@ import { useDockStore } from '@/features/brio/dock/dock.store';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import { useHevyAutoSync } from '@/features/brio/profile/hevy.api';
 import { useLiveActivitySync } from '@/features/brio/live/useLiveActivitySync';
+import { useLiveIsland } from '@/features/brio/live/useLiveIsland';
 import PlanPage from '@/features/brio/plan/PlanPage';
 import EditSessionPage from '@/features/brio/plan/EditSessionPage';
 import DietPage from '@/features/brio/plan/DietPage';
@@ -73,7 +74,6 @@ import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { usePushNotifications } from '@/features/notifications/use-push-notifications';
-import { Snackbar } from '@/components/ux';
 
 
 /** Pestañas en el orden fijo del DS (TabBar): el + va en el centro. */
@@ -100,6 +100,8 @@ export default function TabsShell() {
   useHevyAutoSync();
   // Entreno en vivo ↔ Live Activity de iOS (pantalla bloqueada e isla).
   useLiveActivitySync();
+  // Descanso o entreno en curso en la isla, al salir de su pantalla.
+  useLiveIsland();
   useGarminAutoSync();
   useDeviceHealthAutoSync();
   useReminders();
@@ -215,7 +217,6 @@ export default function TabsShell() {
 
       <DockOverlay hidden={barHidden} />
       <RegisterSheets />
-      <Snackbar />
     </>
   );
 }

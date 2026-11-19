@@ -51,6 +51,8 @@ export function WeightSheet({ isOpen, onClose }: WeightSheetProps) {
       // Sin "Deshacer": la API no borra pesadas y otra del mismo día la sustituye.
       snackbar.show(
         `Peso guardado · ${formatWeight(weight)}${on === today ? '' : ` · ${dayChipLabel(on, today).toLowerCase()}`}`,
+        undefined,
+        { tone: 'weight', icon: 'scale' },
       );
       onClose();
     } catch (e) {
