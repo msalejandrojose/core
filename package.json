@@ -14,7 +14,7 @@
     "build:web": "pnpm --filter @core/web build",
     "preview:web": "pnpm --filter @core/web preview",
     "dev:mobile": "pnpm --filter @core/mobile dev",
-    "build:mobile": "pnpm --filter @core/mobile build",
+    "build:mobile": "pnpm --filter @core/api-client generate:offline && pnpm --filter @core/mobile build",
     "preview:mobile": "pnpm --filter @core/mobile preview",
     "dev:game": "pnpm --filter @core/game dev",
     "test:game": "pnpm --filter @core/game test",
