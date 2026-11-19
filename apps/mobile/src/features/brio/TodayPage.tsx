@@ -301,6 +301,7 @@ export default function TodayPage() {
           await refreshDay();
           invalidateHabits();
         },
+        { tone: 'food', icon: 'food', undone: 'Comida quitada' },
       );
     } catch {
       toast.error('No se pudo registrar');

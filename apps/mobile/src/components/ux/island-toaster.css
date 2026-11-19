@@ -1,12 +1,15 @@
 /*
  * Avisos que salen de la Dynamic Island / notch. La píldora siempre está a su
  * tamaño final; lo que se anima es el recorte (clip-path), que empieza con la
- * forma exacta de la isla y crece hasta la píldora, como en iOS.
+ * forma exacta de la isla y crece hasta la píldora, como en iOS. En pequeño
+ * (`is-compact`: descanso o entreno en curso) el recorte deja una píldora de
+ * 236 px a los lados de la cámara.
  */
 .island {
   --island-w: 126px;
   --island-h: 37px;
   --island-r: 19px;
+  --compact-w: 236px;
   position: fixed;
   z-index: 40000;
   left: 50%;
@@ -14,12 +17,14 @@
   width: min(calc(100vw - 16px), 400px);
   transform: translateX(-50%);
   box-sizing: border-box;
-  padding: 12px 18px 12px 12px;
+  padding: 12px 14px 12px 12px;
   border-radius: 30px;
   background: #000;
   color: #fff;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
   clip-path: inset(
     0 calc(50% - var(--island-w) / 2) calc(100% - var(--island-h)) calc(50% - var(--island-w) / 2) round
@@ -32,8 +37,19 @@
 .island.is-open {
   clip-path: inset(0 0 0 0 round 30px);
 }
+.island.is-compact {
+  clip-path: inset(
+    0 calc(50% - var(--compact-w) / 2) calc(100% - var(--island-h)) calc(50% - var(--compact-w) / 2) round
+      var(--island-r)
+  );
+}
 .island:not(.is-open) {
   box-shadow: none;
+}
+/* Récord: un filo dorado. Solo ese caso. */
+/* Por dentro: el recorte (clip-path) se come lo que sale de la píldora. */
+.island.has-glow {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 214, 10, 0.6);
 }
 
 /*
@@ -42,7 +58,7 @@
  * quede a su altura no se ve. La isla queda como «raíz» negra arriba.
  */
 .island--island {
-  padding: 46px 18px 14px 16px;
+  padding: 46px 12px 14px 14px;
   border-radius: 34px;
 }
 .island--island.is-open {
@@ -57,7 +73,6 @@
   top: 0;
   padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
   border-radius: 0 0 30px 30px;
-  clip-path: inset(0 calc(50% - var(--island-w) / 2) calc(100% - var(--island-h)) calc(50% - var(--island-w) / 2) round 0 0 20px 20px);
 }
 .island--notch.is-open {
   clip-path: inset(0 0 0 0 round 0 0 30px 30px);
@@ -67,14 +82,11 @@
 .island--none {
   --island-w: 40px;
   --island-h: 40px;
+  --island-r: 20px;
   top: calc(env(safe-area-inset-top, 0px) + 8px);
 }
 
 .island__body {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 34px;
   opacity: 0;
   filter: blur(4px);
   transition:
@@ -87,6 +99,19 @@
   transition-delay: 0.12s;
 }
 
+.island__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+}
+
+.island__icon-wrap {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 30px;
+}
 .island__icon {
   display: grid;
   place-items: center;
@@ -96,21 +121,56 @@
   border-radius: 50%;
   color: #fff;
 }
-.island__icon--success {
-  background: #30d158;
+.island__icon--loading {
+  background: rgba(255, 255, 255, 0.12);
 }
-.island__icon--error {
-  background: #ff453a;
+.island__avatar {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
-.island__icon--warning {
-  background: #ff9f0a;
+.island__spin {
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.22);
+  border-top-color: #fff;
+  animation: island-spin 0.8s linear infinite;
 }
-.island__icon--info {
-  background: #0a84ff;
+@keyframes island-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Anillo de «Deshacer»: se vacía en el tiempo del aviso; se congela al mantenerlo pulsado. */
+.island__ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  transform: rotate(-90deg);
+}
+.island__ring-arc {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dashoffset: 0;
+  animation: island-ring linear forwards;
+}
+.island__ring-arc.is-paused {
+  animation-play-state: paused;
+}
+@keyframes island-ring {
+  to {
+    stroke-dashoffset: 106.81;
+  }
 }
 
 .island__text {
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-width: 0;
   gap: 1px;
@@ -124,11 +184,187 @@
   font-size: 13px;
   line-height: 17px;
   color: rgba(235, 235, 245, 0.62);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Una sola acción; 36 px visibles, con zona táctil de 44. */
+.island__action {
+  position: relative;
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.island__action::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+.island__action:active {
+  background: rgba(255, 255, 255, 0.32);
+}
+.island__action:focus-visible,
+.island__btn:focus-visible {
+  outline: 2px solid #0a84ff;
+  outline-offset: 2px;
+}
+
+/* «+1»: hay otro aviso esperando turno. */
+.island__more {
+  flex: none;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Avance conocido. */
+.island__bar {
+  height: 4px;
+  margin: 12px 2px 2px 42px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+.island__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: #30d158;
+  transition: width 0.3s ease;
+}
+.island__bar--live {
+  margin: 0 0 0 42px;
+}
+
+/* En pequeño: anillo o pesa a un lado de la cámara, tiempo al otro. */
+.island__compact {
+  position: absolute;
+  top: 0;
+  left: calc(50% - var(--compact-w) / 2);
+  width: var(--compact-w);
+  height: var(--island-h);
+  box-sizing: border-box;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.island.is-compact .island__compact {
+  opacity: 1;
+  transition-delay: 0.15s;
+}
+.island--notch .island__compact {
+  top: 0;
+}
+.island__live-track {
+  fill: none;
+  stroke: rgba(48, 209, 88, 0.3);
+  stroke-width: 3;
+}
+.island__live-arc {
+  fill: none;
+  stroke: #30d158;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s linear;
+}
+.island__live-ring .island__live-track,
+.island__live-ring .island__live-arc {
+  stroke-width: 5;
+}
+.is-late .island__live-track {
+  stroke: rgba(255, 159, 10, 0.3);
+}
+.is-late .island__live-arc {
+  stroke: #ff9f0a;
+}
+.island__live-time {
+  font-size: 15px;
+  font-weight: 600;
+  color: #30d158;
+  font-variant-numeric: tabular-nums;
+}
+.island__live-time.is-late {
+  color: #ff9f0a;
+}
+.island__live-time.is-plain {
+  color: #fff;
+}
+
+/* Abierto: descanso con «+15 s» y «Saltar», o el entreno con «Volver». */
+.island__live {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.island__live .island__row {
+  gap: 14px;
+}
+.island__big {
+  font-size: 34px;
+  line-height: 40px;
+  font-weight: 700;
+  color: #30d158;
+  font-variant-numeric: tabular-nums;
+}
+.island__big.is-late {
+  color: #ff9f0a;
+}
+.island__elapsed {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.island__buttons {
+  display: flex;
+  gap: 8px;
+}
+.island__btn {
+  flex: 1;
+  height: 44px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.island__btn--go {
+  background: #30d158;
+  color: #000;
+}
+.island__btn--wide {
+  flex: none;
+  width: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .island,
-  .island__body {
+  .island__body,
+  .island__compact {
     transition: opacity 0.15s ease;
+  }
+  .island__spin {
+    animation-duration: 2s;
   }
 }

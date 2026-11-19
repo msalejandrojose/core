@@ -64,8 +64,6 @@
   --brio-silver-deep: #6f7782;
   --brio-bronze: #c27c3a;
   --brio-bronze-deep: #9e5f28;
-  --brio-snackbar: var(--brio-ink);
-  --brio-snackbar-link: #8ec5ff; /* 9,4:1 sobre snackbar */
   --brio-tabbar-bg: rgba(249, 249, 249, 0.94);
   /* Cristal (barra flotante, orbe, píldoras): translúcido con brillo en el borde. */
   --brio-glass: rgba(255, 255, 255, 0.3);

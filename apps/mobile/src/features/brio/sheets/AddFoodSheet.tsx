@@ -265,7 +265,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
         await deleteEntries(created.map((c) => c.id));
         await refreshDay();
         invalidateHabits();
-      });
+      }, { tone: 'food', icon: 'food', undone: 'Comida quitada' });
       onClose();
     } catch {
       toast.error('No se pudo añadir');

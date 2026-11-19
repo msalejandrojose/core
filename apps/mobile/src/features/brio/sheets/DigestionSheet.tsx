@@ -61,7 +61,7 @@ export function DigestionSheet({ isOpen, onClose }: { isOpen: boolean; onClose: 
       snackbar.undo(`Apuntado · tipo ${type}, ${BRISTOL_LABELS[type].toLowerCase()}`, async () => {
         await digestionApi.remove(created.id);
         notifyDigestionChanged();
-      });
+      }, { tone: 'digestion', icon: 'leaf', undone: 'Registro quitado' });
     } catch {
       toast.error('No se pudo registrar');
     } finally {

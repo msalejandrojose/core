@@ -194,7 +194,7 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
         } catch {
           toast.error('No se pudo deshacer');
         }
-      });
+      }, { tone: 'activity', icon: 'dumbbell', undone: 'Entreno quitado' });
       onClose();
     } catch (e) {
       if (isApiError(e) && e.code === 'BRIO_WEIGHT_UNKNOWN') {

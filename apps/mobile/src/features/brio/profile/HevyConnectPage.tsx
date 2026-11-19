@@ -65,12 +65,13 @@ export default function HevyConnectPage() {
 
   async function sync() {
     setBusy(true);
+    const t = toast.progress('Sincronizando Hevy', 'Trayendo entrenos nuevos…');
     try {
       const r = await hevyApi.sync();
       setStatus(r.status);
-      toast.success('Hevy sincronizado', syncSummary(r.sync));
+      t.success('Hevy sincronizado', syncSummary(r.sync), { icon: 'sync' });
     } catch (e) {
-      toast.error('No se pudo sincronizar', hevyErrorText(e));
+      t.error('No se pudo sincronizar', hevyErrorText(e), { action: { label: 'Reintentar', run: sync } });
     } finally {
       setBusy(false);
     }

@@ -44,9 +44,11 @@ export default function GarminConnectPage() {
 
   const sync = () =>
     run(async () => {
+      // Si falla, el error de `run` sustituye a este aviso en la isla.
+      const t = toast.progress('Sincronizando Garmin', 'Trayendo actividades nuevas…');
       const r = await garminApi.sync();
       setStatus(r.status);
-      toast.success('Garmin sincronizado', garminSyncSummary(r.sync));
+      t.success('Garmin sincronizado', garminSyncSummary(r.sync), { icon: 'sync' });
     }, 'No se pudo sincronizar');
 
   const disconnect = () =>
