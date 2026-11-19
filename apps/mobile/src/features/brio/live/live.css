@@ -361,3 +361,40 @@
   place-items: center;
   color: var(--brio-ink-muted);
 }
+
+/* Calentamiento: «C» en vez del número, con su color. */
+.live__set.is-warmup .live__set-n {
+  background: var(--brio-gold-soft);
+  color: var(--brio-gold-ink);
+}
+.live__set-n:disabled {
+  opacity: 1;
+}
+.live__sets-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.live__minus {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brio-surface-fill);
+  color: var(--brio-ink-2);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Con «Anterior» y RIR las columnas son estrechas: rótulos en una línea. */
+.live__sets-head {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+.live__sets-head span {
+  overflow: visible;
+  white-space: nowrap;
+}
