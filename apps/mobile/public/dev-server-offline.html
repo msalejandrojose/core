@@ -18,7 +18,7 @@
   <section>
     <h1>No se puede cargar Brío desde el Mac</h1>
     <p>Esta instalación está en modo «conectada al Mac» (<code>CAP_SERVER_URL</code>): carga la app del Vite del Mac y ahora no responde.</p>
-    <p class="muted">Arranca el Vite del Mac y comprueba que ZeroTier está conectado en los dos, o quita <code>CAP_SERVER_URL</code> de <code>apps/mobile/.env.production.local</code> y reinstala para volver al build normal.</p>
+    <p class="muted">Arranca el Vite del Mac y comprueba que ZeroTier está conectado en los dos, o vuelve al build normal, que funciona sin el Mac: en el Mac, <code>pnpm --filter @core/mobile ios:prod</code> y reinstala con Forja.</p>
     <button type="button" onclick="history.back(); setTimeout(function () { location.reload(); }, 300);">Reintentar</button>
   </section>
 </body>
