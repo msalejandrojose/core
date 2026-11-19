@@ -250,7 +250,7 @@ describe('live-workout', () => {
       { weightKg: 40, reps: 10, isWarmup: true },
       { weightKg: 70, reps: 8, rir: 2, restSec: 120 },
     ]);
-    expect(routineWithTodayWeights(routine, w).exercises[0]?.weightKg).toBe(70);
+    expect(routineWithTodayWeights(routine, w).exercises?.[0]?.weightKg).toBe(70);
     expect(doneSummary({ ...w.exercises[0], sets: w.exercises[0].sets.slice(0, 2) })).toBe('1 serie · mejor 70 kg × 8');
   });
 
