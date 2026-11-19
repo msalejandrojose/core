@@ -508,6 +508,7 @@
   display: inline-block;
   vertical-align: middle;
   margin-right: 2px;
+}
 
 /* Asistentes de IA (conector MCP) */
 .conn__ai {
