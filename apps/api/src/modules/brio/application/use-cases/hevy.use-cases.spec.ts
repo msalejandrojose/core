@@ -119,11 +119,16 @@ function fakes(initial: Partial<HevyConnection> | null = {}) {
       return `OWN-${d.name}`;
     },
     strengthType: async () => ({ id: 'TYPE', met: 5 }),
-    upsertImported: async (_u, id, d) => {
-      const created = !imported.has(id);
-      imported.set(id, d);
-      return { created, previousDay: created ? null : d.loggedOn };
-    },
+    upsertImportedMany: async (_u, items) =>
+      items.map(({ externalId, data }) => {
+        const before = imported.get(externalId);
+        imported.set(externalId, data);
+        return {
+          created: !before,
+          changed: !!before && JSON.stringify(before) !== JSON.stringify(data),
+          previousDay: before ? before.loggedOn : null,
+        };
+      }),
     deleteImported: async (_u, id) =>
       imported.delete(id) ? '2026-11-10' : null,
     recentStrengthSessions: async () => sessions,
@@ -228,6 +233,23 @@ describe('SyncHevyUseCase', () => {
       truncated: false,
     });
     expect(f.imported.has('gone')).toBe(false);
+  });
+
+  it('lo que llega igual que ya estaba no cuenta ni recalcula su día', async () => {
+    const f = fakes();
+    const items = [workout('w1', 'T-bench', 'Bench Press (Barbell)')];
+    f.client.workouts.mockResolvedValue({ pageCount: 1, items });
+    await f.sync.execute(USER);
+    f.refresh.execute.mockClear();
+    f.client.workoutEvents.mockResolvedValue({
+      pageCount: 1,
+      items: [{ type: 'updated', workout: items[0] }],
+    } as never);
+
+    const r = await f.sync.execute(USER);
+
+    expect(r).toMatchObject({ imported: 0, updated: 0 });
+    expect(f.refresh.execute).not.toHaveBeenCalled();
   });
 
   it('no vuelve a pedir el catálogo de Hevy si ya conoce los ejercicios', async () => {

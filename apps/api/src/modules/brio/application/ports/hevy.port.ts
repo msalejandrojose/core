@@ -74,6 +74,22 @@ export interface ImportedSessionData {
   sets: StrengthSet[];
 }
 
+export interface ImportedWorkoutItem {
+  externalId: string;
+  data: ImportedSessionData;
+  /** Rutina con la que enlazarlo si aún no tiene ninguna. */
+  routineId: string | null;
+}
+
+export interface ImportedWorkoutOutcome {
+  /** Nuevo en Brío. */
+  created: boolean;
+  /** Ya estaba y algo ha cambiado (datos, series o rutina). */
+  changed: boolean;
+  /** Día en el que estaba antes, si ya existía. */
+  previousDay: string | null;
+}
+
 export interface StrengthSessionWithSets {
   id: string;
   day: string;
@@ -122,12 +138,15 @@ export interface BrioHevyRepositoryPort {
   ): Promise<string>;
   strengthType(userId: string): Promise<{ id: string; met: number } | null>;
 
-  /** Crea o actualiza el entreno importado; devuelve si era nuevo. */
-  upsertImported(
+  /**
+   * Crea o actualiza de una vez muchos entrenos importados (en bloque, sin una
+   * ida y vuelta a la base de datos por entreno). Los que ya estaban y no han
+   * cambiado no se tocan. Devuelve, en el mismo orden, qué pasó con cada uno.
+   */
+  upsertImportedMany(
     userId: string,
-    externalId: string,
-    data: ImportedSessionData,
-  ): Promise<{ created: boolean; previousDay: string | null }>;
+    items: ImportedWorkoutItem[],
+  ): Promise<ImportedWorkoutOutcome[]>;
   /** Borra el entreno importado; devuelve su día, o null si no estaba. */
   deleteImported(userId: string, externalId: string): Promise<string | null>;
 
