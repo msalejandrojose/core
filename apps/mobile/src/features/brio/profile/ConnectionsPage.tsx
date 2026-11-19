@@ -10,6 +10,7 @@ import { useGarminStatus } from './garmin.api';
 import { useHevyStatus } from './hevy.api';
 import { DeviceHealthRow } from '../health/DeviceHealthRow';
 import { deviceHealthName } from '../health/device-health';
+import { AiConnections } from './AiConnections';
 import './profile.css';
 
 interface Prefs {
@@ -25,9 +26,10 @@ const IMPORTS: { id: 'importActivities' | 'importHealth'; label: string; desc: s
 const SHARES = ['100', '75', '50', '0'] as const;
 
 /**
- * Conexiones (lienzo "Conexiones"): el reloj Garmin, Hevy y qué hace Brío con
- * lo que traen, y Apple Salud / Health Connect. Las preferencias se guardan al
- * tocarlas. Enviar datos al reloj aún no existe, y la pantalla lo dice.
+ * Conexiones (lienzo "Conexiones"): el reloj Garmin, Hevy, los asistentes de IA
+ * conectados (conector MCP) y qué hace Brío con lo que traen, y Apple Salud /
+ * Health Connect. Las preferencias se guardan al tocarlas. Enviar datos al
+ * reloj aún no existe, y la pantalla lo dice.
  */
 export default function ConnectionsPage() {
   const { status: hevy } = useHevyStatus();
@@ -129,6 +131,8 @@ export default function ConnectionsPage() {
               <span className="conn__link">{hevy?.connected ? 'Conectado' : 'Conectar'}</span>
             </Link>
           </section>
+
+          <AiConnections />
 
           <section className="rk-section" aria-labelledby="salud">
             <SectionHeader id="salud">Salud del teléfono</SectionHeader>

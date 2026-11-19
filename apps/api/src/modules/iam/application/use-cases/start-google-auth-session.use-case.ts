@@ -1,3 +1,4 @@
+import type { GoogleAuthSessionOrigin } from '../../domain/entities/google-auth-session.entity';
 import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -23,10 +24,12 @@ export class StartGoogleAuthSessionUseCase {
     private readonly config: ConfigService,
   ) {}
 
-  async execute(): Promise<GoogleAuthSessionStart> {
+  async execute(
+    origin: GoogleAuthSessionOrigin = 'GAME',
+  ): Promise<GoogleAuthSessionStart> {
     const state = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-    const session = await this.sessions.create({ state, expiresAt });
+    const session = await this.sessions.create({ state, expiresAt, origin });
 
     return { sessionId: session.id, authUrl: this.buildAuthUrl(state) };
   }

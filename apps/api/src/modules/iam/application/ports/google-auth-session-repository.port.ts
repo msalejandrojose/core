@@ -1,4 +1,7 @@
-import { GoogleAuthSession } from '../../domain/entities/google-auth-session.entity';
+import {
+  GoogleAuthSession,
+  type GoogleAuthSessionOrigin,
+} from '../../domain/entities/google-auth-session.entity';
 
 export const GOOGLE_AUTH_SESSION_REPOSITORY = Symbol(
   'IAM_GOOGLE_AUTH_SESSION_REPOSITORY',
@@ -7,6 +10,7 @@ export const GOOGLE_AUTH_SESSION_REPOSITORY = Symbol(
 export interface CreateGoogleAuthSessionData {
   state: string;
   expiresAt: Date;
+  origin?: GoogleAuthSessionOrigin;
 }
 
 export interface MarkGoogleAuthSessionReadyData {

@@ -120,6 +120,7 @@ import { BrioHevyController } from './infrastructure/http/brio-hevy.controller';
 import { BrioGarminController } from './infrastructure/http/brio-garmin.controller';
 import { AgentsModule } from '../agents/agents.module';
 import { BrioAgentTools } from './infrastructure/agents/brio-agent-tools';
+import { BrioMcpController } from './infrastructure/mcp/brio-mcp.controller';
 import { BrioDigestionController } from './infrastructure/http/brio-digestion.controller';
 import { PrismaBrioDigestionRepository } from './infrastructure/persistence/prisma-brio-digestion.repository';
 import { BRIO_DIGESTION_REPOSITORY } from './application/ports/digestion.port';
@@ -183,6 +184,8 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
 @Module({
   imports: [IamModule, AgentsModule],
   controllers: [
+    // Conector MCP (TASK-192): las herramientas del coach para IAs externas, con OAuth de IamModule.
+    BrioMcpController,
     BrioProfileController,
     BrioActivityController,
     BrioNutritionController,

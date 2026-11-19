@@ -12,5 +12,6 @@ export function toGoogleAuthSessionDomain(
     row.userId,
     row.failureReason,
     row.expiresAt,
+    row.origin === 'WEB' ? 'WEB' : 'GAME',
   );
 }

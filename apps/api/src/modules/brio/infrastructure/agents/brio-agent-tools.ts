@@ -9,7 +9,19 @@ import { ListActivityTypesUseCase } from '../../application/use-cases/list-activ
 import { LogActivitySessionUseCase } from '../../application/use-cases/log-activity-session.use-case';
 import { LogMealEntryUseCase } from '../../application/use-cases/log-meal-entry.use-case';
 import { SearchFoodsUseCase } from '../../application/use-cases/search-foods.use-case';
-import { GetPlanWeekUseCase } from '../../application/use-cases/plan.use-cases';
+import {
+  CompletePlannedDayUseCase,
+  GetPlanWeekUseCase,
+  SetPlannedDayUseCase,
+  fromTemplate,
+} from '../../application/use-cases/plan.use-cases';
+import type { PlannedSessionData } from '../../application/ports/brio-plan-repository.port';
+import {
+  ACTIVITY_KINDS,
+  type ActivityKind,
+} from '../../domain/entities/performance.entity';
+import type { PlanLoad } from '../../domain/entities/plan.entity';
+import { PLAN_TEMPLATES } from '../../domain/services/plan';
 import { GetRecoveryUseCase } from '../../application/use-cases/recovery.use-cases';
 import { GetRecentHealthUseCase } from '../../application/use-cases/garmin.use-cases';
 import { GetProgressUseCase } from '../../application/use-cases/get-progress.use-case';
@@ -27,6 +39,7 @@ import { summarizeHealth, summarizeProgress } from './agent-summaries';
 import { dayInTimezone } from '../../domain/services/calendar';
 
 const MEALS: MealType[] = ['BREAKFAST', 'LUNCH', 'SNACK', 'DINNER'];
+const PLAN_LOADS: PlanLoad[] = ['REST', 'LOW', 'MEDIUM', 'HIGH'];
 const DAY = { type: 'string', description: 'Día YYYY-MM-DD. Si falta, hoy.' };
 
 const str = (v: unknown) =>
@@ -50,6 +63,8 @@ export class BrioAgentTools implements OnModuleInit {
     private readonly activityTypes: ListActivityTypesUseCase,
     private readonly logActivity: LogActivitySessionUseCase,
     private readonly planWeek: GetPlanWeekUseCase,
+    private readonly setPlanDay: SetPlannedDayUseCase,
+    private readonly completePlanDay: CompletePlannedDayUseCase,
     private readonly recovery: GetRecoveryUseCase,
     private readonly health: GetRecentHealthUseCase,
     private readonly progress: GetProgressUseCase,
@@ -296,6 +311,182 @@ export class BrioAgentTools implements OnModuleInit {
         },
         run: async (args, ctx) =>
           this.planWeek.execute(ctx.userId, str(args.day) ?? null),
+      },
+      {
+        code: 'brio_set_plan_day',
+        label: 'Planificar la sesión de un día',
+        description:
+          'Pone la sesión de entreno de un día del plan (sustituye la que hubiera; confirma antes de pisar una ya planificada). ' +
+          `Con «template» se parte de una plantilla (${PLAN_TEMPLATES.map((t) => `${t.code} = ${t.title}`).join('; ')}) y el resto de campos la ajustan; ` +
+          'sin plantilla hacen falta kind, title y load. Para un día de descanso, template «rest».',
+        parameters: {
+          type: 'object',
+          properties: {
+            day: { type: 'string', description: 'Día YYYY-MM-DD.' },
+            template: {
+              type: 'string',
+              enum: PLAN_TEMPLATES.map((t) => t.code),
+            },
+            kind: { type: 'string', enum: [...ACTIVITY_KINDS] },
+            title: {
+              type: 'string',
+              description: 'Nombre corto, p. ej. «Series 5 × 1000 m».',
+            },
+            load: {
+              type: 'string',
+              enum: [...PLAN_LOADS],
+              description: 'Carga: mueve las kcal de ese día.',
+            },
+            startTime: { type: 'string', description: 'Hora HH:MM.' },
+            durationMin: { type: 'number' },
+            distanceKm: { type: 'number' },
+            targetPace: {
+              type: 'string',
+              description: 'Ritmo objetivo por km, m:ss (p. ej. 4:45).',
+            },
+            notes: {
+              type: 'string',
+              description: 'Detalle: calentamiento, series, ejercicios…',
+            },
+          },
+          required: ['day'],
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const day = str(args.day);
+          if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day))
+            return { error: 'day debe ser YYYY-MM-DD.' };
+          const kind = ACTIVITY_KINDS.includes(args.kind as ActivityKind)
+            ? (args.kind as ActivityKind)
+            : undefined;
+          const load = PLAN_LOADS.includes(args.load as PlanLoad)
+            ? (args.load as PlanLoad)
+            : undefined;
+          const changes: Partial<PlannedSessionData> = {};
+          if (kind) changes.kind = kind;
+          if (str(args.title)) changes.title = str(args.title)!.slice(0, 120);
+          if (load) changes.load = load;
+          const time = str(args.startTime);
+          if (time) {
+            if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))
+              return { error: 'startTime debe ser HH:MM.' };
+            changes.startTime = time;
+          }
+          if (typeof args.durationMin === 'number')
+            changes.plannedDurationMin = Math.max(
+              1,
+              Math.min(720, Math.round(args.durationMin)),
+            );
+          if (typeof args.distanceKm === 'number')
+            changes.plannedDistanceM = Math.max(
+              0,
+              Math.round(args.distanceKm * 1000),
+            );
+          const pace = str(args.targetPace);
+          if (pace) {
+            const m = /^(\d{1,2}):([0-5]\d)$/.exec(pace);
+            const sec = m ? Number(m[1]) * 60 + Number(m[2]) : 0;
+            if (sec < 120 || sec > 1200)
+              return { error: 'targetPace entre 2:00 y 20:00 por km.' };
+            changes.targetPaceSecPerKm = sec;
+          }
+          if (typeof args.notes === 'string')
+            changes.notes = args.notes.trim().slice(0, 500) || null;
+
+          const template = str(args.template);
+          let data: PlannedSessionData | null;
+          if (template) {
+            data = fromTemplate(template, changes);
+            if (!data) return { error: 'Plantilla desconocida.' };
+          } else {
+            if (!kind || !changes.title || !load)
+              return { error: 'Sin plantilla hacen falta kind, title y load.' };
+            data = {
+              kind,
+              templateCode: null,
+              title: changes.title,
+              load,
+              startTime: null,
+              plannedDurationMin: null,
+              plannedDistanceM: null,
+              targetPaceSecPerKm: null,
+              structure: null,
+              notes: null,
+              ...changes,
+            };
+          }
+          const s = await this.setPlanDay.execute(ctx.userId, day, data);
+          return {
+            ok: true,
+            planned: {
+              day: s.day,
+              title: s.title,
+              kind: s.kind,
+              load: s.load,
+              startTime: s.startTime,
+              durationMin: s.plannedDurationMin,
+            },
+          };
+        },
+      },
+      {
+        code: 'brio_complete_plan_day',
+        label: 'Marcar una sesión del plan como hecha',
+        description:
+          'Marca la sesión planificada de un día como hecha (o la desmarca), con notas de cómo fue. Con done=false y skipped=true la deja como saltada a propósito.',
+        parameters: {
+          type: 'object',
+          properties: {
+            day: {
+              type: 'string',
+              description: 'Día YYYY-MM-DD. Si falta, hoy.',
+            },
+            done: {
+              type: 'boolean',
+              description: 'true = hecha (por defecto); false = desmarcar.',
+            },
+            skipped: {
+              type: 'boolean',
+              description: 'Con done=false: se decidió no hacerla.',
+            },
+            notes: {
+              type: 'string',
+              description: 'Cómo fue, en palabras de la persona.',
+            },
+          },
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const day = str(args.day) ?? dayInTimezone(new Date(), ctx.timeZone);
+          const done = args.done !== false;
+          try {
+            const s = await this.completePlanDay.execute(ctx.userId, day, {
+              done,
+              skipped: !done && args.skipped === true,
+              actualNotes:
+                typeof args.notes === 'string'
+                  ? args.notes.trim().slice(0, 500) || null
+                  : null,
+            });
+            return {
+              ok: true,
+              day: s.day,
+              title: s.title,
+              state: s.completedAt
+                ? 'hecha'
+                : s.skipped
+                  ? 'saltada'
+                  : 'pendiente',
+            };
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : '';
+            return {
+              error: msg.includes('NOT_FOUND')
+                ? `El ${day} no tiene ninguna sesión planificada.`
+                : 'No se pudo marcar la sesión.',
+            };
+          }
+        },
       },
       {
         code: 'brio_get_recovery',
