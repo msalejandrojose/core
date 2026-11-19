@@ -509,3 +509,21 @@
   vertical-align: middle;
   margin-right: 2px;
 }
+
+/* Asistentes de IA (conector MCP) */
+.conn__ai {
+  min-height: 60px;
+  gap: 12px;
+}
+.conn__badge--ai {
+  background: var(--brio-sleep-soft);
+  color: var(--brio-sleep-ink);
+}
+.conn__disconnect {
+  color: var(--brio-danger);
+  font-size: 15px;
+}
+.conn__url {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12px;
+}

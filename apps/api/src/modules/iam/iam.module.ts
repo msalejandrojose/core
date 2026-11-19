@@ -23,6 +23,18 @@ import { ChangePasswordUseCase } from './application/use-cases/change-password.u
 import { StartGoogleAuthSessionUseCase } from './application/use-cases/start-google-auth-session.use-case';
 import { CompleteGoogleAuthSessionUseCase } from './application/use-cases/complete-google-auth-session.use-case';
 import { GetGoogleAuthSessionUseCase } from './application/use-cases/get-google-auth-session.use-case';
+// ===== OAuth 2.1 (conectores externos, p. ej. MCP) =====
+import {
+  DecideAuthorizationUseCase,
+  IssueOAuthTokenUseCase,
+  ManageOAuthConnectionsUseCase,
+  RegisterOAuthClientUseCase,
+  ValidateAuthorizeRequestUseCase,
+  VerifyOAuthAccessTokenUseCase,
+} from './application/use-cases/oauth.use-cases';
+import { OAUTH_REPOSITORY } from './application/ports/oauth-repository.port';
+import { PrismaOAuthRepository } from './infrastructure/persistence/prisma-oauth.repository';
+import { OAuthController } from './infrastructure/http/oauth.controller';
 // ===== Users CRUD =====
 import { CreateUserUseCase } from './application/use-cases/create-user.use-case';
 import { DeactivateUserUseCase } from './application/use-cases/deactivate-user.use-case';
@@ -112,6 +124,7 @@ import { MailerModule } from '../mailer/mailer.module';
   ],
   controllers: [
     AuthController,
+    OAuthController,
     UsersController,
     RolesController,
     UserRolesController,
@@ -138,6 +151,15 @@ import { MailerModule } from '../mailer/mailer.module';
     StartGoogleAuthSessionUseCase,
     CompleteGoogleAuthSessionUseCase,
     GetGoogleAuthSessionUseCase,
+
+    // OAuth
+    RegisterOAuthClientUseCase,
+    ValidateAuthorizeRequestUseCase,
+    DecideAuthorizationUseCase,
+    IssueOAuthTokenUseCase,
+    VerifyOAuthAccessTokenUseCase,
+    ManageOAuthConnectionsUseCase,
+    { provide: OAUTH_REPOSITORY, useClass: PrismaOAuthRepository },
 
     // Users use cases
     ListUsersUseCase,
@@ -211,6 +233,8 @@ import { MailerModule } from '../mailer/mailer.module';
     JwtAuthGuard,
     PermissionGuard,
     ResolvePermissionUseCase,
+    // Lo usan los servidores de recursos OAuth (el MCP de Brío).
+    VerifyOAuthAccessTokenUseCase,
     TOKEN_ISSUER,
     ROLE_REPOSITORY,
     // Consumido por el resolver de target `users` de WorkflowsModule.

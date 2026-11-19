@@ -94,7 +94,17 @@ async function bootstrap() {
   // Versionado path-based: toda la API vive bajo `/v1`. Los health checks
   // quedan fuera porque los probes de infra (Cloud Run, ECS, LB) apuntan a
   // rutas fijas sin versión.
-  app.setGlobalPrefix('v1', { exclude: ['health', 'health/live'] });
+  // Los metadatos OAuth/MCP (RFC 8414 / RFC 9728) también: los clientes los
+  // buscan en `/.well-known/...` de la raíz del host.
+  app.setGlobalPrefix('v1', {
+    exclude: [
+      'health',
+      'health/live',
+      '.well-known/oauth-authorization-server',
+      '.well-known/oauth-protected-resource',
+      '.well-known/oauth-protected-resource/v1/brio/mcp',
+    ],
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }

@@ -14,6 +14,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
@@ -212,8 +213,19 @@ export class AuthController {
       'id de sesión para hacer polling.',
   })
   @ApiOkResponse({ type: GoogleAuthStartResponseDto })
-  async startGoogleAuthSessionAction(): Promise<GoogleAuthStartResponseDto> {
-    const start = await this.startGoogleAuthSession.execute();
+  @ApiQuery({
+    name: 'origin',
+    required: false,
+    enum: ['game', 'web'],
+    description:
+      'Quién hace el polling. `web` (p. ej. la pantalla de autorizar un conector) cambia la página de vuelta: sin deep link al juego.',
+  })
+  async startGoogleAuthSessionAction(
+    @Query('origin') origin?: string,
+  ): Promise<GoogleAuthStartResponseDto> {
+    const start = await this.startGoogleAuthSession.execute(
+      origin === 'web' ? 'WEB' : 'GAME',
+    );
     return GoogleAuthStartResponseDto.from(start);
   }
 
@@ -234,7 +246,8 @@ export class AuthController {
     } catch {
       ok = false;
     }
-    res.type('html').send(renderGoogleAuthCallbackPage(ok, dto.state));
+    const origin = await this.completeGoogleAuthSession.originOf(dto.state);
+    res.type('html').send(renderGoogleAuthCallbackPage(ok, dto.state, origin));
   }
 
   @Get('google/session/:id')
