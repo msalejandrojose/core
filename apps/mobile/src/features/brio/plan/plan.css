@@ -827,3 +827,59 @@
   color: var(--brio-tint);
   font-weight: 600;
 }
+
+/* ---- Dieta: de dónde salen las calorías (objetivo de peso) ---- */
+.diet__goal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px 12px 12px;
+  border-radius: var(--brio-radius-2xl);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+  text-decoration: none;
+}
+.diet__goal-icon {
+  align-self: flex-start;
+  margin-top: 4px;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--brio-radius-l);
+  background: var(--brio-sleep-soft);
+  color: var(--brio-sleep-ink);
+}
+.diet__goal-label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--brio-ink-muted);
+}
+.diet__goal-title {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.diet__goal-sub {
+  white-space: pre-line;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--brio-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.diet__goal-action {
+  flex: none;
+  font-size: 15px;
+  color: var(--brio-tint);
+}
+.diet__goal.is-empty {
+  box-shadow: inset 0 0 0 1.5px var(--brio-tint-soft);
+}
+.diet__goal.is-empty .diet__goal-icon {
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+}
