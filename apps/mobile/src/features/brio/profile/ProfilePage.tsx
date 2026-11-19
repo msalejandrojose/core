@@ -4,6 +4,7 @@ import { IonContent, IonModal, IonPage } from '@ionic/react';
 import { useAuthStore } from '@/store/auth.store';
 import { lastLoginMethod } from '@/features/auth/login-method';
 import { toast } from '@/lib/toast';
+import { ErrorState } from '@/components/ux';
 import { isApiError, type ActivityLevel } from '../api';
 import { formatWeight } from '../format';
 import { useBrioStore } from '../brio.store';
@@ -108,6 +109,13 @@ export default function ProfilePage() {
             ) : null}
           </header>
 
+          {profileStatus === 'error' ? (
+            // Sin conexión no hay datos: mejor decirlo que enseñar «Sin indicar».
+            <ErrorState
+              message="No se pudieron cargar tus datos. Comprueba tu conexión."
+              onRetry={() => void loadProfile()}
+            />
+          ) : (
           <section className="rk-section" aria-labelledby="datos">
             <SectionHeader id="datos">Tus datos</SectionHeader>
             <div className="rk-list">
@@ -136,6 +144,7 @@ export default function ProfilePage() {
             </div>
             <p className="rk-note">Con estos datos calculamos tus calorías. El peso lo registras con el +.</p>
           </section>
+          )}
 
           <section className="rk-section" aria-labelledby="app">
             <SectionHeader id="app">Ajustes</SectionHeader>
