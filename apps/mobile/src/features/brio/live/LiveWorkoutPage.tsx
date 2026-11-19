@@ -17,9 +17,14 @@ import {
   clock,
   linkWithNext,
   setRest,
+  doneSummary,
   editSet,
+  isExerciseDone,
   isHybrid,
-  previousLine,
+  nextPending,
+  previousAsSet,
+  previousSetAt,
+  previousSetLabel,
   progress,
   removeExercise,
   removeSet,
@@ -116,6 +121,9 @@ export default function LiveWorkoutPage() {
   /** Ejercicio con el selector de descanso abierto. */
   const [restOpen, setRestOpen] = useState<number | null>(null);
   const restWasRunning = useRef(false);
+  /** Ejercicios hechos que se han vuelto a desplegar (por `exerciseId-índice`). */
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => new Set());
+  const cards = useRef(new Map<number, HTMLElement>());
 
   // Notificación al acabar el descanso, para cuando la app esté en segundo plano.
   const restUntil = workout?.restUntil ?? null;
@@ -191,6 +199,221 @@ export default function LiveWorkoutPage() {
     history.replace('/tabs/today');
   }
 
+  const groups = workout.exercises.map((x) => x.group);
+  // Lo hecho sube arriba (plegado salvo que se despliegue) y lo pendiente queda
+  // debajo. Solo cambia cómo se ve: el orden guardado es el de la rutina.
+  const indices = workout.exercises.map((_, i) => i);
+  const doneIdx = indices.filter((i) => isExerciseDone(workout.exercises[i]));
+  const todoIdx = indices.filter((i) => !isExerciseDone(workout.exercises[i]));
+  const cardKey = (i: number) => `${workout.exercises[i].exerciseId}-${i}`;
+  const setExpanded = (key: string, open: boolean) =>
+    setExpandedKeys((cur) => {
+      const next = new Set(cur);
+      if (open) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+
+  function toggle(i: number, k: number) {
+    if (!workout) return;
+    const wasDone = workout.exercises[i].sets[k].done;
+    if (!wasDone) void tapSuccess();
+    const after = toggleSet(workout, i, k);
+    update((w) => toggleSet(w, i, k));
+    if (!wasDone && isExerciseDone(after.exercises[i])) {
+      // Ejercicio terminado: se pliega arriba y la pantalla baja al siguiente pendiente.
+      setExpanded(cardKey(i), false);
+      const target = nextPending(after, i);
+      if (target !== null) {
+        window.setTimeout(() => cards.current.get(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+      }
+    }
+  }
+
+  /** Fila plegada de un ejercicio hecho: nombre y resumen; al tocarla se despliega. */
+  const folded = (i: number) => {
+    const e = workout.exercises[i];
+    const summary = doneSummary(e);
+    return (
+      <button
+        key={cardKey(i)}
+        type="button"
+        className="live__folded"
+        aria-label={`${e.name}, hecho: ${summary}. Toca para desplegarlo.`}
+        onClick={() => setExpanded(cardKey(i), true)}
+      >
+        <span className="live__folded-check" aria-hidden="true">
+          ✓
+        </span>
+        <span className="live__folded-text">
+          <span className="live__folded-name">{e.name}</span>
+          <span className="live__folded-meta">{summary}</span>
+        </span>
+        <span className="live__folded-chev" aria-hidden="true">
+          ›
+        </span>
+      </button>
+    );
+  };
+
+  /**
+   * Tarjeta de un ejercicio. `shownBefore` es el ejercicio que se ve justo
+   * encima (para el rótulo de superserie) y `linkNext`, si el siguiente de la
+   * rutina va justo debajo (solo entonces tiene sentido el botón de enlazar).
+   */
+  const card = (i: number, shownBefore: number | null, linkNext: boolean) => {
+    const e = workout.exercises[i];
+    const done = isExerciseDone(e);
+    const hasPrev = !!e.previous?.sets.length;
+    const firstOfGroup = e.group != null && (shownBefore === null || groups[shownBefore] !== e.group);
+    const members = e.group != null ? workout.exercises.filter((x) => x.group === e.group).map((x) => x.name) : [];
+    const cols = columnsFor(e.measure, e.bodyweight);
+    const grid = {
+      gridTemplateColumns: `36px ${hasPrev ? '64px ' : ''}repeat(${cols.length}, minmax(0, 1fr)) 48px`,
+    };
+    return (
+      <div
+        key={cardKey(i)}
+        ref={(el) => {
+          if (el) cards.current.set(i, el);
+          else cards.current.delete(i);
+        }}
+        className="live__card"
+      >
+        {firstOfGroup ? (
+          <p className="live__ss-label">
+            Superserie {supersetLetter(e.group!)} ·{' '}
+            {members.length <= 3 ? `alterna ${members.join(' → ')}` : `${members.length} ejercicios seguidos`} y descansa al acabar la vuelta
+          </p>
+        ) : null}
+        <section className={`rk-list live__exercise${e.group ? ' is-superset' : ''}`} aria-label={e.name}>
+          <div className="rk-row live__ex-head">
+            <span className="rk-row__main">
+              <span className="rk-row__title">{e.name}</span>
+              {e.muscles ? <span className="rk-row__sub">{e.muscles}</span> : null}
+            </span>
+            {done ? (
+              <button type="button" className="rk-textbtn" onClick={() => setExpanded(cardKey(i), false)}>
+                Plegar
+              </button>
+            ) : (
+              <button type="button" className="rk-textbtn" onClick={() => update((w) => removeExercise(w, i))}>
+                Quitar
+              </button>
+            )}
+          </div>
+          <div className="live__sets-head" style={grid} aria-hidden="true">
+            <span>Serie</span>
+            {hasPrev ? <span>Anterior</span> : null}
+            {cols.map((c) => (
+              <span key={c}>{c === 'weight' && e.bodyweight ? 'Lastre' : COLUMN_LABEL[c]}</span>
+            ))}
+            <span />
+          </div>
+          {e.sets.map((s, k) => {
+            const p = previousSetAt(e, k);
+            const prevText = p ? previousSetLabel(p, e.measure, e.bodyweight) : null;
+            return (
+              <div key={k} className={`live__set${s.done ? ' is-done' : ''}`} style={grid}>
+                <button
+                  type="button"
+                  className="live__set-n"
+                  aria-label={`Quitar la serie ${k + 1}`}
+                  disabled={e.sets.length === 1 || s.done}
+                  onClick={() => update((w) => removeSet(w, i, k))}
+                >
+                  {k + 1}
+                </button>
+                {hasPrev ? (
+                  p && prevText ? (
+                    <button
+                      type="button"
+                      className="live__prev"
+                      disabled={s.done}
+                      aria-label={`La última vez: ${prevText}. Toca para copiarlo en la serie ${k + 1}.`}
+                      onClick={() => update((w) => editSet(w, i, k, previousAsSet(p, e.measure)))}
+                    >
+                      {prevText}
+                    </button>
+                  ) : (
+                    <span className="live__prev is-empty" aria-hidden="true">
+                      —
+                    </span>
+                  )
+                ) : null}
+                {cols.map((c) => (
+                  <Num
+                    key={c}
+                    label={`Serie ${k + 1}, ${COLUMN_LABEL[c]}`}
+                    value={s[c]}
+                    decimal={c === 'weight'}
+                    time={c === 'time'}
+                    placeholder={c === 'time' ? 'm:ss' : undefined}
+                    onChange={(v) => update((w) => editSet(w, i, k, { [c]: v }))}
+                  />
+                ))}
+                <button
+                  type="button"
+                  className="live__check"
+                  aria-pressed={s.done}
+                  aria-label={s.done ? `Serie ${k + 1} hecha. Toca para desmarcarla.` : `Marcar la serie ${k + 1} como hecha`}
+                  onClick={() => toggle(i, k)}
+                >
+                  ✓
+                </button>
+              </div>
+            );
+          })}
+          <div className="live__ex-foot">
+            <button type="button" className="rk-textbtn" onClick={() => update((w) => addSet(w, i))}>
+              Añadir serie
+            </button>
+            {closesRound(groups, i) ? (
+              <button
+                type="button"
+                className="rk-textbtn live__rest-btn"
+                aria-expanded={restOpen === i}
+                onClick={() => setRestOpen((x) => (x === i ? null : i))}
+              >
+                Descanso: {restLabel(e.restSec)}
+              </button>
+            ) : (
+              <span className="live__rest-note">Sin descanso: sigue con el siguiente</span>
+            )}
+          </div>
+          {restOpen === i ? (
+            <div className="routine__rest-options live__rest-options" role="group" aria-label={`Descanso de ${e.name}`}>
+              {REST_OPTIONS.map((sec) => (
+                <button
+                  key={sec}
+                  type="button"
+                  className="workout__chip routine__rest-chip"
+                  aria-pressed={(e.restSec ?? 0) === sec}
+                  onClick={() => {
+                    update((w) => setRest(w, i, sec));
+                    setRestOpen(null);
+                  }}
+                >
+                  {sec ? restLabel(sec) : 'Nada'}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </section>
+        {linkNext ? (
+          <button
+            type="button"
+            className={`routine__link${linkedWithNext(groups, i) ? ' is-on' : ''}`}
+            aria-pressed={linkedWithNext(groups, i)}
+            onClick={() => update((w) => linkWithNext(w, i))}
+          >
+            {linkedWithNext(groups, i) ? '⛓ En superserie con el siguiente · separar' : '＋ Superserie con el siguiente'}
+          </button>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <IonPage>
       <IonContent>
@@ -228,129 +451,20 @@ export default function LiveWorkoutPage() {
             </div>
           </header>
 
-          {workout.exercises.map((e, i) => {
-            const prev = previousLine(e.previous, e.measure);
-            const groups = workout.exercises.map((x) => x.group);
-            const firstOfGroup = e.group != null && groups[i - 1] !== e.group;
-            const members = e.group != null ? workout.exercises.filter((x) => x.group === e.group).map((x) => x.name) : [];
-            return (
-              <div key={`${e.exerciseId}-${i}`}>
-              {firstOfGroup ? (
-                <p className="live__ss-label">
-                  Superserie {supersetLetter(e.group!)} ·{' '}
-                  {members.length <= 3 ? `alterna ${members.join(' → ')}` : `${members.length} ejercicios seguidos`} y descansa al acabar la vuelta
-                </p>
-              ) : null}
-              <section className={`rk-list live__exercise${e.group ? ' is-superset' : ''}`} aria-label={e.name}>
-                <div className="rk-row live__ex-head">
-                  <span className="rk-row__main">
-                    <span className="rk-row__title">{e.name}</span>
-                    <span className="rk-row__sub">{[e.muscles, prev].filter(Boolean).join(' · ')}</span>
-                  </span>
-                  <button type="button" className="rk-textbtn" onClick={() => update((w) => removeExercise(w, i))}>
-                    Quitar
-                  </button>
-                </div>
-                {(() => {
-                  const cols = columnsFor(e.measure, e.bodyweight);
-                  const grid = { gridTemplateColumns: `44px repeat(${cols.length}, minmax(0, 1fr)) 52px` };
-                  return (
-                    <>
-                      <div className="live__sets-head" style={grid} aria-hidden="true">
-                        <span>Serie</span>
-                        {cols.map((c) => (
-                          <span key={c}>{c === 'weight' && e.bodyweight ? 'Lastre' : COLUMN_LABEL[c]}</span>
-                        ))}
-                        <span />
-                      </div>
-                      {e.sets.map((s, k) => (
-                        <div key={k} className={`live__set${s.done ? ' is-done' : ''}`} style={grid}>
-                          <button
-                            type="button"
-                            className="live__set-n"
-                            aria-label={`Quitar la serie ${k + 1}`}
-                            disabled={e.sets.length === 1 || s.done}
-                            onClick={() => update((w) => removeSet(w, i, k))}
-                          >
-                            {k + 1}
-                          </button>
-                          {cols.map((c) => (
-                            <Num
-                              key={c}
-                              label={`Serie ${k + 1}, ${COLUMN_LABEL[c]}`}
-                              value={s[c]}
-                              decimal={c === 'weight'}
-                              time={c === 'time'}
-                              placeholder={c === 'time' ? 'm:ss' : undefined}
-                              onChange={(v) => update((w) => editSet(w, i, k, { [c]: v }))}
-                            />
-                          ))}
-                          <button
-                            type="button"
-                            className="live__check"
-                            aria-pressed={s.done}
-                            aria-label={s.done ? `Serie ${k + 1} hecha. Toca para desmarcarla.` : `Marcar la serie ${k + 1} como hecha`}
-                            onClick={() => {
-                              if (!s.done) void tapSuccess();
-                              update((w) => toggleSet(w, i, k));
-                            }}
-                          >
-                            ✓
-                          </button>
-                        </div>
-                      ))}
-                    </>
-                  );
-                })()}
-                <div className="live__ex-foot">
-                  <button type="button" className="rk-textbtn" onClick={() => update((w) => addSet(w, i))}>
-                    Añadir serie
-                  </button>
-                  {closesRound(groups, i) ? (
-                    <button
-                      type="button"
-                      className="rk-textbtn live__rest-btn"
-                      aria-expanded={restOpen === i}
-                      onClick={() => setRestOpen((x) => (x === i ? null : i))}
-                    >
-                      Descanso: {restLabel(e.restSec)}
-                    </button>
-                  ) : (
-                    <span className="live__rest-note">Sin descanso: sigue con el siguiente</span>
-                  )}
-                </div>
-                {restOpen === i ? (
-                  <div className="routine__rest-options live__rest-options" role="group" aria-label={`Descanso de ${e.name}`}>
-                    {REST_OPTIONS.map((sec) => (
-                      <button
-                        key={sec}
-                        type="button"
-                        className="workout__chip routine__rest-chip"
-                        aria-pressed={(e.restSec ?? 0) === sec}
-                        onClick={() => {
-                          update((w) => setRest(w, i, sec));
-                          setRestOpen(null);
-                        }}
-                      >
-                        {sec ? restLabel(sec) : 'Nada'}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </section>
-              {i < workout.exercises.length - 1 ? (
-                <button
-                  type="button"
-                  className={`routine__link${linkedWithNext(groups, i) ? ' is-on' : ''}`}
-                  aria-pressed={linkedWithNext(groups, i)}
-                  onClick={() => update((w) => linkWithNext(w, i))}
-                >
-                  {linkedWithNext(groups, i) ? '⛓ En superserie con el siguiente · separar' : '＋ Superserie con el siguiente'}
-                </button>
-              ) : null}
+          {doneIdx.length > 0 ? (
+            <>
+              <SectionHeader id="hechos" action={<span className="live__group-count">{doneIdx.length} de {workout.exercises.length}</span>}>
+                Hechos
+              </SectionHeader>
+              <div className="live__done" role="group" aria-labelledby="hechos">
+                {doneIdx.map((i) => (expandedKeys.has(cardKey(i)) ? card(i, null, false) : folded(i)))}
               </div>
-            );
-          })}
+              {todoIdx.length ? <SectionHeader id="por-hacer">Por hacer</SectionHeader> : null}
+            </>
+          ) : null}
+
+          {todoIdx.map((i, n) => card(i, n > 0 ? todoIdx[n - 1] : null, todoIdx[n + 1] === i + 1))}
+          {doneIdx.length > 0 && todoIdx.length === 0 ? <p className="live__all-done">Todo hecho. Añade otro ejercicio o pulsa Terminar.</p> : null}
 
           {picking ? (
             <ExercisePicker

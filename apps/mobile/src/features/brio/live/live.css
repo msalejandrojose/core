@@ -262,3 +262,102 @@
 .live__rest-note {
   text-align: right;
 }
+
+/* En vivo, lo hecho sube arriba plegado: una fila por ejercicio. */
+.live__group-count {
+  color: var(--brio-ink-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.live__done {
+  display: grid;
+  gap: 8px;
+  margin-bottom: var(--brio-space-l);
+}
+.live__done .live__exercise {
+  margin-bottom: 0;
+}
+.live__folded {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--brio-radius-l);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+  font: inherit;
+  text-align: left;
+}
+.live__folded-check {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--brio-activity);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+.live__folded-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.live__folded-name {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.live__folded-meta {
+  color: var(--brio-ink-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.live__folded-chev {
+  color: var(--brio-ink-muted);
+  font-size: 22px;
+  line-height: 1;
+}
+.live__all-done {
+  margin: 0 0 var(--brio-space-m);
+  color: var(--brio-ink-2);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Columna «Anterior»: lo de la última vez; un toque lo copia en la serie. */
+.live__prev {
+  overflow: hidden;
+  min-width: 0;
+  height: 40px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--brio-ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.live__prev:not(:disabled):active {
+  background: var(--brio-surface-fill);
+}
+.live__prev:disabled {
+  opacity: 1;
+}
+.live__prev.is-empty {
+  display: grid;
+  place-items: center;
+  color: var(--brio-ink-muted);
+}
