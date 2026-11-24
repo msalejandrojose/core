@@ -162,7 +162,7 @@ interface SessionRow {
   kcalBurned: number;
   notes: string | null;
   source: string;
-  activityType?: { name: string; kind?: string } | null;
+  activityType?: { name: string; kind?: string; code?: string | null } | null;
   strengthSets?: StrengthSetRow[];
 }
 
@@ -220,6 +220,7 @@ export function toSession(row: SessionRow): ActivitySession {
     userId: row.userId,
     activityTypeId: row.activityTypeId,
     activityTypeName: row.activityType?.name ?? '',
+    activityTypeCode: row.activityType?.code ?? null,
     startedAt: row.startedAt,
     loggedOn: toDay(row.loggedOn),
     durationSec: row.durationSec,

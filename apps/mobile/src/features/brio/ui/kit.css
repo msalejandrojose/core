@@ -484,3 +484,11 @@ a.rk-row {
   background: var(--brio-tint);
   color: var(--brio-on-tint);
 }
+
+/* Icono de actividad en su círculo de color (ui/activity-icons.tsx). */
+.brio-activity-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+}
