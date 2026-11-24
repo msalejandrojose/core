@@ -30,6 +30,7 @@ import {
   GetPlanWeekUseCase,
   SavePlanUseCase,
   SetPlannedDayUseCase,
+  WeekTemplateUseCase,
   fromTemplate,
   type PlanWeek,
 } from '../../application/use-cases/plan.use-cases';
@@ -39,7 +40,9 @@ import {
   CompleteDayDto,
   FillWeekDto,
   SavePlanDto,
+  SaveWeekTemplateDto,
   SetPlannedDayDto,
+  WeekSlotResponseDto,
 } from './dto/plan.dto';
 import { DayQueryDto } from './dto/queries.dto';
 
@@ -64,6 +67,7 @@ export class BrioPlanController {
     private readonly clearDay: ClearPlannedDayUseCase,
     private readonly completeDay: CompletePlannedDayUseCase,
     private readonly fillWeek: FillPlanWeekUseCase,
+    private readonly weekTemplate: WeekTemplateUseCase,
   ) {}
 
   @Get('week')
@@ -202,5 +206,40 @@ export class BrioPlanController {
         body.replace ?? false,
       ),
     };
+  }
+
+  @Get('week-template')
+  @ApiOperation({
+    summary:
+      'Mi semana tipo: actividades fijas de cada semana (deporte, día, hora y rutina).',
+  })
+  @ApiOkResponse({ type: [WeekSlotResponseDto] })
+  getWeekTemplate(
+    @CurrentUser() current: AccessTokenPayload,
+  ): Promise<WeekSlotResponseDto[]> {
+    return this.weekTemplate.get(current.sub);
+  }
+
+  @Put('week-template')
+  @ApiOperation({
+    summary:
+      'Guardar mi semana tipo. «Rellenar con la semana tipo» la usa en vez de la de ejemplo.',
+  })
+  @ApiOkResponse({ type: [WeekSlotResponseDto] })
+  saveWeekTemplate(
+    @CurrentUser() current: AccessTokenPayload,
+    @Body() body: SaveWeekTemplateDto,
+  ): Promise<WeekSlotResponseDto[]> {
+    return this.weekTemplate.save(
+      current.sub,
+      body.slots.map((s) => ({
+        weekday: s.weekday,
+        templateCode: s.templateCode,
+        title: s.title ?? null,
+        startTime: s.startTime ?? null,
+        durationMin: s.durationMin ?? null,
+        routineId: s.routineId ?? null,
+      })),
+    );
   }
 }

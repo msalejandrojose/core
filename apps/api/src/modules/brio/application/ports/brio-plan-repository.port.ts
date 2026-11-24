@@ -3,6 +3,7 @@ import type {
   Plan,
   PlannedSession,
 } from '../../domain/entities/plan.entity';
+import type { WeekSlot } from '../../domain/services/week-template';
 
 export const BRIO_PLAN_REPOSITORY = Symbol('BRIO_PLAN_REPOSITORY');
 
@@ -65,6 +66,10 @@ export interface BrioPlanRepositoryPort {
     day: string,
     data: CompletionData,
   ): Promise<PlannedSession | null>;
+
+  /** Semana tipo del usuario (vacía si no ha puesto ninguna). */
+  getWeekSlots(userId: string): Promise<WeekSlot[]>;
+  saveWeekSlots(userId: string, slots: WeekSlot[]): Promise<WeekSlot[]>;
 
   /** Entrenos reales entre dos días, para cruzarlos con el plan. */
   actualsBetween(

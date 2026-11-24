@@ -89,6 +89,16 @@ export interface SetDayBody {
   notes?: string | null;
 }
 
+/** Actividad fija de la semana tipo (TASK-429). `weekday`: 1 = lunes … 7 = domingo. */
+export interface WeekSlot {
+  weekday: number;
+  templateCode: string;
+  title: string | null;
+  startTime: string | null;
+  durationMin: number | null;
+  routineId: string | null;
+}
+
 export const planApi = {
   week: (day?: string) =>
     call<PlanWeek>('GET', '/brio/plan/week', { params: { query: day ? { day } : {} } }),
@@ -100,6 +110,8 @@ export const planApi = {
   clearDay: (day: string) => call<void>('DELETE', `/brio/plan/days/${day}`),
   complete: (day: string, body: { done: boolean; skipped?: boolean; sessionId?: string | null; actualNotes?: string | null }) =>
     call<PlannedSession>('PUT', `/brio/plan/days/${day}/completion`, { body }),
+  weekTemplate: () => call<WeekSlot[]>('GET', '/brio/plan/week-template'),
+  saveWeekTemplate: (slots: WeekSlot[]) => call<WeekSlot[]>('PUT', '/brio/plan/week-template', { body: { slots } }),
   fill: (day: string, mode: 'TEMPLATE' | 'COPY_PREVIOUS', replace = false) =>
     call<{ written: number }>('POST', '/brio/plan/week/fill', { body: { day, mode, replace } }),
 };

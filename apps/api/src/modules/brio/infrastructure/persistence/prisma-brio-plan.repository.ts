@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { WeekSlot } from '../../domain/services/week-template';
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
 import type { ActivityKind } from '../../domain/entities/performance.entity';
@@ -225,5 +226,23 @@ export class PrismaBrioPlanRepository implements BrioPlanRepositoryPort {
       durationSec: r.durationSec,
       distanceM: r.distanceM,
     }));
+  }
+
+  async getWeekSlots(userId: string): Promise<WeekSlot[]> {
+    const row = await this.prisma.brioWeekTemplate.findUnique({
+      where: { userId },
+      select: { slots: true },
+    });
+    return Array.isArray(row?.slots) ? (row.slots as unknown as WeekSlot[]) : [];
+  }
+
+  async saveWeekSlots(userId: string, slots: WeekSlot[]): Promise<WeekSlot[]> {
+    const value = slots as unknown as Prisma.InputJsonArray;
+    await this.prisma.brioWeekTemplate.upsert({
+      where: { userId },
+      create: { userId, slots: value },
+      update: { slots: value },
+    });
+    return slots;
   }
 }

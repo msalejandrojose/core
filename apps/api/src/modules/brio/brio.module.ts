@@ -29,6 +29,7 @@ import {
   ClearPlannedDayUseCase,
   CompletePlannedDayUseCase,
   FillPlanWeekUseCase,
+  WeekTemplateUseCase,
   GetPlanWeekUseCase,
   SavePlanUseCase,
   SetPlannedDayUseCase,
@@ -324,6 +325,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     ClearPlannedDayUseCase,
     CompletePlannedDayUseCase,
     FillPlanWeekUseCase,
+    WeekTemplateUseCase,
     // Menús y lista de la compra.
     GetMenuWeekUseCase,
     SwapMenuDishUseCase,

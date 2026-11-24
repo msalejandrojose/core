@@ -55,6 +55,7 @@ import { useLiveActivitySync } from '@/features/brio/live/useLiveActivitySync';
 import { useLiveIsland } from '@/features/brio/live/useLiveIsland';
 import PlanPage from '@/features/brio/plan/PlanPage';
 import TrainingPage from '@/features/brio/training/TrainingPage';
+import WeekTemplatePage from '@/features/brio/plan/WeekTemplatePage';
 import EditSessionPage from '@/features/brio/plan/EditSessionPage';
 import DietPage from '@/features/brio/plan/DietPage';
 import ShoppingPage from '@/features/brio/plan/ShoppingPage';
@@ -159,6 +160,7 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/entreno/:id" component={SessionEditPage} />
           <Route exact path="/tabs/entrenos" component={TrainingPage} />
           <Route exact path="/tabs/entrenos/plan" component={PlanPage} />
+          <Route exact path="/tabs/entrenos/semana-tipo" component={WeekTemplatePage} />
           {/* Rutas de antes (Plan era una pestaña): siguen funcionando en enlaces y avisos. */}
           <Route exact path="/tabs/plan">
             <RedirectPage to="/tabs/entrenos/plan" />

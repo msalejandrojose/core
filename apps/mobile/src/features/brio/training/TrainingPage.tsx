@@ -76,6 +76,16 @@ export default function TrainingPage() {
               </span>
               <Chevron />
             </Link>
+            <Link to="/tabs/entrenos/semana-tipo" className="rk-row">
+              <span className="food-hub__icon" aria-hidden="true">
+                <Icon d="M7 3v3M17 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM8 13h3M13 13h3M8 17h3" size={20} />
+              </span>
+              <span className="rk-row__main">
+                <span className="rk-row__title">Tu semana tipo</span>
+                <span className="rk-row__sub">Futsal, fútbol 7, gimnasio… con su día y su hora</span>
+              </span>
+              <Chevron />
+            </Link>
             <Link to="/tabs/entrenos/plan" className="rk-row">
               <span className="food-hub__icon" aria-hidden="true">
                 <Icon d={PATHS.copy} size={20} />

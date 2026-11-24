@@ -1,4 +1,5 @@
 import type { PlannedSession } from '../../domain/entities/plan.entity';
+import type { WeekSlot } from '../../domain/services/week-template';
 import type { BrioActivityRepositoryPort } from '../ports/brio-activity-repository.port';
 import type {
   PlannedSessionData,
@@ -30,7 +31,7 @@ const session = (day: string, title: string): PlannedSession => ({
   skipped: false,
 });
 
-function plans(existing: PlannedSession[]) {
+function plans(existing: PlannedSession[], slots: WeekSlot[] = []) {
   const upsert = jest
     .fn<
       Promise<PlannedSession>,
@@ -48,6 +49,7 @@ function plans(existing: PlannedSession[]) {
       ),
     upsertPlanned: upsert,
     setCompletion: jest.fn(),
+    getWeekSlots: jest.fn().mockResolvedValue(slots),
   } as unknown as BrioPlanRepositoryPort;
   return { repo, upsert };
 }
@@ -83,6 +85,22 @@ describe('FillPlanWeekUseCase', () => {
       '2026-11-09',
       'plan-1',
       expect.objectContaining({ templateCode: 'fsup' }),
+    ]);
+  });
+
+  it('con la semana tipo del usuario, pone sus actividades y su hora', async () => {
+    const { repo, upsert } = plans(
+      [],
+      [
+        { weekday: 2, templateCode: 'futsal', title: null, startTime: '21:00', durationMin: null, routineId: null },
+        { weekday: 6, templateCode: 'f7', title: null, startTime: '10:00', durationMin: 60, routineId: null },
+      ],
+    );
+    const written = await new FillPlanWeekUseCase(repo).execute('u1', '2026-11-12', 'TEMPLATE', false);
+    expect(written).toBe(2);
+    expect(upsert.mock.calls.map((c) => [c[1], c[3].title, c[3].startTime])).toEqual([
+      ['2026-11-10', 'Fútbol sala', '21:00'],
+      ['2026-11-14', 'Fútbol 7', '10:00'],
     ]);
   });
 

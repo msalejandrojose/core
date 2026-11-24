@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { activityLook } from '../ui/activity-look';
+import { useRegisterStore } from '../register.store';
 import { IonContent, IonModal } from '@ionic/react';
 import { SWIPE_TO_CLOSE } from './swipe';
 import { isApiError, brioApi, type ActivityType, type Effort } from '../api';
@@ -85,6 +86,7 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
     }
   }, [isOpen, types]);
 
+  const presetRoutine = useRegisterStore((s) => s.routineId);
   useEffect(() => {
     if (isOpen) {
       setTypeId(null);
@@ -95,10 +97,11 @@ export function WorkoutSheet({ isOpen, onClose }: WorkoutSheetProps) {
       setRpe(null);
       setExercises([]);
       setCardio(EMPTY_CARDIO);
-      setRoutineId(null);
+      // La rutina del plan de hoy (semana tipo) ya viene elegida.
+      setRoutineId(presetRoutine);
       setAt('');
     }
-  }, [isOpen]);
+  }, [isOpen, presetRoutine]);
 
   /** Tus deportes: los que más usas (120 días); si no hay historial, los de siempre. */
   const favorites = useMemo(() => {

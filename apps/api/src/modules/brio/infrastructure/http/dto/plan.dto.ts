@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsIn,
   IsInt,
@@ -13,6 +16,7 @@ import {
   Min,
   MinLength,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 import {
   ACTIVITY_KINDS,
@@ -203,4 +207,63 @@ export class FillWeekDto {
   @IsOptional()
   @IsBoolean()
   replace?: boolean;
+}
+
+/** Una actividad fija de la semana tipo (TASK-429). */
+export class WeekSlotDto {
+  @ApiProperty({ example: 2, description: '1 = lunes … 7 = domingo.' })
+  @IsInt()
+  @Min(1)
+  @Max(7)
+  weekday!: number;
+
+  @ApiProperty({ example: 'futsal', description: 'Plantilla de sesión.' })
+  @IsString()
+  @MaxLength(40)
+  templateCode!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, example: 'Torso' })
+  @IsOptional()
+  @ValidateIf(notNull)
+  @IsString()
+  @MaxLength(120)
+  title?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, example: '21:00' })
+  @IsOptional()
+  @ValidateIf(notNull)
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'startTime debe ser HH:MM.' })
+  startTime?: string | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, example: 60 })
+  @IsOptional()
+  @ValidateIf(notNull)
+  @IsInt()
+  @Min(5)
+  @Max(600)
+  durationMin?: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Rutina de gimnasio.' })
+  @IsOptional()
+  @ValidateIf(notNull)
+  @IsUUID()
+  routineId?: string | null;
+}
+
+export class SaveWeekTemplateDto {
+  @ApiProperty({ type: [WeekSlotDto] })
+  @IsArray()
+  @ArrayMaxSize(21)
+  @ValidateNested({ each: true })
+  @Type(() => WeekSlotDto)
+  slots!: WeekSlotDto[];
+}
+
+export class WeekSlotResponseDto {
+  @ApiProperty() weekday!: number;
+  @ApiProperty() templateCode!: string;
+  @ApiProperty({ type: String, nullable: true }) title!: string | null;
+  @ApiProperty({ type: String, nullable: true }) startTime!: string | null;
+  @ApiProperty({ type: Number, nullable: true }) durationMin!: number | null;
+  @ApiProperty({ type: String, nullable: true }) routineId!: string | null;
 }
