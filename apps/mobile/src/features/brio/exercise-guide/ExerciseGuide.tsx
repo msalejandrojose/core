@@ -60,8 +60,19 @@ export function ExerciseGuide({ exercise }: { exercise: Exercise }) {
   );
 }
 
-/** La ficha en una hoja, para abrirla desde el registro de un entreno. */
-export function ExerciseGuideSheet({ exercise, onClose }: { exercise: Exercise | null; onClose: () => void }) {
+/**
+ * La ficha en una hoja, para abrirla desde el registro de un entreno o desde
+ * el buscador de ejercicios (con `action`, p. ej. «Añadir a la rutina»).
+ */
+export function ExerciseGuideSheet({
+  exercise,
+  onClose,
+  action,
+}: {
+  exercise: Exercise | null;
+  onClose: () => void;
+  action?: { label: string; onClick: (e: Exercise) => void };
+}) {
   return (
     <IonModal isOpen={!!exercise} onDidDismiss={onClose} initialBreakpoint={0.92} breakpoints={[0, 0.92]} handle>
       <IonContent>
@@ -70,6 +81,11 @@ export function ExerciseGuideSheet({ exercise, onClose }: { exercise: Exercise |
           {exercise ? (
             <div className="exguide__sheet">
               <ExerciseGuide exercise={exercise} />
+              {action ? (
+                <button type="button" className="rk-btn exguide__action" onClick={() => action.onClick(exercise)}>
+                  {action.label}
+                </button>
+              ) : null}
               <ExerciseProgress exerciseId={exercise.id} isBodyweight={exercise.isBodyweight} />
             </div>
           ) : null}

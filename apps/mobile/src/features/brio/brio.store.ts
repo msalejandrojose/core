@@ -7,6 +7,18 @@ import {
   type SaveProfileBody,
 } from './api';
 import { todayIn } from './format';
+import { useAuthStore } from '@/store/auth.store';
+import { readSnapshot, writeSnapshot } from './today-snapshot';
+
+const currentUserId = () => useAuthStore.getState().user?.id ?? null;
+
+/** Guarda la foto de Hoy si lo que hay en el store es el día de hoy. */
+function saveSnapshot(state: { profile: BrioProfile | null; day: string; summary: DaySummary | null }) {
+  const { profile, day, summary } = state;
+  if (!profile) return;
+  const isToday = day === todayIn(profile.timezone);
+  writeSnapshot(currentUserId(), profile, isToday ? day : null, isToday ? summary : null);
+}
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -58,9 +70,26 @@ export const useBrioStore = create<BrioState>((set, get) => ({
   dayStatus: 'idle',
 
   loadProfile: async () => {
-    set({ profileStatus: 'loading' });
+    // Al abrir la app: pinta al instante la última foto de Hoy guardada y
+    // refresca por detrás (la API puede tardar en despertar).
+    const snap = get().profile ? null : readSnapshot(currentUserId());
+    if (snap) {
+      const today = todayIn(snap.profile.timezone);
+      const fresh = snap.day === today && snap.summary;
+      set({
+        profile: snap.profile,
+        profileStatus: 'ready',
+        needsOnboarding: false,
+        day: today,
+        ...(fresh ? { summary: snap.summary, dayStatus: 'ready' as const } : {}),
+      });
+      if (fresh) void get().refreshDay();
+    } else {
+      set({ profileStatus: 'loading' });
+    }
     try {
       const profile = await brioApi.getProfile();
+      const sameDay = get().day === todayIn(profile.timezone);
       set({
         profile,
         profileStatus: 'ready',
@@ -69,13 +98,17 @@ export const useBrioStore = create<BrioState>((set, get) => ({
         // dispositivo: así el día que muestra la app coincide con el que
         // agrega la API.
         day: todayIn(profile.timezone),
+        // Si la foto guardada era de otra zona horaria, el día cambia.
+        ...(snap && !sameDay ? { summary: null, dayStatus: 'idle' as const } : {}),
       });
+      saveSnapshot(get());
     } catch (e) {
       if (isApiError(e) && e.code === 'BRIO_PROFILE_NOT_FOUND') {
-        set({ profileStatus: 'ready', needsOnboarding: true, profile: null });
+        set({ profileStatus: 'ready', needsOnboarding: true, profile: null, summary: null, dayStatus: 'idle' });
         return;
       }
-      set({ profileStatus: 'error' });
+      // Con la foto guardada en pantalla, un fallo de red no la tapa.
+      if (!snap) set({ profileStatus: 'error' });
     }
   },
 
@@ -87,6 +120,7 @@ export const useBrioStore = create<BrioState>((set, get) => ({
       needsOnboarding: false,
       day: todayIn(profile.timezone),
     });
+    saveSnapshot(get());
     await get().refreshDay();
   },
 
@@ -95,9 +129,12 @@ export const useBrioStore = create<BrioState>((set, get) => ({
     set({ dayStatus: 'loading', day: target });
     try {
       const summary = await brioApi.getDay(target);
+      // Si mientras tanto se pidió otro día, esta respuesta ya no vale.
+      if (get().day !== target) return;
       set({ summary, dayStatus: 'ready' });
+      saveSnapshot(get());
     } catch {
-      set({ dayStatus: 'error' });
+      if (get().day === target) set({ dayStatus: 'error' });
     }
   },
 
@@ -105,7 +142,9 @@ export const useBrioStore = create<BrioState>((set, get) => ({
     const { day } = get();
     try {
       const summary = await brioApi.getDay(day);
+      if (get().day !== day) return;
       set({ summary, dayStatus: 'ready' });
+      saveSnapshot(get());
     } catch {
       // Refresco silencioso: el dato anterior sigue siendo mejor que un error
       // a pantalla completa justo después de guardar algo con éxito.

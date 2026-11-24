@@ -28,8 +28,17 @@ export function ensureSocialLoginInitialized(): Promise<void> {
   return initialized;
 }
 
-/** El usuario cerró el diálogo nativo sin completar el login: no es un error a mostrar. */
+/** Mensajes con los que los SDK (y la ventana de Google en la web) dicen «lo he cerrado». */
+const CANCELLED = /cancel|popup closed|window was closed|access[_ ]denied/i;
+
+/**
+ * El usuario cerró el diálogo (nativo o la ventana de Google en la web) sin
+ * completar el login: no es un error a mostrar. `@capgo/capacitor-social-login`
+ * lo marca con `code: 'USER_CANCELLED'`, pero su mensaje en la web es
+ * «Popup closed», sin «cancel»; por eso se miran los dos.
+ */
 export function isSocialLoginCancelled(err: unknown): boolean {
+  if (err && typeof err === 'object' && (err as { code?: unknown }).code === 'USER_CANCELLED') return true;
   const message = err instanceof Error ? err.message : String(err);
-  return /cancel/i.test(message);
+  return CANCELLED.test(message);
 }

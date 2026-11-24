@@ -180,35 +180,34 @@
   text-align: left;
   cursor: pointer;
 }
-.today-day__toggle {
-  min-height: 50px;
+.today-day__row:last-child {
   border-bottom: 0;
 }
-.today-day__toggle-label {
-  flex: 1;
+a.today-day__row,
+div.today-day__row {
+  text-decoration: none;
+  cursor: default;
 }
-.today-day__chevron {
-  display: flex;
-  transition: transform 200ms;
+a.today-day__row {
+  cursor: pointer;
 }
-.today-day__chevron.is-open {
-  transform: rotate(90deg);
-}
-.today-day__done {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 16px 0 32px;
-  border-top: 1px solid var(--brio-separator);
-  font-size: 15px;
+/* Hecho: el título baja de peso para que destaque lo que falta. */
+.today-day__row.is-done .rk-row__title {
   color: var(--brio-ink-muted);
 }
-.today-day__done--link {
-  text-decoration: none;
+.today-day__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 0 16px 0 0;
+  border-bottom: 1px solid var(--brio-separator);
 }
-.today-day__done > span:first-child {
-  flex: 1;
+.today-day__count {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--brio-activity);
 }
 
 /* Hoy · primer día. */

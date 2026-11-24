@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ActivityIcon } from '../ui/activity-icons';
 import { Link } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorState, SkeletonList } from '@/components/ux';
@@ -78,6 +79,7 @@ export default function HistoryPage() {
                   <div className="progress__list">
                     {list.map((s) => (
                       <Link key={s.id} to={`/tabs/entrenos/rendimiento/entrenos/${s.id}`} className="progress__link">
+                        <ActivityIcon code={s.activityTypeCode} kind={s.kind} name={s.activityTypeName} tone="soft" size={34} />
                         <span className="rk-row__main">
                           <span className="rk-row__title">{s.activityTypeName}</span>
                           <span className="rk-row__sub perf__wrap">{detail(s)}</span>
