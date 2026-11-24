@@ -33,7 +33,11 @@ TiDB no admite algunas sentencias del historial (p. ej. `DROP PRIMARY KEY` y
 `ADD PRIMARY KEY` en el mismo `ALTER`), así que la base de datos se creó con el
 esquema final (`prisma migrate diff --from-empty`) y el historial se marcó como
 aplicado (`prisma migrate resolve --applied`). Las migraciones nuevas se aplican
-normal, desde `apps/api`:
+solas en cada despliegue (TASK-434): `deploy.sh` construye también la imagen
+`api-migrate` y ejecuta el job de Cloud Run `brio-api-migrate`
+(`prisma migrate deploy`) antes de desplegar. Si falla, no se despliega y sigue
+la versión anterior. Para migrar sin desplegar: `deploy.sh migrate`. A mano,
+desde `apps/api`, sigue valiendo:
 
 ```bash
 set -a; . ./.env.cloudrun; set +a; npx prisma migrate deploy
@@ -43,3 +47,21 @@ Si una migración nueva junta varios cambios de esquema en un `ALTER TABLE`, hay
 que partirla en varios (TiDB los admite de uno en uno). Además, el clúster
 tiene `tidb_enable_clustered_index=OFF` para que las claves primarias se puedan
 cambiar como en MySQL.
+
+## Despliegue automático desde GitHub Actions
+
+El workflow `Deploy Brío API` (`.github/workflows/deploy-brio-api.yml`) se lanza
+con cada push a `brio-dev` que toque la API, sus paquetes o el lockfile (y a
+mano desde la pestaña Actions). Pasa los tests y ejecuta `deploy.sh ci`:
+construye, migra y despliega. No sube el secreto: usa la última versión de
+`brio-api-env` en Secret Manager (para cambiarlo, `deploy.sh secrets` desde el Mac).
+
+Se autentica en GCP sin claves (Workload Identity Federation), limitado a este
+repo y a la rama `brio-dev`. Se configura una vez con:
+
+```bash
+apps/api/deploy/setup-github-deploy.sh
+```
+
+que crea la cuenta de servicio `github-deploy` con los permisos justos, el pool
+`github` y los secretos del repo `GCP_WIF_PROVIDER` y `GCP_DEPLOY_SA`.

@@ -1,9 +1,16 @@
-# Construye la imagen de la API (contexto = raíz del monorepo) y la sube a
-# Artifact Registry. La lanza deploy/deploy.sh con `gcloud builds submit`.
+# Construye las imágenes de la API (contexto = raíz del monorepo) y las sube a
+# Artifact Registry: la de runtime (servicio brio-api) y la de migraciones
+# (job brio-api-migrate). La lanza deploy/deploy.sh con `gcloud builds submit`.
+# La segunda reutiliza la caché de la primera (comparten el stage `builder`).
 steps:
   - name: gcr.io/cloud-builders/docker
-    args: ['build', '-f', 'apps/api/Dockerfile', '-t', '${_IMAGE}', '.']
+    env: ['DOCKER_BUILDKIT=1']
+    args: ['build', '-f', 'apps/api/Dockerfile', '--target', 'runtime', '-t', '${_IMAGE}', '.']
+  - name: gcr.io/cloud-builders/docker
+    env: ['DOCKER_BUILDKIT=1']
+    args: ['build', '-f', 'apps/api/Dockerfile', '--target', 'migrate', '-t', '${_MIGRATE_IMAGE}', '.']
 images:
   - '${_IMAGE}'
+  - '${_MIGRATE_IMAGE}'
 options:
   logging: CLOUD_LOGGING_ONLY

@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # Despliega la API de Brío en Cloud Run.
 #
-#   apps/api/deploy/deploy.sh            # construye la imagen y despliega
+#   apps/api/deploy/deploy.sh            # sube el secreto, construye, migra y despliega
+#   apps/api/deploy/deploy.sh ci         # construye, migra y despliega (GitHub Actions: el secreto ya está en Secret Manager)
+#   apps/api/deploy/deploy.sh migrate    # construye y aplica las migraciones pendientes, sin desplegar
 #   apps/api/deploy/deploy.sh secrets    # sube apps/api/.env.cloudrun como nueva versión del secreto y redespliega
 #   apps/api/deploy/deploy.sh seed       # ejecuta los seeds (catálogo, IAM, agentes) contra la BBDD de producción
+#
+# Las migraciones (`prisma migrate deploy`) corren en el job de Cloud Run
+# `brio-api-migrate` justo antes de desplegar: si fallan, el despliegue se
+# para y sigue sirviendo la versión anterior.
 #
 # Requiere gcloud con sesión iniciada. Ver deploy/README.md.
 set -euo pipefail
@@ -19,6 +25,7 @@ ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 API="$ROOT/apps/api"
 TAG="$(git -C "$ROOT" rev-parse --short HEAD)"
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}/api:${TAG}"
+MIGRATE_IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}/api-migrate:${TAG}"
 G=(gcloud --project "$PROJECT" --quiet)
 
 ensure_base() {
@@ -41,7 +48,16 @@ push_secret() {
 
 build() {
   "${G[@]}" builds submit "$ROOT" --region "$REGION" \
-    --config "$API/deploy/cloudbuild.yaml" --substitutions "_IMAGE=$IMAGE"
+    --config "$API/deploy/cloudbuild.yaml" --substitutions "_IMAGE=$IMAGE,_MIGRATE_IMAGE=$MIGRATE_IMAGE"
+}
+
+# Aplica las migraciones pendientes con la imagen de migraciones de este commit.
+migrate() {
+  "${G[@]}" run jobs deploy "${SERVICE}-migrate" --region "$REGION" --image "$MIGRATE_IMAGE" \
+    --service-account "$SA" \
+    --set-secrets "/secrets/.env=${SECRET}:latest" \
+    --max-retries 0 --task-timeout 600
+  "${G[@]}" run jobs execute "${SERVICE}-migrate" --region "$REGION" --wait
 }
 
 current_image() {
@@ -75,6 +91,8 @@ seed() {
 case "${1:-all}" in
   secrets) ensure_base; push_secret; deploy "$(current_image)" ;;
   seed) seed ;;
-  all) ensure_base; push_secret; build; deploy "$IMAGE" ;;
-  *) echo "Uso: $0 [all|secrets|seed]"; exit 1 ;;
+  all) ensure_base; push_secret; build; migrate; deploy "$IMAGE" ;;
+  ci) build; migrate; deploy "$IMAGE" ;;
+  migrate) build; migrate ;;
+  *) echo "Uso: $0 [all|ci|migrate|secrets|seed]"; exit 1 ;;
 esac
