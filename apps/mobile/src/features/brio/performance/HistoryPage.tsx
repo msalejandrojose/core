@@ -59,7 +59,7 @@ export default function HistoryPage() {
     <IonPage>
       <IonContent>
         <div className="rk-screen perf">
-          <NavRow back={<BackLink label="Rendimiento" fallback="/tabs/progress/rendimiento" />} />
+          <NavRow back={<BackLink label="Rendimiento" fallback="/tabs/entrenos/rendimiento" />} />
           <LargeTitle sub="Toca uno para verlo o cambiarlo">Entrenos</LargeTitle>
 
           {error && !sessions ? (
@@ -77,7 +77,7 @@ export default function HistoryPage() {
                   <SectionHeader>{longDate(day)}</SectionHeader>
                   <div className="progress__list">
                     {list.map((s) => (
-                      <Link key={s.id} to={`/tabs/progress/rendimiento/entrenos/${s.id}`} className="progress__link">
+                      <Link key={s.id} to={`/tabs/entrenos/rendimiento/entrenos/${s.id}`} className="progress__link">
                         <span className="rk-row__main">
                           <span className="rk-row__title">{s.activityTypeName}</span>
                           <span className="rk-row__sub perf__wrap">{detail(s)}</span>

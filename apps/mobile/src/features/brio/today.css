@@ -327,3 +327,18 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* Acceso a Progreso (ya no es pestaña). */
+.today-progress {
+  margin-top: var(--brio-space-l);
+}
+.today-progress__icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--brio-sleep-soft);
+  color: var(--brio-sleep-ink);
+}

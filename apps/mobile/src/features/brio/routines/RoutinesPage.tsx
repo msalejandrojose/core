@@ -24,9 +24,9 @@ export default function RoutinesPage() {
       <IonContent>
         <div className="rk-screen">
           <NavRow
-            back={<BackLink label="Perfil" fallback="/tabs/settings" />}
+            back={<BackLink label="Entrenos" fallback="/tabs/entrenos" />}
             actions={
-              <Link to="/tabs/settings/rutinas/nueva" className="rk-textbtn rk-textbtn--strong">
+              <Link to="/tabs/entrenos/rutinas/nueva" className="rk-textbtn rk-textbtn--strong">
                 Nueva
               </Link>
             }
@@ -40,7 +40,7 @@ export default function RoutinesPage() {
               <p>
                 Crea tu primera rutina —«Torso A» con press banca y remo, o «Rodaje Z2» de 45 minutos— o empieza con una plantilla de HYROX o híbrida.
               </p>
-              <Link to="/tabs/settings/rutinas/nueva" className="rk-btn">
+              <Link to="/tabs/entrenos/rutinas/nueva" className="rk-btn">
                 Crear rutina
               </Link>
             </div>
@@ -56,7 +56,7 @@ export default function RoutinesPage() {
                     <SectionHeader id={`r-${g.id}`}>{g.title}</SectionHeader>
                     <div className="rk-list">
                       {g.items.map((r) => (
-                        <Link key={r.id} to={`/tabs/settings/rutinas/${r.id}`} className="rk-row routine__row">
+                        <Link key={r.id} to={`/tabs/entrenos/rutinas/${r.id}`} className="rk-row routine__row">
                           <span className="rk-row__main">
                             <span className="rk-row__title">{r.name}</span>
                             <span className="rk-row__sub">

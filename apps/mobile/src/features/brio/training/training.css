@@ -1,0 +1,4 @@
+/* Pestaña Entrenos: las listas reutilizan las de la pestaña Comida (food-hub). */
+.training .week-plan {
+  margin-top: var(--brio-space-l);
+}

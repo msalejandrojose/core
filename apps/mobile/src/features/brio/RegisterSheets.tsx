@@ -31,7 +31,8 @@ const MEAL_LOGGED: Record<MealType, string> = {
 type Domain = 'food' | 'activity' | 'sleep';
 
 /**
- * Hoja "Registrar" (lo que abre el + de la tab bar) y todas las hojas de
+ * Hoja "Registrar" (lo que abre el + de la tab bar; mantenerlo pulsado habla
+ * con el coach, y «Coach» abre su chat) y todas las hojas de
  * registro, montadas una vez en el shell. Sigue el lienzo "Registrar (+)": lo
  * más probable a esta hora listo para un toque, el agua y el resto de cosas
  * que se pueden apuntar.
@@ -102,6 +103,15 @@ export function RegisterSheets() {
     },
     { label: 'Entreno', icon: PATHS.run, domain: 'activity', run: () => open('activity') },
     { label: 'Peso', icon: PATHS.scale, domain: 'sleep', run: () => open('weight') },
+    {
+      label: 'Coach',
+      icon: PATHS.spark,
+      domain: 'activity',
+      run: () => {
+        close();
+        history.push('/tabs/today/coach');
+      },
+    },
     {
       label: 'Digestión',
       icon: PATHS.leaf,

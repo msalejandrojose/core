@@ -22,7 +22,7 @@ export default function ExercisesPage() {
     <PerfPage
       title="Ejercicios"
       sub="Cómo se hace cada uno y cómo vas"
-      back={{ label: 'Músculos', to: '/tabs/progress/rendimiento/musculos' }}
+      back={{ label: 'Músculos', to: '/tabs/entrenos/rendimiento/musculos' }}
       data={data}
       error={error}
       onRetry={reload}
@@ -33,7 +33,7 @@ export default function ExercisesPage() {
         return shown.length ? (
           <div className="rk-list">
             {shown.map((e) => (
-              <Link key={e.id} to={`/tabs/progress/rendimiento/ejercicios/${e.id}`} className="rk-row perf__entry">
+              <Link key={e.id} to={`/tabs/entrenos/rendimiento/ejercicios/${e.id}`} className="rk-row perf__entry">
                 <span className="rk-row__main">
                   <span className="rk-row__title">{e.name}</span>
                   <span className="rk-row__sub perf__wrap">

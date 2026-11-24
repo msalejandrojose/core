@@ -17,7 +17,7 @@ export function WeekPlanCard({ week }: { week: PlanWeek }) {
         <span id="semana" className="week-plan__title">
           Tu semana de entreno
         </span>
-        <Link to="/tabs/today/plan" className="rk-textbtn">
+        <Link to="/tabs/entrenos/plan" className="rk-textbtn">
           Editar semana
         </Link>
       </div>
@@ -29,7 +29,7 @@ export function WeekPlanCard({ week }: { week: PlanWeek }) {
           const isToday = d.day === week.today;
           return (
             <li key={d.day}>
-              <Link to={`/tabs/today/plan/sesion/${d.day}`} className="rk-row week-plan__row">
+              <Link to={`/tabs/entrenos/plan/sesion/${d.day}`} className="rk-row week-plan__row">
                 <span className="week-plan__icon" aria-hidden="true">
                   <StatusIcon day={d} />
                 </span>

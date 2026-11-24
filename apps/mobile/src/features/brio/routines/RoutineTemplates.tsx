@@ -24,7 +24,7 @@ export function RoutineTemplates() {
     try {
       const r = await routinesApi.fromTemplate(t.code);
       toast.success('Rutina creada', 'Ajusta pesos y distancias a tu nivel.');
-      history.push(`/tabs/settings/rutinas/${r.id}`);
+      history.push(`/tabs/entrenos/rutinas/${r.id}`);
     } catch (e) {
       toast.error('No se pudo crear', routineErrorText(e));
     } finally {

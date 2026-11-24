@@ -72,7 +72,7 @@ export default function EditSessionPage() {
     setTemplateCode(p?.templateCode ?? null);
   }, [entry, loadedFor]);
 
-  const back = () => (history.length > 1 ? history.goBack() : history.replace('/tabs/today/plan'));
+  const back = () => (history.length > 1 ? history.goBack() : history.replace('/tabs/entrenos/plan'));
 
   async function run(action: () => Promise<unknown>, ok: string, leave = false) {
     setSaving(true);
@@ -186,7 +186,7 @@ export default function EditSessionPage() {
 
           {entry.actual ? (
             <div className="rk-list">
-              <Link to={`/tabs/progress/rendimiento/entrenos/${entry.actual.id}`} className="rk-row">
+              <Link to={`/tabs/entrenos/rendimiento/entrenos/${entry.actual.id}`} className="rk-row">
                 <span className="rk-row__main">
                   <span className="rk-row__title">{entry.actual.title}</span>
                   <span className="rk-row__sub">

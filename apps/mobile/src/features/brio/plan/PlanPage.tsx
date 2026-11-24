@@ -107,7 +107,7 @@ export default function PlanPage() {
       <IonContent>
         <div className="rk-screen plan">
           <NavRow
-            back={<BackLink label="Hoy" fallback="/tabs/today" />}
+            back={<BackLink label="Entrenos" fallback="/tabs/entrenos" />}
             actions={
               <button type="button" aria-pressed={editing} className="rk-textbtn rk-textbtn--strong" disabled={!data} onClick={() => setEditing((v) => !v)}>
                 {editing ? 'Listo' : 'Editar'}
@@ -203,7 +203,7 @@ export default function PlanPage() {
                             <span className="plan__row-icon" aria-hidden="true">
                               <StatusIcon day={d} />
                             </span>
-                            <button type="button" className="plan__row-cell" onClick={() => history.push(`/tabs/today/plan/sesion/${d.day}`)}>
+                            <button type="button" className="plan__row-cell" onClick={() => history.push(`/tabs/entrenos/plan/sesion/${d.day}`)}>
                               <span className="rk-row__main">
                                 <span className="plan__row-title">{titleOf(d)}</span>
                                 <span className="rk-row__sub">{dayMeta(d)}</span>
@@ -265,7 +265,7 @@ export default function PlanPage() {
                     </div>
                   </section>
                   <div className="plan__edit-actions">
-                    <Link to={`/tabs/today/plan/sesion/${sel.day}`} className="plan__btn">
+                    <Link to={`/tabs/entrenos/plan/sesion/${sel.day}`} className="plan__btn">
                       Detalles del día
                     </Link>
                     <Link to="/tabs/comida" className="plan__btn plan__btn--primary">

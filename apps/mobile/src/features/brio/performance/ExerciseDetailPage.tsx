@@ -14,7 +14,7 @@ export default function ExerciseDetailPage() {
   return (
     <PerfPage
       title={exercise?.name ?? 'Ejercicio'}
-      back={{ label: 'Ejercicios', to: '/tabs/progress/rendimiento/ejercicios' }}
+      back={{ label: 'Ejercicios', to: '/tabs/entrenos/rendimiento/ejercicios' }}
       data={data}
       error={error}
       onRetry={reload}

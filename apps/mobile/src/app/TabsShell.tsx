@@ -10,8 +10,8 @@ import {
 import { Route, useLocation } from 'react-router-dom';
 import { RedirectPage } from './RedirectPage';
 import {
-  barChart,
-  barChartOutline,
+  barbell,
+  barbellOutline,
   restaurant,
   restaurantOutline,
   home,
@@ -54,6 +54,7 @@ import { useHevyAutoSync } from '@/features/brio/profile/hevy.api';
 import { useLiveActivitySync } from '@/features/brio/live/useLiveActivitySync';
 import { useLiveIsland } from '@/features/brio/live/useLiveIsland';
 import PlanPage from '@/features/brio/plan/PlanPage';
+import TrainingPage from '@/features/brio/training/TrainingPage';
 import EditSessionPage from '@/features/brio/plan/EditSessionPage';
 import DietPage from '@/features/brio/plan/DietPage';
 import ShoppingPage from '@/features/brio/plan/ShoppingPage';
@@ -77,13 +78,24 @@ import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { usePushNotifications } from '@/features/notifications/use-push-notifications';
 
 
-/** Pestañas en el orden fijo del DS (TabBar): el + va en el centro. */
+/**
+ * Pestañas: Hoy · Entrenos · + · Alimentación · Social. `also` son rutas que
+ * no tienen pestaña propia y se pintan como parte de otra: Progreso, avisos y
+ * ajustes se abren desde Hoy.
+ */
 const TABS = [
-  { tab: 'today', href: '/tabs/today', label: 'Hoy', icon: homeOutline, active: home },
-  { tab: 'food', href: '/tabs/comida', label: 'Comida', icon: restaurantOutline, active: restaurant },
-  { tab: 'progress', href: '/tabs/progress', label: 'Progreso', icon: barChartOutline, active: barChart },
-  { tab: 'social', href: '/tabs/social', label: 'Social', icon: peopleOutline, active: people },
+  { tab: 'today', href: '/tabs/today', label: 'Hoy', icon: homeOutline, active: home, also: ['/tabs/progress', '/tabs/notifications', '/tabs/settings'] },
+  { tab: 'training', href: '/tabs/entrenos', label: 'Entrenos', icon: barbellOutline, active: barbell, also: [] },
+  { tab: 'food', href: '/tabs/comida', label: 'Alimentación', icon: restaurantOutline, active: restaurant, also: [] },
+  { tab: 'social', href: '/tabs/social', label: 'Social', icon: peopleOutline, active: people, also: [] },
 ] as const;
+
+/** Rutas que cambiaron de sitio con la pestaña Entrenos: siguen valiendo en enlaces y avisos. */
+const MOVED: [from: string, to: string][] = [
+  ['/tabs/today/plan', '/tabs/entrenos/plan'],
+  ['/tabs/progress/rendimiento', '/tabs/entrenos/rendimiento'],
+  ['/tabs/settings/rutinas', '/tabs/entrenos/rutinas'],
+];
 
 /**
  * Shell del área autenticada de Brío con la barra flotante de cristal:
@@ -122,10 +134,10 @@ export default function TabsShell() {
     void refreshUnread();
   }, [refreshUnread]);
 
-  const tabButton = ({ tab, href, label, icon, active }: (typeof TABS)[number]) => {
-    const selected = pathname.startsWith(href);
+  const tabButton = ({ tab, href, label, icon, active, also }: (typeof TABS)[number]) => {
+    const selected = [href, ...also].some((p) => pathname.startsWith(p));
     return (
-      <IonTabButton key={tab} tab={tab} href={href}>
+      <IonTabButton key={tab} tab={tab} href={href} className={selected ? 'is-current' : undefined}>
         <IonIcon icon={selected ? active : icon} aria-hidden="true" />
         <IonLabel>{label}</IonLabel>
       </IonTabButton>
@@ -145,12 +157,13 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/recuperacion" component={RecoveryPage} />
           <Route exact path="/tabs/today/avisos" component={AlertsPage} />
           <Route exact path="/tabs/today/entreno/:id" component={SessionEditPage} />
-          <Route exact path="/tabs/today/plan" component={PlanPage} />
+          <Route exact path="/tabs/entrenos" component={TrainingPage} />
+          <Route exact path="/tabs/entrenos/plan" component={PlanPage} />
           {/* Rutas de antes (Plan era una pestaña): siguen funcionando en enlaces y avisos. */}
           <Route exact path="/tabs/plan">
-            <RedirectPage to="/tabs/today/plan" />
+            <RedirectPage to="/tabs/entrenos/plan" />
           </Route>
-          <Route exact path="/tabs/plan/sesion/:day" render={({ match }) => <RedirectPage to={`/tabs/today/plan/sesion/${match.params.day}`} />} />
+          <Route exact path="/tabs/plan/sesion/:day" render={({ match }) => <RedirectPage to={`/tabs/entrenos/plan/sesion/${match.params.day}`} />} />
           <Route exact path="/tabs/plan/dieta">
             <RedirectPage to="/tabs/comida" />
           </Route>
@@ -160,7 +173,7 @@ export default function TabsShell() {
           <Route exact path="/tabs/today/recetas">
             <RedirectPage to="/tabs/comida/recetas" />
           </Route>
-          <Route exact path="/tabs/today/plan/sesion/:day" component={EditSessionPage} />
+          <Route exact path="/tabs/entrenos/plan/sesion/:day" component={EditSessionPage} />
           <Route exact path="/tabs/comida" component={DietPage} />
           <Route exact path="/tabs/comida/compra" component={ShoppingPage} />
           <Route exact path="/tabs/progress" component={ProgressPage} />
@@ -172,16 +185,16 @@ export default function TabsShell() {
           <Route exact path="/tabs/progress/digestion" component={DigestionPage} />
           <Route exact path="/tabs/progress/compartir" component={SharePage} />
           <Route exact path="/tabs/progress/anual" component={YearPage} />
-          <Route exact path="/tabs/progress/rendimiento" component={PerformancePage} />
-          <Route exact path="/tabs/progress/rendimiento/fuerza" component={StrengthPerfPage} />
-          <Route exact path="/tabs/progress/rendimiento/musculos" component={MusclesPage} />
-          <Route exact path="/tabs/progress/rendimiento/cardio" component={CardioPerfPage} />
-          <Route exact path="/tabs/progress/rendimiento/carga" component={LoadPage} />
-          <Route exact path="/tabs/progress/rendimiento/hibrido" component={HybridPage} />
-          <Route exact path="/tabs/progress/rendimiento/entrenos" component={HistoryPage} />
-          <Route exact path="/tabs/progress/rendimiento/entrenos/:id" component={SessionEditPage} />
-          <Route exact path="/tabs/progress/rendimiento/ejercicios" component={ExercisesPage} />
-          <Route exact path="/tabs/progress/rendimiento/ejercicios/:id" component={ExerciseDetailPage} />
+          <Route exact path="/tabs/entrenos/rendimiento" component={PerformancePage} />
+          <Route exact path="/tabs/entrenos/rendimiento/fuerza" component={StrengthPerfPage} />
+          <Route exact path="/tabs/entrenos/rendimiento/musculos" component={MusclesPage} />
+          <Route exact path="/tabs/entrenos/rendimiento/cardio" component={CardioPerfPage} />
+          <Route exact path="/tabs/entrenos/rendimiento/carga" component={LoadPage} />
+          <Route exact path="/tabs/entrenos/rendimiento/hibrido" component={HybridPage} />
+          <Route exact path="/tabs/entrenos/rendimiento/entrenos" component={HistoryPage} />
+          <Route exact path="/tabs/entrenos/rendimiento/entrenos/:id" component={SessionEditPage} />
+          <Route exact path="/tabs/entrenos/rendimiento/ejercicios" component={ExercisesPage} />
+          <Route exact path="/tabs/entrenos/rendimiento/ejercicios/:id" component={ExerciseDetailPage} />
           <Route exact path="/tabs/social" component={FriendsPage} />
           <Route exact path="/tabs/social/retos" component={ChallengesPage} />
           <Route exact path="/tabs/social/amigo/:id" component={FriendPage} />
@@ -189,8 +202,8 @@ export default function TabsShell() {
           <Route exact path="/tabs/settings" component={BrioProfilePage} />
           <Route exact path="/tabs/settings/conexiones" component={ConnectionsPage} />
           <Route exact path="/tabs/settings/hevy" component={HevyConnectPage} />
-          <Route exact path="/tabs/settings/rutinas" component={RoutinesPage} />
-          <Route exact path="/tabs/settings/rutinas/:id" component={RoutineEditorPage} />
+          <Route exact path="/tabs/entrenos/rutinas" component={RoutinesPage} />
+          <Route exact path="/tabs/entrenos/rutinas/:id" component={RoutineEditorPage} />
           <Route exact path="/tabs/settings/garmin" component={GarminConnectPage} />
           <Route exact path="/tabs/settings/eliminar" component={DeleteAccountPage} />
           <Route exact path="/tabs/settings/profile" component={ProfilePage} />
@@ -199,6 +212,13 @@ export default function TabsShell() {
             path="/tabs/settings/change-password"
             component={ChangePasswordPage}
           />
+          {MOVED.map(([from, to]) => (
+            <Route
+              key={from}
+              path={from}
+              render={({ location }) => <RedirectPage to={location.pathname.replace(from, to)} />}
+            />
+          ))}
           <Route exact path="/tabs">
             <RedirectPage to="/tabs/today" />
           </Route>
@@ -207,11 +227,11 @@ export default function TabsShell() {
 
         <IonTabBar
           slot="bottom"
-          className={`brio-tabbar${barHidden ? ' is-hidden' : ''}${dockMode === 'listening' || dockMode === 'sending' ? ' is-quiet' : ''}${dockMode === 'typing' ? ' is-under' : ''}`}
+          className={`brio-tabbar${barHidden ? ' is-hidden' : ''}${dockMode === 'listening' || dockMode === 'sending' ? ' is-quiet' : ''}`}
         >
           {tabButton(TABS[0])}
           {tabButton(TABS[1])}
-          <CoachOrb tab="coach" />
+          <CoachOrb tab="register" />
           {tabButton(TABS[2])}
           {tabButton(TABS[3])}
         </IonTabBar>

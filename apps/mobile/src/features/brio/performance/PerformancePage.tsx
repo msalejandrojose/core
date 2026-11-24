@@ -118,7 +118,7 @@ export default function PerformancePage() {
     <PerfPage
       title="Rendimiento"
       sub="Calculado con lo que registras"
-      back={{ label: 'Progreso', to: '/tabs/progress' }}
+      back={{ label: 'Entrenos', to: '/tabs/entrenos' }}
       data={summary.data}
       error={summary.error}
       onRetry={summary.reload}
@@ -241,7 +241,7 @@ export default function PerformancePage() {
             <SectionHeader id="det">En detalle</SectionHeader>
             <div className="progress__list">
               {SECTIONS.map((sec) => (
-                <Link key={sec.to} to={`/tabs/progress/rendimiento/${sec.to}`} className="progress__link">
+                <Link key={sec.to} to={`/tabs/entrenos/rendimiento/${sec.to}`} className="progress__link">
                   <span className={`progress__ic progress__ic--${sec.tone}`} aria-hidden="true">
                     <Icon d={sec.icon} size={18} stroke={2.2} />
                   </span>

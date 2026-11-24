@@ -1,4 +1,4 @@
-/* Dock de la barra: píldora del momento, campo del coach, voz y respuesta. */
+/* Dock de la barra: píldora del momento, voz del coach y su respuesta. */
 .dock {
   position: fixed;
   inset: 0;
@@ -13,9 +13,6 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.12);
   animation: dock-fade 0.3s both;
-}
-.dock-scrim--clear {
-  background: transparent;
 }
 @keyframes dock-fade {
   from {
@@ -60,58 +57,6 @@
     opacity: 0;
     transform: translate(-50%, 16px);
   }
-}
-
-/* Campo del coach: ocupa el sitio de la barra */
-.dock-composer {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: calc(12px + var(--ion-safe-area-bottom, 0px));
-  height: 64px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  background: var(--brio-glass-strong);
-  transform-origin: center;
-  animation: dock-open 0.45s var(--brio-spring) both;
-}
-@keyframes dock-open {
-  from {
-    opacity: 0;
-    transform: scaleX(0.55);
-  }
-}
-.dock-composer input[type='text'],
-.dock-composer input:not([type]) {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  background: none;
-  outline: none;
-  color: var(--brio-ink);
-  font: 400 16px var(--brio-font-sans);
-}
-.dock-composer input::placeholder {
-  color: var(--brio-ink-muted);
-}
-.dock-composer__btn,
-.dock-composer__send {
-  width: 44px;
-  height: 44px;
-  flex: none;
-  border: 0;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: transparent;
-  color: var(--brio-ink);
-}
-.dock-composer__send {
-  background: var(--brio-tint);
-  color: var(--brio-on-tint);
 }
 
 /* Burbuja de voz */
@@ -278,7 +223,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dock-moment,
-  .dock-composer,
   .dock-voice,
   .dock-reply {
     animation-duration: 0.01s;
@@ -289,61 +233,6 @@
   .dock-voice__wave i {
     animation: none;
     transform: scaleY(3);
-  }
-}
-
-/* Accesos directos encima del campo del coach */
-.dock-shortcuts {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(88px + var(--ion-safe-area-bottom, 0px));
-  display: flex;
-  gap: 8px;
-  padding: 4px 16px 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  animation: dock-pop 0.45s var(--brio-spring) both;
-}
-.dock-shortcuts::-webkit-scrollbar {
-  display: none;
-}
-.dock-shortcut {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 14px 6px 6px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--brio-glass-strong);
-  color: var(--brio-ink);
-  font: 600 14px/1 var(--brio-font-sans);
-  white-space: nowrap;
-}
-.dock-shortcut__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-}
-.dock-shortcut__icon--food {
-  background: var(--brio-food-soft);
-  color: var(--brio-food-ink);
-}
-.dock-shortcut__icon--activity {
-  background: var(--brio-activity-soft);
-  color: var(--brio-activity-ink);
-}
-.dock-shortcut__icon--sleep {
-  background: var(--brio-sleep-soft);
-  color: var(--brio-sleep-ink);
-}
-@media (prefers-reduced-motion: reduce) {
-  .dock-shortcuts {
-    animation-duration: 0.01s;
   }
 }
 
@@ -382,79 +271,3 @@
   }
 }
 
-/* Con el teclado abierto: el campo, pegado a él (sin el margen del indicador de inicio). */
-body.kb-open .dock-composer {
-  bottom: 6px;
-}
-body.kb-open .dock-shortcuts {
-  bottom: 76px;
-}
-
-/* Cámara dentro de la app (visor grande sobre el campo del coach) */
-.dock-camera {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  top: calc(64px + var(--ion-safe-area-top, 0px));
-  bottom: calc(86px + var(--ion-safe-area-bottom, 0px));
-  overflow: hidden;
-  border-radius: 32px;
-  background: #000;
-  box-shadow: var(--brio-glass-shadow);
-  animation: dock-pop 0.45s var(--brio-spring) both;
-}
-body.kb-open .dock-camera {
-  bottom: 80px;
-}
-.dock-camera__video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.dock-camera__error {
-  margin: 0;
-  padding: 40px 24px;
-  color: #fff;
-  font: 500 16px/1.4 var(--brio-font-sans);
-  text-align: center;
-}
-.dock-camera__bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 22px;
-}
-.dock-camera__round {
-  width: 50px;
-  height: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-.dock-camera__shutter {
-  width: 76px;
-  height: 76px;
-  padding: 5px;
-  border: 4px solid rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  background: transparent;
-}
-.dock-camera__shutter span {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: #fff;
-}
-.dock-camera__shutter:active span {
-  transform: scale(0.9);
-}

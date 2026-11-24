@@ -26,7 +26,7 @@ export function TomorrowRow({ today }: { today: string }) {
     : 'Planifica tu semana';
 
   return (
-    <Link to={planned ? `/tabs/today/plan/sesion/${tomorrow}` : '/tabs/today/plan'} className="today-row">
+    <Link to={planned ? `/tabs/entrenos/plan/sesion/${tomorrow}` : '/tabs/entrenos/plan'} className="today-row">
       <span className="today-tomorrow">Mañana</span>
       <span className="rk-row__main">
         <span className="today-row__title">{title}</span>

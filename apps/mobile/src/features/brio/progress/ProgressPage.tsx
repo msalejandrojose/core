@@ -117,7 +117,7 @@ export default function ProgressPage() {
               {goal ? <span className="rk-row__value">{goal.pct} %</span> : null}
               <Chevron />
             </Link>
-            <Link to="/tabs/progress/rendimiento" className="progress__link">
+            <Link to="/tabs/entrenos/rendimiento" className="progress__link">
               <span className="progress__ic progress__ic--tint" aria-hidden="true">
                 <Icon d="M4 16l5-6 4 4 7-9" size={18} stroke={2.2} />
               </span>

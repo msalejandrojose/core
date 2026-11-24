@@ -63,7 +63,7 @@ export default function RoutineEditorPage() {
       .then((r) => alive && setDraft(draftFrom(r)))
       .catch(() => {
         toast.error('No se encontró la rutina');
-        history.replace('/tabs/settings/rutinas');
+        history.replace('/tabs/entrenos/rutinas');
       });
     return () => {
       alive = false;
@@ -111,7 +111,7 @@ export default function RoutineEditorPage() {
       if (isNew) await routinesApi.create(body);
       else await routinesApi.update(id, body);
       toast.success(isNew ? 'Rutina creada' : 'Rutina guardada');
-      history.replace('/tabs/settings/rutinas');
+      history.replace('/tabs/entrenos/rutinas');
     } catch (e) {
       toast.error('No se pudo guardar', routineErrorText(e));
     } finally {
@@ -125,7 +125,7 @@ export default function RoutineEditorPage() {
     try {
       await routinesApi.remove(id);
       toast.success('Rutina quitada', 'Los entrenos que hiciste con ella se quedan.');
-      history.replace('/tabs/settings/rutinas');
+      history.replace('/tabs/entrenos/rutinas');
     } catch (e) {
       toast.error('No se pudo quitar', routineErrorText(e));
       setSaving(false);
@@ -137,7 +137,7 @@ export default function RoutineEditorPage() {
       <IonContent>
         <div className="rk-screen routine">
           <NavRow
-            back={<BackLink label="Rutinas" fallback="/tabs/settings/rutinas" />}
+            back={<BackLink label="Rutinas" fallback="/tabs/entrenos/rutinas" />}
             actions={
               <button type="button" className="rk-textbtn rk-textbtn--strong" disabled={!canSave || saving} onClick={() => void save()}>
                 Guardar
