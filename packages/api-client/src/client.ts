@@ -4,10 +4,12 @@ import type { paths } from './generated/schema';
 export interface ApiClientOptions {
   baseUrl: string;
   getToken?: () => string | null;
+  /** `fetch` propio (p. ej. para renovar la sesión y reintentar ante un 401). */
+  fetch?: (input: Request) => Promise<Response>;
 }
 
-export function createApiClient({ baseUrl, getToken }: ApiClientOptions) {
-  const client = createFetchClient<paths>({ baseUrl });
+export function createApiClient({ baseUrl, getToken, fetch }: ApiClientOptions) {
+  const client = createFetchClient<paths>({ baseUrl, ...(fetch ? { fetch } : {}) });
 
   if (getToken) {
     client.use({

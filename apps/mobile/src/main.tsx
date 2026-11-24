@@ -6,6 +6,7 @@ import { apiConfigured } from './api/config';
 import { MissingApiUrl } from './app/MissingApiUrl';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { installSessionReset } from './features/brio/session-reset';
+import { installSessionKeepAlive } from './lib/session';
 import './i18n';
 
 /* CSS base de Ionic (mínimo necesario para el layout y la tipografía). */
@@ -28,6 +29,9 @@ setupIonicReact({ mode: 'ios' });
 
 // Vacía los datos de Brío en memoria al cerrar sesión (ver session-reset.ts).
 installSessionReset();
+
+// La sesión no caduca a la hora: se renueva con el refresh token (TASK-425).
+installSessionKeepAlive();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('No se encontró el elemento #root');

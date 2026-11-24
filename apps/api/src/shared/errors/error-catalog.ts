@@ -39,6 +39,11 @@ export const ERROR_CATALOG = {
     level: 'warn',
     defaultMessage: 'Credenciales inválidas.',
   },
+  SESSION_EXPIRED: {
+    httpStatus: 401,
+    level: 'info',
+    defaultMessage: 'La sesión ha caducado. Vuelve a iniciar sesión.',
+  },
   INVALID_TOKEN: {
     httpStatus: 400,
     level: 'warn',

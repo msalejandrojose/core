@@ -21,6 +21,8 @@ import type { Response } from 'express';
 import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
 import { GetCurrentUserUseCase } from '../../application/use-cases/get-current-user.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
+import { AuthSessionsUseCase } from '../../application/use-cases/auth-sessions.use-case';
+import type { User } from '../../domain/entities/user.entity';
 import { LoginWithGoogleUseCase } from '../../application/use-cases/login-with-google.use-case';
 import { LoginWithAppleUseCase } from '../../application/use-cases/login-with-apple.use-case';
 import { AppleLoginDto } from './dto/apple-login.dto';
@@ -38,8 +40,10 @@ import { type AccessTokenPayload } from '../../application/ports/token-issuer.po
 import { Auth } from './decorators/auth.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
+import { UserAgent } from './decorators/user-agent.decorator';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { RefreshSessionDto } from './dto/refresh-session.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { FacebookLoginDto } from './dto/facebook-login.dto';
 import { PlayGamesLoginDto } from './dto/play-games-login.dto';
@@ -79,7 +83,47 @@ export class AuthController {
     private readonly startGoogleAuthSession: StartGoogleAuthSessionUseCase,
     private readonly completeGoogleAuthSession: CompleteGoogleAuthSessionUseCase,
     private readonly getGoogleAuthSession: GetGoogleAuthSessionUseCase,
+    private readonly authSessions: AuthSessionsUseCase,
   ) {}
+
+  /** Respuesta de login con la sesión del dispositivo abierta (refresh token). */
+  private async withSession(
+    accessToken: string,
+    user: User,
+    userAgent?: string,
+  ): Promise<LoginResponseDto> {
+    const refreshToken = await this.authSessions.open(user.id, userAgent);
+    return { accessToken, refreshToken, user: UserResponseDto.fromUser(user) };
+  }
+
+  @Post('refresh')
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Renueva la sesión: cambia el refresh token por un access token nuevo y otro refresh token (el anterior deja de valer). 401 SESSION_EXPIRED si hay que volver a iniciar sesión.',
+  })
+  @ApiOkResponse({ type: LoginResponseDto })
+  async refreshAction(
+    @Body() dto: RefreshSessionDto,
+    @UserAgent() ua?: string,
+  ): Promise<LoginResponseDto> {
+    const { accessToken, refreshToken, user } =
+      await this.authSessions.refresh(dto.refreshToken, ua);
+    return { accessToken, refreshToken, user: UserResponseDto.fromUser(user) };
+  }
+
+  @Post('logout')
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Cierra la sesión de este dispositivo (invalida su refresh token).',
+  })
+  async logoutAction(@Body() dto: RefreshSessionDto): Promise<void> {
+    await this.authSessions.close(dto.refreshToken);
+  }
 
   @Post('register')
   @Public()
@@ -101,9 +145,12 @@ export class AuthController {
     summary: 'Login con email + password. Devuelve un access token.',
   })
   @ApiOkResponse({ type: LoginResponseDto })
-  async loginAction(@Body() dto: LoginDto): Promise<LoginResponseDto> {
+  async loginAction(
+    @Body() dto: LoginDto,
+    @UserAgent() ua?: string,
+  ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.login.execute(dto);
-    return { accessToken, user: UserResponseDto.fromUser(user) };
+    return this.withSession(accessToken, user, ua);
   }
 
   @Post('google')
@@ -117,11 +164,12 @@ export class AuthController {
   @ApiOkResponse({ type: LoginResponseDto })
   async loginWithGoogleAction(
     @Body() dto: GoogleLoginDto,
+    @UserAgent() ua?: string,
   ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.loginWithGoogle.execute(
       dto.idToken,
     );
-    return { accessToken, user: UserResponseDto.fromUser(user) };
+    return this.withSession(accessToken, user, ua);
   }
 
   @Post('apple')
@@ -135,12 +183,13 @@ export class AuthController {
   @ApiOkResponse({ type: LoginResponseDto })
   async loginWithAppleAction(
     @Body() dto: AppleLoginDto,
+    @UserAgent() ua?: string,
   ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.loginWithApple.execute(
       dto.identityToken,
       { firstName: dto.firstName, lastName: dto.lastName },
     );
-    return { accessToken, user: UserResponseDto.fromUser(user) };
+    return this.withSession(accessToken, user, ua);
   }
 
   @Post('facebook')
@@ -154,11 +203,12 @@ export class AuthController {
   @ApiOkResponse({ type: LoginResponseDto })
   async loginWithFacebookAction(
     @Body() dto: FacebookLoginDto,
+    @UserAgent() ua?: string,
   ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.loginWithFacebook.execute(
       dto.accessToken,
     );
-    return { accessToken, user: UserResponseDto.fromUser(user) };
+    return this.withSession(accessToken, user, ua);
   }
 
   @Post('play-games')
@@ -172,11 +222,12 @@ export class AuthController {
   @ApiOkResponse({ type: LoginResponseDto })
   async loginWithPlayGamesAction(
     @Body() dto: PlayGamesLoginDto,
+    @UserAgent() ua?: string,
   ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.loginWithPlayGames.execute(
       dto.serverAuthCode,
     );
-    return { accessToken, user: UserResponseDto.fromUser(user) };
+    return this.withSession(accessToken, user, ua);
   }
 
   @Post('game-center')
@@ -190,6 +241,7 @@ export class AuthController {
   @ApiOkResponse({ type: LoginResponseDto })
   async loginWithGameCenterAction(
     @Body() dto: GameCenterLoginDto,
+    @UserAgent() ua?: string,
   ): Promise<LoginResponseDto> {
     const { accessToken, user } = await this.loginWithGameCenter.execute({
       playerId: dto.playerId,
@@ -199,7 +251,7 @@ export class AuthController {
       salt: dto.salt,
       publicKeyUrl: dto.publicKeyUrl,
     });
-    return { accessToken, user: UserResponseDto.fromUser(user) };
+    return this.withSession(accessToken, user, ua);
   }
 
   @Post('google/start')

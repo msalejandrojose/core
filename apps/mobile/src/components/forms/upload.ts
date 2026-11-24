@@ -1,4 +1,5 @@
 import type { FileRef } from '@core/forms';
+import { refreshIfStale } from '@/lib/session';
 import { API_BASE_URL } from '@/api/config';
 import { getAuthToken } from '@/store/auth.store';
 
@@ -20,6 +21,8 @@ interface StoredFileResponse {
  * apps. En nativo, el `File` sale del input de cámara/galería del WebView.
  */
 export async function uploadFormFile(file: File): Promise<FileRef> {
+  // Sube con `fetch` directo (multipart): renueva antes si el token va a caducar.
+  await refreshIfStale();
   const token = getAuthToken();
   const form = new FormData();
   form.append('file', file);
