@@ -17,6 +17,7 @@ import { PATHS } from '../ui/paths';
 import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
 import { DayPicker } from './DayPicker';
+import { FoodTray } from './FoodTray';
 import { dayChipLabel } from './day-pick';
 import './sheets.css';
 
@@ -121,6 +122,8 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const [unknownBarcode, setUnknownBarcode] = useState<string | null>(null);
   const [typical, setTypical] = useState<Partial<Record<MealType, FoodSection[]>>>({});
   const [section, setSection] = useState<string | null>(null);
+  /** Bandeja abierta: la lista de lo que vas a añadir, para revisarla (TASK-432). */
+  const [trayOpen, setTrayOpen] = useState(false);
   const realToday = todayIn(timezone);
   /** Día en que se apunta: el que estás viendo, o el que elijas. */
   const [on, setOn] = useState(day);
@@ -134,6 +137,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
     setResults(null);
     setQuickKcal('');
     setSection(null);
+    setTrayOpen(false);
   }, [isOpen, initialMealType]);
 
   useEffect(() => {
@@ -173,6 +177,10 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const habits = habitsByMeal[mealType];
   const items = Object.values(picked).map((i) => scaleItem(i, factors[i.key] ?? 1));
   const total = items.reduce((s, i) => s + i.kcal, 0);
+  // Sin nada elegido no hay bandeja que enseñar.
+  useEffect(() => {
+    if (items.length === 0) setTrayOpen(false);
+  }, [items.length]);
   const setFactor = (key: string, f: number) => setFactors((x) => ({ ...x, [key]: clampFactor(f) }));
   // Lo que queda solo se sabe del día que está cargado.
   const remaining = on === day ? (summary?.totals.kcalRemaining ?? null) : null;
@@ -281,7 +289,7 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
     ? items.length === 1
       ? '1 alimento'
       : `${items.length} alimentos`
-    : 'Toca un dibujo para añadirlo';
+    : 'Toca un dibujo para elegirlo';
   const kcalLabel = items.length
     ? `${formatKcal(total)} kcal${remaining !== null ? ` · quedarán ${formatKcal(remaining - total)}` : ''}`
     : remaining !== null
@@ -576,11 +584,48 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
         </div>
       </IonContent>
 
+      {trayOpen ? (
+        <>
+          <div className="addfood__tray-scrim" onClick={() => setTrayOpen(false)} />
+          <FoodTray
+            title={`Vas a añadir a ${MEAL_ARTICLE[mealType]}`}
+            items={items}
+            portionFor={portionFor}
+            onRemove={(key) => toggle(picked[key])}
+            onClear={() => {
+              setPicked({});
+              setFactors({});
+            }}
+          />
+        </>
+      ) : null}
+
       <div className="addfood__bar">
-        <div className="rk-row__main">
-          <span className="addfood__bar-count">{countLabel}</span>
-          <span className="rk-row__sub">{kcalLabel}</span>
-        </div>
+        <button
+          type="button"
+          className="addfood__bar-summary"
+          aria-expanded={trayOpen}
+          aria-label={items.length ? `${countLabel}, ${kcalLabel}. ${trayOpen ? 'Ocultar' : 'Ver'} la lista` : countLabel}
+          disabled={items.length === 0}
+          onClick={() => setTrayOpen((v) => !v)}
+        >
+          {items.length ? (
+            <span className="addfood__bar-icons" aria-hidden="true">
+              {items.slice(0, 3).map((it, idx) => (
+                <FoodIcon key={it.key} name={it.name} size={30} style={{ marginLeft: idx ? -10 : 0, border: '2px solid #FFFFFF' }} />
+              ))}
+            </span>
+          ) : null}
+          <span className="rk-row__main">
+            <span className="addfood__bar-count">{countLabel}</span>
+            <span className="rk-row__sub">{kcalLabel}</span>
+          </span>
+          {items.length ? (
+            <span className={`addfood__bar-chevron${trayOpen ? ' is-open' : ''}`} aria-hidden="true">
+              <Icon d="M6 15l6-6 6 6" size={16} stroke={2.4} />
+            </span>
+          ) : null}
+        </button>
         <button type="button" className="rk-btn" disabled={saving || items.length === 0} onClick={() => void save()}>
           Añadir
         </button>
