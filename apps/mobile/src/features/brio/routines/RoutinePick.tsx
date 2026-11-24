@@ -115,7 +115,7 @@ export function RoutinePick({
       {!routines.length ? (
         <p className="rk-note">
           Guarda los entrenos que repites para elegirlos aquí.{' '}
-          <Link to="/tabs/settings/rutinas/nueva" onClick={onDone} className="rk-textbtn">
+          <Link to="/tabs/entrenos/rutinas/nueva" onClick={onDone} className="rk-textbtn">
             Crear rutina
           </Link>
         </p>
@@ -194,7 +194,7 @@ export function RoutinePick({
               </div>
             </div>
           ) : null}
-          <Link to="/tabs/settings/rutinas" onClick={onDone} className="rk-textbtn routine-pick__manage">
+          <Link to="/tabs/entrenos/rutinas" onClick={onDone} className="rk-textbtn routine-pick__manage">
             Gestionar rutinas
           </Link>
         </>

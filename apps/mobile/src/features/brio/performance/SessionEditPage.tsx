@@ -59,7 +59,7 @@ export default function SessionEditPage() {
     };
   }, [id]);
 
-  const back = () => (history.length > 1 ? history.goBack() : history.replace('/tabs/progress/rendimiento/entrenos'));
+  const back = () => (history.length > 1 ? history.goBack() : history.replace('/tabs/entrenos/rendimiento/entrenos'));
   const isStrength = session?.kind === 'STRENGTH';
   const isCardio = !!session?.kind && CARDIO_KINDS.includes(session.kind);
   const min = Number(minutes);

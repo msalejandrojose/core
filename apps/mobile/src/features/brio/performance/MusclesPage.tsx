@@ -129,7 +129,7 @@ export default function MusclesPage() {
               Una serie cuenta 1 para el músculo principal, 0,5 para el secundario y 0,25 para el indirecto. Esto mide cuánto has entrenado cada grupo, no cuánto ha crecido ni si está recuperado.
             </p>
           </section>
-            <Link to="/tabs/progress/rendimiento/ejercicios" className="rk-row perf__entry">
+            <Link to="/tabs/entrenos/rendimiento/ejercicios" className="rk-row perf__entry">
               <span className="rk-row__main">
                 <span className="rk-row__title">Ajustar ejercicios</span>
                 <span className="rk-row__sub perf__wrap">Cambia qué músculos trabaja cada uno</span>

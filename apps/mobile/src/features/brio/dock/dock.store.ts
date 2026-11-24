@@ -4,7 +4,7 @@ import { coachApi, TOOL_NOTES } from '../coach/coach.api';
 import { tapSuccess } from '../haptics';
 import { requestSpeechPermission, speechPermission, startSpeech, type SpeechSession } from './speech';
 
-export type DockMode = 'idle' | 'typing' | 'listening' | 'sending';
+export type DockMode = 'idle' | 'listening' | 'sending';
 
 export interface CoachReply {
   text: string;
@@ -24,7 +24,6 @@ interface DockState {
   /** Lo dicho por voz, a la espera de que el chat del coach lo mande. */
   pending: string | null;
   takePending: () => string | null;
-  openComposer: () => void;
   close: () => void;
   startListening: () => Promise<void>;
   armCancel: (armed: boolean) => void;
@@ -61,7 +60,6 @@ export const useDockStore = create<DockState>((set, get) => ({
     return text;
   },
 
-  openComposer: () => set({ mode: 'typing', reply: null }),
   close: () => {
     session?.cancel();
     session = null;

@@ -128,11 +128,6 @@ ion-tab-bar.brio-tabbar.is-hidden {
   opacity: 0;
   pointer-events: none;
 }
-ion-tab-bar.brio-tabbar.is-under {
-  opacity: 0;
-  transform: scale(0.9);
-  pointer-events: none;
-}
 ion-tab-bar.brio-tabbar.is-quiet {
   transform: translateY(6px) scale(0.96);
   opacity: 0.55;
@@ -143,14 +138,22 @@ ion-tab-button {
   --background: transparent;
   --background-focused: transparent;
   --ripple-color: transparent;
-  margin: 6px 2px;
+  --padding-start: 0;
+  --padding-end: 0;
+  margin: 6px 1px;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 600;
   opacity: 0.78;
   transition: background 0.35s var(--brio-spring), opacity 0.2s;
 }
-ion-tab-button.tab-selected {
+/* La pestaña marcada la decide la app (`is-current`): Progreso, avisos y
+ * ajustes cuentan como Hoy aunque Ionic no lo sepa. */
+ion-tab-button.tab-selected:not(.is-current) {
+  --color-selected: var(--brio-ink);
+}
+ion-tab-button.is-current {
+  --color: var(--brio-tint);
   opacity: 1;
   background: var(--brio-glass-strong);
   box-shadow: inset 0 1px 0.5px var(--brio-glass-edge), 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -158,6 +161,9 @@ ion-tab-button.tab-selected {
 ion-tab-button ion-label {
   font-size: 10px;
   margin-top: 2px;
+  /* «Alimentación» tiene que caber en un iPhone de 375 pt. */
+  letter-spacing: -0.15px;
+  white-space: nowrap;
 }
 ion-tab-button ion-icon {
   font-size: 23px;
@@ -167,9 +173,9 @@ ion-tabs ion-content {
   --padding-bottom: var(--brio-dock-space);
 }
 
-/* Orbe del coach (centro de la barra): cristal discreto con una chispa. */
+/* + del centro de la barra: abre «Registrar»; mantenerlo habla con el coach. */
 .brio-orb {
-  flex: 0 0 72px;
+  flex: 0 0 64px;
   display: grid;
   place-items: center;
   padding: 0;

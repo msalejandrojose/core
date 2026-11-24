@@ -60,7 +60,7 @@ export function Columns({ values, label }: { values: number[]; label: string }) 
 export function PerfPage<T>({
   title,
   sub,
-  back = { label: 'Rendimiento', to: '/tabs/progress/rendimiento' },
+  back = { label: 'Rendimiento', to: '/tabs/entrenos/rendimiento' },
   data,
   error,
   onRetry,

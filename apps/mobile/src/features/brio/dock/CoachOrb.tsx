@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Icon } from '../ui/kit';
 import { PATHS } from '../ui/paths';
+import { useRegisterStore } from '../register.store';
 import { useDockStore } from './dock.store';
 
 const HOLD_MS = 350;
@@ -9,9 +10,10 @@ const CANCEL_PX = 60;
 const SWIPE_UP_PX = 24;
 
 /**
- * Botón central de la barra. Toque: abre el campo del coach. Mantener o
- * deslizar hacia arriba: sube y escucha; al soltar se lleva al chat del coach
- * y, deslizando hacia abajo, se cancela.
+ * El + del centro de la barra (TASK-428). Toque: abre «Registrar», la hoja de
+ * accesos rápidos (comida, agua, entreno, peso… y el coach), sin teclado.
+ * Mantener o deslizar hacia arriba: sube y escucha al coach; al soltar se
+ * lleva a su chat y, deslizando hacia abajo, se cancela.
  *
  * Como el + de antes, se marca `isTabButton` para que `IonTabBar` le deje su
  * hueco, y no usa el `onClick` que inyecta la barra (cambiaría de pestaña).
@@ -38,9 +40,13 @@ export function CoachOrb({ tab }: { tab: string }) {
       return;
     }
     if (cancelled) return;
-    if (dock.mode === 'typing') dock.close();
-    else if (dock.mode === 'idle') dock.openComposer();
-    else if (dock.mode === 'listening') dock.close();
+    if (dock.mode !== 'idle') {
+      dock.close();
+      return;
+    }
+    const register = useRegisterStore.getState();
+    if (register.sheet === 'menu') register.close();
+    else register.open('menu');
   };
 
   const down = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -77,13 +83,13 @@ export function CoachOrb({ tab }: { tab: string }) {
       type="button"
       data-tab={tab}
       className={`brio-orb brio-orb--${mode}`}
-      aria-label="Coach: toca para escribirle; mantén o desliza hacia arriba para hablarle"
+      aria-label="Registrar: comida, agua, entreno, peso o coach. Mantén pulsado para hablar con el coach"
       onPointerDown={down}
       onPointerMove={move}
       onContextMenu={(e) => e.preventDefault()}
     >
       <span className="brio-orb__glass">
-        <Icon d={PATHS.spark} size={22} stroke={2} />
+        <Icon d={PATHS.plus} size={24} stroke={2.4} />
         <span className="brio-orb__mic" aria-hidden="true">
           <Icon d={PATHS.mic} size={9} stroke={2.6} />
         </span>

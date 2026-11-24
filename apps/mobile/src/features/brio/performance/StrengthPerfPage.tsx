@@ -99,7 +99,7 @@ function ExerciseCard({ ex }: { ex: ExerciseAnalysis }) {
           {ex.rirCoverage < 0.5 ? (
             <p className="rk-row__sub perf__wrap">Pocas series con RIR: el 1RM asume que fueron al fallo y queda por debajo del real.</p>
           ) : null}
-          <Link to={`/tabs/progress/rendimiento/ejercicios/${ex.exerciseId}`} className="rk-textbtn">
+          <Link to={`/tabs/entrenos/rendimiento/ejercicios/${ex.exerciseId}`} className="rk-textbtn">
             Ver la evolución y cómo se hace
           </Link>
         </div>

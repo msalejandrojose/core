@@ -1,24 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useBrioStore } from '../brio.store';
-import { tapSuccess } from '../haptics';
-import { photoToDataUrl } from '../coach/photos';
 import { mealLabel } from '../format';
 import { planApi, type PlanWeek } from '../plan/plan.api';
 import { useRegisterStore } from '../register.store';
-import { useWaterStore, WATER_GOAL } from '../water.store';
 import { Icon } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { useDockStore } from './dock.store';
 import { currentMoment, type Moment } from './moment';
 import { useKeyboardLayout } from './keyboard';
-import { InlineCamera } from './InlineCamera';
-import { canUseInlineCamera } from './camera';
 import './dock.css';
 
 /** Pantallas raíz de las pestañas: solo en ellas flota la píldora del momento. */
-const ROOTS = ['/tabs/today', '/tabs/comida', '/tabs/progress', '/tabs/social'];
+const ROOTS = ['/tabs/today', '/tabs/entrenos', '/tabs/comida', '/tabs/social'];
 
 function useMoment(): Moment | null {
   const summary = useBrioStore((s) => s.summary);
@@ -118,120 +113,6 @@ function MomentPill({ moment }: { moment: Moment }) {
   );
 }
 
-/** Accesos directos encima del campo: lo que antes abría el + de la barra. */
-function Shortcuts() {
-  const open = useRegisterStore((s) => s.open);
-  const close = useDockStore((s) => s.close);
-  const day = useBrioStore((s) => s.day);
-  const addWater = useWaterStore((s) => s.add);
-  const history = useHistory();
-  const go = (fn: () => void) => () => {
-    close();
-    fn();
-  };
-  const items: { label: string; icon: string; domain: 'food' | 'activity' | 'sleep'; run: () => void }[] = [
-    { label: 'Comida', icon: PATHS.fork, domain: 'food', run: go(() => open('meal')) },
-    { label: 'Entreno', icon: PATHS.run, domain: 'activity', run: go(() => open('activity')) },
-    { label: 'Peso', icon: PATHS.scale, domain: 'sleep', run: go(() => open('weight')) },
-    {
-      label: 'Agua',
-      icon: PATHS.drop,
-      domain: 'sleep',
-      run: () => {
-        addWater(day, 1);
-        void tapSuccess();
-        const n = useWaterStore.getState().byDay[day] ?? 0;
-        useDockStore.setState({ reply: { local: true, notes: [], text: `Agua · ${n} de ${WATER_GOAL} vasos` } });
-      },
-    },
-    { label: 'Receta', icon: PATHS.book, domain: 'food', run: go(() => history.push('/tabs/comida/recetas')) },
-    { label: 'Copiar día', icon: PATHS.copy, domain: 'food', run: go(() => open('copy')) },
-    { label: 'Digestión', icon: PATHS.leaf, domain: 'food', run: go(() => open('digestion')) },
-  ];
-  return (
-    <div className="dock-shortcuts" role="toolbar" aria-label="Registrar a mano">
-      {items.map((it) => (
-        <button key={it.label} type="button" className="dock-shortcut brio-glass" onClick={it.run}>
-          <span className={`dock-shortcut__icon dock-shortcut__icon--${it.domain}`} aria-hidden="true">
-            <Icon d={it.icon} size={18} />
-          </span>
-          {it.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Composer() {
-  const send = useDockStore((s) => s.send);
-  const close = useDockStore((s) => s.close);
-  const [text, setText] = useState('');
-  const input = useRef<HTMLInputElement>(null);
-  const file = useRef<HTMLInputElement>(null);
-  const [camera, setCamera] = useState(false);
-  // Dentro de la app (visor propio); si no se puede, la cámara del sistema directamente.
-  const openCamera = () => (canUseInlineCamera() ? setCamera(true) : file.current?.click());
-
-  useEffect(() => {
-    const id = window.setTimeout(() => input.current?.focus(), 220);
-    return () => window.clearTimeout(id);
-  }, []);
-
-  const submit = () => {
-    const clean = text.trim();
-    if (!clean) return close();
-    setText('');
-    void send(clean);
-  };
-  const photo = async (files: FileList | null) => {
-    const f = files?.[0];
-    if (file.current) file.current.value = '';
-    if (!f) return;
-    const url = await photoToDataUrl(f).catch(() => null);
-    if (url) void send(text.trim() || 'Mira esta foto', [url]);
-    setText('');
-  };
-
-  return (
-    <>
-    {camera ? (
-      <InlineCamera
-        onClose={() => setCamera(false)}
-        onShot={(url) => {
-          setCamera(false);
-          void send(text.trim() || 'Mira esta foto', [url]);
-          setText('');
-        }}
-      />
-    ) : null}
-    <form
-      className="dock-composer brio-glass"
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-    >
-      <button type="button" className="dock-composer__btn" aria-label="Hacer una foto" onClick={openCamera}>
-        <Icon d={PATHS.camera} size={22} />
-      </button>
-      <input
-        ref={input}
-        value={text}
-        maxLength={4000}
-        enterKeyHint="send"
-        placeholder="Dime qué has comido o entrenado"
-        aria-label="Mensaje para el coach"
-        onChange={(e) => setText(e.target.value)}
-      />
-      <input ref={file} type="file" accept="image/*" capture="environment" hidden onChange={(e) => void photo(e.target.files)} />
-      <button type="submit" className="dock-composer__send" aria-label={text.trim() ? 'Enviar' : 'Cerrar'}>
-        <Icon d={text.trim() ? PATHS.arrowUp : PATHS.close} size={20} stroke={2.4} />
-      </button>
-    </form>
-    </>
-  );
-}
-
 function VoiceBubble() {
   const mode = useDockStore((s) => s.mode);
   const heard = useDockStore((s) => s.heard);
@@ -302,8 +183,8 @@ function ReplyCard() {
 }
 
 /**
- * Lo que flota sobre la barra de pestañas: la píldora del momento, el campo
- * del coach (toque en el orbe), la burbuja de voz (mantener) y la respuesta.
+ * Lo que flota sobre la barra de pestañas: la píldora del momento, la burbuja
+ * de voz (mantener el +) y la respuesta del coach.
  */
 export function DockOverlay({ hidden }: { hidden: boolean }) {
   const mode = useDockStore((s) => s.mode);
@@ -324,10 +205,6 @@ export function DockOverlay({ hidden }: { hidden: boolean }) {
     if (pending && pathname !== '/tabs/today/coach') history.push('/tabs/today/coach');
   }, [pending, pathname, history]);
 
-  // Cambiar de pantalla cierra el campo del coach.
-  useEffect(() => {
-    if (useDockStore.getState().mode === 'typing') close();
-  }, [pathname, close]);
   // Si la app se va a segundo plano mientras escucha, se cancela.
   useEffect(() => {
     const onHide = () => {
@@ -343,7 +220,6 @@ export function DockOverlay({ hidden }: { hidden: boolean }) {
       {mode === 'listening' || mode === 'sending' ? (
         <div className="dock-scrim" onClick={() => (mode === 'listening' ? close() : undefined)} />
       ) : null}
-      {mode === 'typing' ? <div className="dock-scrim dock-scrim--clear" onClick={close} /> : null}
       {showHint ? (
         <div className="dock-hint brio-glass" role="note">
           <Icon d={PATHS.mic} size={16} stroke={2.2} />
@@ -351,12 +227,6 @@ export function DockOverlay({ hidden }: { hidden: boolean }) {
         </div>
       ) : null}
       {showMoment ? <MomentPill moment={moment} /> : null}
-      {mode === 'typing' && !hidden ? (
-        <>
-          <Shortcuts />
-          <Composer />
-        </>
-      ) : null}
       {mode === 'listening' || mode === 'sending' ? <VoiceBubble /> : null}
       <ReplyCard />
     </div>,

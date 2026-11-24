@@ -45,6 +45,7 @@ import { useRecentHealth } from './profile/garmin.api';
 import { DayRingsCard, TodayWorkoutCard, WeekStrip } from './today/TodayVisuals';
 import { dayRings, greeting } from './today/today-visuals';
 import { DaySwipe } from './today/DaySwipe';
+import { ProgressRow } from './today/ProgressRow';
 import { useAuthStore } from '@/store/auth.store';
 import './today.css';
 
@@ -467,6 +468,8 @@ export default function TodayPage() {
               )}
 
               {week ? <WeekPlanCard week={week} /> : null}
+
+              <ProgressRow />
             </>
           )}
         </div>

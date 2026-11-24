@@ -50,7 +50,7 @@ export function FirstDay({
       title: 'Planifica tu semana',
       desc: 'Elige tus entrenos y te sale la dieta',
       done: false,
-      to: '/tabs/today/plan',
+      to: '/tabs/entrenos/plan',
     },
   ];
   const doneCount = steps.filter((s) => s.done).length;
