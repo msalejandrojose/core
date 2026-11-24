@@ -47,6 +47,11 @@ export const FOOD_ICONS = {
   peach: { bg: '#FFEDE6', paths: [['M20 11c7-2 12 3 12 10s-5 12-12 12S8 28 8 21s5-12 12-10z', '#FF9F68', 'none'], ['M20 12c-2 6-2 14 0 20', 'none', '#F07A4A'], ['M20 11c1-3 4-5 7-4-1 3-4 4-7 4z', '#34C759', 'none']] },
   pineapple: { bg: '#FFF8D6', paths: [['M12 22c0-6 4-9 8-9s8 3 8 9-4 11-8 11-8-5-8-11z', '#FFC21A', 'none'], ['M14 18l12 10M26 18L14 28', 'none', '#D99A0B'], ['M20 13l-4-7 4 3 4-3-4 7z', '#34C759', 'none']] },
   kiwi: { bg: '#EEF6E3', paths: [['M8 20a12 12 0 1 0 24 0a12 12 0 1 0-24 0z', '#8B6B3D', 'none'], ['M10 20a10 10 0 1 0 20 0a10 10 0 1 0-20 0z', '#8CC63F', 'none'], ['M17 20a3 3 0 1 0 6 0a3 3 0 1 0-6 0z', '#F2F7D9', 'none']] },
+  // Cocinas del mundo (TASK-431).
+  sushi: { bg: '#FFEDE6', paths: [['M8 21a12 12 0 1 0 24 0a12 12 0 1 0-24 0z', '#2F4F3A', 'none'], ['M11 21a9 9 0 1 0 18 0a9 9 0 1 0-18 0z', '#FFFFFF', 'none'], ['M16 21a4 4 0 1 0 8 0a4 4 0 1 0-8 0z', '#FF8A65', 'none'], ['M18 19.5l2 1.5', 'none', '#FFFFFF']] },
+  taco: { bg: '#FFF8D6', paths: [['M6 29a14 14 0 0 1 28 0z', '#F2C14E', 'none'], ['M9 24c2-2 4-1 6-2s4 0 6-1 4 0 5 0 3 1 5 2', 'none', '#5BAE4A'], ['M10 27c4-2 16-2 20 0', 'none', '#C0392B'], ['M13 20l1 1M20 18l1 1M27 20l-1 1', 'none', '#E35D5B']] },
+  kebab: { bg: '#FFF1E0', paths: [['M12 9h16l-5 25h-6z', '#E8C27A', 'none'], ['M12 9c2 4 14 4 16 0', 'none', '#5BAE4A'], ['M14 13h12', 'none', '#C0392B'], ['M15 16h10', 'none', '#E35D5B'], ['M17 20l6-1M17 24l5-1', 'none', '#D9A350']] },
+  arepa: { bg: '#FFF4D6', paths: [['M7 20a13 9 0 1 0 26 0a13 9 0 1 0-26 0z', '#F2D49B', 'none'], ['M8 19c3 2 21 2 24 0', 'none', '#FFFFFF'], ['M10 18c4-3 16-3 20 0', 'none', '#5BAE4A'], ['M15 15l2 1M22 15l2 1', 'none', '#D9A350']] },
   plate: { bg: '#F2F2F7', paths: [['M6 20h28a14 12 0 0 1-28 0z', '#FFFFFF', '#D1D1D6'], ['M12 17a8 4 0 0 1 16 0z', '#E5E5EA', 'none']] },
 } satisfies Record<string, FoodIllustration>;
 
@@ -57,6 +62,17 @@ const KEYWORDS: [RegExp, FoodIconKey][] = [
   [/arroz con leche|flan|natillas|postre|helado/i, 'flan'],
   // Pasta con atún, fideuá…: manda la pasta, no lo que lleva.
   [/^(pasta|espagu|macarr|fideu)/i, 'pasta'],
+  // Cocinas del mundo (TASK-431): antes que las reglas generales.
+  [/sushi|sashimi|maki|nigiri/i, 'sushi'],
+  [/taco|burrito|fajita|nacho|enchilada|totopo/i, 'taco'],
+  [/kebab|shawarma|d[uü]r[uü]m|falafel|kofta/i, 'kebab'],
+  [/arepa|pupusa/i, 'arepa'],
+  [/ramen|ph[oó] de|sopa de miso|harira/i, 'soup'],
+  [/pad thai|tallarines|wok|ñoquis|raviolis|lasa[nñ]a|mac and cheese/i, 'pasta'],
+  [/hummus|dal de|chana|edamame/i, 'lentils'],
+  [/naan|pan de pita|bagel|bruschetta/i, 'bread'],
+  [/guacamole/i, 'avocado'],
+  [/tiramis|panna cotta|brownie|cheesecake|tarta de queso|baklava|alfajor/i, 'flan'],
   [/cerveza|vino|refresco|zumo|batido|bebida|isot[oó]nica/i, 'drink'],
   [/whey|prote[ií]na en polvo/i, 'milk'],
   [/barrita/i, 'nuts'],

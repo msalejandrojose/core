@@ -11,6 +11,8 @@ export interface FoodSection {
   label: string;
   icon: string;
   foods: readonly string[];
+  /** `world`: «Cocinas del mundo», que la app pinta aparte (TASK-431). */
+  group?: 'world';
 }
 
 const CAFE: FoodSection = {
@@ -234,6 +236,160 @@ const BEBIDA: FoodSection = {
   ],
 };
 
+
+/** Cocinas del mundo (TASK-431): platos de fuera, por origen, para comida y cena. */
+export const WORLD_SECTIONS: readonly FoodSection[] = [
+  {
+    code: 'asiatica',
+    label: 'Asiática',
+    icon: 'sushi',
+    group: 'world',
+    foods: [
+      'Poke bowl de salmón',
+      'Sushi variado (maki y nigiri)',
+      'Sashimi de salmón',
+      'Ramen de cerdo',
+      'Pad thai de pollo',
+      'Arroz tres delicias',
+      'Tallarines salteados con verduras',
+      'Pollo al limón',
+      'Cerdo agridulce',
+      'Rollito de primavera',
+      'Gyozas de cerdo',
+      'Pollo teriyaki con arroz',
+      'Curry verde tailandés de pollo',
+      'Bibimbap',
+      'Pho de ternera',
+      'Edamame',
+      'Sopa de miso',
+      'Wok de verduras con pollo',
+      'Tempura de langostinos',
+      'Ternera con brócoli',
+    ],
+  },
+  {
+    code: 'india',
+    label: 'India',
+    icon: 'curry',
+    group: 'world',
+    foods: [
+      'Pollo al curry',
+      'Pollo tikka masala',
+      'Pollo a la mantequilla (butter chicken)',
+      'Biryani de pollo',
+      'Dal de lentejas',
+      'Pan naan',
+      'Samosa de verduras',
+      'Arroz basmati',
+      'Chana masala (garbanzos al curry)',
+      'Pollo tandoori',
+      'Palak paneer',
+      'Lassi de mango',
+    ],
+  },
+  {
+    code: 'arabe',
+    label: 'Árabe',
+    icon: 'kebab',
+    group: 'world',
+    foods: [
+      'Hummus',
+      'Falafel',
+      'Kebab de pollo en pan de pita',
+      'Dürüm de ternera',
+      'Shawarma de pollo al plato',
+      'Cuscús con verduras',
+      'Tabulé',
+      'Baba ganoush',
+      'Tajín de pollo',
+      'Kofta de cordero',
+      'Pan de pita',
+      'Baklava',
+      'Harira',
+    ],
+  },
+  {
+    code: 'italiana',
+    label: 'Italiana',
+    icon: 'pasta',
+    group: 'world',
+    foods: [
+      'Pizza margarita',
+      'Lasaña de carne',
+      'Espaguetis a la carbonara',
+      'Espaguetis a la boloñesa',
+      'Risotto de setas',
+      'Pasta al pesto',
+      'Ñoquis con tomate',
+      'Pizza cuatro quesos',
+      'Pizza barbacoa',
+      'Raviolis de ricotta y espinacas',
+      'Calzone',
+      'Bruschetta de tomate',
+      'Ensalada caprese',
+      'Tiramisú',
+      'Panna cotta',
+    ],
+  },
+  {
+    code: 'mexicana',
+    label: 'Mexicana',
+    icon: 'taco',
+    group: 'world',
+    foods: [
+      'Quesadilla de pollo y queso',
+      'Tacos al pastor',
+      'Burrito de ternera',
+      'Fajitas de pollo',
+      'Nachos con queso',
+      'Guacamole',
+      'Enchiladas de pollo',
+      'Chili con carne',
+      'Burrito bowl de pollo',
+      'Tacos de pescado',
+      'Totopos',
+    ],
+  },
+  {
+    code: 'americana',
+    label: 'Americana',
+    icon: 'burger',
+    group: 'world',
+    foods: [
+      'Perrito caliente',
+      'Costillas a la barbacoa',
+      'Macarrones con queso (mac and cheese)',
+      'Alitas de pollo',
+      'Pollo frito',
+      'Nuggets de pollo',
+      'Bagel de salmón y queso crema',
+      'Sándwich club',
+      'Bocadillo de cerdo desmechado (pulled pork)',
+      'Brownie',
+      'Tarta de queso (cheesecake)',
+    ],
+  },
+  {
+    code: 'latina',
+    label: 'Latina',
+    icon: 'arepa',
+    group: 'world',
+    foods: [
+      'Arepa de reina pepiada',
+      'Arepa de queso',
+      'Ceviche de pescado',
+      'Empanada argentina de carne',
+      'Lomo saltado',
+      'Pabellón criollo',
+      'Feijoada',
+      'Tequeños',
+      'Pupusa de queso',
+      'Ajiaco',
+      'Alfajor',
+    ],
+  },
+];
+
 export const MEAL_SECTIONS: Record<MealType, readonly FoodSection[]> = {
   BREAKFAST: [
     CAFE,
@@ -354,6 +510,7 @@ export const MEAL_SECTIONS: Record<MealType, readonly FoodSection[]> = {
     FRUTA,
     POSTRE,
     BEBIDA,
+    ...WORLD_SECTIONS,
   ],
   DINNER: [
     {
@@ -385,5 +542,6 @@ export const MEAL_SECTIONS: Record<MealType, readonly FoodSection[]> = {
     PROTEINA,
     POSTRE,
     BEBIDA,
+    ...WORLD_SECTIONS,
   ],
 };

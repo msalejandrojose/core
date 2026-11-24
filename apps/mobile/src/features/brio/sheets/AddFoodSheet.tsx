@@ -291,6 +291,27 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const combos = useMemo(() => habits?.combos ?? [], [habits]);
   const sections = typical[mealType] ?? [];
   const openSection = sections.find((sec) => sec.code === section) ?? null;
+  // Lo de aquí arriba; las cocinas del mundo, en su propio bloque (TASK-431).
+  const homeSections = sections.filter((sec) => sec.group !== 'world');
+  const worldSections = sections.filter((sec) => sec.group === 'world');
+  const sectionButton = (sec: FoodSection) => {
+    const count = sec.foods.filter((f) => picked[f.id]).length;
+    return (
+      <button
+        key={sec.code}
+        type="button"
+        className="addfood__sec"
+        aria-label={`${sec.label}${count ? `, ${count} elegidos` : ''}`}
+        onClick={() => setSection(sec.code)}
+      >
+        <span className="addfood__freq-bubble">
+          <FoodIcon icon={sectionIcon(sec.icon)} size={56} />
+          {count ? <span className="addfood__sec-count">{count}</span> : null}
+        </span>
+        <span className="addfood__sec-label">{sec.label}</span>
+      </button>
+    );
+  };
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose} className="rk-modal-full" {...SWIPE_TO_CLOSE}>
@@ -427,29 +448,17 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
             </section>
           ) : (
             <>
-              {sections.length > 0 ? (
+              {homeSections.length > 0 ? (
                 <section className="rk-section" aria-labelledby="secciones">
                   <SectionHeader id="secciones">¿Qué has tomado?</SectionHeader>
-                  <div className="addfood__secs">
-                    {sections.map((sec) => {
-                      const count = sec.foods.filter((f) => picked[f.id]).length;
-                      return (
-                        <button
-                          key={sec.code}
-                          type="button"
-                          className="addfood__sec"
-                          aria-label={`${sec.label}${count ? `, ${count} elegidos` : ''}`}
-                          onClick={() => setSection(sec.code)}
-                        >
-                          <span className="addfood__freq-bubble">
-                            <FoodIcon icon={sectionIcon(sec.icon)} size={56} />
-                            {count ? <span className="addfood__sec-count">{count}</span> : null}
-                          </span>
-                          <span className="addfood__sec-label">{sec.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <div className="addfood__secs">{homeSections.map(sectionButton)}</div>
+                </section>
+              ) : null}
+
+              {worldSections.length > 0 ? (
+                <section className="rk-section" aria-labelledby="mundo">
+                  <SectionHeader id="mundo">Cocinas del mundo</SectionHeader>
+                  <div className="addfood__secs">{worldSections.map(sectionButton)}</div>
                 </section>
               ) : null}
 

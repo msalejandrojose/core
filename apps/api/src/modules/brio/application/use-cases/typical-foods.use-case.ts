@@ -12,6 +12,8 @@ export interface FoodSectionView {
   label: string;
   icon: string;
   foods: Food[];
+  /** `world`: cocinas del mundo, que la app pinta en su propio bloque. */
+  group: 'world' | null;
 }
 
 /** Secciones de lo típico de un momento del día, con sus platos del catálogo. */
@@ -33,6 +35,7 @@ export class TypicalFoodsUseCase {
         code: s.code,
         label: s.label,
         icon: s.icon,
+        group: s.group ?? null,
         foods: s.foods.map((n) => byName.get(n)).filter((f): f is Food => !!f),
       }))
       .filter((s) => s.foods.length > 0);

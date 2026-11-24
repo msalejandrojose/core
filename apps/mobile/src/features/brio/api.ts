@@ -50,6 +50,8 @@ export interface FoodSection {
   /** Clave de la ilustración (ui/food-icons.data.ts). */
   icon: string;
   foods: Food[];
+  /** `world`: «Cocinas del mundo», que se pintan en su propio bloque. */
+  group?: 'world' | null;
 }
 
 /** Error de la API con su código del catálogo, para distinguir casos. */
