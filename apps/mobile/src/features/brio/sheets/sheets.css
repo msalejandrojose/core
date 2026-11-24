@@ -975,3 +975,115 @@ button.workout__set-n.is-warmup {
   border-radius: 8px;
   padding: 6px 10px;
 }
+
+/* ---- Bandeja de «Añadir alimento» (TASK-432) ---- */
+.addfood__bar-summary {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.addfood__bar-summary:disabled {
+  opacity: 1;
+}
+.addfood__bar-icons {
+  flex: none;
+  display: flex;
+}
+.addfood__bar-chevron {
+  flex: none;
+  display: grid;
+  color: var(--brio-ink-muted);
+  transition: transform 200ms;
+}
+.addfood__bar-chevron.is-open {
+  transform: rotate(180deg);
+}
+.addfood__tray-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  background: rgba(0, 0, 0, 0.18);
+}
+.addfood__tray {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  max-height: 55vh;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px 10px;
+  border-radius: var(--brio-radius-2xl) var(--brio-radius-2xl) 0 0;
+  background: var(--brio-surface);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+  animation: addfood-tray 0.28s var(--brio-spring) both;
+}
+@keyframes addfood-tray {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+.addfood__tray-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.addfood__tray-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+.addfood__tray-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+.addfood__tray-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+}
+.addfood__tray-item + .addfood__tray-item {
+  border-top: 1px solid var(--brio-separator);
+}
+.addfood__tray-remove {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brio-surface-fill);
+  color: var(--brio-ink-muted);
+}
+.addfood__tray-total {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--brio-separator);
+  font-size: 14px;
+  color: var(--brio-ink-muted);
+}
+.addfood__tray-total strong {
+  color: var(--brio-ink);
+  font-size: 17px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .addfood__tray {
+    animation: none;
+  }
+}
