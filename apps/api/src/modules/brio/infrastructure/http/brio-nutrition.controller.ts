@@ -1,3 +1,4 @@
+import { SandwichBuilderUseCase } from '../../application/use-cases/sandwich-builder.use-case';
 import {
   Body,
   Controller,
@@ -48,6 +49,7 @@ export class BrioNutritionController {
     private readonly searchFoods: SearchFoodsUseCase,
     private readonly createFood: CreateFoodUseCase,
     private readonly typicalFoods: TypicalFoodsUseCase,
+    private readonly sandwichBuilderUseCase: SandwichBuilderUseCase,
     private readonly logMeal: LogMealEntryUseCase,
     private readonly updateMeal: UpdateMealEntryUseCase,
     private readonly deleteMeal: DeleteMealEntryUseCase,
@@ -66,6 +68,31 @@ export class BrioNutritionController {
   ): Promise<MealHabitsResponseDto> {
     const habits = await this.mealHabits.execute(current.sub, query.mealType);
     return MealHabitsResponseDto.from(habits);
+  }
+
+  @Get('foods/sandwich-builder')
+  @ApiOperation({
+    summary:
+      'Creador de bocatas y tostadas: bases de pan (con sus gramos) e ingredientes agrupados.',
+  })
+  async sandwichBuilder(): Promise<{
+    bases: {
+      code: string;
+      kind: string;
+      label: string;
+      grams: number;
+      food: FoodResponseDto;
+    }[];
+    groups: { code: string; label: string; foods: FoodResponseDto[] }[];
+  }> {
+    const view = await this.sandwichBuilderUseCase.execute();
+    return {
+      bases: view.bases.map((b) => ({ ...b, food: FoodResponseDto.from(b.food) })),
+      groups: view.groups.map((g) => ({
+        ...g,
+        foods: g.foods.map((f) => FoodResponseDto.from(f)),
+      })),
+    };
   }
 
   @Get('foods/typical')

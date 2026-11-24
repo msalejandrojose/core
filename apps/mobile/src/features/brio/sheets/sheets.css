@@ -1087,3 +1087,10 @@ button.workout__set-n.is-warmup {
     animation: none;
   }
 }
+
+/* Acceso al creador de bocatas y tostadas (TASK-433). */
+.rk-row.addfood__builder {
+  margin-top: var(--brio-space-m);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+}

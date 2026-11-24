@@ -18,6 +18,7 @@ import { snackbar } from '@/lib/snackbar';
 import { toast } from '@/lib/toast';
 import { DayPicker } from './DayPicker';
 import { FoodTray } from './FoodTray';
+import { SandwichBuilderSheet } from '../sandwich/SandwichBuilderSheet';
 import { dayChipLabel } from './day-pick';
 import './sheets.css';
 
@@ -124,6 +125,8 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
   const [section, setSection] = useState<string | null>(null);
   /** Bandeja abierta: la lista de lo que vas a añadir, para revisarla (TASK-432). */
   const [trayOpen, setTrayOpen] = useState(false);
+  /** Creador de bocatas y tostadas abierto (TASK-433). */
+  const [building, setBuilding] = useState(false);
   const realToday = todayIn(timezone);
   /** Día en que se apunta: el que estás viendo, o el que elijas. */
   const [on, setOn] = useState(day);
@@ -456,6 +459,15 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
             </section>
           ) : (
             <>
+              <button type="button" className="rk-list rk-row addfood__builder" onClick={() => setBuilding(true)}>
+                <FoodIcon icon="sandwich" size={44} />
+                <span className="rk-row__main">
+                  <span className="rk-row__title">Monta tu bocata o tostada</span>
+                  <span className="rk-row__sub">Elige el pan y lo que lleva; calcula las kcal</span>
+                </span>
+                <Icon d={PATHS.forward} size={16} stroke={2.4} />
+              </button>
+
               {homeSections.length > 0 ? (
                 <section className="rk-section" aria-labelledby="secciones">
                   <SectionHeader id="secciones">¿Qué has tomado?</SectionHeader>
@@ -630,6 +642,16 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
           Añadir
         </button>
       </div>
+      <SandwichBuilderSheet
+        isOpen={building}
+        onClose={() => setBuilding(false)}
+        onAdd={(r) => {
+          setBuilding(false);
+          const add = 'food' in r ? [fromFood(r.food)] : r.items;
+          setPicked((p) => ({ ...p, ...Object.fromEntries(add.map((i) => [i.key === 'base' ? `pan:${i.foodId}` : i.key, { ...i, key: i.key === 'base' ? `pan:${i.foodId}` : i.key }])) }));
+          void tapSuccess();
+        }}
+      />
       <CreateFoodSheet
         isOpen={creating}
         initialName={query.trim()}
