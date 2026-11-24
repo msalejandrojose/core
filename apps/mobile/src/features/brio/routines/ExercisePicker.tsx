@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ExerciseGuideSheet } from '../exercise-guide/ExerciseGuide';
 import { MUSCLE_NAME } from '../performance/labels';
 import { perfApi, type Exercise } from '../performance/perf.api';
-import { SearchField } from '../ui/kit';
+import { Icon, SearchField } from '../ui/kit';
+import { PATHS } from '../ui/paths';
 
 /** Grupos para filtrar: los músculos del MuscleEngine agrupados como en el gimnasio. */
 const GROUPS: { id: string; label: string; muscles: string[] }[] = [
@@ -28,7 +30,8 @@ const primaryMuscles = (e: Pick<Exercise, 'muscles'>) =>
 
 /**
  * Buscador del catálogo de ejercicios con filtro por grupo muscular. Muestra
- * qué trabaja cada uno para elegir con criterio.
+ * qué trabaja cada uno para elegir con criterio, y con ⓘ abre su ficha
+ * (animación, cómo se hace y qué trabaja) para verlo antes de añadirlo.
  */
 export function ExercisePicker({
   onPick,
@@ -42,6 +45,7 @@ export function ExercisePicker({
   const [catalog, setCatalog] = useState<Exercise[] | null>(null);
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState<string | null>(null);
+  const [guide, setGuide] = useState<Exercise | null>(null);
 
   useEffect(() => {
     perfApi
@@ -81,15 +85,25 @@ export function ExercisePicker({
           <div className="rk-row rk-row__sub">Cargando ejercicios…</div>
         ) : matches.length ? (
           matches.slice(0, 40).map((e) => (
-            <button key={e.id} type="button" className="rk-row" onClick={() => onPick(e)}>
-              <span className="rk-row__main">
-                <span className="rk-row__title">{e.name}</span>
-                <span className="rk-row__sub">{primaryMuscles(e) || 'Sin músculos asignados'}</span>
-              </span>
-              <span className="routine__add" aria-hidden="true">
-                +
-              </span>
-            </button>
+            <div key={e.id} className="rk-row routine__match">
+              <button
+                type="button"
+                className="routine__info"
+                aria-label={`Ver cómo se hace ${e.name}`}
+                onClick={() => setGuide(e)}
+              >
+                <Icon d={PATHS.info} size={18} stroke={2.2} />
+              </button>
+              <button type="button" className="routine__pick" onClick={() => onPick(e)}>
+                <span className="rk-row__main">
+                  <span className="rk-row__title">{e.name}</span>
+                  <span className="rk-row__sub">{primaryMuscles(e) || 'Sin músculos asignados'}</span>
+                </span>
+                <span className="routine__add" aria-hidden="true">
+                  +
+                </span>
+              </button>
+            </div>
           ))
         ) : (
           <div className="rk-row rk-row__sub">Ningún ejercicio coincide.</div>
@@ -98,6 +112,17 @@ export function ExercisePicker({
       <button type="button" className="rk-textbtn routine__cancel" onClick={onCancel}>
         Cancelar
       </button>
+      <ExerciseGuideSheet
+        exercise={guide}
+        onClose={() => setGuide(null)}
+        action={{
+          label: 'Añadir',
+          onClick: (e) => {
+            setGuide(null);
+            onPick(e);
+          },
+        }}
+      />
     </div>
   );
 }
