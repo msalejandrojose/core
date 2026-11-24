@@ -1,21 +1,11 @@
 import type { ReactNode } from 'react';
 import { formatKcal } from '../format';
-import type { RelogItem } from '../relog';
 import { FoodIcon } from '../ui/food-icons';
 import { Icon } from '../ui/kit';
 import { PATHS } from '../ui/paths';
+import { trayTotals, type TrayItem } from './food-tray';
 
-export interface TrayItem extends RelogItem {
-  key: string;
-}
-
-/** Suma de kcal y macros de lo elegido. */
-export function trayTotals(items: TrayItem[]) {
-  return items.reduce(
-    (t, i) => ({ kcal: t.kcal + i.kcal, protein: t.protein + i.proteinG, carbs: t.carbs + i.carbsG, fat: t.fat + i.fatG }),
-    { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-  );
-}
+export type { TrayItem };
 
 /**
  * Bandeja con lo que vas a añadir (TASK-432): cada alimento con su cantidad,
