@@ -1,3 +1,4 @@
+import { SandwichBuilderUseCase } from './application/use-cases/sandwich-builder.use-case';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IamModule } from '../iam/iam.module';
@@ -356,6 +357,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     DisconnectGarminUseCase,
     GetRecentHealthUseCase,
     TypicalFoodsUseCase,
+    SandwichBuilderUseCase,
     // Herramientas para los agentes de IA.
     BrioAgentTools,
     // Digestión.

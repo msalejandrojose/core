@@ -44,6 +44,19 @@ export type MealHabits = Schemas['MealHabitsResponseDto'];
 export type LogWeightBody = Schemas['LogWeightDto'];
 
 /** `GET /brio/foods/typical` aún no declara su DTO de respuesta: tipo a mano. */
+/** Creador de bocatas y tostadas (TASK-433). */
+export interface SandwichBase {
+  code: string;
+  kind: 'bocata' | 'tostada' | 'sandwich' | 'wrap';
+  label: string;
+  grams: number;
+  food: Food;
+}
+export interface SandwichBuilder {
+  bases: SandwichBase[];
+  groups: { code: string; label: string; foods: Food[] }[];
+}
+
 export interface FoodSection {
   code: string;
   label: string;
@@ -137,6 +150,7 @@ export const brioApi = {
   /** Mis recetas (alimentos propios con su «1 ración»), las más nuevas primero. */
   recipes: () => typed(apiClient.GET('/brio/recipes')),
   createRecipe: (body: CreateRecipeBody) => typed(apiClient.POST('/brio/recipes', { body })),
+  sandwichBuilder: () => call<SandwichBuilder>('GET', '/brio/foods/sandwich-builder'),
   /** Volcado de todo lo guardado en Brío (Perfil › Descargar mis datos). */
   exportMyData: () => call<unknown>('GET', '/brio/account/export'),
   /** Borrado definitivo de la cuenta y de todos sus datos. */

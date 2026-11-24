@@ -1,0 +1,32 @@
+/* Creador de bocatas y tostadas (TASK-433). Reutiliza chips del plan y la bandeja de comida. */
+.sandwich {
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+}
+.sandwich .addfood__tray {
+  position: static;
+  max-height: none;
+  margin-top: var(--brio-space-l);
+  border-radius: var(--brio-radius-2xl);
+  box-shadow: none;
+  animation: none;
+}
+.sandwich__opts {
+  margin-top: var(--brio-space-m);
+}
+.sandwich__name {
+  gap: 12px;
+}
+.sandwich__label {
+  flex: none;
+  font-weight: 600;
+}
+.sandwich__name input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brio-ink);
+  font: 400 16px var(--brio-font-sans);
+  text-align: right;
+  outline: none;
+}
