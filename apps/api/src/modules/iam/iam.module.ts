@@ -107,6 +107,10 @@ import { PermissionGuard } from './infrastructure/http/guards/permission.guard';
 // ===== Mailer =====
 import { MailerModule } from '../mailer/mailer.module';
 
+import { AuthSessionsUseCase } from './application/use-cases/auth-sessions.use-case';
+import { AUTH_SESSION_REPOSITORY } from './application/ports/auth-session-repository.port';
+import { PrismaAuthSessionRepository } from './infrastructure/persistence/prisma-auth-session.repository';
+
 @Module({
   imports: [
     JwtModule.registerAsync({
@@ -136,6 +140,7 @@ import { MailerModule } from '../mailer/mailer.module';
     // Auth use cases
     RegisterUserUseCase,
     LoginUseCase,
+    AuthSessionsUseCase,
     LoginWithGoogleUseCase,
     LoginWithAppleUseCase,
     LoginWithFacebookUseCase,
@@ -201,6 +206,10 @@ import { MailerModule } from '../mailer/mailer.module';
     { provide: PERMISSION_REPOSITORY, useClass: PrismaPermissionRepository },
     { provide: PASSWORD_HASHER, useClass: Argon2PasswordHasher },
     { provide: TOKEN_ISSUER, useClass: JwtTokenIssuer },
+    {
+      provide: AUTH_SESSION_REPOSITORY,
+      useClass: PrismaAuthSessionRepository,
+    },
     { provide: GOOGLE_TOKEN_VERIFIER, useClass: GoogleTokenVerifier },
     { provide: APPLE_TOKEN_VERIFIER, useClass: AppleTokenVerifier },
     { provide: FACEBOOK_TOKEN_VERIFIER, useClass: FacebookTokenVerifier },
