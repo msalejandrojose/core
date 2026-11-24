@@ -305,16 +305,7 @@
 .tv-done-list li + li .tv-done-list__row {
   border-top: 1px solid color-mix(in srgb, var(--brio-activity) 18%, transparent);
 }
-.tv-done-list__icon {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--brio-activity);
-  color: #fff;
-}
+
 .tv-done-list__name {
   flex: 1;
   min-width: 0;

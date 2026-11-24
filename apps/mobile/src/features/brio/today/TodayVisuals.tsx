@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
+import { ActivityIcon } from '../ui/activity-icons';
 import type { DayTotals } from '../api';
 import { formatDuration, formatNumber } from '../format';
 import type { PlanDay, PlannedSession } from '../plan/plan.api';
 import { LOAD_LABEL, fmtMinutes } from '../plan/plan-labels';
-import { Chevron, Icon } from '../ui/kit';
-import { PATHS } from '../ui/paths';
+import { Chevron } from '../ui/kit';
 import { macroBars, weekDots, type DayRing, type WeekDot } from './today-visuals';
 import './today-visuals.css';
 
@@ -154,19 +154,13 @@ export interface DoneWorkout {
   id: string;
   name: string;
   kind: string;
+  /** Código del tipo (`football_7`, `padel`…), para su icono. */
+  code?: string | null;
   durationSec: number;
   kcal: number;
   /** Para los de fuerza: abre sus series. */
   to?: string;
 }
-
-const KIND_ICON: Record<string, string> = {
-  STRENGTH: PATHS.strength,
-  RUN: PATHS.run,
-  CYCLE: PATHS.bike,
-  WALK: PATHS.walk,
-  HIKE: PATHS.walk,
-};
 
 export function TodayWorkoutCard({
   day,
@@ -205,9 +199,7 @@ export function TodayWorkoutCard({
             {done.map((w) => {
               const body = (
                 <>
-                  <span className="tv-done-list__icon" aria-hidden="true">
-                    <Icon d={KIND_ICON[w.kind] ?? PATHS.dance} size={18} stroke={2.2} />
-                  </span>
+                  <ActivityIcon code={w.code} kind={w.kind} name={w.name} />
                   <span className="tv-done-list__name">{w.name}</span>
                   <span className="tv-done-list__meta">
                     {formatDuration(w.durationSec)} · {formatNumber(Math.round(w.kcal))} kcal

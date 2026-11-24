@@ -33,6 +33,13 @@ export class ActivitySessionResponseDto {
   @ApiProperty() id: string;
   @ApiProperty() activityTypeId: string;
   @ApiProperty({ example: 'Correr' }) activityTypeName: string;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'running',
+    description: 'Código del tipo de actividad (para el icono).',
+  })
+  activityTypeCode: string | null;
   @ApiProperty({ type: String, format: 'date-time' }) startedAt: Date;
   @ApiProperty({ example: '2026-11-10' }) loggedOn: string;
   @ApiProperty({ example: 1800 }) durationSec: number;
@@ -93,6 +100,7 @@ export class ActivitySessionResponseDto {
     dto.id = s.id;
     dto.activityTypeId = s.activityTypeId;
     dto.activityTypeName = s.activityTypeName;
+    dto.activityTypeCode = s.activityTypeCode ?? null;
     dto.startedAt = s.startedAt;
     dto.loggedOn = s.loggedOn;
     dto.durationSec = s.durationSec;

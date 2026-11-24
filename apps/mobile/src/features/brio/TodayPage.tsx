@@ -455,6 +455,7 @@ export default function TodayPage() {
                   id: x.id,
                   name: x.activityTypeName,
                   kind: x.kind ?? 'OTHER',
+                  code: x.activityTypeCode,
                   durationSec: x.durationSec,
                   kcal: x.kcalBurned,
                   to: x.kind === 'STRENGTH' ? `/tabs/today/entreno/${x.id}` : undefined,
