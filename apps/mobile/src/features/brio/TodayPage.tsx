@@ -8,7 +8,8 @@ import {
   IonRefresherContent,
 } from '@ionic/react';
 import type { DaySummary, MealType } from './api';
-import { DayChecklist, suggestionFor, type Suggestion } from './today/DayChecklist';
+import { DayChecklist } from './today/DayChecklist';
+import { suggestionFor, type Suggestion } from './today/suggestion';
 import {
   MEAL_ORDER,
   formatKcal,

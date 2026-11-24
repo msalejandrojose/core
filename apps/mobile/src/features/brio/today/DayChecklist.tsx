@@ -1,39 +1,8 @@
 import { Link } from 'react-router-dom';
-import type { DaySummary, HabitItem, MealHabits, MealType } from '../api';
+import type { DaySummary, MealHabits, MealType } from '../api';
+import { suggestionFor } from './suggestion';
 import { MEAL_HOUR, MEAL_ORDER, formatDuration, formatKcal, joinNames, mealLabel, timeIn } from '../format';
 import { CheckCircle, Chevron } from '../ui/kit';
-
-export interface Suggestion {
-  mealType: MealType;
-  items: HabitItem[];
-  kcal: number;
-  count: number;
-}
-
-/** "Lo de siempre" de una comida, o su alimento más frecuente si no hay combinación. */
-export function suggestionFor(
-  mealType: MealType,
-  habits: MealHabits | undefined,
-): Suggestion | null {
-  if (!habits) return null;
-  const combo = habits.combos[0];
-  if (combo)
-    return {
-      mealType,
-      items: combo.items,
-      kcal: combo.kcal,
-      count: combo.count,
-    };
-  const top = habits.frequent[0];
-  if (top && top.count >= 2)
-    return {
-      mealType,
-      items: [top],
-      kcal: Math.round(top.kcal),
-      count: top.count,
-    };
-  return null;
-}
 
 /**
  * «Tu día» como lista de comprobación: cada comida en su orden y el entreno,
