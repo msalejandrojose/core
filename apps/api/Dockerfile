@@ -4,7 +4,8 @@
 # Build context esperado: raíz del repo (NO apps/api/), para tener acceso a
 # pnpm-workspace.yaml y al lockfile.
 #
-#   docker build -f apps/api/Dockerfile -t core-api:latest .
+#   docker build -f apps/api/Dockerfile --target runtime -t core-api:latest .
+#   docker build -f apps/api/Dockerfile --target migrate -t core-api-migrate:latest .
 #
 
 # ============================================================================
@@ -48,6 +49,21 @@ RUN pnpm --filter @core/api... build
 #    y los archivos del paquete (incluido dist/). Es la forma oficial de
 #    sacar un paquete de un workspace para deploy.
 RUN pnpm --filter @core/api deploy --legacy --prod /out
+
+
+# ============================================================================
+# Stage 1b — migraciones (job de Cloud Run `brio-api-migrate`)
+# ============================================================================
+# Imagen aparte con la CLI de Prisma (dependencia de desarrollo) y la carpeta
+# de migraciones, para aplicar `prisma migrate deploy` una vez por despliegue,
+# antes de pasar el tráfico a la versión nueva (ver deploy/deploy.sh). No va en
+# la imagen de runtime: migrar en cada arranque alargaría el arranque en frío.
+# `prisma.config.ts` carga `dotenv/config`, que lee DATABASE_URL del .env de
+# secretos que monta Cloud Run (DOTENV_CONFIG_PATH).
+FROM builder AS migrate
+WORKDIR /repo/apps/api
+ENV DOTENV_CONFIG_PATH=/secrets/.env
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy"]
 
 
 # ============================================================================
