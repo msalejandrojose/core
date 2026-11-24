@@ -9,7 +9,9 @@ interface RegisterState {
   sheet: RegisterSheet | null;
   /** Comida preseleccionada al abrir la hoja de comida. */
   mealType: MealType;
-  open: (sheet: RegisterSheet, mealType?: MealType) => void;
+  /** Rutina ya elegida al abrir «Registrar entreno» (la del plan de hoy). */
+  routineId: string | null;
+  open: (sheet: RegisterSheet, mealType?: MealType, opts?: { routineId?: string | null }) => void;
   close: () => void;
 }
 
@@ -21,10 +23,12 @@ interface RegisterState {
 export const useRegisterStore = create<RegisterState>((set) => ({
   sheet: null,
   mealType: 'LUNCH',
-  open: (sheet, mealType) =>
+  routineId: null,
+  open: (sheet, mealType, opts) =>
     set({
       sheet,
       mealType: mealType ?? mealForHour(new Date().getHours()),
+      routineId: opts?.routineId ?? null,
     }),
   close: () => set({ sheet: null }),
 }));

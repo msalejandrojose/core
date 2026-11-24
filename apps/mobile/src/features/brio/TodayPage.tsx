@@ -460,7 +460,10 @@ export default function TodayPage() {
                   to: x.kind === 'STRENGTH' ? `/tabs/today/entreno/${x.id}` : undefined,
                 }))}
                 isToday={isToday}
-                onStart={() => openRegister('activity')}
+                onStart={() => {
+                  const routineId = todayPlan?.planned?.structure?.routineId;
+                  openRegister('activity', undefined, { routineId: typeof routineId === 'string' ? routineId : null });
+                }}
               />
 
               {isToday ? (

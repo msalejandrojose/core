@@ -252,6 +252,7 @@ model User {
   sectionAccess             UserSectionAccess[]
   oauthCodes                OAuthAuthorizationCode[]
   oauthTokens               OAuthToken[]
+  brioWeekTemplate          BrioWeekTemplate?
   dashboards                Dashboard[]
   notifications             UserNotification[]
   devices                   Device[]
@@ -3039,6 +3040,20 @@ model BrioPlan {
 
   @@index([userId, isActive])
   @@map("brio_plan")
+}
+
+/// Semana tipo del usuario (TASK-429): sus actividades fijas de cada semana
+/// (deporte, día, hora, duración y rutina) para rellenar el plan de un toque.
+/// `slots` es una lista de `WeekSlot` (ver domain/services/week-template.ts).
+model BrioWeekTemplate {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @unique @map("user_id") @db.Char(36)
+  slots     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("brio_week_template")
 }
 
 /// Carga prevista de una sesión: decide cuánto sube o baja la dieta ese día.

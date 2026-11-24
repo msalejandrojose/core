@@ -883,3 +883,91 @@
   background: var(--brio-tint-soft);
   color: var(--brio-tint);
 }
+
+/* Semana tipo (TASK-429) */
+.week-tpl {
+  margin-top: var(--brio-space-m);
+}
+.week-tpl__day {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: var(--brio-row);
+  padding: 10px 16px 10px 0;
+}
+.week-tpl__day + .week-tpl__day {
+  border-top: 1px solid var(--brio-separator);
+}
+.week-tpl__name {
+  flex: 0 0 84px;
+  padding-top: 2px;
+  font-weight: 600;
+}
+.week-tpl__slots {
+  flex: 1;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.week-tpl__slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.week-tpl__remove {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brio-surface-fill);
+  color: var(--brio-ink-muted);
+  font-size: 18px;
+  line-height: 1;
+}
+.week-tpl__add {
+  width: 100%;
+  margin-top: var(--brio-space-l);
+}
+.week-tpl__sheet {
+  padding-bottom: calc(20px + var(--ion-safe-area-bottom, 0px));
+}
+.week-tpl__days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.week-tpl__daybtn {
+  aspect-ratio: 1;
+  min-height: 44px;
+  border: 1px solid var(--brio-border);
+  border-radius: 50%;
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+  font: 600 15px var(--brio-font-sans);
+}
+.week-tpl__daybtn.is-on {
+  border-color: var(--brio-tint);
+  background: var(--brio-tint);
+  color: var(--brio-on-tint);
+}
+.week-tpl__when {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.week-tpl__time {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--brio-border);
+  border-radius: var(--brio-radius-m);
+  background: var(--brio-surface);
+  color: var(--brio-ink);
+  font: 400 17px var(--brio-font-sans);
+  box-sizing: border-box;
+}
+.week-tpl__save {
+  width: 100%;
+  margin-top: var(--brio-space-l);
+}

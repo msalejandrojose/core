@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
@@ -65,6 +65,14 @@ export default function PlanPage() {
   const [selDay, setSelDay] = useState<string | null>(null);
   const [goalOpen, setGoalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Si ya tiene semana tipo, «Usar» la pone; si no, se le lleva a crearla. */
+  const [hasWeekTemplate, setHasWeekTemplate] = useState(false);
+  useEffect(() => {
+    planApi
+      .weekTemplate()
+      .then((s) => setHasWeekTemplate(s.length > 0))
+      .catch(() => undefined);
+  }, []);
 
   async function run(action: () => Promise<unknown>, ok?: string) {
     setBusy(true);
@@ -181,6 +189,15 @@ export default function PlanPage() {
                       </span>
                       <Chevron />
                     </button>
+                    <Link to="/tabs/entrenos/semana-tipo" className="rk-row plan__goal">
+                      <span className="rk-row__main">
+                        <span className="rk-row__title">Tu semana tipo</span>
+                        <span className="rk-row__sub">
+                          {hasWeekTemplate ? 'Tus actividades fijas, con su día y su hora' : 'Futsal, fútbol 7, gimnasio… una vez y para todas las semanas'}
+                        </span>
+                      </span>
+                      <Chevron />
+                    </Link>
                   </div>
 
                   {empty ? (
@@ -188,8 +205,16 @@ export default function PlanPage() {
                       tone="activity"
                       icon={CALENDAR}
                       title="Esta semana aún no tiene plan"
-                      text="Empieza con la semana tipo o repite la anterior. Luego puedes cambiar cada día."
-                      primary={{ label: 'Usar plantilla', onClick: () => void fillSafe('TEMPLATE') }}
+                      text={
+                        hasWeekTemplate
+                          ? 'Ponla con tu semana tipo o repite la anterior. Luego puedes cambiar cada día.'
+                          : 'Crea tu semana tipo (futsal, fútbol 7, gimnasio… con su hora) y se pone sola en cada semana con un toque.'
+                      }
+                      primary={
+                        hasWeekTemplate
+                          ? { label: 'Usar mi semana tipo', onClick: () => void fillSafe('TEMPLATE') }
+                          : { label: 'Crear mi semana tipo', onClick: () => history.push('/tabs/entrenos/semana-tipo') }
+                      }
                       secondary={{ label: 'Repetir semana anterior', onClick: () => void fillSafe('COPY_PREVIOUS') }}
                     />
                   ) : null}

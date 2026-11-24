@@ -1,7 +1,17 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { Plan, PlannedSession } from '../../domain/entities/plan.entity';
 import { BrioActivitySessionNotFoundError } from '../../domain/errors/brio-activity-session-not-found.error';
 import { dayInTimezone, shiftDay } from '../../domain/services/calendar';
+import {
+  invalidWeekSlots,
+  weekFromSlots,
+  type WeekSlot,
+} from '../../domain/services/week-template';
 import {
   DEFAULT_WEEK,
   buildWeek,
@@ -244,7 +254,11 @@ export class FillPlanWeekUseCase {
 
     let source: (PlannedSessionData | null)[];
     if (mode === 'TEMPLATE') {
-      source = DEFAULT_WEEK.map((code) => fromTemplate(code));
+      // La semana tipo del usuario; sin ella, la de ejemplo.
+      const slots = await this.plans.getWeekSlots(userId);
+      source = slots.length
+        ? weekFromSlots(slots)
+        : DEFAULT_WEEK.map((code) => fromTemplate(code));
     } else {
       const previous = await this.plans.plannedBetween(
         userId,
@@ -276,5 +290,32 @@ export class FillPlanWeekUseCase {
       written += 1;
     }
     return written;
+  }
+}
+
+/** Semana tipo: leerla y guardarla (TASK-429). */
+@Injectable()
+export class WeekTemplateUseCase {
+  constructor(
+    @Inject(BRIO_PLAN_REPOSITORY)
+    private readonly plans: BrioPlanRepositoryPort,
+  ) {}
+
+  get(userId: string): Promise<WeekSlot[]> {
+    return this.plans.getWeekSlots(userId);
+  }
+
+  async save(userId: string, slots: WeekSlot[]): Promise<WeekSlot[]> {
+    const clean = slots.map((s) => ({
+      weekday: s.weekday,
+      templateCode: s.templateCode,
+      title: s.title?.trim() || null,
+      startTime: s.startTime ?? null,
+      durationMin: s.durationMin ?? null,
+      routineId: s.routineId ?? null,
+    }));
+    const problem = invalidWeekSlots(clean);
+    if (problem) throw new BadRequestException(problem);
+    return this.plans.saveWeekSlots(userId, clean);
   }
 }
