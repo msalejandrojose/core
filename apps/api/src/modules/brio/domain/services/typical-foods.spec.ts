@@ -40,6 +40,13 @@ const ICONS = [
   'potato',
   'soup',
   'burger',
+  // Cocinas del mundo (TASK-431).
+  'sushi',
+  'curry',
+  'kebab',
+  'pasta',
+  'taco',
+  'arepa',
 ];
 
 describe('secciones de comidas típicas', () => {
@@ -55,6 +62,21 @@ describe('secciones de comidas típicas', () => {
     for (const s of all) {
       expect(ICONS).toContain(s.icon);
       expect(s.foods.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('comida y cena ofrecen las siete cocinas del mundo', () => {
+    for (const meal of ['LUNCH', 'DINNER'] as const) {
+      const world = MEAL_SECTIONS[meal].filter((s) => s.group === 'world');
+      expect(world.map((s) => s.code)).toEqual([
+        'asiatica',
+        'india',
+        'arabe',
+        'italiana',
+        'mexicana',
+        'americana',
+        'latina',
+      ]);
     }
   });
 

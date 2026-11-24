@@ -76,7 +76,13 @@ export class BrioNutritionController {
   async typical(
     @Query() query: MealHabitsQueryDto,
   ): Promise<
-    { code: string; label: string; icon: string; foods: FoodResponseDto[] }[]
+    {
+      code: string;
+      label: string;
+      icon: string;
+      group: 'world' | null;
+      foods: FoodResponseDto[];
+    }[]
   > {
     const sections: FoodSectionView[] = await this.typicalFoods.execute(
       query.mealType,
