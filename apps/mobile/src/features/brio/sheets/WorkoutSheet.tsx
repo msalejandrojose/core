@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { activityLook } from '../ui/activity-icons';
+import { activityLook } from '../ui/activity-look';
 import { IonContent, IonModal } from '@ionic/react';
 import { SWIPE_TO_CLOSE } from './swipe';
 import { isApiError, brioApi, type ActivityType, type Effort } from '../api';

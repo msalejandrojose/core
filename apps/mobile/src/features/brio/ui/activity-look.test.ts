@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activityLook } from './activity-icons';
+import { activityLook } from './activity-look';
 import { PATHS } from './paths';
 
 describe('activityLook', () => {
