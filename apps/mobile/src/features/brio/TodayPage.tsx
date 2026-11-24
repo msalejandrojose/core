@@ -7,11 +7,11 @@ import {
   IonRefresher,
   IonRefresherContent,
 } from '@ionic/react';
-import type { DaySummary, HabitItem, MealHabits, MealType } from './api';
+import type { DaySummary, MealType } from './api';
+import { DayChecklist } from './today/DayChecklist';
+import { suggestionFor, type Suggestion } from './today/suggestion';
 import {
-  MEAL_HOUR,
   MEAL_ORDER,
-  formatDuration,
   formatKcal,
   hourIn,
   joinNames,
@@ -19,7 +19,6 @@ import {
   longDate,
   mealForHour,
   mealLabel,
-  timeIn,
   todayIn,
 } from './format';
 import { useBrioStore } from './brio.store';
@@ -28,7 +27,7 @@ import { useHabitsStore } from './habits.store';
 import { deleteEntries, logItems } from './relog';
 import { tapSuccess } from './haptics';
 import { FoodIcon } from './ui/food-icons';
-import { CheckCircle, Chevron, Icon } from './ui/kit';
+import { Icon } from './ui/kit';
 import { PATHS } from './ui/paths';
 import { FirstDay } from './FirstDay';
 import { isFirstDay } from './first-day';
@@ -70,38 +69,6 @@ function missedText(missed: MealType[]): string {
   return `¿Te faltan ${joinNames(withArticle)}? ${masculine ? 'Añádelos' : 'Añádelas'} con el +.`;
 }
 
-interface Suggestion {
-  mealType: MealType;
-  items: HabitItem[];
-  kcal: number;
-  count: number;
-}
-
-/** "Lo de siempre" de una comida, o su alimento más frecuente si no hay combinación. */
-function suggestionFor(
-  mealType: MealType,
-  habits: MealHabits | undefined,
-): Suggestion | null {
-  if (!habits) return null;
-  const combo = habits.combos[0];
-  if (combo)
-    return {
-      mealType,
-      items: combo.items,
-      kcal: combo.kcal,
-      count: combo.count,
-    };
-  const top = habits.frequent[0];
-  if (top && top.count >= 2)
-    return {
-      mealType,
-      items: [top],
-      kcal: Math.round(top.kcal),
-      count: top.count,
-    };
-  return null;
-}
-
 /** Comidas sin registrar hoy, empezando por la que toca a esta hora. */
 function pendingMeals(summary: DaySummary, hour: number): MealType[] {
   const logged = new Set(summary.meals.map((m) => m.mealType));
@@ -124,53 +91,6 @@ function pastTitle(day: string, today: string): string {
     return wd.charAt(0).toUpperCase() + wd.slice(1);
   }
   return dayLabel(day, today);
-}
-
-/**
- * Comidas de un día pasado: qué se apuntó en cada momento (con sus kcal y
- * alimentos) y, en lo que falta, un toque para añadirlo a ese día.
- */
-function PastDayMeals({
-  summary,
-  onAdd,
-  onAddWorkout,
-}: {
-  summary: DaySummary;
-  onAdd: (type: MealType) => void;
-  onAddWorkout: () => void;
-}) {
-  return (
-    <section aria-label="Comidas del día" className="today-day">
-      {MEAL_ORDER.map((type) => {
-        const entries = summary.meals.filter((m) => m.mealType === type);
-        const kcal = entries.reduce((t, m) => t + m.kcal, 0);
-        return (
-          <button key={type} type="button" className="today-day__row" onClick={() => onAdd(type)}>
-            <CheckCircle on={entries.length > 0} color="var(--brio-activity)" />
-            <span className="rk-row__main">
-              <span className="rk-row__title">{mealLabel(type)}</span>
-              <span className="rk-row__sub">
-                {entries.length ? joinNames(entries.map((e) => e.name)) : 'Sin registrar · toca para añadir'}
-              </span>
-            </span>
-            <span className="rk-row__value">{entries.length ? `${formatKcal(kcal)} kcal` : '+'}</span>
-          </button>
-        );
-      })}
-      <button type="button" className="today-day__row" onClick={onAddWorkout}>
-        <CheckCircle on={summary.sessions.length > 0} color="var(--brio-activity)" />
-        <span className="rk-row__main">
-          <span className="rk-row__title">Entreno</span>
-          <span className="rk-row__sub">
-            {summary.sessions.length
-              ? joinNames(summary.sessions.map((x) => x.activityTypeName))
-              : 'Sin entreno · toca para añadir'}
-          </span>
-        </span>
-        <span className="rk-row__value">+</span>
-      </button>
-    </section>
-  );
 }
 
 /**
@@ -198,7 +118,6 @@ export default function TodayPage() {
   const loadHabits = useHabitsStore((s) => s.load);
   const invalidateHabits = useHabitsStore((s) => s.invalidate);
   const unread = useUnreadStore((s) => s.unread);
-  const [showDone, setShowDone] = useState(false);
   const [logging, setLogging] = useState(false);
 
   const timezone = profile?.timezone ?? 'Europe/Madrid';
@@ -271,6 +190,8 @@ export default function TodayPage() {
   // Cabecera visual: semana, anillos del día y el entreno de hoy.
   const todayPlan = week?.days.find((d) => d.day === day) ?? null;
   const todayDiet = week?.diet?.find((d) => d.day === day) ?? null;
+  const plannedTitle =
+    todayPlan?.planned && todayPlan.planned.load !== 'REST' ? (todayPlan.planned.title ?? null) : null;
   const activeMinutes = Math.round((summary?.sessions ?? []).reduce((m, x) => m + x.durationSec, 0) / 60);
   const steps = health?.days.find((d) => d.day === day)?.steps ?? null;
   const rings = totals
@@ -310,28 +231,6 @@ export default function TodayPage() {
       setLogging(false);
     }
   }
-
-  // "Hecho hoy": comidas registradas (una fila por momento) y entrenos.
-  const done = summary
-    ? [
-        ...MEAL_ORDER.filter((t) =>
-          summary.meals.some((m) => m.mealType === t),
-        ).map((t) => ({
-          key: t,
-          title: mealLabel(t),
-          meta: `${formatKcal(summary.meals.filter((m) => m.mealType === t).reduce((s, m) => s + m.kcal, 0))} kcal`,
-          time: MEAL_HOUR[t],
-        })),
-        ...summary.sessions.map((s) => ({
-          key: s.id,
-          title: s.activityTypeName,
-          meta: `${formatDuration(s.durationSec)} · ${formatKcal(s.kcalBurned)} kcal`,
-          time: timeIn(s.startedAt, timezone),
-          // Los entrenos de fuerza se abren para editar sus series.
-          to: s.kind === 'STRENGTH' ? `/tabs/today/entreno/${s.id}` : undefined,
-        })),
-      ]
-    : [];
 
   return (
     <IonPage>
@@ -456,6 +355,7 @@ export default function TodayPage() {
                   id: x.id,
                   name: x.activityTypeName,
                   kind: x.kind ?? 'OTHER',
+                  code: x.activityTypeCode,
                   durationSec: x.durationSec,
                   kcal: x.kcalBurned,
                   to: x.kind === 'STRENGTH' ? `/tabs/today/entreno/${x.id}` : undefined,
@@ -544,71 +444,30 @@ export default function TodayPage() {
               </section>
               <RecoveryRow />
 
-              <section aria-label="Tu día" className="today-day">
-                {pending.map((type) => {
-                  const s = suggestionFor(type, habitsByMeal[type]);
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      className="today-day__row"
-                      onClick={() => openRegister('meal', type)}
-                    >
-                      <CheckCircle on={false} />
-                      <span className="rk-row__main">
-                        <span className="rk-row__title">{mealLabel(type)}</span>
-                        <span className="rk-row__sub">
-                          {s
-                            ? `Lo de siempre · ${formatKcal(s.kcal)} kcal`
-                            : 'Sin registrar'}
-                        </span>
-                      </span>
-                      <span className="rk-row__value">{MEAL_HOUR[type]}</span>
-                    </button>
-                  );
-                })}
-                <button
-                  type="button"
-                  className="today-day__row today-day__toggle"
-                  aria-expanded={showDone}
-                  onClick={() => setShowDone((v) => !v)}
-                >
-                  <CheckCircle on color="var(--brio-activity)" />
-                  <span className="rk-row__title today-day__toggle-label">
-                    Hecho hoy · {done.length}
-                  </span>
-                  <span
-                    className={`today-day__chevron${showDone ? ' is-open' : ''}`}
-                  >
-                    <Chevron />
-                  </span>
-                </button>
-                {showDone
-                  ? done.map((d) =>
-                      'to' in d && d.to ? (
-                        <Link key={d.key} to={d.to} className="today-day__done today-day__done--link">
-                          <span>
-                            {d.title} · {d.meta}
-                          </span>
-                          <span className="rk-row__value">{d.time}</span>
-                          <Chevron />
-                        </Link>
-                      ) : (
-                        <div key={d.key} className="today-day__done">
-                          <span>
-                            {d.title} · {d.meta}
-                          </span>
-                          <span className="rk-row__value">{d.time}</span>
-                        </div>
-                      ),
-                    )
-                  : null}
-              </section>
+              <DayChecklist
+                summary={summary}
+                isToday
+                pending={pending}
+                habitsByMeal={habitsByMeal}
+                plannedWorkout={plannedTitle}
+                timezone={timezone}
+                onAdd={(t) => openRegister('meal', t)}
+                onAddWorkout={() => openRegister('activity')}
+              />
 
               <TomorrowRow today={today} />
               </>
               ) : (
-                <PastDayMeals summary={summary} onAdd={(t) => openRegister('meal', t)} onAddWorkout={() => openRegister('activity')} />
+                <DayChecklist
+                  summary={summary}
+                  isToday={false}
+                  pending={[]}
+                  habitsByMeal={habitsByMeal}
+                  plannedWorkout={null}
+                  timezone={timezone}
+                  onAdd={(t) => openRegister('meal', t)}
+                  onAddWorkout={() => openRegister('activity')}
+                />
               )}
 
               {week ? <WeekPlanCard week={week} /> : null}

@@ -2,6 +2,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useBrioStore } from './brio.store';
 import { useHabitsStore } from './habits.store';
 import { useRegisterStore } from './register.store';
+import { clearSnapshot } from './today-snapshot';
 
 /**
  * Al cerrar sesión se vacía todo lo que Brío guarda en memoria del usuario
@@ -19,6 +20,7 @@ export function installSessionReset(): () => void {
         summary: null,
         dayStatus: 'idle',
       });
+      clearSnapshot();
       useHabitsStore.getState().invalidate();
       useRegisterStore.getState().close();
     }

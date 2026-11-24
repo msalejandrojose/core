@@ -14,7 +14,7 @@ import { toActivityType, toDateOnly, toDay, toSession } from './brio.mapper';
 
 /** Lo que necesita `toSession`: nombre y disciplina del tipo, y las series. */
 const SESSION_INCLUDE = {
-  activityType: { select: { name: true, kind: true } },
+  activityType: { select: { name: true, kind: true, code: true } },
   strengthSets: true,
 } as const;
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { activityLook } from '../ui/activity-look';
 import { useRegisterStore } from '../register.store';
 import { IonContent, IonModal } from '@ionic/react';
 import { SWIPE_TO_CLOSE } from './swipe';
@@ -31,18 +32,8 @@ const DEFAULT_CODES = ['running', 'strength', 'cycling', 'walking', 'hiit'];
 const SUGGESTED_CODES = ['football', 'padel', 'tennis', 'swimming', 'basketball', 'yoga', 'football_7', 'futsal'];
 const FAVORITES = 5;
 
-/** Dibujo de cada tipo, por código o disciplina. */
-function iconFor(t: ActivityType): string {
-  const c = t.code ?? '';
-  if (/^(football|futsal|football_7|basketball|handball|volleyball|beach_volleyball|rugby|hockey)$/.test(c)) return PATHS.ball;
-  if (/^(padel|tennis|tennis_doubles|squash|badminton|table_tennis|fronton|golf)$/.test(c)) return PATHS.racket;
-  if (/^(swimming|water_polo|surf|kayak|rowing)$/.test(c)) return PATHS.swim;
-  if (t.kind === 'STRENGTH') return PATHS.strength;
-  if (t.kind === 'RUN') return PATHS.run;
-  if (t.kind === 'CYCLE') return PATHS.bike;
-  if (t.kind === 'WALK' || t.kind === 'HIKE') return PATHS.walk;
-  return PATHS.dance;
-}
+/** Dibujo de cada tipo: el mismo mapa que el resto de la app. */
+const iconFor = (t: ActivityType): string => activityLook({ code: t.code, kind: t.kind, name: t.name }).path;
 
 const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 

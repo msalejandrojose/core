@@ -37,7 +37,7 @@ export function useGoogleLogin() {
         setError('No se pudo iniciar sesión con Google. Inténtalo de nuevo.');
         return;
       }
-      login(data.accessToken, data.user);
+      login(data.accessToken, data.user, data.refreshToken);
     } catch (err) {
       if (!isSocialLoginCancelled(err)) {
         setError('No se pudo iniciar sesión con Google. Inténtalo de nuevo.');

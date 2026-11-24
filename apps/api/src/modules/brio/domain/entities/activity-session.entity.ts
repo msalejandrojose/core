@@ -18,6 +18,8 @@ export interface ActivitySession {
   activityTypeId: string;
   /** Nombre del tipo de actividad, para no obligar a un join en el cliente. */
   activityTypeName: string;
+  /** Código del tipo (`football_7`, `padel`…), para el icono en la app. */
+  activityTypeCode?: string | null;
   startedAt: Date;
   /** Día natural al que se imputa (`YYYY-MM-DD`), ya resuelto con la timezone. */
   loggedOn: string;

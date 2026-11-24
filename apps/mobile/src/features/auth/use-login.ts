@@ -32,7 +32,7 @@ export function useLogin() {
         );
         return;
       }
-      login(data.accessToken, data.user);
+      login(data.accessToken, data.user, data.refreshToken);
     } catch {
       setError('No se pudo iniciar sesión. Inténtalo de nuevo.');
     } finally {

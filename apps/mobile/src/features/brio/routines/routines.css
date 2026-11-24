@@ -310,3 +310,35 @@
 .routine-pick__free .routine-pick__meta {
   color: var(--brio-ink-muted);
 }
+
+/* Fila del buscador: ⓘ abre la ficha; el resto de la fila añade (TASK-430). */
+.routine__match {
+  gap: 4px;
+  padding-right: 0;
+}
+.routine__info {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin-left: -6px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+}
+.routine__pick {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--brio-row);
+  padding: 0 16px 0 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}

@@ -19,6 +19,11 @@ export interface AuthUser {
 
 interface AuthState {
   token: string | null;
+  /**
+   * Refresh token de la sesión del dispositivo: renueva `token` (JWT de 60 min)
+   * sin volver a pedir login. Null en sesiones de antes de TASK-425.
+   */
+  refreshToken: string | null;
   user: AuthUser | null;
   isAuthenticated: boolean;
   /**
@@ -27,7 +32,9 @@ interface AuthState {
    * login vs área autenticada, para no parpadear el login antes del auto-login.
    */
   hasHydrated: boolean;
-  login: (token: string, user: AuthUser) => void;
+  login: (token: string, user: AuthUser, refreshToken?: string | null) => void;
+  /** Tras renovar la sesión: par nuevo de tokens, mismo usuario. */
+  setTokens: (token: string, refreshToken: string) => void;
   setUser: (user: AuthUser) => void;
   logout: () => void;
   setHasHydrated: (value: boolean) => void;
@@ -37,12 +44,16 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
+      refreshToken: null,
       user: null,
       isAuthenticated: false,
       hasHydrated: false,
-      login: (token, user) => set({ token, user, isAuthenticated: true }),
+      login: (token, user, refreshToken = null) =>
+        set({ token, user, refreshToken, isAuthenticated: true }),
+      setTokens: (token, refreshToken) => set({ token, refreshToken }),
       setUser: (user) => set({ user }),
-      logout: () => set({ token: null, user: null, isAuthenticated: false }),
+      logout: () =>
+        set({ token: null, refreshToken: null, user: null, isAuthenticated: false }),
       setHasHydrated: (value) => set({ hasHydrated: value }),
     }),
     {
@@ -53,6 +64,7 @@ export const useAuthStore = create<AuthState>()(
       // Solo se persiste la sesión, no las banderas de UI ni las acciones.
       partialize: (state) => ({
         token: state.token,
+        refreshToken: state.refreshToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),

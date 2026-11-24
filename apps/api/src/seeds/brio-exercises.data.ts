@@ -2062,6 +2062,431 @@ export const EXERCISES: readonly SeedExercise[] = [
       'Ajusta velocidad e inclinación para mantener un esfuerzo moderado.',
     ],
   },
+  // ── Ampliación (TASK-430): máquinas, variantes y core ─────────────────────
+  {
+    code: 'smith_incline_bench_press',
+    name: 'Press inclinado en máquina Smith',
+    compound: true,
+    p: ['CHEST'],
+    s: ['FRONT_DELT', 'TRICEPS'],
+    description:
+      'El press inclinado con la barra guiada por los raíles de la máquina Smith. Al no tener que equilibrar la barra, puedes centrarte en empujar con la parte alta del pecho.',
+    steps: [
+      'Coloca un banco inclinado a 30–45° bajo la barra, de modo que baje a la parte alta del pecho.',
+      'Desbloquea la barra girándola con los brazos estirados.',
+      'Bájala controlada hasta rozar el pecho, justo bajo las clavículas.',
+      'Empuja hasta estirar los brazos y vuelve a bloquearla al terminar.',
+    ],
+  },
+  {
+    code: 'smith_decline_bench_press',
+    name: 'Press declinado en máquina Smith',
+    compound: true,
+    p: ['CHEST'],
+    s: ['TRICEPS', 'FRONT_DELT'],
+    description:
+      'Press con el banco declinado y la barra guiada. Carga sobre todo la parte baja del pecho, con un recorrido algo más corto que el press plano.',
+    steps: [
+      'Engancha los pies en el banco declinado y túmbate bajo la barra.',
+      'Desbloquea la barra con los brazos estirados encima del pecho.',
+      'Bájala hasta la parte baja del pecho con los codos a unos 45°.',
+      'Empuja hasta estirar los brazos sin rebotar abajo.',
+    ],
+  },
+  {
+    code: 'cable_front_raise',
+    name: 'Elevación frontal en polea',
+    p: ['FRONT_DELT'],
+    i: ['SIDE_DELT', 'CHEST'],
+    description:
+      'Subes el brazo estirado por delante del cuerpo tirando de una polea baja. La polea mantiene la tensión en todo el recorrido, también abajo.',
+    steps: [
+      'Ponte de espaldas a la polea baja con el agarre en la mano y el brazo estirado.',
+      'Sube el brazo por delante, con el codo apenas flexionado, hasta la altura de los ojos.',
+      'Para un instante arriba sin echar el cuerpo hacia atrás.',
+      'Baja despacio hasta el muslo.',
+    ],
+  },
+  {
+    code: 'rope_pushdown',
+    name: 'Extensión de tríceps con cuerda',
+    p: ['TRICEPS'],
+    description:
+      'Empujas hacia abajo una cuerda en la polea alta estirando los codos. Al separar las puntas de la cuerda abajo, el tríceps termina más contraído que con la barra.',
+    steps: [
+      'Agarra la cuerda en la polea alta con los codos pegados al cuerpo.',
+      'Empuja hacia abajo hasta estirar los brazos, sin mover los codos.',
+      'Abajo, separa las puntas de la cuerda hacia los lados.',
+      'Sube controlado hasta que los antebrazos queden por encima de la horizontal.',
+    ],
+  },
+  {
+    code: 'overhead_triceps_extension',
+    name: 'Extensión de tríceps sobre la cabeza con barra Z',
+    p: ['TRICEPS'],
+    description:
+      'Con una barra Z encima de la cabeza, la bajas por detrás doblando solo los codos y la vuelves a subir. Estira el tríceps más que los ejercicios con los brazos abajo.',
+    steps: [
+      'De pie o sentado, sube la barra Z encima de la cabeza con los brazos estirados.',
+      'Baja la barra por detrás de la cabeza doblando solo los codos.',
+      'Mantén los codos apuntando al frente y cerca de la cabeza.',
+      'Estira los brazos hasta arriba sin arquear la espalda.',
+    ],
+  },
+  {
+    code: 'seated_dip_machine',
+    name: 'Fondos en máquina',
+    compound: true,
+    p: ['TRICEPS'],
+    s: ['CHEST', 'FRONT_DELT'],
+    description:
+      'Sentado en la máquina, empujas las asas hacia abajo hasta estirar los brazos. El gesto de los fondos con el peso que elijas y sin tener que sostener el cuerpo.',
+    steps: [
+      'Siéntate con la espalda apoyada y agarra las asas a los lados.',
+      'Empuja hacia abajo hasta estirar los brazos.',
+      'Mantén los codos cerca del cuerpo, apuntando hacia atrás.',
+      'Sube controlado hasta que los codos queden a 90°.',
+    ],
+  },
+  {
+    code: 'assisted_dip',
+    name: 'Fondos asistidos',
+    compound: true,
+    p: ['CHEST', 'TRICEPS'],
+    s: ['FRONT_DELT'],
+    description:
+      'Fondos en paralelas con una plataforma que te empuja hacia arriba y te quita parte del peso. Sirven para aprender los fondos o hacer más repeticiones.',
+    steps: [
+      'Elige la ayuda en la máquina y apoya las rodillas en la plataforma.',
+      'Sujétate en las paralelas con los brazos estirados.',
+      'Baja doblando los codos hasta que queden a 90°, con el pecho algo inclinado.',
+      'Empuja hasta estirar los brazos sin bloquear los codos de golpe.',
+    ],
+  },
+  {
+    code: 'iso_lateral_row',
+    name: 'Remo en máquina iso-lateral',
+    compound: true,
+    p: ['LATS'],
+    s: ['TRAPS', 'REAR_DELT', 'BICEPS'],
+    description:
+      'Remo en una máquina con un brazo de palanca para cada lado, apoyando el pecho en el respaldo. Cada brazo tira por su cuenta, así no compensa el más fuerte.',
+    steps: [
+      'Ajusta el asiento para que las asas queden a la altura del pecho y apoya el pecho en el respaldo.',
+      'Tira de las asas llevando los codos hacia atrás, pegados al cuerpo.',
+      'Junta las escápulas al final del recorrido.',
+      'Estira los brazos despacio hasta notar la espalda estirada.',
+    ],
+  },
+  {
+    code: 'assisted_chin_up',
+    name: 'Dominadas supinas asistidas',
+    compound: true,
+    p: ['LATS', 'BICEPS'],
+    s: ['TRAPS', 'REAR_DELT'],
+    description:
+      'Dominadas con las palmas hacia ti y una plataforma que te ayuda a subir. El agarre supino mete más bíceps que la dominada normal.',
+    steps: [
+      'Elige la ayuda y apoya las rodillas en la plataforma.',
+      'Agarra la barra con las palmas hacia ti, a la anchura de los hombros.',
+      'Sube hasta pasar la barbilla por encima de la barra, llevando los codos hacia abajo.',
+      'Baja del todo hasta estirar los brazos.',
+    ],
+  },
+  {
+    code: 'decline_crunch',
+    name: 'Encogimiento declinado',
+    bodyweight: true,
+    p: ['ABS'],
+    description:
+      'Encogimiento abdominal en un banco declinado, con los pies enganchados. La inclinación hace el ejercicio más duro que en el suelo.',
+    steps: [
+      'Engancha los pies en el banco declinado y túmbate con las manos en el pecho.',
+      'Sube el tronco enrollando la espalda, vértebra a vértebra.',
+      'Para cuando los hombros estén bien despegados del banco.',
+      'Baja despacio sin dejar caer la espalda.',
+    ],
+  },
+  {
+    code: 'scissor_kicks',
+    name: 'Tijeras',
+    bodyweight: true,
+    p: ['ABS'],
+    i: ['QUADS'],
+    description:
+      'Tumbado boca arriba, subes y bajas las piernas estiradas alternándolas, como unas tijeras. Trabaja la parte baja del abdomen y la estabilidad del tronco.',
+    steps: [
+      'Túmbate boca arriba con las manos bajo los glúteos.',
+      'Levanta las piernas estiradas unos centímetros del suelo.',
+      'Sube una pierna y baja la otra, alternando sin tocar el suelo.',
+      'Mantén la zona lumbar pegada al suelo todo el rato.',
+    ],
+  },
+  {
+    code: 'dumbbell_romanian_deadlift',
+    name: 'Peso muerto rumano con mancuernas',
+    compound: true,
+    p: ['HAMSTRINGS', 'GLUTES'],
+    s: ['LOWER_BACK'],
+    i: ['FOREARMS'],
+    description:
+      'Bajas dos mancuernas por delante de las piernas echando la cadera atrás, con las rodillas apenas flexionadas. Estira y fortalece isquios y glúteos.',
+    steps: [
+      'De pie, con una mancuerna en cada mano delante de los muslos.',
+      'Echa la cadera atrás y baja las mancuernas rozando las piernas, con la espalda recta.',
+      'Para al notar el estiramiento detrás de los muslos, más o menos a media tibia.',
+      'Sube empujando la cadera hacia delante y aprieta los glúteos.',
+    ],
+  },
+  {
+    code: 'dumbbell_lunge',
+    name: 'Zancada con mancuernas',
+    compound: true,
+    p: ['QUADS', 'GLUTES'],
+    s: ['HAMSTRINGS'],
+    i: ['FOREARMS'],
+    description:
+      'La zancada con una mancuerna en cada mano. Trabaja cada pierna por separado y mejora el equilibrio.',
+    steps: [
+      'De pie con una mancuerna en cada mano a los lados.',
+      'Da un paso largo al frente y baja hasta que la rodilla de atrás casi toque el suelo.',
+      'La rodilla de delante va en la línea del pie, sin pasar mucho la punta.',
+      'Empuja con la pierna de delante para volver y cambia de pierna.',
+    ],
+  },
+  {
+    code: 'cable_hammer_curl',
+    name: 'Curl martillo con cuerda en polea',
+    p: ['BICEPS'],
+    s: ['FOREARMS'],
+    description:
+      'Curl en la polea baja con la cuerda y las palmas mirándose. Además del bíceps, carga el braquial y el antebrazo.',
+    steps: [
+      'De frente a la polea baja, agarra la cuerda con las palmas enfrentadas.',
+      'Sube las manos doblando los codos, pegados al cuerpo.',
+      'Arriba, aprieta un instante sin adelantar los codos.',
+      'Baja despacio hasta estirar los brazos.',
+    ],
+  },
+  {
+    code: 'dumbbell_skull_crusher',
+    name: 'Press francés con mancuernas',
+    p: ['TRICEPS'],
+    description:
+      'Tumbado en el banco, bajas dos mancuernas hacia los lados de la cabeza doblando solo los codos. Cada brazo trabaja por su cuenta y las muñecas van más cómodas que con barra.',
+    steps: [
+      'Túmbate con una mancuerna en cada mano y los brazos estirados sobre el pecho.',
+      'Baja las mancuernas hacia los lados de la cabeza doblando solo los codos.',
+      'Mantén los codos apuntando al techo, sin abrirlos.',
+      'Estira los brazos hasta arriba.',
+    ],
+  },
+  {
+    code: 'single_leg_press',
+    name: 'Prensa a una pierna',
+    compound: true,
+    p: ['QUADS', 'GLUTES'],
+    s: ['HAMSTRINGS'],
+    description:
+      'La prensa de piernas empujando con una sola pierna. Corrige diferencias de fuerza entre piernas sin cargar la espalda.',
+    steps: [
+      'Siéntate en la prensa y apoya un pie en el centro de la plataforma.',
+      'Quita los seguros y baja la plataforma doblando la rodilla hacia el pecho.',
+      'Para antes de que la zona lumbar se despegue del respaldo.',
+      'Empuja con todo el pie hasta casi estirar la pierna y cambia de lado.',
+    ],
+  },
+  {
+    code: 'weighted_pull_up',
+    name: 'Dominadas lastradas',
+    compound: true,
+    p: ['LATS'],
+    s: ['BICEPS', 'TRAPS', 'REAR_DELT'],
+    i: ['FOREARMS'],
+    description:
+      'Dominadas con peso extra colgado de un cinturón o entre los pies. Para seguir ganando fuerza cuando ya haces bastantes con tu peso.',
+    steps: [
+      'Cuélgate el disco o la mancuerna del cinturón y agarra la barra algo más abierto que los hombros.',
+      'Sube llevando los codos hacia abajo y atrás hasta pasar la barbilla.',
+      'Evita balancearte: el peso extra lo hace más fácil de perder.',
+      'Baja controlado hasta estirar los brazos.',
+    ],
+  },
+  {
+    code: 'weighted_dip',
+    name: 'Fondos lastrados',
+    compound: true,
+    p: ['CHEST', 'TRICEPS'],
+    s: ['FRONT_DELT'],
+    description:
+      'Fondos en paralelas con peso extra colgado del cinturón. Uno de los mejores ejercicios de empuje para pecho y tríceps.',
+    steps: [
+      'Cuélgate el peso del cinturón y súbete a las paralelas con los brazos estirados.',
+      'Baja doblando los codos hasta que queden a 90°, con el pecho algo inclinado.',
+      'No bajes más de lo que tus hombros aguanten cómodos.',
+      'Empuja hasta estirar los brazos.',
+    ],
+  },
+  {
+    code: 'neutral_grip_lat_pulldown',
+    name: 'Jalón al pecho con agarre neutro',
+    compound: true,
+    p: ['LATS'],
+    s: ['BICEPS', 'TRAPS'],
+    description:
+      'Jalón en polea alta con un agarre de palmas enfrentadas. Suele ser cómodo para los hombros y deja tirar con fuerza.',
+    steps: [
+      'Siéntate con los muslos bajo los rodillos y agarra el triángulo o el agarre neutro.',
+      'Tira hacia la parte alta del pecho llevando los codos hacia abajo.',
+      'Inclínate un poco hacia atrás, sin balancearte.',
+      'Sube despacio hasta estirar los brazos del todo.',
+    ],
+  },
+  {
+    code: 'reverse_grip_lat_pulldown',
+    name: 'Jalón al pecho supino',
+    compound: true,
+    p: ['LATS', 'BICEPS'],
+    s: ['TRAPS'],
+    description:
+      'Jalón con las palmas hacia ti y las manos a la anchura de los hombros. Como la dominada supina, mete más bíceps.',
+    steps: [
+      'Agarra la barra con las palmas hacia ti, a la anchura de los hombros.',
+      'Tira hacia el pecho llevando los codos hacia abajo y pegados.',
+      'Junta las escápulas abajo.',
+      'Sube controlado hasta estirar los brazos.',
+    ],
+  },
+  {
+    code: 'wide_grip_cable_row',
+    name: 'Remo en polea con agarre abierto',
+    compound: true,
+    p: ['LATS', 'TRAPS'],
+    s: ['REAR_DELT', 'BICEPS'],
+    description:
+      'Remo sentado en polea con una barra ancha. Al abrir los codos, trabaja más la parte alta de la espalda y el hombro posterior.',
+    steps: [
+      'Siéntate con los pies apoyados y agarra la barra ancha con los brazos estirados.',
+      'Tira hacia la parte baja del pecho abriendo los codos.',
+      'Junta las escápulas sin echar el tronco hacia atrás.',
+      'Estira los brazos despacio.',
+    ],
+  },
+  {
+    code: 'machine_hip_thrust',
+    name: 'Hip thrust en máquina',
+    compound: true,
+    p: ['GLUTES'],
+    s: ['HAMSTRINGS'],
+    description:
+      'El hip thrust en una máquina con la almohadilla sobre la cadera. Más fácil de colocar que con barra y con el mismo trabajo de glúteo.',
+    steps: [
+      'Apoya la parte alta de la espalda en el respaldo y la almohadilla sobre la cadera.',
+      'Empuja con los talones y sube la cadera hasta alinear rodillas, cadera y hombros.',
+      'Aprieta los glúteos arriba un segundo.',
+      'Baja la cadera controlada sin llegar a apoyar.',
+    ],
+  },
+  {
+    code: 'cable_pullover',
+    name: 'Pullover en polea',
+    p: ['LATS'],
+    i: ['TRICEPS', 'ABS'],
+    description:
+      'De pie frente a la polea alta, bajas una barra o cuerda con los brazos casi estirados hasta los muslos. Aísla el dorsal sin que trabaje el bíceps.',
+    steps: [
+      'Agarra la barra de la polea alta con los brazos estirados e inclínate un poco hacia delante.',
+      'Baja la barra en arco hasta los muslos sin doblar los codos.',
+      'Aprieta la espalda abajo.',
+      'Sube despacio hasta notar el dorsal estirado.',
+    ],
+  },
+  {
+    code: 'sumo_squat',
+    name: 'Sentadilla sumo con mancuerna',
+    compound: true,
+    p: ['QUADS', 'GLUTES'],
+    s: ['HAMSTRINGS'],
+    description:
+      'Sentadilla con las piernas muy abiertas y las puntas hacia fuera, sujetando una mancuerna entre las piernas. Carga más los aductores y el glúteo.',
+    steps: [
+      'Abre los pies bastante más que los hombros, con las puntas hacia fuera.',
+      'Sujeta una mancuerna con las dos manos colgando entre las piernas.',
+      'Baja con el tronco erguido, llevando las rodillas en la dirección de los pies.',
+      'Sube empujando el suelo y aprieta los glúteos.',
+    ],
+  },
+  {
+    code: 'lying_leg_raise',
+    name: 'Elevación de piernas tumbado',
+    bodyweight: true,
+    p: ['ABS'],
+    description:
+      'Tumbado boca arriba, subes las piernas estiradas hasta la vertical y las bajas sin tocar el suelo. Trabaja la parte baja del abdomen.',
+    steps: [
+      'Túmbate boca arriba con las manos a los lados o bajo los glúteos.',
+      'Sube las piernas juntas y estiradas hasta la vertical.',
+      'Bájalas despacio hasta casi tocar el suelo.',
+      'Mantén la zona lumbar pegada al suelo.',
+    ],
+  },
+  {
+    code: 'hollow_hold',
+    measure: 'TIME',
+    name: 'Hollow hold',
+    bodyweight: true,
+    p: ['ABS'],
+    description:
+      'Tumbado boca arriba, aguantas brazos y piernas estirados y despegados del suelo con la zona lumbar pegada. Un ejercicio isométrico de core muy usado en gimnasia.',
+    steps: [
+      'Túmbate boca arriba y pega la zona lumbar al suelo.',
+      'Despega hombros y piernas, con los brazos estirados hacia atrás.',
+      'Aguanta la postura en forma de plátano sin que la espalda se arquee.',
+      'Si cuesta, dobla las rodillas o lleva los brazos al frente.',
+    ],
+  },
+  {
+    code: 'superman',
+    name: 'Superman',
+    bodyweight: true,
+    p: ['LOWER_BACK'],
+    s: ['GLUTES'],
+    description:
+      'Tumbado boca abajo, levantas a la vez brazos y piernas del suelo. Fortalece la zona lumbar y los glúteos sin material.',
+    steps: [
+      'Túmbate boca abajo con los brazos estirados por delante.',
+      'Levanta a la vez brazos, pecho y piernas unos centímetros.',
+      'Mira al suelo para no forzar el cuello.',
+      'Aguanta un segundo y baja despacio.',
+    ],
+  },
+  {
+    code: 'cable_woodchop',
+    name: 'Leñador en polea',
+    p: ['ABS'],
+    i: ['FRONT_DELT'],
+    description:
+      'Giras el tronco tirando en diagonal de una polea, de arriba abajo o al revés. Trabaja los oblicuos y la rotación del tronco.',
+    steps: [
+      'Ponte de lado a la polea alta y agarra el asa con las dos manos.',
+      'Tira en diagonal hacia la rodilla contraria girando el tronco.',
+      'Pivota el pie de atrás y mantén los brazos casi estirados.',
+      'Vuelve despacio y, al terminar, cambia de lado.',
+    ],
+  },
+  {
+    code: 'machine_crunch',
+    name: 'Crunch en máquina',
+    p: ['ABS'],
+    description:
+      'Encogimiento abdominal sentado en una máquina con el peso que elijas. Permite progresar en el abdomen como en cualquier otro músculo.',
+    steps: [
+      'Siéntate y coloca los rodillos o las asas sobre el pecho.',
+      'Enrolla el tronco hacia delante llevando el pecho a la cadera.',
+      'Aprieta el abdomen abajo sin tirar con los brazos.',
+      'Vuelve despacio sin dejar que el peso choque.',
+    ],
+  },
 ];
 
 /** Disciplina de cada tipo de actividad del catálogo (por `code`). */

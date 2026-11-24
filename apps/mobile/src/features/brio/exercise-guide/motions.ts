@@ -684,6 +684,28 @@ const SAME_MOTION: Record<string, string> = {
   machine_hip_abduction: 'hip_abduction',
   machine_hip_adduction: 'hip_adduction',
   hanging_knee_raise: 'hanging_leg_raise',
+  // Mismo gesto que otro ya animado (TASK-430).
+  cable_crossover: 'chest_fly',
+  cable_rear_delt_fly: 'reverse_fly',
+  dumbbell_arnold_press: 'dumbbell_shoulder_press',
+  push_press: 'overhead_press',
+  rack_pull: 'deadlift',
+  single_arm_cable_row: 'seated_cable_row',
+  dumbbell_overhead_triceps_extension: 'overhead_triceps_extension',
+  machine_bicep_curl: 'preacher_curl',
+  reverse_curl: 'barbell_curl',
+  sandbag_lunges: 'lunge',
+  dumbbell_romanian_deadlift: 'romanian_deadlift',
+  dumbbell_lunge: 'lunge',
+  cable_hammer_curl: 'cable_curl',
+  dumbbell_skull_crusher: 'skull_crusher',
+  single_leg_press: 'leg_press',
+  weighted_pull_up: 'pull_up',
+  weighted_dip: 'dip',
+  neutral_grip_lat_pulldown: 'lat_pulldown',
+  reverse_grip_lat_pulldown: 'lat_pulldown',
+  wide_grip_cable_row: 'seated_cable_row',
+  machine_hip_thrust: 'hip_thrust',
 };
 
 export function motionFor(code: string | null | undefined): Motion | null {
