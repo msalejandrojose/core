@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { FoodTray, trayTotals, type TrayItem } from './FoodTray';
+import { FoodTray } from './FoodTray';
+import { trayTotals, type TrayItem } from './food-tray';
 
 const item = (key: string, name: string, kcal: number, extra: Partial<TrayItem> = {}): TrayItem => ({
   key,
