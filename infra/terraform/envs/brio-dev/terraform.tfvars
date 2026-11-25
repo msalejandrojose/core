@@ -18,7 +18,7 @@ cloudflare_zone_name = "ajly.online"
 api_hostname = "brio-api.ajly.online"
 
 # TODO: dash.cloudflare.com → ajly.online → Información general → API → Account ID.
-cloudflare_account_id = "REEMPLAZAR_CLOUDFLARE_ACCOUNT_ID"
+cloudflare_account_id = "626a57498855074bf118c6a2912ee847"
 
 # Pasar a true cuando la app use ya api_hostname (ver README).
 enforce_edge_origin = false
