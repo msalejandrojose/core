@@ -268,6 +268,8 @@ resource "google_project_iam_member" "deployer" {
     "roles/cloudbuild.builds.editor",
     "roles/logging.viewer",
     "roles/serviceusage.serviceUsageConsumer",
+    # `gcloud builds submit` lista los buckets para comprobar el suyo.
+    "roles/storage.bucketViewer",
   ])
 
   project = var.project
@@ -281,6 +283,17 @@ resource "google_storage_bucket_iam_member" "deployer_cloudbuild" {
   bucket = "${var.project}_cloudbuild"
   role   = "roles/storage.admin"
   member = "serviceAccount:${google_service_account.deployer["this"].email}"
+}
+
+# Cloud Run comprueba que quien despliega puede leer la imagen del servicio y del job.
+resource "google_artifact_registry_repository_iam_member" "deployer_reader" {
+  for_each = local.deployer_set
+
+  project    = var.project
+  location   = google_artifact_registry_repository.images.location
+  repository = google_artifact_registry_repository.images.repository_id
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${google_service_account.deployer["this"].email}"
 }
 
 resource "google_service_account_iam_member" "deployer_act_as_runtime" {
