@@ -33,7 +33,10 @@ BUILD_SA="${NUMBER}-compute@developer.gserviceaccount.com"
 
 # Lo justo para: subir el código a Cloud Build y seguir el log, desplegar el
 # servicio y el job de migraciones, y hacerlos correr como brio-api.
-for role in roles/run.admin roles/cloudbuild.builds.editor roles/logging.viewer roles/serviceusage.serviceUsageConsumer; do
+# `storage.bucketViewer` en el proyecto: `gcloud builds submit` lista los
+# buckets para comprobar que el suyo (PROJECT_cloudbuild) es de este proyecto;
+# sin ello falla con «forbidden from accessing the bucket».
+for role in roles/run.admin roles/cloudbuild.builds.editor roles/logging.viewer roles/serviceusage.serviceUsageConsumer roles/storage.bucketViewer; do
   "${G[@]}" projects add-iam-policy-binding "$PROJECT" \
     --member "serviceAccount:$DEPLOYER_SA" --role "$role" --condition None >/dev/null
 done
