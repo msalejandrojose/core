@@ -48,6 +48,11 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter @core/api prisma:generate
 
+      - name: Build workspace packages
+        # La API importa el dist/ de @core/shared-types (y demás paquetes internos):
+        # sin compilarlos, jest no encuentra el módulo.
+        run: pnpm --filter "@core/api^..." build
+
       - name: Test API
         run: pnpm --filter @core/api test
 
