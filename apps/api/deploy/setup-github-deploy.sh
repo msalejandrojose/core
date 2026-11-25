@@ -33,12 +33,18 @@ BUILD_SA="${NUMBER}-compute@developer.gserviceaccount.com"
 
 # Lo justo para: subir el código a Cloud Build y seguir el log, desplegar el
 # servicio y el job de migraciones, y hacerlos correr como brio-api.
-for role in roles/run.admin roles/cloudbuild.builds.editor roles/logging.viewer roles/serviceusage.serviceUsageConsumer; do
+# `storage.bucketViewer` en el proyecto: `gcloud builds submit` lista los
+# buckets para comprobar que el suyo (PROJECT_cloudbuild) es de este proyecto;
+# sin ello falla con «forbidden from accessing the bucket».
+for role in roles/run.admin roles/cloudbuild.builds.editor roles/logging.viewer roles/serviceusage.serviceUsageConsumer roles/storage.bucketViewer; do
   "${G[@]}" projects add-iam-policy-binding "$PROJECT" \
     --member "serviceAccount:$DEPLOYER_SA" --role "$role" --condition None >/dev/null
 done
 "${G[@]}" storage buckets add-iam-policy-binding "gs://${PROJECT}_cloudbuild" \
   --member "serviceAccount:$DEPLOYER_SA" --role roles/storage.admin >/dev/null
+# Cloud Run comprueba que quien despliega puede leer la imagen del servicio y del job.
+"${G[@]}" artifacts repositories add-iam-policy-binding "${REPO:-brio}" --location "$REGION" \
+  --member "serviceAccount:$DEPLOYER_SA" --role roles/artifactregistry.reader >/dev/null
 for sa in "$RUNTIME_SA" "$BUILD_SA"; do
   "${G[@]}" iam service-accounts add-iam-policy-binding "$sa" \
     --member "serviceAccount:$DEPLOYER_SA" --role roles/iam.serviceAccountUser >/dev/null
