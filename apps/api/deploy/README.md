@@ -7,6 +7,16 @@
 | Fotos y archivos | Cloudflare R2, bucket privado `brio-fotos` | Gratuito (10 GB/mes) |
 | Secretos | Secret Manager `brio-api-env` (un único `.env`) | Gratuito |
 
+## Terraform y Cloudflare
+
+La infraestructura de este despliegue está declarada en
+[`infra/terraform/envs/brio-dev`](../../../infra/terraform/README.md): el servicio,
+el job de migraciones, los secretos, Artifact Registry, el acceso de GitHub
+Actions (WIF) y, delante, Cloudflare (Worker proxy + WAF + rate limiting) y el
+bucket R2. Desde entonces `deploy.sh` solo cambia la **imagen** del servicio y
+del job; CPU, escalado y variables (incluidas las de `cloudrun.env.yaml`) se
+aplican con `terraform apply`.
+
 ## Variables de entorno
 
 - **No secretas**: `deploy/cloudrun.env.yaml` (en git). Se aplican en cada despliegue.

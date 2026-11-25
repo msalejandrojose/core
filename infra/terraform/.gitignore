@@ -1,0 +1,7 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+# Config del backend con el ID de la cuenta (usa backend.hcl.example).
+backend.hcl

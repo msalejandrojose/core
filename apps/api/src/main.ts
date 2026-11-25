@@ -5,6 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import type { Application, NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
+import { edgeOriginMiddleware } from './infrastructure/edge/edge-origin.middleware';
 import { AppLoggerService } from './infrastructure/logger/app-logger.service';
 import { requestIdMiddleware } from './infrastructure/logger/request-id.middleware';
 
@@ -26,6 +27,17 @@ async function bootstrap() {
   // para que `req.ip` sea la IP real del cliente (la usa el rate limiter).
   const expressApp = app.getHttpAdapter().getInstance() as Application;
   expressApp.set('trust proxy', 1);
+
+  // Detrás de Cloudflare (Worker `brio-api-edge` → Cloud Run): toma la IP
+  // real del cliente si la petición trae el secreto del Worker y, con
+  // EDGE_ORIGIN_ENFORCE=true, bloquea el acceso directo a `*.run.app`. Sin
+  // EDGE_ORIGIN_SECRET no hace nada. Ver infra/terraform/README.md.
+  app.use(
+    edgeOriginMiddleware({
+      secret: process.env.EDGE_ORIGIN_SECRET,
+      enforce: process.env.EDGE_ORIGIN_ENFORCE === 'true',
+    }),
+  );
 
   // El chat con los agentes admite fotos en base64 (hasta 4 de ~2 MB): el
   // límite por defecto de Express (100 kB) se queda corto.
