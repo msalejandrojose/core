@@ -52,11 +52,17 @@ build() {
 }
 
 # Aplica las migraciones pendientes con la imagen de migraciones de este commit.
+# Si el job ya existe (lo gestiona Terraform) solo se cambia la imagen; la
+# primera vez se crea con toda su configuración.
 migrate() {
-  "${G[@]}" run jobs deploy "${SERVICE}-migrate" --region "$REGION" --image "$MIGRATE_IMAGE" \
-    --service-account "$SA" \
-    --set-secrets "/secrets/.env=${SECRET}:latest" \
-    --max-retries 0 --task-timeout 600
+  if "${G[@]}" run jobs describe "${SERVICE}-migrate" --region "$REGION" >/dev/null 2>&1; then
+    "${G[@]}" run jobs update "${SERVICE}-migrate" --region "$REGION" --image "$MIGRATE_IMAGE"
+  else
+    "${G[@]}" run jobs deploy "${SERVICE}-migrate" --region "$REGION" --image "$MIGRATE_IMAGE" \
+      --service-account "$SA" \
+      --set-secrets "/secrets/.env=${SECRET}:latest" \
+      --max-retries 0 --task-timeout 600
+  fi
   "${G[@]}" run jobs execute "${SERVICE}-migrate" --region "$REGION" --wait
 }
 
@@ -64,8 +70,17 @@ current_image() {
   "${G[@]}" run services describe "$SERVICE" --region "$REGION" --format 'value(spec.template.spec.containers[0].image)'
 }
 
+# Si el servicio ya existe, su configuración (variables, secretos, CPU,
+# escalado…) la gestiona Terraform (infra/terraform/envs/brio-dev) y aquí solo
+# se cambia la imagen: un `gcloud run deploy` completo borraría las variables
+# que añade Terraform (p. ej. EDGE_ORIGIN_SECRET). La primera vez se crea con
+# la configuración de siempre.
 deploy() {
-  local image="$1"
+  local image="$1"; shift
+  if "${G[@]}" run services describe "$SERVICE" --region "$REGION" >/dev/null 2>&1; then
+    "${G[@]}" run services update "$SERVICE" --region "$REGION" --image "$image" "$@"
+    return
+  fi
   "${G[@]}" run deploy "$SERVICE" --region "$REGION" --image "$image" \
     --service-account "$SA" \
     --env-vars-file "$API/deploy/cloudrun.env.yaml" \
@@ -89,7 +104,8 @@ seed() {
 }
 
 case "${1:-all}" in
-  secrets) ensure_base; push_secret; deploy "$(current_image)" ;;
+  # Revisión nueva (sufijo) para que la API relea el secreto aunque la imagen no cambie.
+  secrets) ensure_base; push_secret; deploy "$(current_image)" --revision-suffix "s$(date +%s)" ;;
   seed) seed ;;
   all) ensure_base; push_secret; build; migrate; deploy "$IMAGE" ;;
   ci) build; migrate; deploy "$IMAGE" ;;

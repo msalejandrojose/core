@@ -1,0 +1,25 @@
+# Copia a backend.hcl y rellena el ID de cuenta de Cloudflare:
+#   cp backend.hcl.example backend.hcl
+#   terraform init -backend-config=backend.hcl
+#
+# Credenciales: un token de API de R2 (Lectura y escritura de objetos) en
+#   export AWS_ACCESS_KEY_ID=...  AWS_SECRET_ACCESS_KEY=...
+
+bucket = "core-tfstate"
+key    = "brio-dev/terraform.tfstate"
+region = "auto"
+
+endpoints = {
+  s3 = "https://REEMPLAZAR_CLOUDFLARE_ACCOUNT_ID.r2.cloudflarestorage.com"
+}
+
+# R2 no es AWS: sin estas comprobaciones el backend falla.
+skip_credentials_validation = true
+skip_region_validation      = true
+skip_requesting_account_id  = true
+skip_metadata_api_check     = true
+skip_s3_checksum            = true
+use_path_style              = true
+
+# Bloqueo del estado con un .tflock en el propio bucket (Terraform >= 1.10).
+use_lockfile = true
