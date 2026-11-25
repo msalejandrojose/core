@@ -9,7 +9,7 @@ variable "zone_name" {
 }
 
 variable "api_hostname" {
-  description = "Hostname público de la API dentro de la zona, p. ej. api.brio.example.com."
+  description = "Hostname público de la API dentro de la zona, p. ej. brio-api.example.com (un solo nivel: Universal SSL no cubre sub-subdominios)."
   type        = string
 }
 

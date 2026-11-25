@@ -30,7 +30,7 @@ variable "cloudflare_zone_name" {
 }
 
 variable "api_hostname" {
-  description = "Hostname público de la API, p. ej. api.brio.example.com."
+  description = "Hostname público de la API, p. ej. brio-api.example.com (un solo nivel: Universal SSL no cubre sub-subdominios)."
   type        = string
 }
 
