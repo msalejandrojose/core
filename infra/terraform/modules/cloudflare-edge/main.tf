@@ -36,8 +36,22 @@ resource "cloudflare_workers_script" "proxy" {
     },
   ]
 
+  # Se declaran todos los valores que Cloudflare pone por defecto: con solo
+  # `enabled`, el provider ve diferencias en cada plan e intenta quitarlos.
   observability = {
-    enabled = true
+    enabled            = true
+    head_sampling_rate = 1
+    logs = {
+      enabled            = true
+      head_sampling_rate = 1
+      invocation_logs    = true
+      persist            = true
+    }
+    traces = {
+      enabled            = false
+      head_sampling_rate = 1
+      persist            = true
+    }
   }
 }
 
