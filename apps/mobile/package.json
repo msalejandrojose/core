@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "cap:sync": "cap sync",
-    "ios:prod": "CAP_SERVER_URL= VITE_API_URL=https://brio-api-653444001481.europe-west1.run.app sh -c 'pnpm --filter @core/api-client generate:offline && tsc --noEmit && vite build && cap sync ios'",
+    "ios:prod": "CAP_SERVER_URL= VITE_API_URL=https://brio-api.ajly.online sh -c 'pnpm --filter @core/api-client generate:offline && tsc --noEmit && vite build && cap sync ios'",
     "cap:add:ios": "cap add ios",
     "ios:live-activity": "ruby scripts/ios-live-activity.rb",
     "cap:add:android": "cap add android",

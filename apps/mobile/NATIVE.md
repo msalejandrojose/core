@@ -173,7 +173,7 @@ pnpm --filter @core/mobile ios:prod
 ```
 
 Compila la web contra la API de producción
-(`https://brio-api-653444001481.europe-west1.run.app`) y hace `cap sync ios`
+(`https://brio-api.ajly.online`) y hace `cap sync ios`
 sin el modo «conectada al Mac», aunque `.env.production.local` tenga
 `CAP_SERVER_URL` o una `VITE_API_URL` de pruebas (el resto de ese archivo, como
 los client IDs de Google, se sigue usando). Después compila e instala con Forja
