@@ -1,5 +1,7 @@
 # Infraestructura como código (Terraform)
 
+> Checklist paso a paso para brio-dev: [`SETUP-brio-dev.md`](./SETUP-brio-dev.md).
+
 El stack de cada proyecto declarado en Terraform. De momento, **Brío (`brio-dev`)**.
 
 ```
