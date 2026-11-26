@@ -31,6 +31,7 @@ import {
   OtaBundleDto,
   OtaBundleListDto,
   OtaPurgeQueryDto,
+  OtaPurgeResultDto,
   PublishOtaBundleDto,
   SetOtaBundleEnabledDto,
 } from './dto/ota.dto';
@@ -102,7 +103,8 @@ export class AdminOtaController {
     summary:
       'Borra ya los zips que sobran (de una app o de todas con all=true)',
   })
-  async purge(@Query() q: OtaPurgeQueryDto): Promise<{ removed: number }> {
+  @ApiOkResponse({ type: OtaPurgeResultDto })
+  async purge(@Query() q: OtaPurgeQueryDto): Promise<OtaPurgeResultDto> {
     const removed = q.all
       ? await this.ota.purge()
       : await this.ota.purge(q.appId?.trim() || undefined, q.channel);

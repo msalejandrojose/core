@@ -112,3 +112,7 @@ export class OtaBundleListDto {
   keep!: number;
   @ApiProperty({ type: [OtaBundleDto] }) bundles!: OtaBundleDto[];
 }
+
+export class OtaPurgeResultDto {
+  @ApiProperty({ description: 'Zips borrados del storage.' }) removed!: number;
+}
