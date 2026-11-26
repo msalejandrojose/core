@@ -1,6 +1,6 @@
 import type { DayTotals } from '../api';
 import { formatNumber } from '../format';
-import type { DayStatus, PlanDay } from '../plan/plan.api';
+import type { DayStatus, PlanDay, PlanWorkout } from '../plan/plan.api';
 
 /**
  * Lo que dibuja la cabecera de Hoy: saludo, anillos del día, barras de macros
@@ -116,11 +116,23 @@ export function macroBars(
 
 export type WeekDotState = 'done' | 'today' | 'missed' | 'planned' | 'rest' | 'free';
 
+/** El deporte que se pinta en el punto: lo que hiciste o, si no, lo planificado. */
+export interface WeekSport {
+  code?: string | null;
+  kind?: string | null;
+  name?: string | null;
+}
+
 export interface WeekDot {
   day: string;
   letter: string;
   state: WeekDotState;
-  /** Texto para lectores de pantalla («martes: hecho»). */
+  isToday: boolean;
+  /** Icono del deporte; null en descanso o días sin nada. */
+  sport: WeekSport | null;
+  /** Entrenos de más ese día (fútbol + gimnasio → 1). */
+  extra: number;
+  /** Texto para lectores de pantalla («martes: Fútbol 7, hecho»). */
   label: string;
 }
 
@@ -145,16 +157,44 @@ const FROM_STATUS: Record<DayStatus, WeekDotState> = {
   FREE: 'free',
 };
 
-/** Un punto por día de la semana del plan. Hoy siempre es «hoy», aunque ya esté hecho. */
-export function weekDots(days: Pick<PlanDay, 'day' | 'status'>[], today: string): WeekDot[] {
+/**
+ * Un punto por día de la semana. Cuándo sale el check (punto lleno con el
+ * icono del deporte):
+ * - si ese día registraste cualquier entreno (con plan o sin él, del deporte
+ *   que sea, también hoy), o
+ * - si marcaste a mano como hecha la sesión planificada.
+ * Si no, el punto va vacío con el icono de lo planificado: punteado si el día
+ * ya pasó (no se hizo), normal si está por venir, y hoy resaltado.
+ * Descanso y días sin nada no llevan icono.
+ */
+export function weekDots(
+  days: (Pick<PlanDay, 'day' | 'status'> & Partial<Pick<PlanDay, 'planned' | 'actual' | 'workouts'>>)[],
+  today: string,
+): WeekDot[] {
   return days.map((d) => {
     const weekday = new Date(`${d.day}T12:00:00Z`).getUTCDay();
-    const state: WeekDotState = d.day === today ? 'today' : FROM_STATUS[d.status] ?? 'free';
+    const isToday = d.day === today;
+    // Sin la lista nueva (API antigua), al menos el entreno que cumple el plan.
+    const workouts: PlanWorkout[] = d.workouts ?? (d.actual ? [d.actual] : []);
+    const trained = workouts.length > 0;
+    const state: WeekDotState =
+      trained || d.status === 'DONE' ? 'done' : isToday ? 'today' : (FROM_STATUS[d.status] ?? 'free');
+    const planned = d.planned && d.planned.load !== 'REST' ? d.planned : null;
+    const sport: WeekSport | null = trained
+      ? { code: workouts[0].code ?? null, kind: workouts[0].kind, name: workouts[0].title }
+      : planned
+        ? { kind: planned.kind, name: planned.title }
+        : null;
+    const what = trained ? workouts.map((w) => w.title).join(' y ') : (planned?.title ?? null);
+    const status = state === 'done' && isToday ? 'hecho hoy' : STATE_TEXT[state];
     return {
       day: d.day,
       letter: LETTERS[weekday],
       state,
-      label: `${DAY_NAMES[weekday]}: ${d.day === today && d.status === 'DONE' ? 'hecho hoy' : STATE_TEXT[state]}`,
+      isToday,
+      sport,
+      extra: Math.max(0, workouts.length - 1),
+      label: `${DAY_NAMES[weekday]}${isToday && state !== 'today' ? ' (hoy)' : ''}: ${what ? `${what}, ` : ''}${status}`,
     };
   });
 }

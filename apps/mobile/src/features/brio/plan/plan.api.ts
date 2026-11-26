@@ -42,6 +42,18 @@ export interface PlanDay {
   status: DayStatus;
   actual: { id: string; kind: string; title: string; durationSec: number; distanceM: number | null } | null;
   autoCompleted: boolean;
+  /** Todos los entrenos registrados ese día, cumplan o no el plan (API nueva; puede faltar). */
+  workouts?: PlanWorkout[];
+}
+
+export interface PlanWorkout {
+  id: string;
+  kind: string;
+  /** Código del tipo (`football_7`, `padel`…), para su icono. */
+  code?: string | null;
+  title: string;
+  durationSec: number;
+  distanceM: number | null;
 }
 
 export interface DayDiet {

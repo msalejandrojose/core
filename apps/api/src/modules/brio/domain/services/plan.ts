@@ -231,6 +231,11 @@ export interface WeekDay {
   actual: ActualSession | null;
   /** true si la sesión se dio por hecha sola, por un entreno registrado. */
   autoCompleted: boolean;
+  /**
+   * Todos los entrenos registrados ese día (cumplan o no el plan), en orden.
+   * La tira de la semana los usa para enseñar el deporte que hiciste.
+   */
+  workouts: ActualSession[];
 }
 
 /** Un entreno real cumple una sesión si es de la misma disciplina. */
@@ -291,15 +296,12 @@ export function buildWeek(
   const dates = weekDays(day);
   const days = dates.map((date) => {
     const p = planned.find((x) => x.day === date) ?? null;
+    const ofDay = actuals.filter((a) => a.day === date);
     return {
       day: date,
       planned: p,
-      ...dayStatus(
-        p,
-        actuals.filter((a) => a.day === date),
-        date,
-        today,
-      ),
+      ...dayStatus(p, ofDay, date, today),
+      workouts: ofDay,
     };
   });
   const sessions = days.filter((d) => d.planned && d.planned.load !== 'REST');

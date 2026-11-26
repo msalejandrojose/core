@@ -33,26 +33,45 @@
   color: var(--brio-tint);
 }
 .tv-week__dot {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   box-sizing: border-box;
   border-radius: 50%;
   border: 3px solid var(--brio-separator);
   color: #fff;
+  --sport: var(--brio-activity);
 }
+/* Hecho: lleno. Con deporte, del color de su familia y con su icono. */
 .tv-week__dot.is-done {
   border: 0;
-  background: var(--brio-activity);
+  background: var(--sport);
 }
-.tv-week__dot.is-today {
+/* Pendiente con deporte: aro fino y el icono en su color, apagado. */
+.tv-week__dot.has-icon:not(.is-done) {
+  border-width: 2px;
+  color: var(--sport);
+  background: color-mix(in srgb, var(--sport) 10%, transparent);
+}
+.tv-week__dot.is-today:not(.has-icon) {
   border-color: var(--brio-tint);
   box-shadow: inset 0 0 0 4px var(--brio-surface), inset 0 0 0 14px var(--brio-tint);
+}
+.tv-week__dot.is-today.has-icon {
+  border-color: var(--brio-tint);
+}
+/* Hoy hecho: un halo para seguir viendo qué día es. */
+.tv-week__dot.is-now.is-done {
+  box-shadow: 0 0 0 2px var(--brio-surface), 0 0 0 4px var(--brio-tint);
 }
 .tv-week__dot.is-missed {
   border-color: var(--brio-food);
   border-style: dashed;
+}
+.tv-week__dot.is-missed.has-icon {
+  opacity: 0.6;
 }
 .tv-week__dot.is-planned {
   border-color: var(--brio-border-strong);
@@ -60,6 +79,37 @@
 .tv-week__dot.is-rest {
   border-color: var(--brio-sleep-soft);
   background: var(--brio-sleep-soft);
+}
+/* El check pequeño sobre el icono, para que «hecho» se lea sin pensar. */
+.tv-week__tick {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--brio-activity);
+  color: #fff;
+  box-shadow: 0 0 0 2px var(--brio-surface);
+}
+.tv-week__extra {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--brio-ink);
+  color: var(--brio-surface);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--brio-surface);
 }
 
 /* Anillos */
@@ -298,12 +348,104 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 44px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  background: var(--brio-activity-soft);
   color: var(--brio-ink);
+  font: inherit;
+  text-align: left;
   text-decoration: none;
+  cursor: pointer;
 }
-.tv-done-list li + li .tv-done-list__row {
+.tv-done-list li + li {
   border-top: 1px solid color-mix(in srgb, var(--brio-activity) 18%, transparent);
+}
+.tv-done-list__chev {
+  display: inline-flex;
+  transition: transform 0.2s ease;
+}
+.tv-done-list__row.is-open .tv-done-list__chev {
+  transform: rotate(90deg);
+}
+.tv-done-list__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0 12px 40px;
+  animation: tv-done-in 0.18s ease-out;
+}
+@keyframes tv-done-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.tv-done-list__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tv-done-list__notes {
+  margin: 0;
+  color: var(--brio-ink-2);
+  font-size: 15px;
+  line-height: 1.4;
+  white-space: pre-line;
+}
+.tv-done-list__notes.is-empty {
+  color: var(--brio-ink-muted);
+}
+.tv-done-list__actions {
+  display: flex;
+  gap: 16px;
+}
+.tv-done-list__edit,
+.tv-done-list__delete {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tv-done-list__edit {
+  color: var(--brio-tint);
+}
+.tv-done-list__delete {
+  color: var(--brio-danger);
+}
+
+/* Deslizar una fila a la izquierda para borrarla. */
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.swipe-row__content {
+  position: relative;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.swipe-row__content.is-dragging {
+  transition: none;
+}
+.swipe-row__action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--brio-danger);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .tv-done-list__name {

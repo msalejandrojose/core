@@ -44,6 +44,8 @@ export interface ActualSession {
   id: string;
   day: string;
   kind: ActivityKind;
+  /** Código del tipo (`football_7`, `padel`…), para su icono. */
+  code?: string | null;
   title: string;
   durationSec: number;
   distanceM: number | null;

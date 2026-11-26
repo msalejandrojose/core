@@ -6,8 +6,9 @@ import {
   IonPage,
   IonRefresher,
   IonRefresherContent,
+  useIonAlert,
 } from '@ionic/react';
-import type { DaySummary, MealType } from './api';
+import { brioApi, type DaySummary, type MealType } from './api';
 import { DayChecklist } from './today/DayChecklist';
 import { suggestionFor, type Suggestion } from './today/suggestion';
 import {
@@ -17,6 +18,7 @@ import {
   joinNames,
   dayLabel,
   longDate,
+  timeIn,
   mealForHour,
   mealLabel,
   todayIn,
@@ -42,7 +44,7 @@ import { WeekPlanCard } from './plan/WeekPlanCard';
 import './plan/plan.css';
 import { usePlanWeekData } from './plan/plan.api';
 import { useRecentHealth } from './profile/garmin.api';
-import { DayRingsCard, TodayWorkoutCard, WeekStrip } from './today/TodayVisuals';
+import { DayRingsCard, TodayWorkoutCard, WeekStrip, type DoneWorkout } from './today/TodayVisuals';
 import { dayRings, greeting } from './today/today-visuals';
 import { DaySwipe } from './today/DaySwipe';
 import { ProgressRow } from './today/ProgressRow';
@@ -125,7 +127,8 @@ export default function TodayPage() {
   const firstName = useAuthStore((s) => s.user?.firstName ?? null);
   /** El día que se ve: hoy, o el que elijas con las flechas o la semana. */
   const isToday = day === today;
-  const { data: week } = usePlanWeekData(day);
+  const { data: week, reload: reloadWeek } = usePlanWeekData(day);
+  const [askDelete] = useIonAlert();
   const health = useRecentHealth();
 
   useEffect(() => {
@@ -207,6 +210,34 @@ export default function TodayPage() {
     carbsG: todayDiet?.carbsG ?? profile?.carbsTargetG ?? null,
     fatG: todayDiet?.fatG ?? profile?.fatTargetG ?? null,
   };
+
+  /** Borrar un entreno del día, tras confirmarlo. Se quita también de la semana. */
+  function deleteWorkout(w: DoneWorkout) {
+    void askDelete({
+      header: `¿Eliminar «${w.name}»?`,
+      message: 'Se quita de este día y de tus estadísticas.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Eliminar',
+          role: 'destructive',
+          handler: () => {
+            void (async () => {
+              try {
+                await brioApi.deleteActivity(w.id);
+                await refreshDay();
+                reloadWeek();
+                void tapSuccess();
+                toast.success('Entreno eliminado');
+              } catch {
+                toast.error('No se pudo eliminar');
+              }
+            })();
+          },
+        },
+      ],
+    });
+  }
 
   async function logSuggestion(s: Suggestion) {
     setLogging(true);
@@ -358,9 +389,20 @@ export default function TodayPage() {
                   code: x.activityTypeCode,
                   durationSec: x.durationSec,
                   kcal: x.kcalBurned,
-                  to: x.kind === 'STRENGTH' ? `/tabs/today/entreno/${x.id}` : undefined,
+                  to: `/tabs/today/entreno/${x.id}`,
+                  info: {
+                    startTime: x.startedAt ? timeIn(String(x.startedAt), timezone) : null,
+                    distanceM: x.distanceM,
+                    avgHeartRate: x.avgHeartRate,
+                    rpe: x.rpe,
+                    effort: x.effort,
+                    sets: x.sets,
+                    source: x.source,
+                    notes: x.notes,
+                  },
                 }))}
                 isToday={isToday}
+                onDelete={deleteWorkout}
                 onStart={() => {
                   const routineId = todayPlan?.planned?.structure?.routineId;
                   openRegister('activity', undefined, { routineId: typeof routineId === 'string' ? routineId : null });
