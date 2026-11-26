@@ -7,5 +7,6 @@ import Capacitor
 class BrioBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(BrioLiveActivityPlugin())
+        bridge?.registerPluginInstance(BrioWidgetsPlugin())
     }
 }

@@ -1,4 +1,4 @@
-# Puesta en marcha: actualizaciones en caliente (OTA) y novedades de Brío en el móvil
+# Puesta en marcha: actualizaciones en caliente (OTA), widgets y novedades de Brío en el móvil
 
 > Para lanzar en una sesión de Claude Code **en el Mac** (hace falta Xcode).
 > Pega esto como primer mensaje: «Lee `apps/mobile/PUESTA-EN-MARCHA-OTA.md` y
@@ -20,6 +20,7 @@ todavía). Commits:
 | `17185c0` | **OTA – Backoffice**: Apps móviles › Actualizaciones (`/ota/bundles`). |
 | `225bc52` | **OTA – App**: plugin `@capgo/capacitor-updater` (servidor propio), `pnpm ota:keygen` / `pnpm ota:publish`, `ota/config.json`, `ota/README.md`. El seed del despliegue sincroniza también las secciones de permisos (`ota.bundles`). |
 | `ef3de84` | Clave pública `apps/mobile/ota/public.pem`. |
+| _(widgets)_ | **Widgets de iOS**: Hoy (anillos y macros), Entreno de hoy (con «Empezar») y Mi semana. Código en `native/ios/` + `src/features/brio/widgets/`; App Group `group.es.aj.brio` y esquema `brio://`. Ver `NATIVE.md › widgets`. |
 | `b5654c1` | **163 ejercicios nuevos** para cubrir el catálogo de Hevy (`apps/api/src/seeds/brio-exercises-hevy.data.ts`), con ficha y, 87 de ellos, animación. Script `hevy:coverage` para comparar con la lista real de Hevy. |
 
 Cómo funciona la OTA, el cifrado y la regla de la versión nativa mínima:
@@ -104,7 +105,20 @@ El despliegue de la API se dispara al entrar código en `brio-dev`
 
 ## 4. Versión nativa nueva (una sola vez)
 
-Las versiones instaladas no llevan el plugin: hace falta una de tienda.
+Las versiones instaladas no llevan el plugin de OTA ni los widgets: hace falta
+una de tienda.
+
+0. **Widgets** (antes del build): enganchar el código nativo y revisar el App
+   Group:
+   ```bash
+   pnpm --filter @core/mobile build && pnpm --filter @core/mobile cap:sync
+   pnpm --filter @core/mobile ios:live-activity
+   ```
+   En Xcode, *Signing & Capabilities* de los targets **App** y **BrioWidgets**:
+   tiene que salir **App Groups** con `group.es.aj.brio` marcado (si no,
+   «+ Capability › App Groups» y marcarlo). Compilar una vez en el simulador o
+   el iPhone y corregir con Claude cualquier error de Swift: los widgets no se
+   han podido compilar en el contenedor (no hay Xcode).
 
 1. Mirar la versión actual en Xcode (MARKETING_VERSION / «Version»). Tiene que
    ser **≥ `minNativeVersion` de `apps/mobile/ota/config.json` (1.0.0)**. Si la
@@ -139,6 +153,22 @@ el descifrado y el checksum. Fallos típicos:
 - 403 al publicar → falta el seed (paso 3.3) o el usuario no es admin.
 - La app no pregunta → `cap config` dice `autoUpdate: false` (paso 2).
 
+## 5 bis. Widgets en el iPhone
+
+1. Abrir la app y entrar en **Hoy** (es la que manda los datos a los widgets).
+2. Pantalla de inicio › mantener pulsado › «+» › **Brío**: añadir *Hoy*
+   (pequeño y mediano), *Entreno de hoy* y *Mi semana*.
+3. Comprobar:
+   - [ ] Hoy: las kcal que quedan coinciden con la app; registrar una comida y
+         volver a casa → el widget se actualiza.
+   - [ ] Entreno de hoy: con algo planificado sale «Empezar»; al tocarlo se abre
+         la app y arranca el registro con la rutina del día.
+   - [ ] Mi semana: iconos y checks iguales que la tira de Hoy; al tocar, abre
+         el plan.
+   - [ ] Cerrar sesión → los widgets piden «Abre Brío».
+4. Si los widgets salen siempre en «Abre Brío»: el App Group no está bien
+   firmado (paso 4.0) o la app no ha abierto Hoy desde que se instaló.
+
 ## 6. Ejercicios: comparar con la lista real de Hevy
 
 La lista de Hevy no es pública; los 163 nuevos salen de su catálogo conocido.
@@ -168,6 +198,7 @@ que pase `hevy-catalog.spec.ts`». Después, nuevo seed (`deploy.sh seed`).
       la animación.
 - [ ] **Añadir comida › Monta tu bocata…**: base Burrito y buscador de
       ingredientes.
+- [ ] **Widgets**: ver el paso 5 bis.
 - [ ] **Ejercicios**: al añadir ejercicio en una rutina salen los nuevos
       (p. ej. «Press Arnold», «Remo Meadows», «Hip thrust en multipower») con
       su ficha.

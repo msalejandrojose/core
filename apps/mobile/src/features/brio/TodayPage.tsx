@@ -49,6 +49,8 @@ import { dayRings, greeting } from './today/today-visuals';
 import { DaySwipe } from './today/DaySwipe';
 import { ProgressRow } from './today/ProgressRow';
 import { useAuthStore } from '@/store/auth.store';
+import { widgetSnapshot } from './widgets/widget-snapshot';
+import { pushWidgetSnapshot } from './widgets/widgets.native';
 import './today.css';
 
 /** Mensaje en pasado tras registrar una comida, con su género. */
@@ -176,6 +178,35 @@ export default function TodayPage() {
   useEffect(() => {
     for (const type of pending) void loadHabits(type);
   }, [pending, loadHabits]);
+
+  // Los widgets de la pantalla de inicio (iOS) enseñan lo mismo que esta cabecera.
+  const todayPlanDay = week?.days.find((d) => d.day === today) ?? null;
+  const widgetDiet = week?.diet?.find((d) => d.day === today) ?? null;
+  const todaySteps = health?.days.find((d) => d.day === today)?.steps ?? null;
+  useEffect(() => {
+    if (!isToday || !summary || !week || summary.day !== today) return;
+    pushWidgetSnapshot(
+      widgetSnapshot({
+        day: today,
+        totals: summary.totals,
+        done: summary.sessions.map((x) => ({
+          name: x.activityTypeName,
+          kind: x.kind ?? 'OTHER',
+          code: x.activityTypeCode,
+          durationSec: x.durationSec,
+          kcal: x.kcalBurned,
+        })),
+        plan: todayPlanDay,
+        week: week.days,
+        steps: todaySteps,
+        macroTargets: {
+          proteinG: widgetDiet?.proteinG ?? profile?.proteinTargetG ?? null,
+          carbsG: widgetDiet?.carbsG ?? profile?.carbsTargetG ?? null,
+          fatG: widgetDiet?.fatG ?? profile?.fatTargetG ?? null,
+        },
+      }),
+    );
+  }, [isToday, summary, week, today, todayPlanDay, widgetDiet, todaySteps, profile]);
 
   if (toOnboarding) {
     return (

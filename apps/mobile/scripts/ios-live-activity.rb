@@ -2,11 +2,14 @@
 # frozen_string_literal: true
 
 # Añade al proyecto iOS (que genera `cap add ios` y no se commitea) la Live
-# Activity del entreno en vivo:
-#   - target «BrioWidgets» (extensión WidgetKit, iOS 17) con su vista;
-#   - los ficheros compartidos (modelo e intents) en la app y en la extensión;
-#   - el plugin propio y el controlador que lo registra, en la app;
-#   - NSSupportsLiveActivities en el Info.plist y el storyboard apuntando al controlador.
+# Activity del entreno en vivo y los widgets de la pantalla de inicio:
+#   - target «BrioWidgets» (extensión WidgetKit, iOS 17) con sus vistas;
+#   - los ficheros compartidos (modelos e intents) en la app y en la extensión;
+#   - los plugins propios y el controlador que los registra, en la app;
+#   - NSSupportsLiveActivities en el Info.plist y el storyboard apuntando al controlador;
+#   - el App Group `group.es.aj.brio` en la app y en la extensión (los widgets
+#     leen ahí lo que deja la app) y el esquema `brio://` (los widgets abren la
+#     app con él).
 # Es idempotente: se puede pasar las veces que haga falta (p. ej. tras `cap add ios`).
 #
 # Uso (desde apps/mobile): ruby scripts/ios-live-activity.rb   (o pnpm ios:live-activity)
@@ -20,6 +23,8 @@ IOS = File.join(ROOT, 'ios/App')
 PROJECT_PATH = File.join(IOS, 'App.xcodeproj')
 WIDGET = 'BrioWidgets'
 WIDGET_BUNDLE_SUFFIX = '.widgets'
+APP_GROUP = 'group.es.aj.brio'
+URL_SCHEME = 'brio'
 
 abort "No existe #{PROJECT_PATH}: ejecuta antes `pnpm cap:add:ios`." unless File.exist?(PROJECT_PATH)
 
@@ -73,6 +78,7 @@ widget.build_configurations.each do |c|
   s['CURRENT_PROJECT_VERSION'] = app_cfg['CURRENT_PROJECT_VERSION'] || '1'
   s['DEVELOPMENT_TEAM'] = app_cfg['DEVELOPMENT_TEAM'] if app_cfg['DEVELOPMENT_TEAM']
   s['APPLICATION_EXTENSION_API_ONLY'] = 'YES'
+  s['CODE_SIGN_ENTITLEMENTS'] = File.join(NATIVE, 'Widget/BrioWidgets.entitlements')
 end
 
 (shared + widget_only).each { |r| add_source(widget, r) }
@@ -93,6 +99,26 @@ unless embed.files_references.include?(widget.product_reference)
   bf.settings = { 'ATTRIBUTES' => ['RemoveHeadersOnCopy'] }
 end
 
+# App Group en la app: se añade a su fichero de entitlements (o se crea uno),
+# sin tocar lo que ya tenga (push, Sign in with Apple…).
+app_entitlements_rel = app.build_configurations.first.build_settings['CODE_SIGN_ENTITLEMENTS'] || 'App/App.entitlements'
+app_entitlements = File.join(IOS, app_entitlements_rel)
+unless File.exist?(app_entitlements)
+  File.write(app_entitlements, <<~PLIST)
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict/>
+    </plist>
+  PLIST
+end
+app.build_configurations.each { |c| c.build_settings['CODE_SIGN_ENTITLEMENTS'] ||= app_entitlements_rel }
+groups = `/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups' "#{app_entitlements}" 2>/dev/null`
+unless groups.include?(APP_GROUP)
+  system('/usr/libexec/PlistBuddy', '-c', 'Add :com.apple.security.application-groups array', app_entitlements) if groups.empty?
+  system('/usr/libexec/PlistBuddy', '-c', "Add :com.apple.security.application-groups: string #{APP_GROUP}", app_entitlements) or abort 'PlistBuddy falló (App Group)'
+end
+
 project.save
 
 # --- Info.plist y storyboard de la app --------------------------------------
@@ -101,10 +127,23 @@ unless File.read(plist).include?('NSSupportsLiveActivities')
   system('/usr/libexec/PlistBuddy', '-c', 'Add :NSSupportsLiveActivities bool true', plist) or abort 'PlistBuddy falló'
 end
 
+# Esquema brio:// para que los widgets abran la app en su sitio.
+unless File.read(plist).include?("<string>#{URL_SCHEME}</string>")
+  types = `/usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes' "#{plist}" 2>/dev/null`
+  system('/usr/libexec/PlistBuddy', '-c', 'Add :CFBundleURLTypes array', plist) if types.empty?
+  count = types.scan(/^\s{4}Dict \{/).size
+  [
+    "Add :CFBundleURLTypes:#{count} dict",
+    "Add :CFBundleURLTypes:#{count}:CFBundleURLName string es.aj.brio",
+    "Add :CFBundleURLTypes:#{count}:CFBundleURLSchemes array",
+    "Add :CFBundleURLTypes:#{count}:CFBundleURLSchemes:0 string #{URL_SCHEME}",
+  ].each { |cmd| system('/usr/libexec/PlistBuddy', '-c', cmd, plist) or abort "PlistBuddy falló: #{cmd}" }
+end
+
 storyboard = File.join(IOS, 'App/Base.lproj/Main.storyboard')
 sb = File.read(storyboard)
 patched = sb.sub('customClass="CAPBridgeViewController" customModule="Capacitor"',
                  'customClass="BrioBridgeViewController" customModule="App" customModuleProvider="target"')
 File.write(storyboard, patched) if patched != sb
 
-puts "Live Activity lista en el proyecto iOS (#{WIDGET})."
+puts "Live Activity y widgets listos en el proyecto iOS (#{WIDGET}, App Group #{APP_GROUP}, brio://)."

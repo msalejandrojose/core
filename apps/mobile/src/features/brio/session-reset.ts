@@ -3,6 +3,7 @@ import { useBrioStore } from './brio.store';
 import { useHabitsStore } from './habits.store';
 import { useRegisterStore } from './register.store';
 import { clearSnapshot } from './today-snapshot';
+import { clearWidgets } from './widgets/widgets.native';
 
 /**
  * Al cerrar sesión se vacía todo lo que Brío guarda en memoria del usuario
@@ -21,6 +22,8 @@ export function installSessionReset(): () => void {
         dayStatus: 'idle',
       });
       clearSnapshot();
+      // Los widgets de la pantalla de inicio no siguen enseñando sus datos.
+      clearWidgets();
       useHabitsStore.getState().invalidate();
       useRegisterStore.getState().close();
     }
