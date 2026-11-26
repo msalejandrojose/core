@@ -3,6 +3,8 @@
 // valores de partida; se guardan en `brio_exercise_muscle` y se pueden
 // ajustar por ejercicio sin tocar código.
 
+import { HEVY_EXERCISES } from './brio-exercises-hevy.data';
+
 export type Muscle =
   | 'CHEST'
   | 'LATS'
@@ -41,7 +43,7 @@ export interface SeedExercise {
   steps?: string[];
 }
 
-export const EXERCISES: readonly SeedExercise[] = [
+const CORE_EXERCISES: readonly SeedExercise[] = [
   // Empuje
   {
     code: 'bench_press',
@@ -2487,6 +2489,12 @@ export const EXERCISES: readonly SeedExercise[] = [
       'Vuelve despacio sin dejar que el peso choque.',
     ],
   },
+];
+
+/** Todo el catálogo: el de Brío y lo que faltaba del de Hevy. */
+export const EXERCISES: readonly SeedExercise[] = [
+  ...CORE_EXERCISES,
+  ...HEVY_EXERCISES,
 ];
 
 /** Disciplina de cada tipo de actividad del catálogo (por `code`). */
