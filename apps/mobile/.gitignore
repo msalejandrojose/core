@@ -21,3 +21,8 @@ dist-ssr
 
 # TS build info
 *.tsbuildinfo
+
+# Actualizaciones en caliente: la clave privada NUNCA se sube (ver ota/README.md)
+/ota/private.pem
+/ota/*.key
+/ota/out

@@ -98,7 +98,7 @@ seed() {
     --env-vars-file "$API/deploy/cloudrun.env.yaml" \
     --set-secrets "/secrets/.env=${SECRET}:latest" \
     --command sh \
-    --args=-c,"node dist/seeds/seed-iam.js && node dist/seeds/seed-sections.js && node dist/seeds/seed-brio.js && node dist/seeds/seed-agents.js" \
+    --args=-c,"node dist/seeds/seed-iam.js && node dist/seeds/sync-api-sections.js && node dist/seeds/seed-sections.js && node dist/seeds/seed-brio.js && node dist/seeds/seed-agents.js" \
     --max-retries 0 --task-timeout 900
   "${G[@]}" run jobs execute "${SERVICE}-seed" --region "$REGION" --wait
 }
