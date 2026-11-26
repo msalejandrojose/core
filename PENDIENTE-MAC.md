@@ -109,7 +109,7 @@ El despliegue de la API se dispara solo al entrar código en `brio-dev`
         -d '{"app_id":"es.aj.brio","version_name":"builtin","version_build":"1.0.0"}'
       # → {"kind":"up_to_date","error":"no_new_version_available",...}
       ```
-- [ ] Backoffice contra producción (no se despliega solo; la API admite
+- [x] Backoffice contra producción (no se despliega solo; la API admite
       `localhost:5174`):
       ```bash
       VITE_API_URL=https://brio-api.ajly.online pnpm --filter @core/backoffice dev
@@ -120,43 +120,45 @@ El despliegue de la API se dispara solo al entrar código en `brio-dev`
 
 ## 4. Build nativo (una sola vez: lleva la OTA y los widgets)
 
-1. - [ ] Versión de la app en Xcode (*Version* / `MARKETING_VERSION`) **≥
+1. - [x] Versión de la app en Xcode (*Version* / `MARKETING_VERSION`) **≥
          `minNativeVersion` de `apps/mobile/ota/config.json` (1.0.0)**. Si va
          por debajo (p. ej. 0.9), bajar `minNativeVersion` a esa versión y
          hacer commit.
-2. - [ ] Web + sync contra producción (instala el pod del plugin de OTA):
+2. - [x] Web + sync contra producción (instala el pod del plugin de OTA):
          ```bash
          pnpm --filter @core/mobile ios:prod
          ```
-3. - [ ] Enganchar el nativo propio (Live Activity + widgets, App Group,
+3. - [x] Enganchar el nativo propio (Live Activity + widgets, App Group,
          `brio://`). Es idempotente:
          ```bash
          pnpm --filter @core/mobile ios:live-activity
          ```
-4. - [ ] En Xcode (`pnpm --filter @core/mobile exec cap open ios`), *Signing &
+4. - [x] En Xcode (`pnpm --filter @core/mobile exec cap open ios`), *Signing &
          Capabilities* de los targets **App** y **BrioWidgets**: aparece **App
          Groups** con `group.es.aj.brio` marcado (si no: «+ Capability › App
          Groups» y marcarlo; Xcode lo registra en la cuenta). Ver el punto de la
          cuenta gratuita en el paso 0.
-5. - [ ] Compilar en el iPhone o el simulador. **Si hay errores de Swift** en
+5. - [x] Compilar en el iPhone o el simulador. *(26 nov: compila sin
+         errores, widgets incluidos; firmado con la cuenta gratuita y App Group
+         en los dos targets.)* **Si hay errores de Swift** en
          `native/ios/` (sobre todo `Widget/BrioHomeWidgets.swift`), pegarlos a
          Claude para que los corrija, hacer commit y volver a compilar.
-6. - [ ] Instalar en el iPhone: subir el número de build y TestFlight (cuenta de
+6. - [x] Instalar en el iPhone: subir el número de build y TestFlight (cuenta de
          pago) o directamente desde Xcode/Forja (gratuita). Abrir la app y
          entrar en **Hoy**.
 
 ## 5. Probar la OTA en el iPhone
 
-1. - [ ] Cambiar algo visible en la web (p. ej. un texto de Hoy).
-2. - [ ] Publicar: `pnpm --filter @core/mobile ota:publish --notes "Prueba OTA"`
+1. - [x] Cambiar algo visible en la web (p. ej. un texto de Hoy).
+2. - [x] Publicar: `pnpm --filter @core/mobile ota:publish --notes "Prueba OTA"`
          (pide el email y la contraseña del backoffice si no están en
          `.env.production.local`).
-3. - [ ] Backoffice › Actualizaciones: la nueva sale **Sirviéndose**.
-4. - [ ] iPhone: abrir la app (la baja en segundo plano), mandarla a segundo
+3. - [x] Backoffice › Actualizaciones: la nueva sale **Sirviéndose**.
+4. - [x] iPhone: abrir la app (la baja en segundo plano), mandarla a segundo
          plano unos segundos y volver → se ve el cambio.
 5. - [ ] Vuelta atrás: desactivarla en el backoffice, cerrar y abrir la app dos
          veces → vuelve a la versión del build.
-6. - [ ] Revertir el cambio de prueba en el código.
+6. - [x] Revertir el cambio de prueba en el código.
 
 Si no llega: consola de Xcode filtrando por `CapacitorUpdater` (petición a
 `/v1/ota/updates`, descarga, descifrado, checksum).

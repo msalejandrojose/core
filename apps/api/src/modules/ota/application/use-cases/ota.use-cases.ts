@@ -39,7 +39,12 @@ export interface UpdateCheck {
 /** Respuesta en el formato que entiende el plugin. */
 export type UpdateAnswer =
   | { version: string; url: string; session_key: string; checksum: string }
+  /** Vuelve a la web que vino con la app (el plugin hace `reset`). */
+  | { version: typeof BUILTIN }
   | { kind: 'up_to_date'; error: 'no_new_version_available'; message: string };
+
+/** Nombre que usa el plugin para la web que vino dentro de la app. */
+const BUILTIN = 'builtin';
 
 /** Validez de la URL firmada de descarga (el plugin baja el zip en el momento). */
 const DOWNLOAD_URL_TTL = 60 * 60;
@@ -77,7 +82,14 @@ export class OtaUseCases {
       q.channel?.trim() || DEFAULT_CHANNEL,
     );
     const bundle = pickBundle(bundles, q.versionBuild);
-    if (!bundle) return upToDate('No hay actualizaciones para esta app');
+    if (!bundle) {
+      // Si el teléfono lleva una bajada y ya no queda ninguna activa para él
+      // (se desactivaron todas), hay que decírselo: con «no hay
+      // actualizaciones» el plugin se quedaría con la que tiene.
+      if (q.versionName && q.versionName !== BUILTIN)
+        return { version: BUILTIN };
+      return upToDate('No hay actualizaciones para esta app');
+    }
     if (bundle.version === q.versionName)
       return upToDate('Ya tienes la última versión');
     return {
