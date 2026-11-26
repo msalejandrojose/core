@@ -129,9 +129,11 @@ private struct Ring: View {
 private struct Rings: View {
     let s: BrioWidgetSnapshot
     let size: CGFloat
+    /// Grosor de cada anillo respecto al tamaño.
+    var thickness: CGFloat = 0.11
 
     var body: some View {
-        let w = size * 0.11
+        let w = size * thickness
         ZStack {
             Ring(ratio: s.food.ratio, color: foodColor, width: w)
             Ring(ratio: s.move.ratio, color: moveColor, width: w)
@@ -142,6 +144,100 @@ private struct Rings: View {
             }
         }
         .frame(width: size, height: size)
+    }
+}
+
+/// «1.240»: punto de millar también con cuatro cifras, como en la app.
+private func kcalText(_ s: BrioWidgetSnapshot) -> String {
+    let digits = String(Int(abs(s.food.remaining ?? s.food.eaten).rounded()))
+    var out = ""
+    for (i, c) in digits.enumerated() {
+        if i > 0 && (digits.count - i) % 3 == 0 { out.append(".") }
+        out.append(c)
+    }
+    return out
+}
+
+/// El «reloj»: los anillos con las kcal que quedan en el centro.
+private struct TodayDial: View {
+    let s: BrioWidgetSnapshot
+    let size: CGFloat
+
+    /// Anillos más finos que en el mediano de Hoy para que las kcal quepan
+    /// en el hueco del centro (con tres anillos, el hueco es size - 6 grosores).
+    private let thickness: CGFloat = 0.075
+
+    var body: some View {
+        let hole = size * (1 - 6 * thickness)
+        ZStack {
+            Rings(s: s, size: size, thickness: thickness)
+            VStack(spacing: 0) {
+                Text(kcalText(s))
+                    .font(.system(size: hole * 0.34, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                Text(s.food.remaining.map { $0 >= 0 ? "quedan" : "de más" } ?? "kcal")
+                    .font(.system(size: max(8, hole * 0.19), weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(width: hole * 0.88)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Comida: \(s.food.label). Entreno: \(s.move.label)")
+    }
+}
+
+/// Un día de la semana: el deporte, el check si se hizo y el aro de hoy.
+private struct WeekDot: View {
+    let d: BrioWidgetSnapshot.WeekDay
+    let size: CGFloat
+
+    var body: some View {
+        let check = size * 0.4
+        ZStack(alignment: .bottomTrailing) {
+            switch d.state {
+            case "done":
+                SportBadge(family: d.family, filled: true, size: size)
+                ZStack {
+                    Circle().fill(moveColor)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: check * 0.55, weight: .black))
+                        .foregroundStyle(.white)
+                }
+                .frame(width: check, height: check)
+                .overlay(Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 2))
+                .offset(x: size * 0.1, y: size * 0.1)
+            case "rest":
+                Circle().fill(Color(uiColor: .systemIndigo).opacity(0.18)).frame(width: size, height: size)
+            case "free":
+                Circle().stroke(Color.secondary.opacity(0.25), lineWidth: 2.5).frame(width: size, height: size)
+            default:
+                if d.family != nil {
+                    SportBadge(family: d.family, filled: false, size: size)
+                        .opacity(d.state == "missed" ? 0.5 : 1)
+                } else {
+                    Circle().stroke(Color.secondary.opacity(0.35), lineWidth: 2.5).frame(width: size, height: size)
+                }
+            }
+        }
+        .overlay(
+            Circle()
+                .stroke(d.isToday ? brioTint : .clear, lineWidth: 2)
+                .frame(width: size + 6, height: size + 6)
+        )
+        .overlay(alignment: .topTrailing) {
+            if d.extra > 0 {
+                Text("+\(d.extra)")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Color(uiColor: .systemBackground))
+                    .padding(.horizontal, 3)
+                    .background(Capsule().fill(Color.primary))
+                    .offset(x: 6, y: -4)
+            }
+        }
+        .frame(width: size + 6, height: size + 6)
     }
 }
 
@@ -199,17 +295,7 @@ struct BrioTodayWidgetView: View {
 
     private func small(_ s: BrioWidgetSnapshot) -> some View {
         VStack(spacing: 8) {
-            ZStack {
-                Rings(s: s, size: 84)
-                VStack(spacing: 0) {
-                    Text(kcal(s))
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .minimumScaleFactor(0.7)
-                    Text(s.food.remaining.map { $0 >= 0 ? "quedan" : "de más" } ?? "kcal")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-            }
+            TodayDial(s: s, size: 84)
             Text(s.move.label)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(moveColor)
@@ -257,17 +343,6 @@ struct BrioTodayWidgetView: View {
                 .minimumScaleFactor(0.8)
         }
         .accessibilityLabel("\(title): \(value)")
-    }
-
-    /// «1.240»: punto de millar también con cuatro cifras, como en la app.
-    private func kcal(_ s: BrioWidgetSnapshot) -> String {
-        let digits = String(Int(abs(s.food.remaining ?? s.food.eaten).rounded()))
-        var out = ""
-        for (i, c) in digits.enumerated() {
-            if i > 0 && (digits.count - i) % 3 == 0 { out.append(".") }
-            out.append(c)
-        }
-        return out
     }
 }
 
@@ -410,60 +485,13 @@ struct BrioWeekWidgetView: View {
                         Text(d.letter)
                             .font(.caption2.weight(.bold))
                             .foregroundStyle(d.isToday ? brioTint : .secondary)
-                        dot(d)
+                        WeekDot(d: d, size: 32)
                     }
                     .frame(maxWidth: .infinity)
                 }
             }
             Spacer(minLength: 0)
         }
-    }
-
-    @ViewBuilder
-    private func dot(_ d: BrioWidgetSnapshot.WeekDay) -> some View {
-        let size: CGFloat = 32
-        ZStack(alignment: .bottomTrailing) {
-            switch d.state {
-            case "done":
-                SportBadge(family: d.family, filled: true, size: size)
-                ZStack {
-                    Circle().fill(moveColor)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 7, weight: .black))
-                        .foregroundStyle(.white)
-                }
-                .frame(width: 13, height: 13)
-                .overlay(Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 2))
-                .offset(x: 3, y: 3)
-            case "rest":
-                Circle().fill(Color(uiColor: .systemIndigo).opacity(0.18)).frame(width: size, height: size)
-            case "free":
-                Circle().stroke(Color.secondary.opacity(0.25), lineWidth: 2.5).frame(width: size, height: size)
-            default:
-                if d.family != nil {
-                    SportBadge(family: d.family, filled: false, size: size)
-                        .opacity(d.state == "missed" ? 0.5 : 1)
-                } else {
-                    Circle().stroke(Color.secondary.opacity(0.35), lineWidth: 2.5).frame(width: size, height: size)
-                }
-            }
-        }
-        .overlay(
-            Circle()
-                .stroke(d.isToday ? brioTint : .clear, lineWidth: 2)
-                .frame(width: size + 6, height: size + 6)
-        )
-        .overlay(alignment: .topTrailing) {
-            if d.extra > 0 {
-                Text("+\(d.extra)")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(Color(uiColor: .systemBackground))
-                    .padding(.horizontal, 3)
-                    .background(Capsule().fill(Color.primary))
-                    .offset(x: 6, y: -4)
-            }
-        }
-        .frame(width: size + 6, height: size + 6)
     }
 }
 
@@ -474,6 +502,86 @@ struct BrioWeekWidget: Widget {
         }
         .configurationDisplayName("Mi semana")
         .description("Tu semana con el deporte de cada día y lo que ya has entrenado.")
+        .supportedFamilies([.systemMedium])
+    }
+}
+
+// MARK: - Hoy y semana (mediano: el reloj de la comida y la semana de entrenos)
+
+struct BrioTodayWeekWidgetView: View {
+    let entry: BrioEntry
+
+    var body: some View {
+        Group {
+            if let s = entry.usable {
+                content(s)
+            } else {
+                OpenAppView()
+            }
+        }
+        .widgetURL(URL(string: "brio://hoy"))
+        .containerBackground(for: .widget) { Color(uiColor: .systemBackground) }
+    }
+
+    private func content(_ s: BrioWidgetSnapshot) -> some View {
+        let trained = s.week.filter { $0.state == "done" }.count
+        return HStack(spacing: 12) {
+            // Cada mitad abre lo suyo: el reloj, Hoy; la semana, el plan.
+            Link(destination: URL(string: "brio://hoy")!) {
+                TodayDial(s: s, size: 104)
+            }
+            Link(destination: URL(string: "brio://plan")!) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Mi semana")
+                            .font(.subheadline.weight(.semibold))
+                        Spacer(minLength: 4)
+                        Text(trained == 1 ? "1 entrenado" : "\(trained) entrenados")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(moveColor)
+                            .lineLimit(1)
+                    }
+                    HStack(spacing: 0) {
+                        ForEach(s.week, id: \.day) { d in
+                            VStack(spacing: 4) {
+                                Text(d.letter)
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(d.isToday ? brioTint : .secondary)
+                                WeekDot(d: d, size: 21)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                    HStack(spacing: 10) {
+                        tag(moveColor, s.move.label)
+                        if let steps = s.steps { tag(stepsColor, steps.label) }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func tag(_ color: Color, _ text: String) -> some View {
+        HStack(spacing: 4) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(text)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+    }
+}
+
+struct BrioTodayWeekWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "BrioTodayWeek", provider: BrioProvider()) { entry in
+            BrioTodayWeekWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Hoy y semana")
+        .description("El reloj de la comida y tu semana de entrenos, juntos.")
         .supportedFamilies([.systemMedium])
     }
 }

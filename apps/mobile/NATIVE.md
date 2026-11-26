@@ -168,13 +168,15 @@ App Groups ni push).
 
 ## iOS: widgets de la pantalla de inicio
 
-Tres widgets en la misma extensión `BrioWidgets` (iOS 17):
+Cuatro widgets en la misma extensión `BrioWidgets` (iOS 17):
 
 - **Hoy** (pequeño y mediano): anillos de comida, entreno y pasos, y macros.
 - **Entreno de hoy** (pequeño y mediano): lo que toca según el plan con
   «Empezar», o lo ya hecho. Al tocarlo abre la app y empieza la rutina del día
   (o vuelve al entreno en curso).
 - **Mi semana** (mediano): la tira de la semana con el deporte de cada día.
+- **Hoy y semana** (mediano): el reloj de la comida (anillos con las kcal que
+  quedan) y la tira de la semana. El reloj abre Hoy y la semana, el plan.
 
 Cómo funciona: la pantalla Hoy calcula una instantánea
 (`src/features/brio/widgets/widget-snapshot.ts`) y la manda al plugin
