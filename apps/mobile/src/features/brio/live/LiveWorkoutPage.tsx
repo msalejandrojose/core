@@ -7,6 +7,8 @@ import { useBrioStore } from '../brio.store';
 import { tapSuccess } from '../haptics';
 import { MUSCLE_NAME } from '../performance/labels';
 import { ExercisePicker } from '../routines/ExercisePicker';
+import { GuideButton } from '../exercise-guide/GuideButton';
+import { useExerciseGuide } from '../exercise-guide/use-exercise-guide';
 import { routinesApi } from '../routines/routines.api';
 import { formatKcal } from '../format';
 import { BackLink, NavRow, Segmented, SectionHeader } from '../ui/kit';
@@ -115,6 +117,8 @@ export default function LiveWorkoutPage() {
   const setWorkout = useLiveStore((s) => s.set);
   const refreshDay = useBrioStore((s) => s.refreshDay);
   const now = useNow();
+  /** Ficha del ejercicio («Cómo se hace») sin salir del entreno. */
+  const guide = useExerciseGuide({ prefetch: true });
   const [picking, setPicking] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [effort, setEffort] = useState<Effort>('MODERATE');
@@ -302,6 +306,7 @@ export default function LiveWorkoutPage() {
               <span className="rk-row__title">{e.name}</span>
               {e.muscles ? <span className="rk-row__sub">{e.muscles}</span> : null}
             </span>
+            <GuideButton name={e.name} onClick={() => guide.open(e.exerciseId)} />
             {done ? (
               <button type="button" className="rk-textbtn" onClick={() => setExpanded(cardKey(i), false)}>
                 Plegar
@@ -573,6 +578,7 @@ export default function LiveWorkoutPage() {
             </button>
           </div>
         ) : null}
+        {guide.sheet}
       </IonContent>
     </IonPage>
   );

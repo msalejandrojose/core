@@ -5,6 +5,8 @@ import { toast } from '@/lib/toast';
 import { MUSCLE_NAME } from '../performance/labels';
 import { BackLink, LargeTitle, NavRow, SectionHeader, Segmented, Stepper } from '../ui/kit';
 import { ExercisePicker } from './ExercisePicker';
+import { GuideButton } from '../exercise-guide/GuideButton';
+import { useExerciseGuide } from '../exercise-guide/use-exercise-guide';
 import { REST_OPTIONS, linkedWithNext, normalizeGroups, restLabel, supersetLetter, toggleLink } from './supersets';
 import {
   EMPTY_ROUTINE,
@@ -60,6 +62,7 @@ export default function RoutineEditorPage() {
   const [picking, setPicking] = useState(false);
   const [saving, setSaving] = useState(false);
   const starter = useStartRoutine();
+  const guide = useExerciseGuide();
 
   useEffect(() => {
     if (isNew) return;
@@ -239,6 +242,7 @@ export default function RoutineEditorPage() {
                           .join(', ')}
                       </span>
                     </span>
+                    <GuideButton name={e.name} onClick={() => guide.open(e.exerciseId)} />
                     <div className="routine__order">
                       <button type="button" aria-label={`Subir ${e.name}`} disabled={i === 0} onClick={() => move(i, -1)}>
                         ↑
@@ -471,6 +475,7 @@ export default function RoutineEditorPage() {
             </button>
           ) : null}
         </div>
+        {guide.sheet}
       </IonContent>
     </IonPage>
   );
