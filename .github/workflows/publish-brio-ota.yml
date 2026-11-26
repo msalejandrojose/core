@@ -1,23 +1,28 @@
 name: Publish Brío OTA
 
 # Publica la web de la app de Brío como actualización en caliente (OTA) al hacer
-# push a `brio-ota`. Es lo mismo que `pnpm --filter @core/mobile ota:publish` en
-# el Mac (ver apps/mobile/ota/README.md), pero con la clave privada guardada como
-# secreto del repo:
-#   1. tests de la app;
-#   2. `ota:publish`: type-check + build, zip, cifrado/firma y subida a la API.
+# push a `brio-dev` (lo que entra al fusionar un PR) si toca la app. Es lo mismo
+# que `pnpm --filter @core/mobile ota:publish` en el Mac (apps/mobile/ota/README.md):
+#   1. ¿Se puede publicar? (scripts/ota-ci-check.sh: nada nativo sin subir
+#      minNativeVersion desde la última OTA, ni «[skip ota]» en el commit);
+#   2. tests de la app;
+#   3. si el mismo push despliega la API, espera a que acabe bien (la web nueva
+#      puede usar endpoints nuevos);
+#   4. `ota:publish`: type-check + build, zip, cifrado/firma y subida a la API;
+#   5. mueve la etiqueta `ota/<appId>` a este commit (la base del paso 1).
 #
-# Secretos del repo (Settings › Secrets and variables › Actions):
-#   OTA_PRIVATE_KEY  contenido completo de apps/mobile/ota/private.pem
-#   OTA_EMAIL        email de un admin del backoffice
-#   OTA_PASSWORD     su contraseña
-#
-# Ojo: una web que use algo nativo nuevo (plugin de Capacitor, cambios en
-# capacitor.config.ts, permisos, widgets…) NO va por aquí: subir antes
-# `minNativeVersion` en apps/mobile/ota/config.json y sacar build nativo.
+# La clave de firma NO está en GitHub: está en GCP Secret Manager y se lee al
+# vuelo con Workload Identity Federation, con la misma cuenta que despliega la
+# API (secretos GCP_WIF_PROVIDER / GCP_DEPLOY_SA, que no son claves). Una sola
+# clave sirve para todas las apps. Puesta en marcha: apps/mobile/ota/setup-gcp.sh.
 on:
   push:
-    branches: [brio-ota]
+    branches: [brio-dev]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/publish-brio-ota.yml'
   workflow_dispatch:
     inputs:
       notes:
@@ -30,29 +35,59 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write # mover la etiqueta ota/<appId>
+  actions: read # ver si el despliegue de la API ha acabado
+  id-token: write # Workload Identity Federation (GCP)
+
+env:
+  GCP_PROJECT: core-502518
+  OTA_KEY_SECRET: ota-signing-key
+  OTA_LOGIN_SECRET: ota-publisher-login
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Check what can go over the air
+        id: check
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          app_id="$(node -p "require('./apps/mobile/ota/config.json').appId")"
+          tag="ota/$app_id"
+          echo "tag=$tag" >>"$GITHUB_OUTPUT"
+          base="$(git rev-parse -q --verify "refs/tags/$tag^{commit}" || echo "${BEFORE:-0}")"
+          echo "Base: $base"
+          apps/mobile/scripts/ota-ci-check.sh "$base" "$GITHUB_SHA" | tee "$RUNNER_TEMP/check.txt"
+          if grep -q '^No se publica' "$RUNNER_TEMP/check.txt"; then
+            echo "::warning title=OTA no publicada::$(grep '^No se publica' "$RUNNER_TEMP/check.txt")"
+          fi
 
       - uses: pnpm/action-setup@v4
+        if: steps.check.outputs.publish == 'true'
 
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.publish == 'true'
         with:
           node-version: 22
           cache: pnpm
 
       - name: Install dependencies
+        if: steps.check.outputs.publish == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Build API
         # `prebuild` ejecuta `prisma generate`; hace falta para el OpenAPI.
+        if: steps.check.outputs.publish == 'true'
         run: pnpm build:api
 
       - name: Generate api-client schema
+        if: steps.check.outputs.publish == 'true'
         run: |
           node apps/api/dist/generate-openapi.js "$RUNNER_TEMP/openapi.json"
           pnpm --filter @core/api-client exec openapi-typescript \
@@ -61,38 +96,81 @@ jobs:
             -o "$GITHUB_WORKSPACE/packages/api-client/src/generated/schema.d.ts"
 
       - name: Test mobile
+        if: steps.check.outputs.publish == 'true'
         run: pnpm --filter @core/mobile test
 
-      - name: Write OTA private key
+      - name: Wait for the API deploy of this commit
+        if: steps.check.outputs.publish == 'true' && github.event_name == 'push'
         env:
-          OTA_PRIVATE_KEY: ${{ secrets.OTA_PRIVATE_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -z "$OTA_PRIVATE_KEY" ]; then
-            echo "::error::Falta el secreto OTA_PRIVATE_KEY (contenido de apps/mobile/ota/private.pem)."
+          for i in $(seq 1 120); do
+            run="$(gh run list -R "$GITHUB_REPOSITORY" --workflow deploy-brio-api.yml \
+              --commit "$GITHUB_SHA" --json status,conclusion \
+              --jq '.[0] // empty | "\(.status) \(.conclusion)"')"
+            if [ -z "$run" ]; then
+              # Sin despliegue de la API para este commit (no la toca): adelante.
+              [ "$i" -ge 3 ] && { echo "Este push no despliega la API."; exit 0; }
+            elif [ "${run%% *}" = completed ]; then
+              [ "${run#* }" = success ] && { echo "API desplegada."; exit 0; }
+              echo "::error::El despliegue de la API ha fallado (${run#* }): no se publica la OTA."
+              exit 1
+            else
+              echo "Esperando al despliegue de la API ($run)…"
+            fi
+            sleep 15
+          done
+          echo "::error::El despliegue de la API no ha acabado en 30 min."
+          exit 1
+
+      - uses: google-github-actions/auth@v2
+        if: steps.check.outputs.publish == 'true'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        if: steps.check.outputs.publish == 'true'
+
+      - name: Read signing key and publisher login (Secret Manager)
+        if: steps.check.outputs.publish == 'true'
+        run: |
+          umask 077
+          gcloud secrets versions access latest --project "$GCP_PROJECT" \
+            --secret "$OTA_KEY_SECRET" >"$RUNNER_TEMP/ota-private.pem"
+          # ota-publisher-login: dos líneas OTA_EMAIL=… y OTA_PASSWORD=…
+          login="$(gcloud secrets versions access latest --project "$GCP_PROJECT" --secret "$OTA_LOGIN_SECRET")"
+          email="$(sed -n 's/^OTA_EMAIL=//p' <<<"$login")"
+          password="$(sed -n 's/^OTA_PASSWORD=//p' <<<"$login")"
+          if [ -z "$email" ] || [ -z "$password" ]; then
+            echo "::error::El secreto $OTA_LOGIN_SECRET tiene que tener las líneas OTA_EMAIL=… y OTA_PASSWORD=…"
             exit 1
           fi
-          umask 077
-          printf '%s\n' "$OTA_PRIVATE_KEY" > "$RUNNER_TEMP/ota-private.pem"
+          echo "::add-mask::$password"
+          { echo "OTA_EMAIL=$email"; echo "OTA_PASSWORD=$password"; } >>"$GITHUB_ENV"
 
       - name: Publish OTA
+        if: steps.check.outputs.publish == 'true'
         working-directory: apps/mobile
         env:
           VITE_API_URL: https://brio-api.ajly.online
           OTA_PRIVATE_KEY_PATH: ${{ runner.temp }}/ota-private.pem
-          OTA_EMAIL: ${{ secrets.OTA_EMAIL }}
-          OTA_PASSWORD: ${{ secrets.OTA_PASSWORD }}
           # Por variable de entorno, nunca interpolado en el script.
           INPUT_NOTES: ${{ github.event.inputs.notes }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          if [ -z "$OTA_EMAIL" ] || [ -z "$OTA_PASSWORD" ]; then
-            echo "::error::Faltan los secretos OTA_EMAIL / OTA_PASSWORD (admin del backoffice)."
-            exit 1
-          fi
           notes="${INPUT_NOTES:-${COMMIT_MESSAGE%%$'\n'*}}"
-          notes="${notes:-${GITHUB_SHA::7}}"
-          pnpm ota:publish --notes "$notes (${GITHUB_SHA::7})" < /dev/null
+          notes="${notes:-$(git log -1 --format=%s)}"
+          pnpm ota:publish --notes "$notes (${GITHUB_SHA::7})" </dev/null
 
-      - name: Remove OTA private key
+      - name: Mark this commit as the last OTA
+        if: steps.check.outputs.publish == 'true'
+        env:
+          TAG: ${{ steps.check.outputs.tag }}
+        run: |
+          git tag -f "$TAG" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$TAG"
+
+      - name: Remove signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/ota-private.pem"

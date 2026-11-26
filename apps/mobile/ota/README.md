@@ -56,31 +56,46 @@ Pide el email y la contraseña del backoffice (o los lee de `OTA_EMAIL` /
 `VITE_API_URL`. Otras opciones: `--dry-run` (lo deja en `ota/out/` sin
 subir), `--skip-build`, `--version`, `--channel`, `--min-native`.
 
-## Publicar con un push (GitHub Actions)
+## Publicar con un push a `brio-dev` (GitHub Actions)
 
 `.github/workflows/publish-brio-ota.yml` hace lo mismo que `pnpm ota:publish`
-sin necesitar el Mac: **lo que entra en la rama `brio-ota` se publica**. Las
-notas del backoffice son la primera línea del último commit.
+sin el Mac: **cada push a `brio-dev` que toque la app se publica** (lo que entra
+al fusionar un PR). Las notas del backoffice son la primera línea del commit.
+Antes de publicar:
 
-Una vez, en GitHub › *Settings › Secrets and variables › Actions*, tres
-secretos:
+- comprueba que desde la última OTA no cambia nada nativo (plugins de
+  Capacitor, `capacitor.config.ts`, `native/`, parches) sin subir
+  `minNativeVersion` (`scripts/ota-ci-check.sh`). Si lo hay, no publica y deja
+  un aviso en el run. Si el cambio nativo no afecta a la web (p. ej. solo el
+  Swift de un widget), un commit con `[ota-native-ok]` lo deja pasar;
+- pasa los tests de la app;
+- si el mismo push despliega la API, espera a que acabe bien.
 
-| Secreto | Valor |
-|---|---|
-| `OTA_PRIVATE_KEY` | el contenido entero de `ota/private.pem` (con las líneas `BEGIN`/`END`) |
-| `OTA_EMAIL` | email de un admin del backoffice |
-| `OTA_PASSWORD` | su contraseña |
+Al publicar mueve la etiqueta `ota/es.aj.brio` a ese commit: es la «última
+OTA» con la que compara el siguiente push. Para no publicar un push concreto:
+`[skip ota]` en el mensaje del commit.
 
-Después, para publicar lo que haya en `brio-dev`:
+**La clave no está en GitHub**: está en **GCP Secret Manager**
+(`ota-signing-key`, más `ota-publisher-login` con el usuario del backoffice) y
+el workflow la lee al vuelo con Workload Identity Federation, con la cuenta
+`github-deploy` de la API. Esa identidad solo se concede a ejecuciones de
+`brio-dev` de este repo. **Una sola clave para todas las apps**: una app nueva
+lleva el mismo `ota/public.pem` y lee el mismo secreto.
+
+Puesta en marcha, una vez, desde un equipo con `gcloud` y la clave (el Mac o
+Cloud Shell):
 
 ```bash
-git push origin brio-dev:brio-ota
+apps/mobile/ota/setup-gcp.sh path/to/private.pem
 ```
 
-(o un PR a `brio-ota`). Se puede lanzar también a mano desde *Actions ›
-Publish Brío OTA › Run workflow* (cuando el workflow esté en `main`). Si el
-build o los tests fallan, no se sube nada. La misma regla de siempre: lo que
-necesite build nativo no va por aquí (ver abajo).
+Comprueba que la privada casa con `ota/public.pem`, crea los dos secretos y da
+acceso a `github-deploy`. Sin terminal, también se puede desde la consola de
+GCP › Secret Manager: `ota-signing-key` con el contenido del `.pem` y
+`ota-publisher-login` con dos líneas `OTA_EMAIL=…` / `OTA_PASSWORD=…`, y en
+cada uno dar a `github-deploy@core-502518.iam.gserviceaccount.com` el rol
+*Secret Manager Secret Accessor*. Para el usuario, mejor uno propio del
+backoffice con solo el permiso `ota.bundles` que un admin.
 
 ## Versión nativa mínima
 
