@@ -193,3 +193,18 @@
 .exguide__action {
   width: 100%;
 }
+
+/* Botón «i» para abrir la ficha desde el entreno en directo o el editor de rutinas. */
+.exguide__btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brio-tint-soft);
+  color: var(--brio-tint);
+  cursor: pointer;
+}

@@ -15,6 +15,8 @@ export interface RoutineExercise {
   sets: number;
   reps: number;
   weightKg: number | null;
+  /** Repeticiones y peso de cada serie, si no son todas iguales. */
+  setPlan?: RoutineSetPlan[] | null;
   restSec: number | null;
   supersetGroup: number | null;
   measure: Measure;
@@ -23,6 +25,12 @@ export interface RoutineExercise {
   durationSec: number | null;
   calories: number | null;
   muscles: { muscle: string; weight: number }[];
+}
+
+/** Una serie prevista: repeticiones y peso (null = el que toque ese día). */
+export interface RoutineSetPlan {
+  reps: number;
+  weightKg: number | null;
 }
 
 export interface MuscleShare {
@@ -59,6 +67,7 @@ export interface SaveRoutineBody {
     sets: number;
     reps: number;
     weightKg?: number | null;
+    setPlan?: RoutineSetPlan[] | null;
     restSec?: number | null;
     supersetGroup?: number | null;
     distanceM?: number | null;

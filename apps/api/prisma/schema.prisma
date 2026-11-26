@@ -3187,6 +3187,9 @@ model BrioRoutineExercise {
   distanceM     Int?     @map("distance_m")
   durationSec   Int?     @map("duration_sec") @db.SmallInt
   calories      Int?     @db.SmallInt
+  /// Repeticiones y peso de cada serie ([{ reps, weightKg }], una por serie),
+  /// cuando no son todas iguales. Nulo = `sets` series de `reps` con `weightKg`.
+  setPlan       Json?    @map("set_plan")
 
   routine  BrioRoutine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
   exercise BrioExercise @relation(fields: [exerciseId], references: [id])
@@ -3589,4 +3592,36 @@ model AiRequest {
   @@index([createdAt])
   @@index([agentId, createdAt])
   @@map("ai_request")
+}
+
+/// Actualización en caliente (OTA) de una app móvil: el zip de la web, cifrado
+/// (AES-128 con clave de sesión firmada con la clave privada de la app), en el
+/// storage (R2). La app pregunta a `POST /v1/ota/updates` y se baja la más
+/// reciente activa que encaja con su versión nativa.
+model OtaBundle {
+  id               String    @id @default(uuid()) @db.Char(36)
+  /// Identificador de la app (`es.aj.brio`), el mismo que manda el plugin.
+  appId            String    @map("app_id") @db.VarChar(120)
+  channel          String    @default("production") @db.VarChar(40)
+  version          String    @db.VarChar(60)
+  /// Versión nativa (App Store / Play) mínima que necesita esta web.
+  minNativeVersion String    @map("min_native_version") @db.VarChar(40)
+  storageKey       String    @map("storage_key") @db.VarChar(255)
+  sizeBytes        Int       @map("size_bytes")
+  /// SHA-256 del zip sin cifrar, firmado con la clave privada (hex).
+  checksum         String    @db.VarChar(1100)
+  /// `iv:claveDeSesión` en base64, la clave firmada con la clave privada.
+  sessionKey       String    @map("session_key") @db.VarChar(1100)
+  notes            String?   @db.VarChar(500)
+  /// Desactivada = no se sirve (sirve de vuelta atrás a la anterior).
+  isEnabled        Boolean   @default(true) @map("is_enabled")
+  /// Cuándo se borró el zip del storage (la fila queda como historial).
+  purgedAt         DateTime? @map("purged_at")
+  createdById      String?   @map("created_by_id") @db.Char(36)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@unique([appId, channel, version])
+  @@index([appId, channel, createdAt])
+  @@map("ota_bundle")
 }

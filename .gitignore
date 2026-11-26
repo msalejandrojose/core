@@ -69,3 +69,6 @@ android/app/build/
 
 # Secretos de despliegue (Cloud Run)
 .env.cloudrun
+
+# Informe de `pnpm --filter @core/api hevy:coverage` (local)
+apps/api/hevy-coverage.json

@@ -77,6 +77,7 @@ import ProfilePage from '@/features/profile/ProfilePage';
 import ChangePasswordPage from '@/features/profile/ChangePasswordPage';
 import { useUnreadStore } from '@/features/notifications/notifications.store';
 import { usePushNotifications } from '@/features/notifications/use-push-notifications';
+import { useWidgetDeepLinks } from '@/features/brio/widgets/useWidgetDeepLinks';
 
 
 /**
@@ -119,6 +120,8 @@ export default function TabsShell() {
   useGarminAutoSync();
   useDeviceHealthAutoSync();
   useReminders();
+  // Los widgets de la pantalla de inicio abren la app con brio://…
+  useWidgetDeepLinks();
   const { pathname } = useLocation();
   const refreshUnread = useUnreadStore((s) => s.refresh);
   const dockMode = useDockStore((s) => s.mode);

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
-import type { CleanRoutine } from '../../domain/services/routine';
+import type {
+  CleanRoutine,
+  RoutineSetPlan,
+} from '../../domain/services/routine';
 import type {
   BrioRoutineRepositoryPort,
   LinkableSession,
@@ -34,6 +37,22 @@ const INCLUDE = {
 
 type Row = Prisma.BrioRoutineGetPayload<{ include: typeof INCLUDE }>;
 
+/** El JSON guardado, solo si tiene la forma esperada. */
+const readSetPlan = (v: unknown): RoutineSetPlan[] | null =>
+  Array.isArray(v) &&
+  v.length > 0 &&
+  v.every(
+    (s) =>
+      s &&
+      typeof s === 'object' &&
+      typeof (s as RoutineSetPlan).reps === 'number',
+  )
+    ? (v as RoutineSetPlan[]).map((s) => ({
+        reps: s.reps,
+        weightKg: typeof s.weightKg === 'number' ? s.weightKg : null,
+      }))
+    : null;
+
 const toView = (r: Row): RoutineView => ({
   id: r.id,
   name: r.name,
@@ -51,6 +70,7 @@ const toView = (r: Row): RoutineView => ({
     sets: e.sets,
     reps: e.reps,
     weightKg: e.weightKg == null ? null : Number(e.weightKg),
+    setPlan: readSetPlan(e.setPlan),
     restSec: e.restSec,
     supersetGroup: e.supersetGroup,
     measure: e.exercise.measure,
@@ -74,6 +94,9 @@ const exerciseRows = (data: CleanRoutine) =>
     sets: e.sets,
     reps: e.reps,
     weightKg: e.weightKg,
+    setPlan: e.setPlan
+      ? (e.setPlan as unknown as Prisma.InputJsonArray)
+      : Prisma.DbNull,
     restSec: e.restSec,
     supersetGroup: e.supersetGroup,
     distanceM: e.distanceM,

@@ -7,6 +7,7 @@ import { MissingApiUrl } from './app/MissingApiUrl';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { installSessionReset } from './features/brio/session-reset';
 import { installSessionKeepAlive } from './lib/session';
+import { notifyAppReady } from './lib/live-update';
 import './i18n';
 
 /* CSS base de Ionic (mínimo necesario para el layout y la tipografía). */
@@ -48,3 +49,6 @@ createRoot(container).render(
     )}
   </React.StrictMode>,
 );
+
+// La web ya pinta: el plugin de actualizaciones en caliente no tiene que volver atrás.
+notifyAppReady();

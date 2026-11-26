@@ -1,4 +1,8 @@
-import type { CleanRoutine, RoutineKind } from '../../domain/services/routine';
+import type {
+  CleanRoutine,
+  RoutineKind,
+  RoutineSetPlan,
+} from '../../domain/services/routine';
 
 export const BRIO_ROUTINE_REPOSITORY = Symbol('BRIO_ROUTINE_REPOSITORY');
 
@@ -9,6 +13,8 @@ export interface RoutineExerciseView {
   sets: number;
   reps: number;
   weightKg: number | null;
+  /** Repeticiones y peso de cada serie cuando no son todas iguales. */
+  setPlan: RoutineSetPlan[] | null;
   restSec: number | null;
   supersetGroup: number | null;
   measure: 'REPS' | 'DISTANCE' | 'TIME' | 'CALORIES';

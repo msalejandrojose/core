@@ -358,6 +358,21 @@ const BACKOFFICE_TREE: SeedNode[] = [
       },
     ],
   },
+  {
+    code: 'ota',
+    name: 'Apps móviles',
+    icon: 'Smartphone',
+    order: 12,
+    children: [
+      {
+        code: 'ota.bundles',
+        name: 'Actualizaciones',
+        icon: 'CloudDownload',
+        route: '/ota/bundles',
+        order: 0,
+      },
+    ],
+  },
 ];
 
 const ADMIN_ROLE_CODE = 'admin';

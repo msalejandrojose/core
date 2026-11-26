@@ -166,6 +166,39 @@ el estado pendiente, que la web recoge (`takeChanges`) al instante si está viva
 o al volver a la app. Con la cuenta gratuita de Apple funciona igual (no usa
 App Groups ni push).
 
+## iOS: widgets de la pantalla de inicio
+
+Tres widgets en la misma extensión `BrioWidgets` (iOS 17):
+
+- **Hoy** (pequeño y mediano): anillos de comida, entreno y pasos, y macros.
+- **Entreno de hoy** (pequeño y mediano): lo que toca según el plan con
+  «Empezar», o lo ya hecho. Al tocarlo abre la app y empieza la rutina del día
+  (o vuelve al entreno en curso).
+- **Mi semana** (mediano): la tira de la semana con el deporte de cada día.
+
+Cómo funciona: la pantalla Hoy calcula una instantánea
+(`src/features/brio/widgets/widget-snapshot.ts`) y la manda al plugin
+`BrioWidgets` (`native/ios/App/BrioWidgetsPlugin.swift`), que la guarda en el
+**App Group `group.es.aj.brio`** y recarga los widgets. Los widgets
+(`native/ios/Widget/BrioHomeWidgets.swift`) solo la leen; a medianoche pasan
+solos a «Abre Brío» hasta que la app vuelve a abrirse. Al tocar un widget, la
+app se abre con `brio://hoy`, `brio://entreno?routine=…` o `brio://plan`
+(`useWidgetDeepLinks`, en `TabsShell`). Al cerrar sesión se borran los datos.
+
+El mismo `pnpm --filter @core/mobile ios:live-activity` lo engancha todo:
+añade los ficheros nuevos, pone el App Group en los entitlements de la app y de
+la extensión (`native/ios/Widget/BrioWidgets.entitlements`) y registra el
+esquema `brio://` en el Info.plist.
+
+**Una vez en Xcode**: en *Signing & Capabilities* de los targets `App` y
+`BrioWidgets`, comprobar que aparece **App Groups** con `group.es.aj.brio`
+marcado (si no, añadir la capacidad y marcarlo: Xcode registra el grupo en la
+cuenta de desarrollador). El App Group necesita la cuenta de desarrollador de
+pago; con la gratuita, Xcode puede negarse a firmar y entonces los widgets no
+reciben datos (la Live Activity sigue funcionando).
+
+Para añadirlos al iPhone: mantener pulsada la pantalla de inicio › «+» › Brío.
+
 ## Instalar la app normal (contra la API de Cloud Run)
 
 ```bash

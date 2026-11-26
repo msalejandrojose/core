@@ -1,11 +1,15 @@
+import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { ActivityIcon } from '../ui/activity-icons';
+import { activityLook } from '../ui/activity-look';
 import type { DayTotals } from '../api';
 import { formatDuration, formatNumber } from '../format';
 import type { PlanDay, PlannedSession } from '../plan/plan.api';
 import { LOAD_LABEL, fmtMinutes } from '../plan/plan-labels';
-import { Chevron } from '../ui/kit';
+import { Chevron, Icon } from '../ui/kit';
 import { macroBars, weekDots, type DayRing, type WeekDot } from './today-visuals';
+import { doneWorkoutFacts, type DoneWorkoutInfo } from './done-workout';
+import { SwipeRow } from './SwipeRow';
 import './today-visuals.css';
 
 /** Anillos concéntricos (de fuera a dentro), estilo «actividad» de iOS. */
@@ -87,14 +91,34 @@ export function DayRingsCard({
   );
 }
 
+/**
+ * Punto de un día: lleno con el icono del deporte si entrenaste (el «check»),
+ * vacío con el icono de lo planificado si no, y sin icono en descanso o sin plan.
+ */
 function Dot({ d }: { d: WeekDot }) {
+  const look = d.sport ? activityLook(d.sport) : null;
+  const done = d.state === 'done';
   return (
-    <span className={`tv-week__dot is-${d.state}`} aria-hidden="true">
-      {d.state === 'done' ? (
+    <span
+      className={`tv-week__dot is-${d.state}${d.isToday ? ' is-now' : ''}${look ? ' has-icon' : ''}`}
+      style={look ? ({ '--sport': look.color } as CSSProperties) : undefined}
+      aria-hidden="true"
+    >
+      {look ? (
+        <Icon d={look.path} size={15} stroke={2.3} />
+      ) : done ? (
         <svg width="14" height="14" viewBox="0 0 24 24">
           <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ) : null}
+      {done && look ? (
+        <span className="tv-week__tick">
+          <svg width="8" height="8" viewBox="0 0 24 24">
+            <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      ) : null}
+      {d.extra ? <span className="tv-week__extra">+{d.extra}</span> : null}
     </span>
   );
 }
@@ -121,7 +145,7 @@ export function WeekStrip({
           <button
             key={d.day}
             type="button"
-            className={`tv-week__day tv-week__pick${d.state === 'today' ? ' is-today' : ''}${d.day === selected ? ' is-selected' : ''}`}
+            className={`tv-week__day tv-week__pick${d.isToday ? ' is-today' : ''}${d.day === selected ? ' is-selected' : ''}`}
             aria-pressed={d.day === selected}
             aria-label={d.label}
             disabled={d.day > today}
@@ -137,7 +161,7 @@ export function WeekStrip({
   return (
     <Link to="/tabs/entrenos/plan" className="tv-week" aria-label={`Tu semana. ${dots.map((d) => d.label).join(', ')}. Abrir plan.`}>
       {dots.map((d) => (
-        <span key={d.day} className={`tv-week__day${d.state === 'today' ? ' is-today' : ''}`}>
+        <span key={d.day} className={`tv-week__day${d.isToday ? ' is-today' : ''}`}>
           <span className="tv-week__letter">{d.letter}</span>
           <Dot d={d} />
         </span>
@@ -158,8 +182,70 @@ export interface DoneWorkout {
   code?: string | null;
   durationSec: number;
   kcal: number;
-  /** Para los de fuerza: abre sus series. */
+  /** Abre el entreno para verlo entero y editarlo. */
   to?: string;
+  /** Detalle que se enseña al tocar la fila: hora, datos y notas. */
+  info?: DoneWorkoutInfo;
+}
+
+/**
+ * Un entreno de la lista: tocar lo abre (datos y descripción) y deslizar a la
+ * izquierda deja borrarlo.
+ */
+function DoneRow({ w, onDelete }: { w: DoneWorkout; onDelete?: (w: DoneWorkout) => void }) {
+  const [open, setOpen] = useState(false);
+  const facts = w.info ? doneWorkoutFacts(w.info) : [];
+  const notes = w.info?.notes?.trim();
+  const panelId = `tv-done-${w.id}`;
+  const head = (
+    <button
+      type="button"
+      className={`tv-done-list__row${open ? ' is-open' : ''}`}
+      aria-expanded={open}
+      aria-controls={panelId}
+      onClick={() => setOpen((x) => !x)}
+    >
+      <ActivityIcon code={w.code} kind={w.kind} name={w.name} />
+      <span className="tv-done-list__name">{w.name}</span>
+      <span className="tv-done-list__meta">
+        {formatDuration(w.durationSec)} · {formatNumber(Math.round(w.kcal))} kcal
+      </span>
+      <span className="tv-done-list__chev" aria-hidden="true">
+        <Chevron />
+      </span>
+    </button>
+  );
+  return (
+    <li>
+      {onDelete ? <SwipeRow onDelete={() => onDelete(w)}>{head}</SwipeRow> : head}
+      {open ? (
+        <div id={panelId} className="tv-done-list__detail">
+          {facts.length ? (
+            <span className="tv-done-list__facts">
+              {facts.map((f) => (
+                <span key={f} className="tv-workout__chip">
+                  {f}
+                </span>
+              ))}
+            </span>
+          ) : null}
+          <p className={`tv-done-list__notes${notes ? '' : ' is-empty'}`}>{notes || 'Sin descripción.'}</p>
+          <div className="tv-done-list__actions">
+            {w.to ? (
+              <Link to={w.to} className="tv-done-list__edit">
+                Ver y editar
+              </Link>
+            ) : null}
+            {onDelete ? (
+              <button type="button" className="tv-done-list__delete" onClick={() => onDelete(w)}>
+                Eliminar
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </li>
+  );
 }
 
 export function TodayWorkoutCard({
@@ -168,7 +254,10 @@ export function TodayWorkoutCard({
   doneMinutes,
   done = [],
   isToday = true,
+  onDelete,
 }: {
+  /** Borrar un entreno de la lista (deslizando a la izquierda o desde su detalle). */
+  onDelete?: (w: DoneWorkout) => void;
   day: PlanDay | null;
   onStart: () => void;
   doneMinutes: number;
@@ -196,28 +285,9 @@ export function TodayWorkoutCard({
             </span>
           </div>
           <ul className="tv-done-list">
-            {done.map((w) => {
-              const body = (
-                <>
-                  <ActivityIcon code={w.code} kind={w.kind} name={w.name} />
-                  <span className="tv-done-list__name">{w.name}</span>
-                  <span className="tv-done-list__meta">
-                    {formatDuration(w.durationSec)} · {formatNumber(Math.round(w.kcal))} kcal
-                  </span>
-                </>
-              );
-              return (
-                <li key={w.id}>
-                  {w.to ? (
-                    <Link to={w.to} className="tv-done-list__row">
-                      {body}
-                    </Link>
-                  ) : (
-                    <span className="tv-done-list__row">{body}</span>
-                  )}
-                </li>
-              );
-            })}
+            {done.map((w) => (
+              <DoneRow key={w.id} w={w} onDelete={onDelete} />
+            ))}
           </ul>
           <button type="button" className="tv-workout__another" onClick={onStart}>
             + Añadir otro entreno

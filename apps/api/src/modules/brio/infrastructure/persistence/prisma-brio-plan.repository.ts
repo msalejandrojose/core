@@ -215,13 +215,14 @@ export class PrismaBrioPlanRepository implements BrioPlanRepositoryPort {
         loggedOn: true,
         durationSec: true,
         distanceM: true,
-        activityType: { select: { kind: true, name: true } },
+        activityType: { select: { kind: true, name: true, code: true } },
       },
     });
     return rows.map((r) => ({
       id: r.id,
       day: toDay(r.loggedOn),
       kind: r.activityType.kind,
+      code: r.activityType.code ?? null,
       title: r.activityType.name,
       durationSec: r.durationSec,
       distanceM: r.distanceM,

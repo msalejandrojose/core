@@ -2,6 +2,7 @@ import type { LogActivityBody } from '../api';
 import type { Routine, SaveRoutineBody } from '../routines/routines.api';
 import { closesRound, normalizeGroups, toggleLink } from '../routines/supersets';
 import { formatDistance, formatTime, parseTime } from '../routines/measures';
+import { setsOf } from '../routines/routine-draft';
 import type { Measure } from '../performance/perf.api';
 
 /**
@@ -98,9 +99,10 @@ export function startFromRoutine(
         restSec: e.restSec,
         group: e.supersetGroup,
         previous: prev,
-        sets: Array.from({ length: e.sets }, () => ({
-          weight: weight !== null ? fmt(weight) : '',
-          reps: String(e.reps),
+        // Cada serie con lo suyo (pirámides…); sin peso previsto, el de la última vez.
+        sets: setsOf(e).map((p) => ({
+          weight: p.weightKg ? fmt(p.weightKg) : weight !== null ? fmt(weight) : '',
+          reps: String(p.reps),
           distance: e.distanceM ? String(e.distanceM) : '',
           time: formatTime(e.durationSec),
           cal: e.calories ? String(e.calories) : '',
@@ -345,11 +347,16 @@ export function routineWithTodayWeights(r: Routine, w: LiveWorkout): SaveRoutine
       const live = w.exercises.find((x) => x.exerciseId === e.exerciseId);
       const sets = live ? doneSets(live).filter((s) => !s.isWarmup) : [];
       const top = sets.length ? Math.max(...sets.map((s) => s.weightKg)) : null;
+      // Con series distintas, cada una se queda con el peso que moviste en ella.
+      const setPlan = e.setPlan?.length
+        ? e.setPlan.map((p, k) => ({ reps: p.reps, weightKg: sets[k] && sets[k].weightKg > 0 ? sets[k].weightKg : p.weightKg }))
+        : null;
       return {
         exerciseId: e.exerciseId,
         sets: e.sets,
         reps: e.reps,
         weightKg: top && top > 0 ? top : e.weightKg,
+        ...(setPlan ? { setPlan } : {}),
         // Si cambiaste el descanso entrenando, se queda el de hoy.
         restSec: live ? live.restSec : e.restSec,
         supersetGroup: e.supersetGroup,

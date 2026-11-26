@@ -125,6 +125,10 @@ describe('buildWeek', () => {
       [actual('2026-11-09', 'STRENGTH')],
     );
     expect(status(w, '2026-11-09').status).toBe('MISSED');
+    // …pero el día sigue contando lo que entrenaste, para la tira de la semana.
+    expect(status(w, '2026-11-09').workouts.map((a) => a.kind)).toEqual([
+      'STRENGTH',
+    ]);
   });
 
   it('prefiere el entreno enlazado a mano', () => {

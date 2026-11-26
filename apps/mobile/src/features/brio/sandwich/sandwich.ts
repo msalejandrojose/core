@@ -22,16 +22,24 @@ const PREFIX: Record<SandwichBase['kind'], string> = {
   tostada: 'Tostada con',
   sandwich: 'Sándwich de',
   wrap: 'Wrap de',
+  burrito: 'Burrito de',
 };
 
-/** «Bocata de jamón serrano, tomate natural rallado y aceite…» → como mucho tres ingredientes. */
+/** Ingredientes que se nombran como mucho; con más, «y más». */
+const MAX_NAMED = 5;
+
+/**
+ * «Bocata de tortilla de patatas, pechuga de pavo y tomate», «Burrito de
+ * tomate, aguacate, ternera y queso»: todos los ingredientes en orden, hasta
+ * cinco; con más, los cinco primeros «y más».
+ */
 export function sandwichName(base: SandwichBase | null, lines: SandwichLine[]): string {
   if (!base) return '';
   const names = lines.map((l) => short(l.food.name));
   if (names.length === 0) return base.label;
-  const shown = names.slice(0, 3);
+  const shown = names.slice(0, MAX_NAMED);
   const list =
-    names.length > 3
+    names.length > MAX_NAMED
       ? `${shown.join(', ')} y más`
       : shown.length === 1
         ? shown[0]
@@ -40,6 +48,13 @@ export function sandwichName(base: SandwichBase | null, lines: SandwichLine[]): 
 }
 
 /** Vista previa de una línea para la bandeja (las kcal de verdad las calcula la API). */
+/** Añade un ingrediente (cualquiera del catálogo, sin límite) o lo quita si ya estaba. */
+export function toggleLine(lines: SandwichLine[], food: Food): SandwichLine[] {
+  return lines.some((l) => l.food.id === food.id)
+    ? lines.filter((l) => l.food.id !== food.id)
+    : [...lines, { food, grams: defaultGramsOf(food) }];
+}
+
 export function lineItem(food: Food, grams: number): TrayItem {
   const f = grams / 100;
   return {

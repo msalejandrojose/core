@@ -1,13 +1,15 @@
 /**
- * Creador de bocatas y tostadas (TASK-433): la base (pan y cuánto) y los
- * ingredientes que se le suelen poner, agrupados. Los nombres son los del
+ * Creador de bocatas, tostadas, wraps y burritos (TASK-433): la base (pan o
+ * tortilla y cuánto) y sugerencias de lo que se le suele poner, agrupadas.
+ * Son solo atajos: en la app se puede añadir cualquier alimento del catálogo,
+ * tantos como se quiera. Los nombres son los del
  * catálogo global (`seeds/brio-foods.data.ts` y `seed-brio.ts`). Dominio puro.
  */
 
 export interface SandwichBase {
   code: string;
   /** «Bocata», «Tostada»: da nombre a lo que se monta. */
-  kind: 'bocata' | 'tostada' | 'sandwich' | 'wrap';
+  kind: 'bocata' | 'tostada' | 'sandwich' | 'wrap' | 'burrito';
   label: string;
   food: string;
   grams: number;
@@ -28,6 +30,8 @@ export const SANDWICH_BASES: readonly SandwichBase[] = [
   { code: 'tostada-integral', kind: 'tostada', label: 'Tostada integral', food: 'Pan integral', grams: 35 },
   { code: 'tostada-centeno', kind: 'tostada', label: 'Tostada de centeno', food: 'Pan de centeno', grams: 35 },
   { code: 'wrap', kind: 'wrap', label: 'Wrap', food: 'Tortilla de trigo para wrap', grams: 60 },
+  // Tortilla grande de burrito (~30 cm): más o menos una y media de wrap.
+  { code: 'burrito', kind: 'burrito', label: 'Burrito', food: 'Tortilla de trigo para wrap', grams: 90 },
 ];
 
 export const INGREDIENT_GROUPS: readonly IngredientGroup[] = [
@@ -41,7 +45,9 @@ export const INGREDIENT_GROUPS: readonly IngredientGroup[] = [
       'Atún al natural',
       'Huevo entero',
       'Tortilla francesa',
+      'Tortilla de patatas',
       'Pechuga de pollo a la plancha',
+      'Filete de ternera a la plancha',
       'Salmón ahumado',
       'Lomo embuchado',
       'Chorizo',
@@ -73,6 +79,11 @@ export const INGREDIENT_GROUPS: readonly IngredientGroup[] = [
     code: 'verdura',
     label: 'Verdura y fruta',
     foods: ['Tomate en rodajas', 'Lechuga', 'Rúcula', 'Cebolla', 'Pimiento asado', 'Pepino', 'Plátano'],
+  },
+  {
+    code: 'burrito',
+    label: 'Para burrito o wrap',
+    foods: ['Arroz basmati', 'Guacamole'],
   },
 ];
 

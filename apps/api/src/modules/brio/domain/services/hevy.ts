@@ -179,6 +179,12 @@ const ALIASES: Record<string, string> = {
   'shoulder press|machine plates': 'machine_shoulder_press',
   'shoulder press|machine': 'machine_shoulder_press',
   'lateral raise|machine': 'machine_lateral_raise',
+  // Multipower: el suyo, no el de barra libre.
+  'incline bench press|smith machine': 'smith_incline_bench_press',
+  'decline bench press|smith machine': 'smith_decline_bench_press',
+  'incline chest fly|dumbbell': 'dumbbell_incline_fly',
+  'chest supported incline row|dumbbell': 'chest_supported_dumbbell_row',
+  'rope straight arm pulldown': 'straight_arm_lat_pulldown',
 };
 
 /**

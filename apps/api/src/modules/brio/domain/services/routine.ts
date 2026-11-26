@@ -15,11 +15,22 @@ export type RoutineKind =
   | 'OTHER_CARDIO'
   | 'OTHER';
 
+/** Una serie prevista con sus repeticiones y su peso. */
+export interface RoutineSetPlan {
+  reps: number;
+  weightKg: number | null;
+}
+
 export interface RoutineExerciseInput {
   exerciseId: string;
   sets: number;
   reps: number;
   weightKg?: number | null;
+  /**
+   * Repeticiones y peso de cada serie (pirámides, series descendentes…). Si
+   * llega, manda sobre `sets`, `reps` y `weightKg`.
+   */
+  setPlan?: { reps: number; weightKg?: number | null }[] | null;
   restSec?: number | null;
   /** Mismo número que el ejercicio de al lado = superserie. */
   supersetGroup?: number | null;
@@ -61,6 +72,71 @@ const intIn = (n: number | null | undefined, min: number, max: number) =>
   n == null || !Number.isFinite(n)
     ? null
     : Math.min(max, Math.max(min, Math.round(n)));
+
+/** Peso redondeado a 0,25 kg; nada, cero o negativo = sin peso. */
+const cleanWeight = (w: number | null | undefined) =>
+  w == null || !Number.isFinite(w) || w <= 0
+    ? null
+    : Math.round(Math.min(w, 500) * 4) / 4;
+
+export const MAX_ROUTINE_SETS = 20;
+
+/**
+ * Series de un ejercicio: sin plan por serie, `sets` iguales; con él, cada una
+ * la suya. `sets`, `reps` y `weightKg` quedan como resumen (número de series,
+ * repeticiones de la primera y el peso más alto) y el plan solo se guarda si
+ * de verdad cambia de una serie a otra.
+ */
+export function cleanSets(e: {
+  sets: number;
+  reps: number;
+  weightKg?: number | null;
+  setPlan?: { reps: number; weightKg?: number | null }[] | null;
+}): {
+  sets: number;
+  reps: number;
+  weightKg: number | null;
+  setPlan: RoutineSetPlan[] | null;
+} {
+  const plan = (e.setPlan ?? []).slice(0, MAX_ROUTINE_SETS).map((s) => ({
+    reps: intIn(s.reps, 1, 100) ?? 10,
+    weightKg: cleanWeight(s.weightKg),
+  }));
+  if (!plan.length) {
+    return {
+      sets: intIn(e.sets, 1, MAX_ROUTINE_SETS) ?? 3,
+      reps: intIn(e.reps, 1, 100) ?? 10,
+      weightKg: cleanWeight(e.weightKg),
+      setPlan: null,
+    };
+  }
+  const weights = plan
+    .map((s) => s.weightKg)
+    .filter((w): w is number => w !== null);
+  const same = plan.every(
+    (s) => s.reps === plan[0].reps && s.weightKg === plan[0].weightKg,
+  );
+  return {
+    sets: plan.length,
+    reps: plan[0].reps,
+    weightKg: weights.length ? Math.max(...weights) : null,
+    setPlan: same ? null : plan,
+  };
+}
+
+/** Las series una a una, tengan plan propio o no. */
+export function expandSets(e: {
+  sets: number;
+  reps: number;
+  weightKg: number | null;
+  setPlan?: RoutineSetPlan[] | null;
+}): RoutineSetPlan[] {
+  if (e.setPlan?.length) return e.setPlan;
+  return Array.from({ length: e.sets }, () => ({
+    reps: e.reps,
+    weightKg: e.weightKg,
+  }));
+}
 
 /**
  * Deja las superseries limpias: solo cuentan los ejercicios seguidos con el
@@ -110,12 +186,7 @@ export function cleanRoutine(input: RoutineInput): CleanRoutine {
     exercises: exercises.map((e, i) => ({
       exerciseId: e.exerciseId,
       supersetGroup: groups[i],
-      sets: intIn(e.sets, 1, 20) ?? 3,
-      reps: intIn(e.reps, 1, 100) ?? 10,
-      weightKg:
-        e.weightKg == null || !Number.isFinite(e.weightKg) || e.weightKg <= 0
-          ? null
-          : Math.round(Math.min(e.weightKg, 500) * 4) / 4,
+      ...cleanSets(e),
       restSec: intIn(e.restSec, 0, 900),
       distanceM: intIn(e.distanceM, 1, 100_000),
       durationSec: intIn(e.durationSec, 1, 7200),
@@ -179,6 +250,7 @@ export function hevyRoutineFrom(
     sets: number;
     reps: number;
     weightKg: number | null;
+    setPlan?: RoutineSetPlan[] | null;
     restSec: number | null;
     supersetGroup?: number | null;
     measure?: string;
@@ -201,12 +273,12 @@ export function hevyRoutineFrom(
       superset_id: e.supersetGroup ? e.supersetGroup - 1 : null,
       rest_seconds: e.restSec,
       notes: null,
-      sets: Array.from({ length: e.sets }, () => {
+      sets: expandSets(e).map((s) => {
         const measure = e.measure ?? 'REPS';
         return {
           type: 'normal' as const,
-          weight_kg: e.weightKg,
-          reps: measure === 'REPS' ? e.reps : null,
+          weight_kg: s.weightKg,
+          reps: measure === 'REPS' ? s.reps : null,
           ...(measure === 'DISTANCE'
             ? { distance_meters: e.distanceM ?? null }
             : {}),

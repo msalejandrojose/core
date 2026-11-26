@@ -5,17 +5,24 @@ import { toast } from '@/lib/toast';
 import { MUSCLE_NAME } from '../performance/labels';
 import { BackLink, LargeTitle, NavRow, SectionHeader, Segmented, Stepper } from '../ui/kit';
 import { ExercisePicker } from './ExercisePicker';
+import { GuideButton } from '../exercise-guide/GuideButton';
+import { useExerciseGuide } from '../exercise-guide/use-exercise-guide';
 import { REST_OPTIONS, linkedWithNext, normalizeGroups, restLabel, supersetLetter, toggleLink } from './supersets';
 import {
   EMPTY_ROUTINE,
   ROUTINE_KINDS,
+  addRow,
   draftFrom,
   musclesOf,
+  newRows,
+  resizeRows,
   routineBody,
+  type DraftSetRow,
   type RoutineDraft,
   type RoutineDraftExercise,
 } from './routine-draft';
 import { routineErrorText, routinesApi } from './routines.api';
+import { useStartRoutine } from './use-start-routine';
 import '../sheets/sheets.css';
 import './routines.css';
 
@@ -54,6 +61,8 @@ export default function RoutineEditorPage() {
   const [draft, setDraft] = useState<RoutineDraft | null>(isNew ? EMPTY_ROUTINE : null);
   const [picking, setPicking] = useState(false);
   const [saving, setSaving] = useState(false);
+  const starter = useStartRoutine();
+  const guide = useExerciseGuide();
 
   useEffect(() => {
     if (isNew) return;
@@ -70,7 +79,10 @@ export default function RoutineEditorPage() {
     };
   }, [id, isNew, history]);
 
-  const muscles = useMemo(() => musclesOf(draft?.exercises ?? []), [draft?.exercises]);
+  const muscles = useMemo(
+    () => musclesOf((draft?.exercises ?? []).map((e) => ({ sets: e.rows.length, muscles: e.muscles }))),
+    [draft?.exercises],
+  );
 
   if (!draft) {
     return (
@@ -96,6 +108,8 @@ export default function RoutineEditorPage() {
   const groups = draft.exercises.map((e) => e.group);
   const withGroups = (exs: RoutineDraftExercise[], gs: (number | null)[]) => exs.map((e, k) => ({ ...e, group: gs[k] }));
   const link = (i: number) => set({ exercises: withGroups(draft.exercises, toggleLink(groups, i)) });
+  const setRow = (i: number, k: number, changes: Partial<DraftSetRow>) =>
+    patch(i, { rows: draft.exercises[i].rows.map((r, j) => (j === k ? { ...r, ...changes } : r)) });
   const removeAt = (i: number) => {
     const exs = draft.exercises.filter((_, j) => j !== i);
     set({ exercises: withGroups(exs, normalizeGroups(exs.map((e) => e.group))) });
@@ -114,6 +128,20 @@ export default function RoutineEditorPage() {
       history.replace('/tabs/entrenos/rutinas');
     } catch (e) {
       toast.error('No se pudo guardar', routineErrorText(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** Guarda lo que hayas cambiado y empieza la sesión con la rutina tal cual queda. */
+  async function saveAndStart() {
+    if (!draft || isNew || !canSave) return;
+    setSaving(true);
+    try {
+      const saved = await routinesApi.update(id, routineBody(draft));
+      await starter.start(saved);
+    } catch (e) {
+      toast.error('No se pudo empezar', routineErrorText(e));
     } finally {
       setSaving(false);
     }
@@ -145,6 +173,17 @@ export default function RoutineEditorPage() {
             }
           />
           <LargeTitle>{isNew ? 'Nueva rutina' : draft.name || 'Rutina'}</LargeTitle>
+
+          {!isNew ? (
+            <button
+              type="button"
+              className="rk-btn routine__start-big"
+              disabled={!canSave || saving || starter.busy}
+              onClick={() => void saveAndStart()}
+            >
+              {saving || starter.busy ? 'Un momento…' : strength ? 'Empezar entreno' : 'Hacer sesión'}
+            </button>
+          ) : null}
 
           <div className="rk-list">
             <TextField label="Nombre" value={draft.name} onChange={(v) => set({ name: v })} placeholder={strength ? 'Torso A' : 'Rodaje Z2'} />
@@ -203,6 +242,7 @@ export default function RoutineEditorPage() {
                           .join(', ')}
                       </span>
                     </span>
+                    <GuideButton name={e.name} onClick={() => guide.open(e.exerciseId)} />
                     <div className="routine__order">
                       <button type="button" aria-label={`Subir ${e.name}`} disabled={i === 0} onClick={() => move(i, -1)}>
                         ↑
@@ -212,28 +252,66 @@ export default function RoutineEditorPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="rk-row routine__line">
-                    <span className="rk-row__main rk-row__title">Series</span>
-                    <Stepper
-                      value={e.sets}
-                      minusLabel="Una serie menos"
-                      plusLabel="Una serie más"
-                      onMinus={() => patch(i, { sets: Math.max(1, e.sets - 1) })}
-                      onPlus={() => patch(i, { sets: Math.min(20, e.sets + 1) })}
-                    />
-                  </div>
                   {e.measure === 'REPS' ? (
+                    <div className="routine__sets" role="group" aria-label={`Series de ${e.name}`}>
+                      <div className="routine__set routine__set--head" aria-hidden="true">
+                        <span>Serie</span>
+                        <span>Reps</span>
+                        <span>{e.bodyweight ? 'Lastre kg' : 'Kg'}</span>
+                        <span />
+                      </div>
+                      {e.rows.map((r, k) => (
+                        <div key={k} className="routine__set">
+                          <span className="routine__set-n">{k + 1}</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            aria-label={`Repeticiones de la serie ${k + 1}`}
+                            value={r.reps}
+                            placeholder="10"
+                            onChange={(ev) => setRow(i, k, { reps: ev.target.value.replace(/[^0-9]/g, '').slice(0, 3) })}
+                          />
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            aria-label={`Peso de la serie ${k + 1}`}
+                            value={r.weight}
+                            placeholder="—"
+                            onChange={(ev) => setRow(i, k, { weight: ev.target.value.replace(/[^0-9.,]/g, '') })}
+                          />
+                          <button
+                            type="button"
+                            className="routine__set-remove"
+                            aria-label={`Quitar la serie ${k + 1}`}
+                            disabled={e.rows.length === 1}
+                            onClick={() => patch(i, { rows: e.rows.filter((_, j) => j !== k) })}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        className="routine__set-add"
+                        disabled={e.rows.length >= 20}
+                        onClick={() => patch(i, { rows: addRow(e.rows) })}
+                      >
+                        + Añadir serie
+                      </button>
+                    </div>
+                  ) : (
                     <div className="rk-row routine__line">
-                      <span className="rk-row__main rk-row__title">Repeticiones</span>
+                      <span className="rk-row__main rk-row__title">Series</span>
                       <Stepper
-                        value={e.reps}
-                        minusLabel="Una repetición menos"
-                        plusLabel="Una repetición más"
-                        onMinus={() => patch(i, { reps: Math.max(1, e.reps - 1) })}
-                        onPlus={() => patch(i, { reps: Math.min(100, e.reps + 1) })}
+                        value={e.rows.length}
+                        minusLabel="Una serie menos"
+                        plusLabel="Una serie más"
+                        onMinus={() => patch(i, { rows: resizeRows(e.rows, e.rows.length - 1) })}
+                        onPlus={() => patch(i, { rows: resizeRows(e.rows, Math.min(20, e.rows.length + 1)) })}
                       />
                     </div>
-                  ) : e.measure === 'DISTANCE' ? (
+                  )}
+                  {e.measure === 'DISTANCE' ? (
                     <label className="rk-row routine__line routine__field">
                       <span className="rk-row__main rk-row__title">Metros por serie</span>
                       <input
@@ -255,7 +333,7 @@ export default function RoutineEditorPage() {
                         onChange={(ev) => patch(i, { time: ev.target.value.replace(/[^0-9:]/g, '') })}
                       />
                     </label>
-                  ) : (
+                  ) : e.measure === 'CALORIES' ? (
                     <label className="rk-row routine__line routine__field">
                       <span className="rk-row__main rk-row__title">Calorías por serie</span>
                       <input
@@ -266,16 +344,19 @@ export default function RoutineEditorPage() {
                         onChange={(ev) => patch(i, { calories: ev.target.value.replace(/[^0-9]/g, '') })}
                       />
                     </label>
-                  )}
-                  {e.measure === 'REPS' || !e.bodyweight ? (
+                  ) : null}
+                  {e.measure !== 'REPS' && !e.bodyweight ? (
                     <label className="rk-row routine__line routine__field">
-                      <span className="rk-row__main rk-row__title">{e.bodyweight ? 'Lastre (kg)' : 'Peso (kg)'}</span>
+                      <span className="rk-row__main rk-row__title">Peso (kg)</span>
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={e.weight}
+                        value={e.rows[0]?.weight ?? ''}
                         placeholder="—"
-                        onChange={(ev) => patch(i, { weight: ev.target.value.replace(/[^0-9.,]/g, '') })}
+                        onChange={(ev) => {
+                          const weight = ev.target.value.replace(/[^0-9.,]/g, '');
+                          patch(i, { rows: e.rows.map((r) => ({ ...r, weight })) });
+                        }}
                       />
                     </label>
                   ) : null}
@@ -331,9 +412,7 @@ export default function RoutineEditorPage() {
                           name: ex.name,
                           bodyweight: ex.isBodyweight,
                           muscles: ex.muscles,
-                          sets: (ex.measure ?? 'REPS') === 'REPS' ? 3 : 1,
-                          reps: 10,
-                          weight: '',
+                          rows: newRows((ex.measure ?? 'REPS') === 'REPS' ? 3 : 1),
                           rest: (ex.measure ?? 'REPS') === 'REPS' ? '90' : '',
                           group: null,
                           measure: ex.measure ?? 'REPS',
@@ -396,6 +475,7 @@ export default function RoutineEditorPage() {
             </button>
           ) : null}
         </div>
+        {guide.sheet}
       </IonContent>
     </IonPage>
   );

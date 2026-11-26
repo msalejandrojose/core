@@ -1,4 +1,6 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { loadEnv } from 'vite';
 
 // Si el build apunta a una API por `http` (un backend de pruebas en la red local
@@ -15,6 +17,15 @@ const httpApi = apiUrl.startsWith('http://');
 // web llegan al iPhone sin reinstalar, estés donde estés. Sin la variable, el
 // build es el normal. Ver NATIVE.md.
 const devServerUrl = env.CAP_SERVER_URL?.trim() || '';
+
+// Actualizaciones en caliente (ver ota/README.md): la app pregunta a la API si
+// hay una web nueva y se la baja de R2, cifrada y firmada. Solo con la clave
+// pública (`ota/public.pem`, se genera con `pnpm ota:keygen`), contra una API
+// https y fuera del modo «app conectada al Mac».
+const otaKeyPath = join(__dirname, 'ota', 'public.pem');
+const otaPublicKey = existsSync(otaKeyPath) ? readFileSync(otaKeyPath, 'utf8').trim() : '';
+const otaEnabled = !!otaPublicKey && apiUrl.startsWith('https://') && !devServerUrl;
+const otaChannel = (JSON.parse(readFileSync(join(__dirname, 'ota', 'config.json'), 'utf8')) as { channel?: string }).channel;
 
 // Config de Capacitor para los builds nativos (iOS/Android). `webDir` apunta al
 // output de Vite. Las plataformas nativas se añaden con `pnpm cap:add:ios` /
@@ -68,6 +79,24 @@ const config: CapacitorConfig = {
     StatusBar: {
       overlaysWebView: true,
     },
+    // Actualizaciones en caliente con servidor propio (API de Brío + R2), no
+    // el de Capgo. Se bajan en segundo plano y se aplican al pasar la app a
+    // segundo plano; si una no arranca, se vuelve sola a la anterior.
+    CapacitorUpdater: otaEnabled
+      ? {
+          autoUpdate: true,
+          updateUrl: `${apiUrl.replace(/\/+$/, '')}/v1/ota/updates`,
+          statsUrl: `${apiUrl.replace(/\/+$/, '')}/v1/ota/stats`,
+          defaultChannel: otaChannel ?? 'production',
+          publicKey: otaPublicKey,
+          appReadyTimeout: 10000,
+          autoDeleteFailed: true,
+          autoDeletePrevious: true,
+          // Al instalar una versión nueva de la tienda, se usa su web y se
+          // olvidan las bajadas para la versión anterior.
+          resetWhenUpdate: true,
+        }
+      : { autoUpdate: false },
   },
 };
 

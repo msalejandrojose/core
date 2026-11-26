@@ -44,10 +44,10 @@ export type MealHabits = Schemas['MealHabitsResponseDto'];
 export type LogWeightBody = Schemas['LogWeightDto'];
 
 /** `GET /brio/foods/typical` aún no declara su DTO de respuesta: tipo a mano. */
-/** Creador de bocatas y tostadas (TASK-433). */
+/** Creador de bocatas, tostadas, wraps y burritos (TASK-433). */
 export interface SandwichBase {
   code: string;
-  kind: 'bocata' | 'tostada' | 'sandwich' | 'wrap';
+  kind: 'bocata' | 'tostada' | 'sandwich' | 'wrap' | 'burrito';
   label: string;
   grams: number;
   food: Food;

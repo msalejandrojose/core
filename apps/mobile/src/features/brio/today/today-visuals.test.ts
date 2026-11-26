@@ -44,20 +44,43 @@ describe('today-visuals', () => {
     expect(m[1]).toMatchObject({ target: null, ratio: 0 });
   });
 
-  it('la semana: letras, estados y hoy marcado aunque ya esté hecho', () => {
+  it('la semana: check si entrenaste (también hoy), icono del deporte y estados del plan', () => {
+    const run = { id: 'p', day: '', kind: 'RUN', title: 'Rodaje', load: 'MEDIUM' } as never;
     const days = [
-      { day: '2026-11-16', status: 'DONE' as const },
-      { day: '2026-11-17', status: 'PLANNED' as const },
-      { day: '2026-11-15', status: 'MISSED' as const },
+      { day: '2026-11-16', status: 'DONE' as const, workouts: [{ id: 'a', kind: 'OTHER', code: 'football_7', title: 'Fútbol 7', durationSec: 3600, distanceM: null }] },
+      { day: '2026-11-17', status: 'PLANNED' as const, planned: run },
+      { day: '2026-11-15', status: 'MISSED' as const, planned: run },
       { day: '2026-11-14', status: 'REST' as const },
+      // Sin plan, pero jugaste al pádel y fuiste al gimnasio: cuenta.
+      {
+        day: '2026-11-13',
+        status: 'FREE' as const,
+        workouts: [
+          { id: 'b', kind: 'OTHER', code: 'padel', title: 'Pádel', durationSec: 3600, distanceM: null },
+          { id: 'c', kind: 'STRENGTH', code: 'strength', title: 'Gimnasio', durationSec: 3600, distanceM: null },
+        ],
+      },
+      // Tocaba correr y jugaste al fútbol: también cuenta como entrenado.
+      { day: '2026-11-12', status: 'MISSED' as const, planned: run, workouts: [{ id: 'd', kind: 'OTHER', code: 'football', title: 'Fútbol', durationSec: 3600, distanceM: null }] },
     ];
     const w = weekDots(days, '2026-11-16');
     expect(w.map((d) => [d.letter, d.state])).toEqual([
-      ['L', 'today'],
+      ['L', 'done'],
       ['M', 'planned'],
       ['D', 'missed'],
       ['S', 'rest'],
+      ['V', 'done'],
+      ['J', 'done'],
     ]);
-    expect(w[0].label).toBe('lunes: hecho hoy');
+    expect(w[0]).toMatchObject({ isToday: true, sport: { code: 'football_7' }, label: 'lunes (hoy): Fútbol 7, hecho hoy' });
+    expect(w[1].sport).toMatchObject({ kind: 'RUN' });
+    expect(w[3].sport).toBeNull();
+    expect(w[4]).toMatchObject({ extra: 1, sport: { code: 'padel' }, label: 'viernes: Pádel y Gimnasio, hecho' });
+  });
+
+  it('hoy sin entrenar aún sale como «hoy» con lo planificado', () => {
+    const run = { kind: 'RUN', title: 'Rodaje', load: 'MEDIUM' } as never;
+    const [d] = weekDots([{ day: '2026-11-16', status: 'TODAY', planned: run }], '2026-11-16');
+    expect(d).toMatchObject({ state: 'today', isToday: true, sport: { kind: 'RUN' }, label: 'lunes: Rodaje, hoy' });
   });
 });

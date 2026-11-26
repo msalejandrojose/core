@@ -170,6 +170,9 @@ const AiSkillsPage = lazy(() =>
 const AiModelsPage = lazy(() =>
   import('@/features/ai/AiModelsPage').then((m) => ({ default: m.AiModelsPage })),
 );
+const OtaBundlesPage = lazy(() =>
+  import('@/features/ota/OtaBundlesPage').then((m) => ({ default: m.OtaBundlesPage })),
+);
 const BrioFoodsPage = lazy(() =>
   import('@/features/brio/BrioFoodsPage').then((m) => ({ default: m.BrioFoodsPage })),
 );
@@ -365,6 +368,7 @@ export default function App() {
               <Route path="/ai/skills" element={<AiSkillsPage />} />
               <Route path="/ai/models" element={<AiModelsPage />} />
               <Route path="/ai/usage" element={<AiUsagePage />} />
+              <Route path="/ota/bundles" element={<OtaBundlesPage />} />
               <Route path="/brio/foods" element={<BrioFoodsPage />} />
               <Route path="/brio/exercises" element={<BrioExercisesPage />} />
               <Route path="/brio/activity-types" element={<BrioActivityTypesPage />} />
