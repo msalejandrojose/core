@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   EMPTY_ROUTINE,
+  addRow,
   draftFrom,
+  newRows,
+  resizeRows,
+  rowsPlan,
   musclesLine,
   musclesOf,
   paceToSec,
@@ -50,7 +54,8 @@ const torso: Routine = {
 describe('routine-draft', () => {
   it('ida y vuelta: rutina → borrador → cuerpo para la API', () => {
     const d = draftFrom(torso);
-    expect(d.exercises[0]).toMatchObject({ sets: 4, reps: 8, weight: '62,5', rest: '120' });
+    expect(d.exercises[0].rows).toEqual(Array.from({ length: 4 }, () => ({ reps: '8', weight: '62,5' })));
+    expect(d.exercises[0].rest).toBe('120');
     expect(routineBody(d)).toEqual({
       name: 'Torso A',
       kind: 'STRENGTH',
@@ -109,5 +114,52 @@ describe('routine-draft', () => {
     expect(body.exercises?.[1]).toMatchObject({ durationSec: 75 });
     // El registro rápido solo trae los de repeticiones.
     expect(workoutDraftFrom({ ...torso, exercises: [bench, run] })).toHaveLength(1);
+  });
+
+  it('series una a una: cada serie con sus repeticiones y su peso', () => {
+    const pyramid = {
+      ...bench,
+      sets: 3,
+      reps: 12,
+      weightKg: 70,
+      setPlan: [
+        { reps: 12, weightKg: 50 },
+        { reps: 10, weightKg: 60 },
+        { reps: 8, weightKg: 70 },
+      ],
+    };
+    const d = draftFrom({ ...torso, exercises: [pyramid] });
+    expect(d.exercises[0].rows).toEqual([
+      { reps: '12', weight: '50' },
+      { reps: '10', weight: '60' },
+      { reps: '8', weight: '70' },
+    ]);
+    // Se cambia la última serie y se añade otra (copia de la última).
+    const rows = addRow(d.exercises[0].rows.map((r, k) => (k === 2 ? { reps: '6', weight: '72,5' } : r)));
+    const body = routineBody({ ...d, exercises: [{ ...d.exercises[0], rows }] });
+    expect(body.exercises?.[0]).toMatchObject({
+      sets: 4,
+      reps: 12,
+      weightKg: 72.5,
+      setPlan: [
+        { reps: 12, weightKg: 50 },
+        { reps: 10, weightKg: 60 },
+        { reps: 6, weightKg: 72.5 },
+        { reps: 6, weightKg: 72.5 },
+      ],
+    });
+    // Y el registro rápido trae cada serie como estaba prevista.
+    expect(workoutDraftFrom({ ...torso, exercises: [pyramid] })[0].sets.map((x) => [x.reps, x.weight])).toEqual([
+      ['12', '50'],
+      ['10', '60'],
+      ['8', '70'],
+    ]);
+  });
+
+  it('cambiar el número de series en lo que no va por repeticiones', () => {
+    const rows = newRows(1);
+    expect(resizeRows(rows, 3)).toHaveLength(3);
+    expect(resizeRows(resizeRows(rows, 3), 0)).toHaveLength(1);
+    expect(rowsPlan([{ reps: '', weight: '0' }])).toEqual([{ reps: 10, weightKg: null }]);
   });
 });

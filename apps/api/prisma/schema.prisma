@@ -3187,6 +3187,9 @@ model BrioRoutineExercise {
   distanceM     Int?     @map("distance_m")
   durationSec   Int?     @map("duration_sec") @db.SmallInt
   calories      Int?     @db.SmallInt
+  /// Repeticiones y peso de cada serie ([{ reps, weightKg }], una por serie),
+  /// cuando no son todas iguales. Nulo = `sets` series de `reps` con `weightKg`.
+  setPlan       Json?    @map("set_plan")
 
   routine  BrioRoutine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
   exercise BrioExercise @relation(fields: [exerciseId], references: [id])

@@ -265,5 +265,34 @@ describe('live-workout', () => {
     const added = addSet(w, 0).exercises[0].sets[2];
     expect(added).toMatchObject({ warmup: false, rir: '', done: false });
   });
-});
 
+  it('rutina con series distintas: cada serie empieza con lo suyo y se guarda con lo de hoy', () => {
+    const r: Routine = {
+      ...routine,
+      exercises: [
+        {
+          ...routine.exercises[0],
+          sets: 2,
+          reps: 10,
+          weightKg: 80,
+          setPlan: [
+            { reps: 10, weightKg: 70 },
+            { reps: 6, weightKg: 80 },
+          ],
+        },
+      ],
+    };
+    let w = startFromRoutine(r, [], (m) => m, T0);
+    expect(w.exercises[0].sets.map((s) => [s.reps, s.weight])).toEqual([
+      ['10', '70'],
+      ['6', '80'],
+    ]);
+    w = editSet(w, 0, 1, { weight: '82,5' });
+    w = toggleSet(w, 0, 0, T0);
+    w = toggleSet(w, 0, 1, T0);
+    expect(routineWithTodayWeights(r, w).exercises?.[0].setPlan).toEqual([
+      { reps: 10, weightKg: 70 },
+      { reps: 6, weightKg: 82.5 },
+    ]);
+  });
+});

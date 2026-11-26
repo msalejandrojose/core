@@ -55,6 +55,7 @@ import {
 } from '../../application/use-cases/routine.use-cases';
 import {
   MAX_ROUTINE_EXERCISES,
+  MAX_ROUTINE_SETS,
   type RoutineKind,
 } from '../../domain/services/routine';
 
@@ -70,6 +71,14 @@ const KINDS: RoutineKind[] = [
   'OTHER',
 ];
 
+export class RoutineSetPlanDto {
+  @ApiProperty({ example: 10 }) @IsInt() reps!: number;
+  @ApiPropertyOptional({ example: 60, nullable: true, type: Number })
+  @IsOptional()
+  @IsNumber()
+  weightKg?: number | null;
+}
+
 export class RoutineExerciseDto {
   @ApiProperty() @IsUUID() exerciseId!: string;
   @ApiProperty({ example: 4 }) @IsInt() sets!: number;
@@ -78,6 +87,18 @@ export class RoutineExerciseDto {
   @IsOptional()
   @IsNumber()
   weightKg?: number | null;
+  @ApiPropertyOptional({
+    type: [RoutineSetPlanDto],
+    nullable: true,
+    description:
+      'Repeticiones y peso de cada serie. Si llega, manda sobre sets, reps y weightKg.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_ROUTINE_SETS)
+  @ValidateNested({ each: true })
+  @Type(() => RoutineSetPlanDto)
+  setPlan?: RoutineSetPlanDto[] | null;
   @ApiPropertyOptional({
     example: 90,
     description: 'Descanso entre series (s).',

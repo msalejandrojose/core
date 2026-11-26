@@ -2,7 +2,7 @@ import { MUSCLE_NAME } from '../performance/labels';
 import type { DraftExercise } from '../sheets/workout-draft';
 import type { Measure } from '../performance/perf.api';
 import { formatTime, parseTime } from './measures';
-import type { MuscleShare, Routine, RoutineKind, SaveRoutineBody } from './routines.api';
+import type { MuscleShare, Routine, RoutineExercise, RoutineKind, RoutineSetPlan, SaveRoutineBody } from './routines.api';
 
 /** Pantallas de rutinas: tipos, formatos y conversiones puras (probadas). */
 
@@ -17,16 +17,20 @@ export const ROUTINE_KINDS: { value: RoutineKind; label: string; activityCode: s
 
 export const kindLabel = (k: RoutineKind) => ROUTINE_KINDS.find((x) => x.value === k)?.label ?? 'Otro';
 
-/** Ejercicio en el editor de rutinas: números ya validados por los steppers. */
+/** Una serie en el editor: texto libre para poder teclear decimales con coma. */
+export interface DraftSetRow {
+  reps: string;
+  weight: string;
+}
+
+/** Ejercicio en el editor de rutinas. */
 export interface RoutineDraftExercise {
   exerciseId: string;
   name: string;
   bodyweight: boolean;
   muscles: { muscle: string; weight: number }[];
-  sets: number;
-  reps: number;
-  /** Texto libre para poder teclear decimales con coma. */
-  weight: string;
+  /** Una fila por serie, cada una con sus repeticiones y su peso. */
+  rows: DraftSetRow[];
   /** Descanso en segundos ('' = sin descanso). */
   rest: string;
   /** Superserie (mismo número que el de al lado). */
@@ -72,6 +76,39 @@ export function paceToSec(pace: string): number | null {
 
 export const secToPace = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
+const kgText = (w: number | null | undefined) => (w ? String(w).replace('.', ',') : '');
+
+/** Las series de un ejercicio de rutina una a una, tengan plan propio o no. */
+export function setsOf(e: Pick<RoutineExercise, 'sets' | 'reps' | 'weightKg' | 'setPlan'>): RoutineSetPlan[] {
+  if (e.setPlan?.length) return e.setPlan;
+  return Array.from({ length: e.sets }, () => ({ reps: e.reps, weightKg: e.weightKg }));
+}
+
+/** Series iniciales de un ejercicio recién añadido. */
+export const newRows = (count: number, reps = 10): DraftSetRow[] =>
+  Array.from({ length: count }, () => ({ reps: String(reps), weight: '' }));
+
+/** Una serie más, copia de la última (así una pirámide se sigue rápido). */
+export const addRow = (rows: DraftSetRow[]): DraftSetRow[] =>
+  rows.length >= 20 ? rows : [...rows, { ...(rows[rows.length - 1] ?? { reps: '10', weight: '' }) }];
+
+/** Cambia el número de series (para lo que no va por repeticiones). */
+export const resizeRows = (rows: DraftSetRow[], n: number): DraftSetRow[] =>
+  n > rows.length ? Array.from({ length: n - rows.length }).reduce<DraftSetRow[]>((r) => addRow(r), rows) : rows.slice(0, Math.max(1, n));
+
+/** Series del borrador como plan para la API (repeticiones de 1 a 100, peso o nada). */
+export function rowsPlan(rows: DraftSetRow[]): RoutineSetPlan[] {
+  const list = rows.length ? rows : newRows(1);
+  return list.map((r) => {
+    const reps = num(r.reps);
+    const w = num(r.weight);
+    return {
+      reps: reps === null ? 10 : Math.min(100, Math.max(1, Math.round(reps))),
+      weightKg: w && w > 0 ? w : null,
+    };
+  });
+}
+
 export function draftFrom(r: Routine, bodyweightOf: (id: string) => boolean = () => false): RoutineDraft {
   return {
     name: r.name,
@@ -85,9 +122,7 @@ export function draftFrom(r: Routine, bodyweightOf: (id: string) => boolean = ()
       name: e.name,
       bodyweight: e.isBodyweight ?? bodyweightOf(e.exerciseId),
       muscles: e.muscles,
-      sets: e.sets,
-      reps: e.reps,
-      weight: e.weightKg ? String(e.weightKg).replace('.', ',') : '',
+      rows: setsOf(e).map((x) => ({ reps: String(x.reps), weight: kgText(x.weightKg) })),
       rest: e.restSec ? String(e.restSec) : '',
       group: e.supersetGroup,
       measure: e.measure ?? 'REPS',
@@ -110,13 +145,17 @@ export function routineBody(d: RoutineDraft): SaveRoutineBody {
     ...(strength
       ? {
           exercises: d.exercises.map((e) => {
-            const w = num(e.weight);
+            const plan = rowsPlan(e.rows);
+            const weights = plan.map((x) => x.weightKg).filter((w): w is number => w !== null);
+            const same = plan.every((x) => x.reps === plan[0].reps && x.weightKg === plan[0].weightKg);
             const rest = num(e.rest);
             return {
               exerciseId: e.exerciseId,
-              sets: e.sets,
-              reps: e.reps,
-              weightKg: w && w > 0 ? w : null,
+              sets: plan.length,
+              reps: plan[0].reps,
+              weightKg: weights.length ? Math.max(...weights) : null,
+              // Solo si cambia de una serie a otra; si no, basta con el resumen.
+              ...(same ? {} : { setPlan: plan }),
               restSec: rest !== null && rest >= 0 ? Math.round(rest) : null,
               supersetGroup: e.group,
               ...(e.measure === 'DISTANCE' ? { distanceM: num(e.distance) ? Math.round(num(e.distance)!) : null } : {}),
@@ -180,9 +219,9 @@ export function workoutDraftFrom(r: Routine, bodyweightOf: (id: string) => boole
     name: e.name,
     bodyweight: bodyweightOf(e.exerciseId),
     rest: e.restSec ? String(e.restSec) : '',
-    sets: Array.from({ length: e.sets }, () => ({
-      weight: e.weightKg ? String(e.weightKg).replace('.', ',') : '',
-      reps: String(e.reps),
+    sets: setsOf(e).map((x) => ({
+      weight: kgText(x.weightKg),
+      reps: String(x.reps),
       rir: '',
       warmup: false,
     })),

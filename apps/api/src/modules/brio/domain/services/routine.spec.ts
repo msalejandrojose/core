@@ -1,4 +1,6 @@
 import {
+  cleanSets,
+  expandSets,
   InvalidRoutineError,
   normalizeSupersets,
   cleanRoutine,
@@ -28,6 +30,7 @@ describe('routine', () => {
         sets: 20,
         reps: 1,
         weightKg: 61.25,
+        setPlan: null,
         restSec: 900,
         distanceM: null,
         durationSec: null,
@@ -39,6 +42,7 @@ describe('routine', () => {
         sets: 3,
         reps: 12,
         weightKg: null,
+        setPlan: null,
         restSec: null,
         distanceM: null,
         durationSec: null,
@@ -196,5 +200,76 @@ describe('routine', () => {
       (id) => `T-${id}`,
     );
     expect(r.exercises.map((e) => e.superset_id)).toEqual([0, 0, null]);
+  });
+
+  describe('series una a una', () => {
+    it('con plan por serie, cada serie lleva sus repeticiones y su peso', () => {
+      const r = cleanSets({
+        sets: 3,
+        reps: 10,
+        weightKg: 60,
+        setPlan: [
+          { reps: 12, weightKg: 50 },
+          { reps: 10, weightKg: 60.1 },
+          { reps: 0, weightKg: 70 },
+          { reps: 6 },
+        ],
+      });
+      expect(r).toEqual({
+        sets: 4,
+        reps: 12,
+        weightKg: 70,
+        setPlan: [
+          { reps: 12, weightKg: 50 },
+          { reps: 10, weightKg: 60 },
+          { reps: 1, weightKg: 70 },
+          { reps: 6, weightKg: null },
+        ],
+      });
+    });
+
+    it('si todas las series son iguales no guarda plan', () => {
+      expect(
+        cleanSets({
+          sets: 9,
+          reps: 1,
+          setPlan: [
+            { reps: 8, weightKg: 40 },
+            { reps: 8, weightKg: 40 },
+          ],
+        }),
+      ).toEqual({ sets: 2, reps: 8, weightKg: 40, setPlan: null });
+    });
+
+    it('sin plan, todas iguales', () => {
+      expect(expandSets({ sets: 2, reps: 5, weightKg: 100 })).toEqual([
+        { reps: 5, weightKg: 100 },
+        { reps: 5, weightKg: 100 },
+      ]);
+    });
+
+    it('a Hevy va cada serie con su peso', () => {
+      const r = hevyRoutineFrom(
+        [
+          {
+            exerciseId: 'e1',
+            name: 'Sentadilla',
+            sets: 2,
+            reps: 8,
+            weightKg: 100,
+            setPlan: [
+              { reps: 8, weightKg: 90 },
+              { reps: 5, weightKg: 100 },
+            ],
+            restSec: 120,
+          },
+        ],
+        () => 'T1',
+      );
+      expect(r.exercises[0].sets.map((s) => [s.reps, s.weight_kg])).toEqual([
+        [8, 90],
+        [5, 100],
+      ]);
+    });
   });
 });
