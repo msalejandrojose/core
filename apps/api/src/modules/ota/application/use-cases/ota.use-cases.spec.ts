@@ -143,6 +143,20 @@ describe('OtaUseCases', () => {
     expect(answer).toMatchObject({ version: '1.0.0-a' });
   });
 
+  it('desactivar todas hace que vuelvan a la web de la app', async () => {
+    const only = await ota.publish(input('1.0.0-a'), Buffer.from('a'), null);
+    await ota.setEnabled(only.id, false);
+    const ask = (versionName: string) =>
+      ota.check({
+        appId: 'es.aj.brio',
+        versionName,
+        versionBuild: '1.0',
+        channel: null,
+      });
+    expect(await ask('1.0.0-a')).toEqual({ version: 'builtin' });
+    expect(await ask('builtin')).toMatchObject({ kind: 'up_to_date' });
+  });
+
   it('no deja repetir versión ni subir sin firmar', async () => {
     await ota.publish(input('1.0.0-a'), Buffer.from('a'), null);
     await expect(
