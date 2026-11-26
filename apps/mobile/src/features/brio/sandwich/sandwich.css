@@ -30,3 +30,12 @@
   text-align: right;
   outline: none;
 }
+.sandwich .rk-search {
+  margin-top: 4px;
+}
+.sandwich__results {
+  margin-top: var(--brio-space-s, 8px);
+}
+.sandwich__results .recipe__result[aria-pressed='true'] > svg {
+  color: var(--brio-activity);
+}

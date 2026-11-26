@@ -4,9 +4,14 @@ import { toast } from '@/lib/toast';
 import { brioApi, isApiError, type Food, type SandwichBase, type SandwichBuilder } from '../api';
 import { FoodTray, type TrayItem } from '../sheets/FoodTray';
 import { SWIPE_TO_CLOSE } from '../sheets/swipe';
-import { SectionHeader, SheetBar, Switch } from '../ui/kit';
-import { defaultGramsOf, sandwichItems, sandwichName, type SandwichLine } from './sandwich';
+import { formatKcal } from '../format';
+import { iconForFood } from '../ui/food-icons.data';
+import { FoodIcon } from '../ui/food-icons';
+import { Icon, SearchField, SectionHeader, SheetBar, Switch } from '../ui/kit';
+import { PATHS } from '../ui/paths';
+import { defaultGramsOf, sandwichItems, sandwichName, toggleLine, type SandwichLine } from './sandwich';
 import '../plan/plan.css';
+import '../pages/pages.css';
 import './sandwich.css';
 
 let cache: SandwichBuilder | null = null;
@@ -16,10 +21,13 @@ export type SandwichResult = { food: Food } | { items: TrayItem[] };
 
 const MIN_G = 5;
 const MAX_G = 400;
+const SEARCH_DEBOUNCE_MS = 250;
 
 /**
- * Creador de bocatas y tostadas (TASK-433): eliges el pan y vas sumando lo que
- * lleva, cada cosa con su cantidad típica (− / + para ajustarla). Abajo, la
+ * Creador de bocatas, tostadas, wraps y burritos (TASK-433): eliges la base y
+ * vas sumando lo que lleva, sin límite: las sugerencias de un toque o cualquier
+ * alimento del catálogo con el buscador (tortilla de patatas, ternera…). Cada
+ * cosa entra con su cantidad típica (− / + para ajustarla). Abajo, la
  * lista con kcal y macros. Por defecto se guarda como receta propia con su
  * nombre («Bocata de jamón serrano y tomate»), así cuenta como un solo
  * alimento y la próxima vez sale al buscarlo; si no, se apuntan los
@@ -42,11 +50,29 @@ export function SandwichBuilderSheet({
   const [nameTouched, setNameTouched] = useState(false);
   const [save, setSave] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Food[] | null>(null);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults(null);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      brioApi
+        .searchFoods(q)
+        .then(setResults)
+        .catch(() => setResults([]));
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [query]);
 
   useEffect(() => {
     if (!isOpen) return;
     setBase(null);
     setLines([]);
+    setQuery('');
     setName('');
     setNameTouched(false);
     setSave(true);
@@ -71,8 +97,12 @@ export function SandwichBuilderSheet({
     setBase(b);
     setBaseGrams(b.grams);
   };
-  const toggle = (food: Food) =>
-    setLines((ls) => (ls.some((l) => l.food.id === food.id) ? ls.filter((l) => l.food.id !== food.id) : [...ls, { food, grams: defaultGramsOf(food) }]));
+  const toggle = (food: Food) => setLines((ls) => toggleLine(ls, food));
+  /** Desde el buscador: se añade (o se quita si ya iba) y se limpia la búsqueda. */
+  const pickResult = (food: Food) => {
+    toggle(food);
+    setQuery('');
+  };
   const step = (key: string, dir: 1 | -1) => {
     if (key === 'base' && base) {
       setBaseGrams((g) => Math.min(MAX_G, Math.max(MIN_G, g + dir * Math.max(5, Math.round(base.grams / 4)))));
@@ -118,13 +148,13 @@ export function SandwichBuilderSheet({
         <div className="rk-sheet sandwich">
           <span className="rk-grab" aria-hidden="true" />
           <SheetBar
-            title="Bocata o tostada"
+            title="Bocata, tostada o burrito"
             onCancel={onClose}
             action={{ label: busy ? 'Guardando…' : 'Añadir', onClick: () => void add(), disabled: busy || !base }}
           />
 
           <section className="rk-section" aria-labelledby="pan">
-            <SectionHeader id="pan">El pan</SectionHeader>
+            <SectionHeader id="pan">La base</SectionHeader>
             <div className="plan__chips">
               {(data?.bases ?? []).map((b) => (
                 <button
@@ -138,6 +168,39 @@ export function SandwichBuilderSheet({
                 </button>
               ))}
             </div>
+          </section>
+
+          <section className="rk-section" aria-labelledby="lleva">
+            <SectionHeader id="lleva">Lo que lleva</SectionHeader>
+            <SearchField
+              label="Buscar ingrediente"
+              placeholder="Busca cualquier ingrediente"
+              value={query}
+              onChange={setQuery}
+            />
+            {results ? (
+              results.length > 0 ? (
+                <ul className="recipe__results sandwich__results" aria-label="Ingredientes encontrados">
+                  {results.map((f) => (
+                    <li key={f.id}>
+                      <button type="button" className="recipe__result" aria-pressed={chosen.has(f.id)} onClick={() => pickResult(f)}>
+                        <FoodIcon icon={iconForFood(f.name)} size={32} />
+                        <span className="rk-row__main">
+                          <span className="rk-row__title">{f.name}</span>
+                          <span className="rk-row__sub">
+                            {f.brand ? `${f.brand} · ` : ''}
+                            {formatKcal(f.kcalPer100)} kcal / 100 {f.isLiquid ? 'ml' : 'g'}
+                          </span>
+                        </span>
+                        <Icon d={chosen.has(f.id) ? PATHS.check : PATHS.plus} size={18} stroke={2.2} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="recipe__none">Nada con «{query.trim()}» en el catálogo.</p>
+              )
+            ) : null}
           </section>
 
           {(data?.groups ?? []).map((g) => (
@@ -201,7 +264,10 @@ export function SandwichBuilderSheet({
               </div>
             </>
           ) : (
-            <p className="rk-note">Elige el pan y ve tocando lo que lleva. Cada cosa entra con su cantidad típica.</p>
+            <p className="rk-note">
+              Elige la base y añade lo que lleva, tantas cosas como quieras: toca una sugerencia o busca cualquier
+              ingrediente. Cada cosa entra con su cantidad típica.
+            </p>
           )}
         </div>
       </IonContent>

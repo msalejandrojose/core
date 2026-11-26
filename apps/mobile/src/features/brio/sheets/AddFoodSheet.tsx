@@ -462,8 +462,8 @@ export function AddFoodSheet({ isOpen, initialMealType, onClose }: AddFoodSheetP
               <button type="button" className="rk-list rk-row addfood__builder" onClick={() => setBuilding(true)}>
                 <FoodIcon icon="sandwich" size={44} />
                 <span className="rk-row__main">
-                  <span className="rk-row__title">Monta tu bocata o tostada</span>
-                  <span className="rk-row__sub">Elige el pan y lo que lleva; calcula las kcal</span>
+                  <span className="rk-row__title">Monta tu bocata, tostada o burrito</span>
+                  <span className="rk-row__sub">Elige la base y añade lo que quieras; calcula las kcal</span>
                 </span>
                 <Icon d={PATHS.forward} size={16} stroke={2.4} />
               </button>

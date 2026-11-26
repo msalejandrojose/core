@@ -17,8 +17,10 @@ describe('creador de bocatas y tostadas', () => {
     for (const n of sandwichFoodNames()) expect(known.has(n) ? n : `falta: ${n}`).toBe(n);
   });
 
-  it('hay bocatas, tostadas, sándwich y wrap, sin códigos repetidos', () => {
-    expect(new Set(SANDWICH_BASES.map((b) => b.kind))).toEqual(new Set(['bocata', 'tostada', 'sandwich', 'wrap']));
+  it('hay bocatas, tostadas, sándwich, wrap y burrito, sin códigos repetidos', () => {
+    expect(new Set(SANDWICH_BASES.map((b) => b.kind))).toEqual(
+      new Set(['bocata', 'tostada', 'sandwich', 'wrap', 'burrito']),
+    );
     expect(new Set(SANDWICH_BASES.map((b) => b.code)).size).toBe(SANDWICH_BASES.length);
     expect(new Set(INGREDIENT_GROUPS.map((g) => g.code)).size).toBe(INGREDIENT_GROUPS.length);
   });
