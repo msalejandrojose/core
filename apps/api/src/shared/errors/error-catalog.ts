@@ -636,6 +636,23 @@ export const ERROR_CATALOG = {
     defaultMessage:
       'Necesitamos tu peso para estimar las calorías. Registra una pesada primero.',
   },
+
+  // Actualizaciones en caliente (OTA) de las apps móviles
+  OTA_BUNDLE_INVALID: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'La actualización no es válida.',
+  },
+  OTA_BUNDLE_DUPLICATED: {
+    httpStatus: 409,
+    level: 'info',
+    defaultMessage: 'Ya hay una actualización con esa versión para esta app.',
+  },
+  OTA_BUNDLE_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'info',
+    defaultMessage: 'No existe esa actualización.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;
