@@ -93,16 +93,16 @@ pnpm --filter @core/mobile exec tsc --noEmit
 El despliegue de la API se dispara solo al entrar código en `brio-dev`
 (`.github/workflows/deploy-brio-api.yml`: tests → migraciones → Cloud Run).
 
-- [ ] Abrir PR `claude/loving-curie-7dkfuu` → **`brio-dev`** (si `brio-dev`
+- [x] Abrir PR `claude/loving-curie-7dkfuu` → **`brio-dev`** *(#278, fusionado)* (si `brio-dev`
       ha avanzado y hay conflictos, resolverlos y repetir el paso 2) y fusionarlo.
-- [ ] El workflow «Deploy Brío API» acaba en verde (aplica las migraciones
+- [x] El workflow «Deploy Brío API» acaba en verde (aplica las migraciones
       `set_plan` y `ota_bundle`).
-- [ ] Seed (sincroniza permisos —crea `ota.bundles`—, crea la sección del
+- [x] Seed (sincroniza permisos —crea `ota.bundles`—, crea la sección del
       backoffice y carga los ejercicios nuevos):
       ```bash
       apps/api/deploy/deploy.sh seed
       ```
-- [ ] El endpoint del plugin responde:
+- [x] El endpoint del plugin responde:
       ```bash
       curl -s -X POST https://brio-api.ajly.online/v1/ota/updates \
         -H 'content-type: application/json' \
