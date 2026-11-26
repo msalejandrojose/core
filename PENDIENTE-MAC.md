@@ -29,21 +29,23 @@ probado en un iPhone** y **el Swift de los widgets no se ha compilado nunca**
 
 ## 0. Antes de empezar
 
-- [ ] Tener a mano **`brio-ota-private.pem`** (la clave privada de la OTA, me
+- [x] Tener a mano **`brio-ota-private.pem`** (la clave privada de la OTA, me
       la pasaron por el chat). Es la única copia: guardarla también en el gestor
-      de contraseñas.
-- [ ] `gcloud` con sesión iniciada (despliegue y seed de la API).
-- [ ] Xcode, y saber con qué **cuenta de Apple** se firma:
+      de contraseñas. *(Regenerada el 26 nov en el Mac: la buena es
+      `apps/mobile/ota/private.pem`; la de `~/Downloads` ya no vale.)*
+- [x] `gcloud` con sesión iniciada (despliegue y seed de la API).
+- [x] Xcode, y saber con qué **cuenta de Apple** se firma: *(Xcode 27.2; los
+      perfiles duran 7 días → cuenta **gratuita**)*
   - **De pago** (Apple Developer Program): todo funciona, se puede subir a
     TestFlight.
   - **Gratuita**: se instala por cable desde Xcode (o Forja). La OTA funciona.
     Los **widgets necesitan App Groups**, que muy probablemente exige la de
     pago: si Xcode no firma con App Groups, quitar la capacidad, sacar el build
     sin widgets (seguirán en «Abre Brío») y dejarlos para cuando haya cuenta de pago.
-- [ ] `apps/mobile/.env.production.local` con
+- [x] `apps/mobile/.env.production.local` con
       `VITE_API_URL=https://brio-api.ajly.online` (y, si se quiere, `OTA_EMAIL`
       / `OTA_PASSWORD` del backoffice para no teclearlos al publicar).
-- [ ] El proyecto nativo `apps/mobile/ios/` existe (si no: `pnpm --filter
+- [x] El proyecto nativo `apps/mobile/ios/` existe (si no: `pnpm --filter
       @core/mobile cap:add:ios`, ver `apps/mobile/NATIVE.md`).
 
 ## 1. Rama, dependencias y clave
@@ -56,7 +58,7 @@ chmod 600 apps/mobile/ota/private.pem
 git check-ignore apps/mobile/ota/private.pem   # TIENE que imprimir la ruta (= ignorada)
 ```
 
-- [ ] La privada casa con la pública del repo:
+- [x] La privada casa con la pública del repo:
 
 ```bash
 cd apps/mobile && node -e "
