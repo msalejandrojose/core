@@ -1,16 +1,56 @@
 # Construye las imágenes de la API (contexto = raíz del monorepo) y las sube a
-# Artifact Registry: la de runtime (servicio brio-api) y la de migraciones
-# (job brio-api-migrate). La lanza deploy/deploy.sh con `gcloud builds submit`.
-# La segunda reutiliza la caché de la primera (comparten el stage `builder`).
+# Artifact Registry: la de migraciones (job brio-api-migrate) y la de runtime
+# (servicio brio-api). La lanza deploy/deploy.sh con `gcloud builds submit`.
+#
+# La imagen de migraciones es la etapa `deps` del Dockerfile (dependencias con
+# las de desarrollo + schema y migraciones de Prisma): no cambia con los cambios
+# de código, así que en un despliegue normal no hay que volver a subirla.
+#
+# Caché entre despliegues: cada build empieza en una máquina vacía. La imagen de
+# migraciones se sube también como `api-migrate:cache`, con los metadatos de
+# caché dentro (BUILDKIT_INLINE_CACHE), y el build siguiente la usa como caché:
+# si no cambian el lockfile, packages/, patches/ ni prisma/, se salta el
+# `pnpm install`. La primera vez (o si se borra la etiqueta) no hay caché y
+# simplemente tarda como antes.
+#
+# Primero la de migraciones (construye `deps`) y luego la de runtime, que
+# reutiliza `deps` de esta misma máquina.
 steps:
-  - name: gcr.io/cloud-builders/docker
+  - id: migrate-image
+    name: gcr.io/cloud-builders/docker
     env: ['DOCKER_BUILDKIT=1']
-    args: ['build', '-f', 'apps/api/Dockerfile', '--target', 'runtime', '-t', '${_IMAGE}', '.']
-  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - apps/api/Dockerfile
+      - --target
+      - migrate
+      - --cache-from
+      - ${_CACHE_IMAGE}
+      - --build-arg
+      - BUILDKIT_INLINE_CACHE=1
+      - -t
+      - ${_MIGRATE_IMAGE}
+      - -t
+      - ${_CACHE_IMAGE}
+      - .
+  - id: runtime-image
+    name: gcr.io/cloud-builders/docker
     env: ['DOCKER_BUILDKIT=1']
-    args: ['build', '-f', 'apps/api/Dockerfile', '--target', 'migrate', '-t', '${_MIGRATE_IMAGE}', '.']
+    args:
+      - build
+      - -f
+      - apps/api/Dockerfile
+      - --target
+      - runtime
+      - --cache-from
+      - ${_CACHE_IMAGE}
+      - -t
+      - ${_IMAGE}
+      - .
 images:
   - '${_IMAGE}'
   - '${_MIGRATE_IMAGE}'
+  - '${_CACHE_IMAGE}'
 options:
   logging: CLOUD_LOGGING_ONLY

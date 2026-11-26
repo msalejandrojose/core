@@ -129,8 +129,16 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_DEPLOY_SA }}
 
+      # El runner ya trae gcloud: usarlo ahorra la descarga (~15 s).
+      - name: Check preinstalled gcloud
+        id: gcloud
+        if: steps.check.outputs.publish == 'true'
+        run: echo "installed=$(command -v gcloud >/dev/null && echo true || echo false)" >>"$GITHUB_OUTPUT"
+
       - uses: google-github-actions/setup-gcloud@v2
         if: steps.check.outputs.publish == 'true'
+        with:
+          skip_install: ${{ steps.gcloud.outputs.installed }}
 
       - name: Read signing key and publisher login (Secret Manager)
         if: steps.check.outputs.publish == 'true'

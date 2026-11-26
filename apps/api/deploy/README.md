@@ -62,9 +62,24 @@ cambiar como en MySQL.
 
 El workflow `Deploy Brío API` (`.github/workflows/deploy-brio-api.yml`) se lanza
 con cada push a `brio-dev` que toque la API, sus paquetes o el lockfile (y a
-mano desde la pestaña Actions). Pasa los tests y ejecuta `deploy.sh ci`:
-construye, migra y despliega. No sube el secreto: usa la última versión de
+mano desde la pestaña Actions). A la vez pasa los tests y construye las imágenes
+(`deploy.sh build`); si las dos cosas van bien, `deploy.sh release` migra (si
+hace falta) y despliega. No sube el secreto: usa la última versión de
 `brio-api-env` en Secret Manager (para cambiarlo, `deploy.sh secrets` desde el Mac).
+
+Para que tarde poco:
+
+- **Migraciones solo si hay nuevas**: el job `brio-api-migrate` se ejecuta si
+  cambia `apps/api/prisma/migrations/` entre el commit desplegado (la etiqueta
+  de la imagen que sirve Cloud Run) y el nuevo; si no se puede saber, se
+  ejecuta. Para forzarlo: *Run workflow* con «force_migrate», o
+  `FORCE_MIGRATE=1 deploy.sh ci`. El job se apunta a la imagen nueva igualmente.
+- **Imagen de migraciones ligera y fija**: sale de la etapa `deps` del
+  Dockerfile (dependencias + Prisma), no de `builder`, así que no cambia con los
+  cambios de código y no se vuelve a subir.
+- **Caché entre despliegues**: Cloud Build usa `api-migrate:cache` (la última
+  imagen de migraciones) como caché, y se salta el `pnpm install` si no cambian
+  el lockfile, `packages/`, `patches/` ni `prisma/`.
 
 Se autentica en GCP sin claves (Workload Identity Federation), limitado a este
 repo y a la rama `brio-dev`. Se configura una vez con:
