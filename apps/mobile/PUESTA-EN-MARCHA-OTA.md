@@ -20,7 +20,7 @@ todavía). Commits:
 | `17185c0` | **OTA – Backoffice**: Apps móviles › Actualizaciones (`/ota/bundles`). |
 | `225bc52` | **OTA – App**: plugin `@capgo/capacitor-updater` (servidor propio), `pnpm ota:keygen` / `pnpm ota:publish`, `ota/config.json`, `ota/README.md`. El seed del despliegue sincroniza también las secciones de permisos (`ota.bundles`). |
 | `ef3de84` | Clave pública `apps/mobile/ota/public.pem`. |
-| _(widgets)_ | **Widgets de iOS**: Hoy (anillos y macros), Entreno de hoy (con «Empezar») y Mi semana. Código en `native/ios/` + `src/features/brio/widgets/`; App Group `group.es.aj.brio` y esquema `brio://`. Ver `NATIVE.md › widgets`. |
+| `92851c5` | **Widgets de iOS**: Hoy (anillos y macros), Entreno de hoy (con «Empezar») y Mi semana. Código en `native/ios/` + `src/features/brio/widgets/`; App Group `group.es.aj.brio` y esquema `brio://`. Ver `NATIVE.md › widgets`. |
 | `b5654c1` | **163 ejercicios nuevos** para cubrir el catálogo de Hevy (`apps/api/src/seeds/brio-exercises-hevy.data.ts`), con ficha y, 87 de ellos, animación. Script `hevy:coverage` para comparar con la lista real de Hevy. |
 
 Cómo funciona la OTA, el cifrado y la regla de la versión nativa mínima:
