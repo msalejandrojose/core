@@ -56,6 +56,32 @@ Pide el email y la contraseña del backoffice (o los lee de `OTA_EMAIL` /
 `VITE_API_URL`. Otras opciones: `--dry-run` (lo deja en `ota/out/` sin
 subir), `--skip-build`, `--version`, `--channel`, `--min-native`.
 
+## Publicar con un push (GitHub Actions)
+
+`.github/workflows/publish-brio-ota.yml` hace lo mismo que `pnpm ota:publish`
+sin necesitar el Mac: **lo que entra en la rama `brio-ota` se publica**. Las
+notas del backoffice son la primera línea del último commit.
+
+Una vez, en GitHub › *Settings › Secrets and variables › Actions*, tres
+secretos:
+
+| Secreto | Valor |
+|---|---|
+| `OTA_PRIVATE_KEY` | el contenido entero de `ota/private.pem` (con las líneas `BEGIN`/`END`) |
+| `OTA_EMAIL` | email de un admin del backoffice |
+| `OTA_PASSWORD` | su contraseña |
+
+Después, para publicar lo que haya en `brio-dev`:
+
+```bash
+git push origin brio-dev:brio-ota
+```
+
+(o un PR a `brio-ota`). Se puede lanzar también a mano desde *Actions ›
+Publish Brío OTA › Run workflow* (cuando el workflow esté en `main`). Si el
+build o los tests fallan, no se sube nada. La misma regla de siempre: lo que
+necesite build nativo no va por aquí (ver abajo).
+
 ## Versión nativa mínima
 
 `ota/config.json › minNativeVersion` dice qué versión de la tienda necesita la

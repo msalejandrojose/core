@@ -1,0 +1,98 @@
+name: Publish Brío OTA
+
+# Publica la web de la app de Brío como actualización en caliente (OTA) al hacer
+# push a `brio-ota`. Es lo mismo que `pnpm --filter @core/mobile ota:publish` en
+# el Mac (ver apps/mobile/ota/README.md), pero con la clave privada guardada como
+# secreto del repo:
+#   1. tests de la app;
+#   2. `ota:publish`: type-check + build, zip, cifrado/firma y subida a la API.
+#
+# Secretos del repo (Settings › Secrets and variables › Actions):
+#   OTA_PRIVATE_KEY  contenido completo de apps/mobile/ota/private.pem
+#   OTA_EMAIL        email de un admin del backoffice
+#   OTA_PASSWORD     su contraseña
+#
+# Ojo: una web que use algo nativo nuevo (plugin de Capacitor, cambios en
+# capacitor.config.ts, permisos, widgets…) NO va por aquí: subir antes
+# `minNativeVersion` en apps/mobile/ota/config.json y sacar build nativo.
+on:
+  push:
+    branches: [brio-ota]
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: Qué lleva (sale en el backoffice)
+        required: false
+
+# Una publicación detrás de otra.
+concurrency:
+  group: publish-brio-ota
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build API
+        # `prebuild` ejecuta `prisma generate`; hace falta para el OpenAPI.
+        run: pnpm build:api
+
+      - name: Generate api-client schema
+        run: |
+          node apps/api/dist/generate-openapi.js "$RUNNER_TEMP/openapi.json"
+          pnpm --filter @core/api-client exec openapi-typescript \
+            "$RUNNER_TEMP/openapi.json" \
+            --default-non-nullable false \
+            -o "$GITHUB_WORKSPACE/packages/api-client/src/generated/schema.d.ts"
+
+      - name: Test mobile
+        run: pnpm --filter @core/mobile test
+
+      - name: Write OTA private key
+        env:
+          OTA_PRIVATE_KEY: ${{ secrets.OTA_PRIVATE_KEY }}
+        run: |
+          if [ -z "$OTA_PRIVATE_KEY" ]; then
+            echo "::error::Falta el secreto OTA_PRIVATE_KEY (contenido de apps/mobile/ota/private.pem)."
+            exit 1
+          fi
+          umask 077
+          printf '%s\n' "$OTA_PRIVATE_KEY" > "$RUNNER_TEMP/ota-private.pem"
+
+      - name: Publish OTA
+        working-directory: apps/mobile
+        env:
+          VITE_API_URL: https://brio-api.ajly.online
+          OTA_PRIVATE_KEY_PATH: ${{ runner.temp }}/ota-private.pem
+          OTA_EMAIL: ${{ secrets.OTA_EMAIL }}
+          OTA_PASSWORD: ${{ secrets.OTA_PASSWORD }}
+          # Por variable de entorno, nunca interpolado en el script.
+          INPUT_NOTES: ${{ github.event.inputs.notes }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          if [ -z "$OTA_EMAIL" ] || [ -z "$OTA_PASSWORD" ]; then
+            echo "::error::Faltan los secretos OTA_EMAIL / OTA_PASSWORD (admin del backoffice)."
+            exit 1
+          fi
+          notes="${INPUT_NOTES:-${COMMIT_MESSAGE%%$'\n'*}}"
+          notes="${notes:-${GITHUB_SHA::7}}"
+          pnpm ota:publish --notes "$notes (${GITHUB_SHA::7})" < /dev/null
+
+      - name: Remove OTA private key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/ota-private.pem"
