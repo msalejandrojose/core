@@ -20,6 +20,7 @@ todavía). Commits:
 | `17185c0` | **OTA – Backoffice**: Apps móviles › Actualizaciones (`/ota/bundles`). |
 | `225bc52` | **OTA – App**: plugin `@capgo/capacitor-updater` (servidor propio), `pnpm ota:keygen` / `pnpm ota:publish`, `ota/config.json`, `ota/README.md`. El seed del despliegue sincroniza también las secciones de permisos (`ota.bundles`). |
 | `ef3de84` | Clave pública `apps/mobile/ota/public.pem`. |
+| `b5654c1` | **163 ejercicios nuevos** para cubrir el catálogo de Hevy (`apps/api/src/seeds/brio-exercises-hevy.data.ts`), con ficha y, 87 de ellos, animación. Script `hevy:coverage` para comparar con la lista real de Hevy. |
 
 Cómo funciona la OTA, el cifrado y la regla de la versión nativa mínima:
 `apps/mobile/ota/README.md` (léelo antes de empezar).
@@ -85,7 +86,8 @@ El despliegue de la API se dispara al entrar código en `brio-dev`
 1. Abrir PR de `claude/loving-curie-7dkfuu` → **`brio-dev`** y fusionarlo.
 2. Esperar a que el workflow «Deploy Brío API» acabe en verde (aplica las dos
    migraciones: `set_plan` y `ota_bundle`).
-3. Lanzar el seed (crea la sección del backoffice y el permiso `ota.bundles`):
+3. Lanzar el seed (crea la sección del backoffice y el permiso `ota.bundles`,
+   y carga los ejercicios nuevos del catálogo):
    ```bash
    apps/api/deploy/deploy.sh seed
    ```
@@ -137,7 +139,24 @@ el descifrado y el checksum. Fallos típicos:
 - 403 al publicar → falta el seed (paso 3.3) o el usuario no es admin.
 - La app no pregunta → `cap config` dice `autoUpdate: false` (paso 2).
 
-## 6. Probar en el iPhone lo demás que se hizo hoy
+## 6. Ejercicios: comparar con la lista real de Hevy
+
+La lista de Hevy no es pública; los 163 nuevos salen de su catálogo conocido.
+Para ver si falta alguno, con la clave de la API de Hevy (Hevy Pro › Ajustes ›
+Developer):
+
+```bash
+HEVY_API_KEY=xxxx pnpm --filter @core/api hevy:coverage
+```
+
+Dice cuántos casan y lista los que no, con el detalle en
+`apps/api/hevy-coverage.json` (no se sube). Si sale alguno, pedir a Claude:
+«Añade a `brio-exercises-hevy.data.ts` los ejercicios de
+`apps/api/hevy-coverage.json`, con el mismo formato (nombre en español,
+músculos, descripción, 3 pasos y animación si es variante de uno animado), y
+que pase `hevy-catalog.spec.ts`». Después, nuevo seed (`deploy.sh seed`).
+
+## 7. Probar en el iPhone lo demás que se hizo hoy
 
 - [ ] **Hoy › semana**: iconos del deporte; check en días entrenados (también
       hoy y días sin plan); punteado en días que no se hicieron.
@@ -149,6 +168,9 @@ el descifrado y el checksum. Fallos típicos:
       la animación.
 - [ ] **Añadir comida › Monta tu bocata…**: base Burrito y buscador de
       ingredientes.
+- [ ] **Ejercicios**: al añadir ejercicio en una rutina salen los nuevos
+      (p. ej. «Press Arnold», «Remo Meadows», «Hip thrust en multipower») con
+      su ficha.
 
 ## Reglas para no romper nada
 
