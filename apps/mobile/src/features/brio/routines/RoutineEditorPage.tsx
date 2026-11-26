@@ -20,6 +20,7 @@ import {
   type RoutineDraftExercise,
 } from './routine-draft';
 import { routineErrorText, routinesApi } from './routines.api';
+import { useStartRoutine } from './use-start-routine';
 import '../sheets/sheets.css';
 import './routines.css';
 
@@ -58,6 +59,7 @@ export default function RoutineEditorPage() {
   const [draft, setDraft] = useState<RoutineDraft | null>(isNew ? EMPTY_ROUTINE : null);
   const [picking, setPicking] = useState(false);
   const [saving, setSaving] = useState(false);
+  const starter = useStartRoutine();
 
   useEffect(() => {
     if (isNew) return;
@@ -128,6 +130,20 @@ export default function RoutineEditorPage() {
     }
   }
 
+  /** Guarda lo que hayas cambiado y empieza la sesión con la rutina tal cual queda. */
+  async function saveAndStart() {
+    if (!draft || isNew || !canSave) return;
+    setSaving(true);
+    try {
+      const saved = await routinesApi.update(id, routineBody(draft));
+      await starter.start(saved);
+    } catch (e) {
+      toast.error('No se pudo empezar', routineErrorText(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function remove() {
     if (isNew) return;
     setSaving(true);
@@ -154,6 +170,17 @@ export default function RoutineEditorPage() {
             }
           />
           <LargeTitle>{isNew ? 'Nueva rutina' : draft.name || 'Rutina'}</LargeTitle>
+
+          {!isNew ? (
+            <button
+              type="button"
+              className="rk-btn routine__start-big"
+              disabled={!canSave || saving || starter.busy}
+              onClick={() => void saveAndStart()}
+            >
+              {saving || starter.busy ? 'Un momento…' : strength ? 'Empezar entreno' : 'Hacer sesión'}
+            </button>
+          ) : null}
 
           <div className="rk-list">
             <TextField label="Nombre" value={draft.name} onChange={(v) => set({ name: v })} placeholder={strength ? 'Torso A' : 'Rodaje Z2'} />

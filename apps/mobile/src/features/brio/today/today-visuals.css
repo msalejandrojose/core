@@ -399,11 +399,15 @@
 }
 .tv-done-list__actions {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  gap: 20px;
 }
 .tv-done-list__edit,
 .tv-done-list__delete {
-  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  line-height: 1;
   padding: 0;
   border: 0;
   background: none;

@@ -4,11 +4,11 @@ import { toast } from '@/lib/toast';
 import { useBrioStore } from '../brio.store';
 import { MUSCLE_NAME } from '../performance/labels';
 import { SectionHeader } from '../ui/kit';
-import { emptyWorkout, startFromRoutine } from '../live/live-workout';
-import { previousSetsApi } from '../live/live.api';
+import { emptyWorkout } from '../live/live-workout';
 import { useLiveStore } from '../live/live.store';
 import { kindLabel, routineSummary } from './routine-draft';
 import { openHevy, routineErrorText, routinesApi, useRoutines, type Routine } from './routines.api';
+import { useStartRoutine } from './use-start-routine';
 import './routines.css';
 
 const kg = (n: number) => `${String(n).replace('.', ',')} kg`;
@@ -38,25 +38,10 @@ export function RoutinePick({
   const [busy, setBusy] = useState(false);
   const selected = routines?.find((r) => r.id === selectedId) ?? null;
 
-  if (routines === null) return null;
+  /** Gimnasio: se entrena en Brío serie a serie (lo mismo que «Empezar» en Rutinas). */
+  const trainInBrio = useStartRoutine(onDone);
 
-  async function trainInBrio(r: Routine) {
-    if (live) {
-      toast.info('Ya tienes un entreno en curso', `Termínalo o descártalo antes de empezar «${r.name}».`);
-      onDone();
-      history.push('/tabs/today/entreno');
-      return;
-    }
-    setBusy(true);
-    try {
-      const previous = await previousSetsApi.get(r.exercises.map((e) => e.exerciseId)).catch(() => []);
-      startLive(startFromRoutine(r, previous, (m) => MUSCLE_NAME[m] ?? m));
-      onDone();
-      history.push('/tabs/today/entreno');
-    } finally {
-      setBusy(false);
-    }
-  }
+  if (routines === null) return null;
 
   /** Gimnasio sin rutina: se abre el entreno en directo vacío y se añaden ejercicios. */
   function trainFree() {
@@ -176,7 +161,7 @@ export function RoutinePick({
               <div className="routine-pick__actions">
                 {selected.kind === 'STRENGTH' ? (
                   <>
-                    <button type="button" className="rk-btn routine-pick__primary" disabled={busy} onClick={() => void trainInBrio(selected)}>
+                    <button type="button" className="rk-btn routine-pick__primary" disabled={busy || trainInBrio.busy} onClick={() => void trainInBrio.start(selected)}>
                       Entrenar en Brío
                     </button>
                     <button type="button" className="routine-pick__btn" disabled={busy} onClick={() => void trainInHevy(selected)}>

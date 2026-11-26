@@ -431,3 +431,39 @@
 .routine__set-add:disabled {
   opacity: 0.4;
 }
+
+/* Rutina en la lista: tocar abre el editor; «Empezar» hace la sesión ya. */
+.routine__row--start {
+  align-items: center;
+  gap: 10px;
+}
+.routine__row-link {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.routine__start {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brio-tint);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.routine__start:disabled {
+  opacity: 0.5;
+}
+.routine__start-big {
+  width: 100%;
+  margin-bottom: var(--brio-space-m);
+}
