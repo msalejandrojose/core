@@ -83,8 +83,8 @@ pnpm --filter @core/mobile exec tsc --noEmit
 (cd apps/mobile && pnpm exec cap config --json | grep -A4 CapacitorUpdater)
 ```
 
-- [ ] Tests en verde.
-- [ ] En `cap config`: `autoUpdate: true` y `updateUrl`
+- [x] Tests en verde.
+- [x] En `cap config`: `autoUpdate: true` y `updateUrl`
       `https://brio-api.ajly.online/v1/ota/updates`. (Si sale `autoUpdate:
       false`: falta `ota/public.pem` o `VITE_API_URL` no es https.)
 
