@@ -220,6 +220,10 @@ resource "google_cloud_run_v2_job" "migrate" {
 
       containers {
         image = var.bootstrap_image
+        # Misma imagen que el servicio (la cambia deploy.sh en cada despliegue),
+        # con la CLI de Prisma en vez de arrancar la API. deploy.sh pasa lo mismo.
+        command = ["/app/node_modules/.bin/prisma"]
+        args    = ["migrate", "deploy"]
 
         volume_mounts {
           name       = local.env_volume

@@ -43,9 +43,9 @@ TiDB no admite algunas sentencias del historial (p. ej. `DROP PRIMARY KEY` y
 `ADD PRIMARY KEY` en el mismo `ALTER`), así que la base de datos se creó con el
 esquema final (`prisma migrate diff --from-empty`) y el historial se marcó como
 aplicado (`prisma migrate resolve --applied`). Las migraciones nuevas se aplican
-solas en cada despliegue (TASK-434): `deploy.sh` construye también la imagen
-`api-migrate` y ejecuta el job de Cloud Run `brio-api-migrate`
-(`prisma migrate deploy`) antes de desplegar. Si falla, no se despliega y sigue
+solas en cada despliegue (TASK-434): `deploy.sh` ejecuta el job de Cloud Run
+`brio-api-migrate` (la misma imagen que el servicio, con el comando
+`prisma migrate deploy`) antes de desplegar. Si falla, no se despliega y sigue
 la versión anterior. Para migrar sin desplegar: `deploy.sh migrate`. A mano,
 desde `apps/api`, sigue valiendo:
 
@@ -74,12 +74,11 @@ Para que tarde poco:
   de la imagen que sirve Cloud Run) y el nuevo; si no se puede saber, se
   ejecuta. Para forzarlo: *Run workflow* con «force_migrate», o
   `FORCE_MIGRATE=1 deploy.sh ci`. El job se apunta a la imagen nueva igualmente.
-- **Imagen de migraciones ligera y fija**: sale de la etapa `deps` del
-  Dockerfile (dependencias + Prisma), no de `builder`, así que no cambia con los
-  cambios de código y no se vuelve a subir.
-- **Caché entre despliegues**: Cloud Build usa `api-migrate:cache` (la última
-  imagen de migraciones) como caché, y se salta el `pnpm install` si no cambian
-  el lockfile, `packages/`, `patches/` ni `prisma/`.
+- **Una sola imagen** (`api:<commit>`, ~170 MB comprimida) para el servicio y
+  los jobs de migraciones y seed: Cloud Build construye y sube una, no dos. Por
+  eso `prisma` y `dotenv` son dependencias de producción, y la imagen lleva
+  `prisma/` y `prisma.config.ts`. El comando del job está en Terraform
+  (`modules/cloud-run-api`) y `deploy.sh` pasa el mismo.
 
 Se autentica en GCP sin claves (Workload Identity Federation), limitado a este
 repo y a la rama `brio-dev`. Se configura una vez con:

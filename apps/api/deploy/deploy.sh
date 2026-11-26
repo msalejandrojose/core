@@ -3,14 +3,15 @@
 #
 #   apps/api/deploy/deploy.sh            # sube el secreto, construye, migra y despliega
 #   apps/api/deploy/deploy.sh ci         # construye, migra y despliega (GitHub Actions: el secreto ya está en Secret Manager)
-#   apps/api/deploy/deploy.sh build      # solo construye y sube las imágenes (GitHub Actions, en paralelo con los tests)
-#   apps/api/deploy/deploy.sh release    # migra (si hace falta) y despliega las imágenes ya construidas de este commit
+#   apps/api/deploy/deploy.sh build      # solo construye y sube la imagen (GitHub Actions, en paralelo con los tests)
+#   apps/api/deploy/deploy.sh release    # migra (si hace falta) y despliega la imagen ya construida de este commit
 #   apps/api/deploy/deploy.sh migrate    # construye y aplica las migraciones pendientes, sin desplegar
 #   apps/api/deploy/deploy.sh secrets    # sube apps/api/.env.cloudrun como nueva versión del secreto y redespliega
 #   apps/api/deploy/deploy.sh seed       # ejecuta los seeds (catálogo, IAM, agentes) contra la BBDD de producción
 #
 # Las migraciones (`prisma migrate deploy`) corren en el job de Cloud Run
-# `brio-api-migrate` justo antes de desplegar: si fallan, el despliegue se
+# `brio-api-migrate` (la misma imagen que el servicio, con otro comando) justo
+# antes de desplegar: si fallan, el despliegue se
 # para y sigue sirviendo la versión anterior. En `ci` y `release` el job solo se
 # ejecuta si cambia apps/api/prisma/migrations/ entre el commit desplegado (el
 # de la etiqueta de la imagen que sirve Cloud Run) y este; si no se puede saber,
@@ -32,10 +33,11 @@ API="$ROOT/apps/api"
 # misma etiqueta (git puede alargar el hash corto si el historial es completo).
 TAG="${IMAGE_TAG:-$(git -C "$ROOT" rev-parse --short HEAD)}"
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}/api:${TAG}"
-MIGRATE_IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}/api-migrate:${TAG}"
-# Caché entre despliegues de Cloud Build (ver cloudbuild.yaml).
-CACHE_IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}/api-migrate:cache"
 MIGRATIONS="apps/api/prisma/migrations"
+# El job de migraciones usa la misma imagen que el servicio con este comando.
+# Terraform (infra/terraform/modules/cloud-run-api) declara lo mismo: se pasa
+# también aquí para que funcione aunque aún no se haya aplicado.
+MIGRATE_CMD=(--command /app/node_modules/.bin/prisma --args migrate,deploy)
 G=(gcloud --project "$PROJECT" --quiet)
 
 ensure_base() {
@@ -58,17 +60,17 @@ push_secret() {
 
 build() {
   "${G[@]}" builds submit "$ROOT" --region "$REGION" \
-    --config "$API/deploy/cloudbuild.yaml" --substitutions "_IMAGE=$IMAGE,_MIGRATE_IMAGE=$MIGRATE_IMAGE,_CACHE_IMAGE=$CACHE_IMAGE"
+    --config "$API/deploy/cloudbuild.yaml" --substitutions "_IMAGE=$IMAGE"
 }
 
-# Aplica las migraciones pendientes con la imagen de migraciones de este commit.
+# Aplica las migraciones pendientes con la imagen de este commit.
 # Si el job ya existe (lo gestiona Terraform) solo se cambia la imagen; la
 # primera vez se crea con toda su configuración.
 migrate() {
   if "${G[@]}" run jobs describe "${SERVICE}-migrate" --region "$REGION" >/dev/null 2>&1; then
-    "${G[@]}" run jobs update "${SERVICE}-migrate" --region "$REGION" --image "$MIGRATE_IMAGE"
+    "${G[@]}" run jobs update "${SERVICE}-migrate" --region "$REGION" --image "$IMAGE" "${MIGRATE_CMD[@]}"
   else
-    "${G[@]}" run jobs deploy "${SERVICE}-migrate" --region "$REGION" --image "$MIGRATE_IMAGE" \
+    "${G[@]}" run jobs deploy "${SERVICE}-migrate" --region "$REGION" --image "$IMAGE" "${MIGRATE_CMD[@]}" \
       --service-account "$SA" \
       --set-secrets "/secrets/.env=${SECRET}:latest" \
       --max-retries 0 --task-timeout 600
@@ -107,7 +109,7 @@ migrate_if_needed() {
   if needs_migrate; then
     migrate
   elif "${G[@]}" run jobs describe "${SERVICE}-migrate" --region "$REGION" >/dev/null 2>&1; then
-    "${G[@]}" run jobs update "${SERVICE}-migrate" --region "$REGION" --image "$MIGRATE_IMAGE"
+    "${G[@]}" run jobs update "${SERVICE}-migrate" --region "$REGION" --image "$IMAGE" "${MIGRATE_CMD[@]}"
   else
     migrate
   fi

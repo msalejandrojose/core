@@ -2,14 +2,14 @@ name: Deploy Brío API
 
 # Despliegue de la API de Brío en Cloud Run al hacer push a `brio-dev` (lo que
 # entra al fusionar un PR de tarea) si toca la API o sus paquetes. Pasos:
-#   1. a la vez: tests de la API y `deploy.sh build` (las dos imágenes en
-#      Cloud Build, con caché del despliegue anterior);
+#   1. a la vez: tests de la API y `deploy.sh build` (la imagen en Cloud Build;
+#      la misma para el servicio y los jobs de migraciones y seed);
 #   2. si las dos cosas van bien, `deploy.sh release`: el job de migraciones
 #      `brio-api-migrate` (solo si hay migraciones nuevas desde lo desplegado)
 #      y el despliegue.
 # Si fallan los tests o una migración, no se despliega y sigue la versión
-# anterior (las imágenes de un build que no se despliega se quedan en Artifact
-# Registry y las borra la limpieza).
+# anterior (la imagen de un build que no se despliega se queda en Artifact
+# Registry y la borra la limpieza).
 #
 # Se autentica en GCP sin claves, con Workload Identity Federation: hace falta
 # configurarlo una vez con apps/api/deploy/setup-github-deploy.sh, que deja los

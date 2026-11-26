@@ -5,16 +5,15 @@
 # pnpm-workspace.yaml y al lockfile.
 #
 #   docker build -f apps/api/Dockerfile --target runtime -t core-api:latest .
-#   docker build -f apps/api/Dockerfile --target migrate -t core-api-migrate:latest .
+#
+# Una sola imagen para todo: el servicio (CMD) y, con otro comando, el job de
+# migraciones (`prisma migrate deploy`) y el de seed (ver deploy/deploy.sh).
 #
 
 # ============================================================================
-# Stage 1 — deps (dependencias del workspace de la api, con las de desarrollo)
+# Stage 1 — deps + build
 # ============================================================================
-# Va aparte de `builder` para que la imagen de migraciones salga de aquí: solo
-# cambia cuando cambian el lockfile, packages/ o prisma/ (no con cada cambio de
-# código), y es la caché entre despliegues de Cloud Build (deploy/cloudbuild.yaml).
-FROM node:24-alpine AS deps
+FROM node:24-alpine AS builder
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
@@ -40,12 +39,6 @@ COPY patches/ ./patches/
 #    necesitamos para `nest build`). --frozen-lockfile = imagen reproducible.
 RUN pnpm install --frozen-lockfile --filter @core/api...
 
-
-# ============================================================================
-# Stage 1b — build
-# ============================================================================
-FROM deps AS builder
-
 # 3) Copiamos el resto del código y compilamos.
 #    `prebuild` regenera el cliente de Prisma en `src/generated/prisma/`
 #    antes de que `nest build` lo transpile a `dist/generated/prisma/`.
@@ -58,25 +51,6 @@ RUN pnpm --filter @core/api... build
 #    y los archivos del paquete (incluido dist/). Es la forma oficial de
 #    sacar un paquete de un workspace para deploy.
 RUN pnpm --filter @core/api deploy --legacy --prod /out
-
-
-# ============================================================================
-# Stage 1c — migraciones (job de Cloud Run `brio-api-migrate`)
-# ============================================================================
-# Imagen aparte con la CLI de Prisma (dependencia de desarrollo) y la carpeta
-# de migraciones, para aplicar `prisma migrate deploy` una vez por despliegue,
-# antes de pasar el tráfico a la versión nueva (ver deploy/deploy.sh). No va en
-# la imagen de runtime: migrar en cada arranque alargaría el arranque en frío.
-# `prisma.config.ts` carga `dotenv/config`, que lee DATABASE_URL del .env de
-# secretos que monta Cloud Run (DOTENV_CONFIG_PATH).
-# Sale de `deps`, no de `builder`: para migrar basta con la CLI de Prisma, el
-# schema y las migraciones (copiados antes del install). Así no lleva el código
-# compilado ni /out, y no cambia en cada despliegue (antes pesaba ~2,7 GB y se
-# volvía a subir casi entera cada vez).
-FROM deps AS migrate
-WORKDIR /repo/apps/api
-ENV DOTENV_CONFIG_PATH=/secrets/.env
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy"]
 
 
 # ============================================================================
@@ -95,6 +69,16 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder --chown=app:app /out/node_modules ./node_modules
 COPY --from=builder --chown=app:app /out/dist ./dist
 COPY --from=builder --chown=app:app /out/package.json ./package.json
+
+# Migraciones: el job de Cloud Run `brio-api-migrate` usa esta misma imagen con
+# el comando `prisma migrate deploy` (la CLI de Prisma y dotenv son dependencias
+# de producción). Se aplican una vez por despliegue, antes de pasar el tráfico a
+# la versión nueva, no al arrancar (alargaría el arranque en frío).
+# `prisma.config.ts` carga `dotenv/config`, que lee DATABASE_URL del .env de
+# secretos que monta Cloud Run (DOTENV_CONFIG_PATH); la API no usa dotenv.
+COPY --from=builder --chown=app:app /repo/apps/api/prisma ./prisma
+COPY --from=builder --chown=app:app /repo/apps/api/prisma.config.ts ./prisma.config.ts
+ENV DOTENV_CONFIG_PATH=/secrets/.env
 
 # /app pertenece a root por defecto, así que el user `app` no puede crear
 # subdirectorios en él. Damos la propiedad al user de runtime y dejamos
