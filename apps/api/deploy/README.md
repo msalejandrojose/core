@@ -79,6 +79,13 @@ Para que tarde poco:
   eso `prisma` y `dotenv` son dependencias de producción, y la imagen lleva
   `prisma/` y `prisma.config.ts`. El comando del job está en Terraform
   (`modules/cloud-run-api`) y `deploy.sh` pasa el mismo.
+- **Solo se guarda la imagen desplegada**: tras un despliegue correcto,
+  `deploy.sh` borra de Artifact Registry todas las imágenes `api` menos la que
+  sirve Cloud Run (y las `api-migrate` antiguas). Si algo falla antes no se borra
+  nada, y las imágenes de builds fallidos se van en el siguiente despliegue
+  correcto. Por eso `github-deploy` tiene `repoAdmin` en el repositorio `brio`.
+  Volver atrás no es cambiar de revisión en Cloud Run (la imagen anterior ya no
+  existe): es revertir el commit en `brio-dev` y dejar que se despliegue.
 
 Se autentica en GCP sin claves (Workload Identity Federation), limitado a este
 repo y a la rama `brio-dev`. Se configura una vez con:

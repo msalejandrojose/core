@@ -34,6 +34,7 @@ API="$ROOT/apps/api"
 TAG="${IMAGE_TAG:-$(git -C "$ROOT" rev-parse --short HEAD)}"
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}/api:${TAG}"
 MIGRATIONS="apps/api/prisma/migrations"
+REGISTRY="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
 # El job de migraciones usa la misma imagen que el servicio con este comando.
 # Terraform (infra/terraform/modules/cloud-run-api) declara lo mismo: se pasa
 # también aquí para que funcione aunque aún no se haya aplicado.
@@ -136,6 +137,38 @@ deploy() {
     --concurrency 40 --timeout 120
 }
 
+# Tras un despliegue correcto deja en Artifact Registry solo la imagen que sirve
+# Cloud Run (volver atrás = revertir en git y desplegar). Si algo falla antes
+# (tests, build, migración o despliegue) no se llega aquí y no se borra nada; las
+# imágenes de builds que no llegaron a desplegarse se borran en el siguiente
+# despliegue correcto. También borra las `api-migrate` de antes de la imagen única.
+prune_images() {
+  local live keep d
+  live="$(current_image)"
+  if [ "$live" != "$IMAGE" ]; then
+    echo "› Limpieza: Cloud Run sirve ${live:-?}, no $IMAGE; no se borra nada."; return 0
+  fi
+  keep="$("${G[@]}" artifacts docker images describe "$IMAGE" --format 'value(image_summary.digest)' 2>/dev/null || true)"
+  if [[ "$keep" != sha256:* ]]; then
+    echo "› Limpieza: no sé el digest de $IMAGE; no se borra nada."; return 1
+  fi
+  echo "› Limpieza: se queda $IMAGE ($keep)."
+  while read -r d; do
+    if [ -z "$d" ] || [ "$d" = "$keep" ]; then continue; fi
+    echo "    borrando api@$d"
+    "${G[@]}" artifacts docker images delete "$REGISTRY/api@$d" --delete-tags >/dev/null || return 1
+  done < <("${G[@]}" artifacts docker images list "$REGISTRY/api" --format 'value(version)')
+  if "${G[@]}" artifacts packages describe api-migrate --repository "$REPO" --location "$REGION" >/dev/null 2>&1; then
+    echo "    borrando api-migrate (ya no se usa)"
+    "${G[@]}" artifacts packages delete api-migrate --repository "$REPO" --location "$REGION" >/dev/null || return 1
+  fi
+}
+
+# El despliegue ya está hecho: si la limpieza falla, se avisa y ya.
+prune() {
+  prune_images || echo "⚠ No se pudieron borrar las imágenes viejas de Artifact Registry (el despliegue está hecho)."
+}
+
 seed() {
   local image; image="$(current_image)"
   "${G[@]}" run jobs deploy "${SERVICE}-seed" --region "$REGION" --image "$image" \
@@ -152,10 +185,10 @@ case "${1:-all}" in
   # Revisión nueva (sufijo) para que la API relea el secreto aunque la imagen no cambie.
   secrets) ensure_base; push_secret; deploy "$(current_image)" --revision-suffix "s$(date +%s)" ;;
   seed) seed ;;
-  all) ensure_base; push_secret; build; migrate; deploy "$IMAGE" ;;
-  ci) build; migrate_if_needed; deploy "$IMAGE" ;;
+  all) ensure_base; push_secret; build; migrate; deploy "$IMAGE"; prune ;;
+  ci) build; migrate_if_needed; deploy "$IMAGE"; prune ;;
   build) build ;;
-  release) migrate_if_needed; deploy "$IMAGE" ;;
+  release) migrate_if_needed; deploy "$IMAGE"; prune ;;
   migrate) build; migrate ;;
   *) echo "Uso: $0 [all|ci|build|release|migrate|secrets|seed]"; exit 1 ;;
 esac
