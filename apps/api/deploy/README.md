@@ -43,9 +43,9 @@ TiDB no admite algunas sentencias del historial (p. ej. `DROP PRIMARY KEY` y
 `ADD PRIMARY KEY` en el mismo `ALTER`), así que la base de datos se creó con el
 esquema final (`prisma migrate diff --from-empty`) y el historial se marcó como
 aplicado (`prisma migrate resolve --applied`). Las migraciones nuevas se aplican
-solas en cada despliegue (TASK-434): `deploy.sh` construye también la imagen
-`api-migrate` y ejecuta el job de Cloud Run `brio-api-migrate`
-(`prisma migrate deploy`) antes de desplegar. Si falla, no se despliega y sigue
+solas en cada despliegue (TASK-434): `deploy.sh` ejecuta el job de Cloud Run
+`brio-api-migrate` (la misma imagen que el servicio, con el comando
+`prisma migrate deploy`) antes de desplegar. Si falla, no se despliega y sigue
 la versión anterior. Para migrar sin desplegar: `deploy.sh migrate`. A mano,
 desde `apps/api`, sigue valiendo:
 
@@ -62,9 +62,30 @@ cambiar como en MySQL.
 
 El workflow `Deploy Brío API` (`.github/workflows/deploy-brio-api.yml`) se lanza
 con cada push a `brio-dev` que toque la API, sus paquetes o el lockfile (y a
-mano desde la pestaña Actions). Pasa los tests y ejecuta `deploy.sh ci`:
-construye, migra y despliega. No sube el secreto: usa la última versión de
+mano desde la pestaña Actions). A la vez pasa los tests y construye las imágenes
+(`deploy.sh build`); si las dos cosas van bien, `deploy.sh release` migra (si
+hace falta) y despliega. No sube el secreto: usa la última versión de
 `brio-api-env` en Secret Manager (para cambiarlo, `deploy.sh secrets` desde el Mac).
+
+Para que tarde poco:
+
+- **Migraciones solo si hay nuevas**: el job `brio-api-migrate` se ejecuta si
+  cambia `apps/api/prisma/migrations/` entre el commit desplegado (la etiqueta
+  de la imagen que sirve Cloud Run) y el nuevo; si no se puede saber, se
+  ejecuta. Para forzarlo: *Run workflow* con «force_migrate», o
+  `FORCE_MIGRATE=1 deploy.sh ci`. El job se apunta a la imagen nueva igualmente.
+- **Una sola imagen** (`api:<commit>`, ~170 MB comprimida) para el servicio y
+  los jobs de migraciones y seed: Cloud Build construye y sube una, no dos. Por
+  eso `prisma` y `dotenv` son dependencias de producción, y la imagen lleva
+  `prisma/` y `prisma.config.ts`. El comando del job está en Terraform
+  (`modules/cloud-run-api`) y `deploy.sh` pasa el mismo.
+- **Solo se guarda la imagen desplegada**: tras un despliegue correcto,
+  `deploy.sh` borra de Artifact Registry todas las imágenes `api` menos la que
+  sirve Cloud Run (y las `api-migrate` antiguas). Si algo falla antes no se borra
+  nada, y las imágenes de builds fallidos se van en el siguiente despliegue
+  correcto. Por eso `github-deploy` tiene `repoAdmin` en el repositorio `brio`.
+  Volver atrás no es cambiar de revisión en Cloud Run (la imagen anterior ya no
+  existe): es revertir el commit en `brio-dev` y dejar que se despliegue.
 
 Se autentica en GCP sin claves (Workload Identity Federation), limitado a este
 repo y a la rama `brio-dev`. Se configura una vez con:

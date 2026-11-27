@@ -5,7 +5,9 @@
 # pnpm-workspace.yaml y al lockfile.
 #
 #   docker build -f apps/api/Dockerfile --target runtime -t core-api:latest .
-#   docker build -f apps/api/Dockerfile --target migrate -t core-api-migrate:latest .
+#
+# Una sola imagen para todo: el servicio (CMD) y, con otro comando, el job de
+# migraciones (`prisma migrate deploy`) y el de seed (ver deploy/deploy.sh).
 #
 
 # ============================================================================
@@ -52,21 +54,6 @@ RUN pnpm --filter @core/api deploy --legacy --prod /out
 
 
 # ============================================================================
-# Stage 1b — migraciones (job de Cloud Run `brio-api-migrate`)
-# ============================================================================
-# Imagen aparte con la CLI de Prisma (dependencia de desarrollo) y la carpeta
-# de migraciones, para aplicar `prisma migrate deploy` una vez por despliegue,
-# antes de pasar el tráfico a la versión nueva (ver deploy/deploy.sh). No va en
-# la imagen de runtime: migrar en cada arranque alargaría el arranque en frío.
-# `prisma.config.ts` carga `dotenv/config`, que lee DATABASE_URL del .env de
-# secretos que monta Cloud Run (DOTENV_CONFIG_PATH).
-FROM builder AS migrate
-WORKDIR /repo/apps/api
-ENV DOTENV_CONFIG_PATH=/secrets/.env
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy"]
-
-
-# ============================================================================
 # Stage 2 — runtime
 # ============================================================================
 FROM node:24-alpine AS runtime
@@ -82,6 +69,16 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder --chown=app:app /out/node_modules ./node_modules
 COPY --from=builder --chown=app:app /out/dist ./dist
 COPY --from=builder --chown=app:app /out/package.json ./package.json
+
+# Migraciones: el job de Cloud Run `brio-api-migrate` usa esta misma imagen con
+# el comando `prisma migrate deploy` (la CLI de Prisma y dotenv son dependencias
+# de producción). Se aplican una vez por despliegue, antes de pasar el tráfico a
+# la versión nueva, no al arrancar (alargaría el arranque en frío).
+# `prisma.config.ts` carga `dotenv/config`, que lee DATABASE_URL del .env de
+# secretos que monta Cloud Run (DOTENV_CONFIG_PATH); la API no usa dotenv.
+COPY --from=builder --chown=app:app /repo/apps/api/prisma ./prisma
+COPY --from=builder --chown=app:app /repo/apps/api/prisma.config.ts ./prisma.config.ts
+ENV DOTENV_CONFIG_PATH=/secrets/.env
 
 # /app pertenece a root por defecto, así que el user `app` no puede crear
 # subdirectorios en él. Damos la propiedad al user de runtime y dejamos

@@ -42,9 +42,10 @@ for role in roles/run.admin roles/cloudbuild.builds.editor roles/logging.viewer 
 done
 "${G[@]}" storage buckets add-iam-policy-binding "gs://${PROJECT}_cloudbuild" \
   --member "serviceAccount:$DEPLOYER_SA" --role roles/storage.admin >/dev/null
-# Cloud Run comprueba que quien despliega puede leer la imagen del servicio y del job.
+# Cloud Run comprueba que quien despliega puede leer la imagen del servicio y del job;
+# repoAdmin (solo en este repositorio) para que deploy.sh borre las imágenes viejas.
 "${G[@]}" artifacts repositories add-iam-policy-binding "${REPO:-brio}" --location "$REGION" \
-  --member "serviceAccount:$DEPLOYER_SA" --role roles/artifactregistry.reader >/dev/null
+  --member "serviceAccount:$DEPLOYER_SA" --role roles/artifactregistry.repoAdmin >/dev/null
 for sa in "$RUNTIME_SA" "$BUILD_SA"; do
   "${G[@]}" iam service-accounts add-iam-policy-binding "$sa" \
     --member "serviceAccount:$DEPLOYER_SA" --role roles/iam.serviceAccountUser >/dev/null

@@ -371,7 +371,10 @@ export default function TodayPage() {
               </div>
             </div>
             {isToday ? (
-              <h1 className={firstDay ? undefined : 'is-greeting'}>{firstDay ? 'Hoy' : greeting(hourIn(timezone), firstName)}</h1>
+              // Prueba de OTA: el « · OTA 2» se quita al acabar la prueba.
+              <h1 className={firstDay ? undefined : 'is-greeting'}>
+                {firstDay ? 'Hoy' : greeting(hourIn(timezone), firstName)} · OTA 2
+              </h1>
             ) : (
               <div className="today-past">
                 <h1>{pastTitle(day, today)}</h1>

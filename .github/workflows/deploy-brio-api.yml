@@ -2,10 +2,14 @@ name: Deploy Brío API
 
 # Despliegue de la API de Brío en Cloud Run al hacer push a `brio-dev` (lo que
 # entra al fusionar un PR de tarea) si toca la API o sus paquetes. Pasos:
-#   1. tests de la API;
-#   2. `deploy.sh ci`: construye las imágenes en Cloud Build, aplica las
-#      migraciones con el job `brio-api-migrate` y, si van bien, despliega.
-# Si una migración falla, no se despliega y sigue la versión anterior.
+#   1. a la vez: tests de la API y `deploy.sh build` (la imagen en Cloud Build;
+#      la misma para el servicio y los jobs de migraciones y seed);
+#   2. si las dos cosas van bien, `deploy.sh release`: el job de migraciones
+#      `brio-api-migrate` (solo si hay migraciones nuevas desde lo desplegado)
+#      y el despliegue.
+# Si fallan los tests o una migración, no se despliega y sigue la versión
+# anterior (la imagen de un build que no se despliega se queda en Artifact
+# Registry y la borra la limpieza).
 #
 # Se autentica en GCP sin claves, con Workload Identity Federation: hace falta
 # configurarlo una vez con apps/api/deploy/setup-github-deploy.sh, que deja los
@@ -19,6 +23,11 @@ on:
       - 'pnpm-lock.yaml'
       - '.github/workflows/deploy-brio-api.yml'
   workflow_dispatch:
+    inputs:
+      force_migrate:
+        description: Ejecutar el job de migraciones aunque no haya migraciones nuevas
+        type: boolean
+        default: false
 
 # Un despliegue detrás de otro, nunca dos migraciones a la vez.
 concurrency:
@@ -28,6 +37,10 @@ concurrency:
 permissions:
   contents: read
   id-token: write
+
+env:
+  # La misma etiqueta de imagen en el job de build y en el de release.
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   test:
@@ -56,8 +69,8 @@ jobs:
       - name: Test API
         run: pnpm --filter @core/api test
 
-  deploy:
-    needs: test
+  # En paralelo con los tests: si fallan, las imágenes se quedan sin desplegar.
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +80,42 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_DEPLOY_SA }}
 
-      - uses: google-github-actions/setup-gcloud@v2
+      # El runner ya trae gcloud: usarlo ahorra la descarga (~15 s).
+      - name: Check preinstalled gcloud
+        id: gcloud
+        run: echo "installed=$(command -v gcloud >/dev/null && echo true || echo false)" >>"$GITHUB_OUTPUT"
 
-      - name: Build, migrate and deploy
-        run: apps/api/deploy/deploy.sh ci
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          skip_install: ${{ steps.gcloud.outputs.installed }}
+
+      - name: Build and push images (Cloud Build)
+        run: apps/api/deploy/deploy.sh build
+
+  deploy:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Historial completo: para comparar las migraciones con el commit desplegado.
+          fetch-depth: 0
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      # El runner ya trae gcloud: usarlo ahorra la descarga (~15 s).
+      - name: Check preinstalled gcloud
+        id: gcloud
+        run: echo "installed=$(command -v gcloud >/dev/null && echo true || echo false)" >>"$GITHUB_OUTPUT"
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          skip_install: ${{ steps.gcloud.outputs.installed }}
+
+      - name: Migrate (if needed) and deploy
+        env:
+          FORCE_MIGRATE: ${{ inputs.force_migrate && '1' || '' }}
+        run: apps/api/deploy/deploy.sh release

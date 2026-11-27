@@ -220,6 +220,10 @@ resource "google_cloud_run_v2_job" "migrate" {
 
       containers {
         image = var.bootstrap_image
+        # Misma imagen que el servicio (la cambia deploy.sh en cada despliegue),
+        # con la CLI de Prisma en vez de arrancar la API. deploy.sh pasa lo mismo.
+        command = ["/app/node_modules/.bin/prisma"]
+        args    = ["migrate", "deploy"]
 
         volume_mounts {
           name       = local.env_volume
@@ -285,14 +289,16 @@ resource "google_storage_bucket_iam_member" "deployer_cloudbuild" {
   member = "serviceAccount:${google_service_account.deployer["this"].email}"
 }
 
-# Cloud Run comprueba que quien despliega puede leer la imagen del servicio y del job.
+# Cloud Run comprueba que quien despliega puede leer la imagen del servicio y del
+# job. repoAdmin (solo en este repositorio) para que deploy.sh borre, tras un
+# despliegue correcto, las imágenes que ya no sirve nadie.
 resource "google_artifact_registry_repository_iam_member" "deployer_reader" {
   for_each = local.deployer_set
 
   project    = var.project
   location   = google_artifact_registry_repository.images.location
   repository = google_artifact_registry_repository.images.repository_id
-  role       = "roles/artifactregistry.reader"
+  role       = "roles/artifactregistry.repoAdmin"
   member     = "serviceAccount:${google_service_account.deployer["this"].email}"
 }
 
