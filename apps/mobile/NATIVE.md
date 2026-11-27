@@ -5,6 +5,23 @@ Capacitor. Las carpetas nativas `ios/` y `android/` **no se versionan**
 (`.gitignore`): se generan en local y se regeneran cuando cambian los plugins o
 la config. Este documento describe el flujo completo.
 
+## `native.config.yml`: la configuración nativa en un solo sitio
+
+Todo lo nativo que este documento cuenta que hay que hacer a mano tras `cap add`
+(Info.plist, entitlements, iOS 15, widgets, permisos de Android…) está recogido
+en `native.config.yml`, con perfiles para cada destino: `device` (instalar en un
+móvil), `mac` (app conectada al Mac por ZeroTier), `testflight` y `production`.
+El siguiente paso es un `pnpm native:prepare` que genere `ios/` y `android/` a
+partir de él; **hasta entonces, los pasos de abajo siguen siendo los que valen**,
+y cualquier ajuste nativo nuevo se apunta en los dos sitios.
+
+Comprobar el fichero y ver lo que sale para un perfil (dice qué variables
+faltan, p. ej. `APPLE_TEAM_ID`, que va en `.env.production.local`):
+
+```bash
+pnpm --filter @core/mobile native:config --profile device --platform ios
+```
+
 ## Requisitos
 
 - **iOS**: macOS con Xcode + CocoaPods (`sudo gem install cocoapods`).

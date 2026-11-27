@@ -1,0 +1,193 @@
+# Configuración nativa de Brío (iOS + Android).
+#
+# `ios/` y `android/` no se versionan: se generan a partir de este fichero
+# (`pnpm native:prepare`, en camino). Todo lo nativo que hoy se ajusta a mano
+# después de `cap add` (NATIVE.md) y lo que monta `scripts/ios-live-activity.rb`
+# vive aquí. Regla: si se cambia algo a mano en Xcode o Android Studio y no se
+# pasa a este fichero, se pierde en el siguiente build.
+#
+# Comprobar el fichero y ver lo que sale para un perfil:
+#   pnpm --filter @core/mobile native:config --profile device --platform ios
+#
+# Valores de fuera (variables de entorno o `.env.production(.local)`, que no se
+# commitea en el caso de `.local`):
+#   ${VAR}       obligatoria: si falta, el build se para y dice cuál.
+#   ${VAR:-x}    con valor por defecto (vacío si no hay nada tras `:-`).
+# Los secretos (contraseñas, claves) NUNCA se escriben aquí: solo se nombra la
+# variable. Solo se piden las que usa el perfil y la plataforma que se compila.
+
+schema: 1
+
+app:
+  id: es.aj.brio
+  name: Brío
+  # CFBundleShortVersionString / versionName. Tiene que ser ≥ `minNativeVersion`
+  # de ota/config.json. El número de build lo pone el pipeline en cada build.
+  version: 1.0.0
+
+# Iconos y splash (`@capacitor/assets`) a partir de resources/.
+resources:
+  dir: resources
+  iconBackground: '#1c1c1e'
+  iconBackgroundDark: '#1c1c1e'
+  splashBackground: '#f2f2f7'
+  splashBackgroundDark: '#1c1c1e'
+
+apple:
+  # free: cuenta gratuita (firma de 7 días, sin TestFlight ni Sign in with Apple).
+  # paid: Apple Developer Program.
+  account: ${APPLE_ACCOUNT:-free}
+  # Team ID con el que firma Xcode (Xcode › Settings › Accounts, o el
+  # DEVELOPMENT_TEAM del proyecto actual).
+  teamId: ${APPLE_TEAM_ID}
+
+# Qué se compila y para dónde. `web` son las variables con las que se compila la
+# web que va dentro de la app (pisan `.env.production.local`).
+profiles:
+  device:
+    description: Instalar en un móvil por cable o por la misma Wi-Fi que el Mac.
+    web:
+      apiUrl: https://brio-api.ajly.online
+    ios:
+      signing: development
+    android:
+      buildType: debug
+      output: apk
+
+  mac:
+    description: >-
+      La app carga la web del Vite del Mac por ZeroTier para probar sin
+      reinstalar (NATIVE.md › App conectada al Mac). Solo para pruebas.
+    web:
+      apiUrl: ${VITE_API_URL}
+      serverUrl: ${CAP_SERVER_URL}
+      allowHttp: true
+    ios:
+      signing: development
+    android:
+      buildType: debug
+      output: apk
+
+  testflight:
+    description: TestFlight en iOS y pista interna de Google Play.
+    web:
+      apiUrl: https://brio-api.ajly.online
+    ios:
+      signing: app-store
+      upload: testflight
+    android:
+      buildType: release
+      output: aab
+      upload: internal
+
+  production:
+    description: App Store (se envía a revisión) y producción de Google Play.
+    web:
+      apiUrl: https://brio-api.ajly.online
+    ios:
+      signing: app-store
+      upload: app-store
+    android:
+      buildType: release
+      output: aab
+      upload: production
+
+ios:
+  # Mínimo 15: el Xcode actual no compila para simulador por debajo y el login
+  # social pide 14. Se aplica al proyecto y a todos los pods (Podfile).
+  deploymentTarget: '15.0'
+  # Capacitor 8 crea SPM por defecto; con CocoaPods se mantiene App.xcworkspace.
+  packageManager: CocoaPods
+
+  infoPlist:
+    # Nombre en los avisos del sistema (si no, «App quiere usar…»).
+    CFBundleName: Brío
+    NSHealthShareUsageDescription: Brío lee tu sueño, pulso en reposo, variabilidad, pasos, peso y entrenos para ajustar tu plan y tus calorías.
+    NSHealthUpdateUsageDescription: Brío no escribe en Salud; el sistema pide este texto igualmente.
+    NSCameraUsageDescription: Brío usa la cámara para leer el código de barras de los alimentos.
+    NSMicrophoneUsageDescription: Brío usa el micrófono para que le cuentes al coach lo que has comido o entrenado.
+    NSSpeechRecognitionUsageDescription: Brío pasa a texto lo que le dices al coach para apuntarlo.
+    # Sin esto iOS no deja comprobar si Hevy está instalada.
+    LSApplicationQueriesSchemes: [hevy]
+    # Live Activity del entreno en vivo.
+    NSSupportsLiveActivities: true
+
+  # Esquemas de URL de la app. `brio://` lo usan los widgets para abrir la app
+  # en su sitio. El de Google (reversed client id) se añade solo si hay
+  # `integrations.google.iosClientId`.
+  urlTypes:
+    - name: es.aj.brio
+      schemes: [brio]
+
+  entitlements:
+    com.apple.developer.healthkit: true
+    com.apple.developer.healthkit.access: []
+    # Los widgets leen aquí lo que deja la app (BrioWidgetsPlugin).
+    com.apple.security.application-groups: [group.es.aj.brio]
+
+  # Solo con `apple.account: paid`: con la gratuita Xcode no firma si van.
+  paidAccountOnly:
+    entitlements:
+      com.apple.developer.applesignin: [Default]
+    web:
+      VITE_APPLE_SIGN_IN: 'true'
+    # Pendiente: Push Notifications (aps-environment + UIBackgroundModes
+    # remote-notification) cuando exista el registro de dispositivos en la API.
+
+  # Main.storyboard arranca con este controlador, que registra los plugins propios.
+  rootViewController:
+    class: BrioBridgeViewController
+    module: App
+
+  # Código nativo propio que se compila en el target App.
+  sources:
+    - native/ios/Shared
+    - native/ios/App
+
+  extensions:
+    - name: BrioWidgets
+      kind: widgetkit
+      bundleIdSuffix: .widgets
+      deploymentTarget: '17.0'
+      sources:
+        - native/ios/Shared
+        - native/ios/Widget
+      infoPlist: native/ios/Widget/Info.plist
+      entitlements: native/ios/Widget/BrioWidgets.entitlements
+      frameworks: [WidgetKit, SwiftUI, ActivityKit, AppIntents]
+
+  # Clave de la API de App Store Connect (.p8). Solo para los perfiles que suben.
+  appStoreConnect:
+    keyId: ${ASC_KEY_ID}
+    issuerId: ${ASC_ISSUER_ID}
+    keyPath: ${ASC_KEY_PATH}
+
+android:
+  # Health Connect necesita 26.
+  minSdk: 26
+  # Además de los que declaran los plugins.
+  permissions:
+    # Sin él Health Connect solo deja leer ~30 días.
+    - android.permission.health.READ_HEALTH_DATA_HISTORY
+  # res/values/strings.xml
+  strings:
+    # Health Connect exige una política de privacidad. Pendiente de tener la URL.
+    health_connect_privacy_policy_url: ${BRIO_PRIVACY_POLICY_URL:-}
+
+  # Firma de release (keystore de subida a Play). Solo para buildType release.
+  signing:
+    keystorePath: ${ANDROID_KEYSTORE_PATH}
+    keystorePassword: ${ANDROID_KEYSTORE_PASSWORD}
+    keyAlias: ${ANDROID_KEY_ALIAS}
+    keyPassword: ${ANDROID_KEY_PASSWORD}
+
+  # Cuenta de servicio de Google Play (JSON). Solo para los perfiles que suben.
+  play:
+    serviceAccountJson: ${PLAY_SERVICE_ACCOUNT_JSON}
+
+integrations:
+  google:
+    # El mismo que VITE_GOOGLE_IOS_CLIENT_ID de la web: de él sale el esquema de
+    # URL que necesita el login con Google en iOS.
+    iosClientId: ${VITE_GOOGLE_IOS_CLIENT_ID:-}
+  # Facebook: sin configurar (pide tocar AppDelegate y el manifest, NATIVE.md).

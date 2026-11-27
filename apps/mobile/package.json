@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "cap:sync": "cap sync",
+    "native:config": "node scripts/native-config.mjs",
     "ota:keygen": "node scripts/ota.mjs keygen",
     "ota:publish": "node scripts/ota.mjs publish",
     "ios:prod": "CAP_SERVER_URL= VITE_API_URL=https://brio-api.ajly.online sh -c 'pnpm --filter @core/api-client generate:offline && tsc --noEmit && vite build && cap sync ios'",
@@ -75,6 +76,8 @@
     "typescript-eslint": "^8.61.0",
     "vite": "^8.0.12",
     "vite-plugin-pwa": "^1.3.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
   }
 }
