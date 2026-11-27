@@ -74,14 +74,28 @@ Para que tarde poco:
   de la imagen que sirve Cloud Run) y el nuevo; si no se puede saber, se
   ejecuta. Para forzarlo: *Run workflow* con «force_migrate», o
   `FORCE_MIGRATE=1 deploy.sh ci`. El job se apunta a la imagen nueva igualmente.
-- **Una sola imagen** (`api:<commit>`, ~170 MB comprimida) para el servicio y
-  los jobs de migraciones y seed: Cloud Build construye y sube una, no dos. Por
-  eso `prisma` y `dotenv` son dependencias de producción, y la imagen lleva
-  `prisma/` y `prisma.config.ts`. El comando del job está en Terraform
-  (`modules/cloud-run-api`) y `deploy.sh` pasa el mismo.
+- **Una sola imagen** (`api:<commit>`) para el servicio y los jobs de
+  migraciones y seed. Por eso `prisma` y `dotenv` son dependencias de
+  producción, y la imagen lleva `prisma/` y `prisma.config.ts`. El comando del
+  job está en Terraform (`modules/cloud-run-api`) y `deploy.sh` pasa el mismo.
+- **Base de dependencias aparte** (`api-deps:<huella>`, ~170 MB comprimida):
+  Node + dependencias de producción (etapa `deps` del Dockerfile). La huella es
+  un hash del lockfile, los `package.json`, `packages/`, `patches/` y el
+  Dockerfile (`DEPS_INPUTS` en `deploy.sh`). Si ya existe una base con esa
+  huella, no se instala nada; si no, se construye en Cloud Build
+  (`cloudbuild-deps.yaml`, ~5 min). Para forzarla: *Run workflow* con
+  «force_deps», o `FORCE_DEPS=1`.
+- **La imagen de cada despliegue es una capa fina**: el código se compila en el
+  runner de GitHub (o en el Mac) y `deploy/Dockerfile.app` lo pone encima de la
+  base con un contexto mínimo (`dist/`, `prisma/`, `prisma.config.ts`, ~2 MB
+  comprimido). El cliente de Prisma no lleva motor nativo, así que da igual
+  dónde se compile; lo nativo (argon2) vive en la base, compilado en Alpine.
+- **`docker-compose`** sigue construyendo la imagen completa con
+  `apps/api/Dockerfile` (última etapa, `runtime`), sin base aparte.
 - **Solo se guarda la imagen desplegada**: tras un despliegue correcto,
   `deploy.sh` borra de Artifact Registry todas las imágenes `api` menos la que
-  sirve Cloud Run (y las `api-migrate` antiguas). Si algo falla antes no se borra
+  sirve Cloud Run, todas las `api-deps` menos la base de esa imagen (y las
+  `api-migrate` antiguas). Si algo falla antes no se borra
   nada, y las imágenes de builds fallidos se van en el siguiente despliegue
   correcto. Por eso `github-deploy` tiene `repoAdmin` en el repositorio `brio`.
   Volver atrás no es cambiar de revisión en Cloud Run (la imagen anterior ya no

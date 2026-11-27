@@ -3,11 +3,14 @@
 #
 #   apps/api/deploy/deploy.sh            # sube el secreto, construye, migra y despliega
 #   apps/api/deploy/deploy.sh ci         # construye, migra y despliega (GitHub Actions: el secreto ya está en Secret Manager)
-#   apps/api/deploy/deploy.sh build      # solo construye y sube la imagen (GitHub Actions, en paralelo con los tests)
+#   apps/api/deploy/deploy.sh build      # base de dependencias (si han cambiado) + compilar + imagen (GitHub Actions, en paralelo con los tests)
 #   apps/api/deploy/deploy.sh release    # migra (si hace falta) y despliega la imagen ya construida de este commit
 #   apps/api/deploy/deploy.sh migrate    # construye y aplica las migraciones pendientes, sin desplegar
 #   apps/api/deploy/deploy.sh secrets    # sube apps/api/.env.cloudrun como nueva versión del secreto y redespliega
 #   apps/api/deploy/deploy.sh seed       # ejecuta los seeds (catálogo, IAM, agentes) contra la BBDD de producción
+#
+# FORCE_DEPS=1 reconstruye la base de dependencias aunque ya exista (p. ej. para
+# coger una versión nueva de Node 24 Alpine).
 #
 # Las migraciones (`prisma migrate deploy`) corren en el job de Cloud Run
 # `brio-api-migrate` (la misma imagen que el servicio, con otro comando) justo
@@ -35,6 +38,21 @@ TAG="${IMAGE_TAG:-$(git -C "$ROOT" rev-parse --short HEAD)}"
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}/api:${TAG}"
 MIGRATIONS="apps/api/prisma/migrations"
 REGISTRY="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
+
+# Base de dependencias (etapa `deps` del Dockerfile): api-deps:<huella>. La
+# huella sale del contenido de todo lo que define las dependencias; si no cambia,
+# la base ya existe y no se instala nada. Tiene que coincidir con lo que copia la
+# etapa `deps-install` del Dockerfile (por eso el propio Dockerfile entra).
+DEPS_INPUTS=(pnpm-workspace.yaml pnpm-lock.yaml package.json apps/api/package.json packages patches apps/api/Dockerfile)
+deps_hash() {
+  local sum=(sha256sum) files
+  command -v sha256sum >/dev/null || sum=(shasum -a 256)   # macOS
+  files="$(git -C "$ROOT" ls-files -- "${DEPS_INPUTS[@]}" | wc -l)"
+  if [ "$files" -lt 5 ]; then echo "✖ No encuentro los ficheros de las dependencias (${files})." >&2; return 1; fi
+  (cd "$ROOT" && git ls-files -z -- "${DEPS_INPUTS[@]}" | xargs -0 "${sum[@]}" | "${sum[@]}" | cut -c1-16)
+}
+DEPS_TAG="${DEPS_TAG:-$(deps_hash)}"
+DEPS_IMAGE="${REGISTRY}/api-deps:${DEPS_TAG}"
 # El job de migraciones usa la misma imagen que el servicio con este comando.
 # Terraform (infra/terraform/modules/cloud-run-api) declara lo mismo: se pasa
 # también aquí para que funcione aunque aún no se haya aplicado.
@@ -59,10 +77,42 @@ push_secret() {
     --member "serviceAccount:$SA" --role roles/secretmanager.secretAccessor >/dev/null
 }
 
-build() {
+# 1) La base de dependencias, solo si no existe ya la de esta huella
+#    (FORCE_DEPS=1 la reconstruye igualmente, p. ej. para coger un Node nuevo).
+build_deps() {
+  if [ "${FORCE_DEPS:-}" != 1 ] && "${G[@]}" artifacts docker images describe "$DEPS_IMAGE" >/dev/null 2>&1; then
+    echo "› Dependencias sin cambios: se reutiliza api-deps:$DEPS_TAG."
+    return
+  fi
+  echo "› Dependencias nuevas o forzadas: se construye api-deps:$DEPS_TAG."
   "${G[@]}" builds submit "$ROOT" --region "$REGION" \
-    --config "$API/deploy/cloudbuild.yaml" --substitutions "_IMAGE=$IMAGE"
+    --config "$API/deploy/cloudbuild-deps.yaml" --substitutions "_DEPS_IMAGE=$DEPS_IMAGE"
 }
+
+# 2) El código, compilado aquí (en GitHub Actions, el runner; en el Mac, el Mac).
+#    `prebuild` genera el cliente de Prisma, que no lleva motor nativo, así que
+#    da igual dónde se compile.
+compile_api() {
+  echo "› Compilando la API…"
+  [ -d "$ROOT/node_modules" ] || (cd "$ROOT" && pnpm install --frozen-lockfile --filter @core/api...)
+  (cd "$ROOT" && pnpm --filter @core/api... build)
+}
+
+# 3) La imagen: base + dist/ + prisma/, con un contexto mínimo.
+build_app() {
+  local ctx
+  ctx="$(mktemp -d)"
+  cp "$API/deploy/Dockerfile.app" "$ctx/Dockerfile"
+  cp -R "$API/dist" "$ctx/dist"
+  cp -R "$API/prisma" "$ctx/prisma"
+  cp "$API/prisma.config.ts" "$ctx/prisma.config.ts"
+  echo "› Imagen $IMAGE sobre api-deps:$DEPS_TAG."
+  "${G[@]}" builds submit "$ctx" --region "$REGION" \
+    --config "$API/deploy/cloudbuild.yaml" --substitutions "_IMAGE=$IMAGE,_DEPS_IMAGE=$DEPS_IMAGE"
+  rm -rf "$ctx"
+}
+
+build() { build_deps; compile_api; build_app; }
 
 # Aplica las migraciones pendientes con la imagen de este commit.
 # Si el job ya existe (lo gestiona Terraform) solo se cambia la imagen; la
@@ -138,26 +188,36 @@ deploy() {
 }
 
 # Tras un despliegue correcto deja en Artifact Registry solo la imagen que sirve
-# Cloud Run (volver atrás = revertir en git y desplegar). Si algo falla antes
+# Cloud Run y la base sobre la que está montada (volver atrás = revertir en git
+# y desplegar). Si algo falla antes
 # (tests, build, migración o despliegue) no se llega aquí y no se borra nada; las
 # imágenes de builds que no llegaron a desplegarse se borran en el siguiente
 # despliegue correcto. También borra las `api-migrate` de antes de la imagen única.
+# Borra todas las versiones de <paquete> menos la de <imagen>. Si no sabe el
+# digest de <imagen>, no borra nada.
+prune_package() {
+  local pkg="$1" image="$2" keep d
+  keep="$("${G[@]}" artifacts docker images describe "$image" --format 'value(image_summary.digest)' 2>/dev/null || true)"
+  if [[ "$keep" != sha256:* ]]; then
+    echo "› Limpieza: no sé el digest de $image; no se borra nada de $pkg."; return 1
+  fi
+  echo "› Limpieza: de $pkg se queda ${image##*/} (${keep:0:19}…)."
+  while read -r d; do
+    if [ -z "$d" ] || [ "$d" = "$keep" ]; then continue; fi
+    echo "    borrando $pkg@$d"
+    "${G[@]}" artifacts docker images delete "$REGISTRY/$pkg@$d" --delete-tags >/dev/null || return 1
+  done < <("${G[@]}" artifacts docker images list "$REGISTRY/$pkg" --format 'value(version)')
+}
+
 prune_images() {
-  local live keep d
+  local live
   live="$(current_image)"
   if [ "$live" != "$IMAGE" ]; then
     echo "› Limpieza: Cloud Run sirve ${live:-?}, no $IMAGE; no se borra nada."; return 0
   fi
-  keep="$("${G[@]}" artifacts docker images describe "$IMAGE" --format 'value(image_summary.digest)' 2>/dev/null || true)"
-  if [[ "$keep" != sha256:* ]]; then
-    echo "› Limpieza: no sé el digest de $IMAGE; no se borra nada."; return 1
-  fi
-  echo "› Limpieza: se queda $IMAGE ($keep)."
-  while read -r d; do
-    if [ -z "$d" ] || [ "$d" = "$keep" ]; then continue; fi
-    echo "    borrando api@$d"
-    "${G[@]}" artifacts docker images delete "$REGISTRY/api@$d" --delete-tags >/dev/null || return 1
-  done < <("${G[@]}" artifacts docker images list "$REGISTRY/api" --format 'value(version)')
+  prune_package api "$IMAGE" || return 1
+  # La base sobre la que está montada la imagen desplegada.
+  prune_package api-deps "$DEPS_IMAGE" || return 1
   if "${G[@]}" artifacts packages describe api-migrate --repository "$REPO" --location "$REGION" >/dev/null 2>&1; then
     echo "    borrando api-migrate (ya no se usa)"
     "${G[@]}" artifacts packages delete api-migrate --repository "$REPO" --location "$REGION" >/dev/null || return 1

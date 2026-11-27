@@ -1,0 +1,14 @@
+# Base de dependencias de la API (api-deps:<huella>): Node + dependencias de
+# producción, etapa `deps` de apps/api/Dockerfile (contexto = raíz del
+# monorepo). deploy/deploy.sh solo la lanza cuando no existe ya una base con la
+# huella actual, es decir, cuando ha cambiado algo de lo que define las
+# dependencias (DEPS_INPUTS en deploy.sh).
+steps:
+  - id: deps
+    name: gcr.io/cloud-builders/docker
+    env: ['DOCKER_BUILDKIT=1']
+    args: ['build', '-f', 'apps/api/Dockerfile', '--target', 'deps', '-t', '${_DEPS_IMAGE}', '.']
+images:
+  - '${_DEPS_IMAGE}'
+options:
+  logging: CLOUD_LOGGING_ONLY
