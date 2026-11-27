@@ -1,5 +1,7 @@
-# Construye la imagen de la API (contexto = raíz del monorepo) y la sube a
-# Artifact Registry. La lanza deploy/deploy.sh con `gcloud builds submit`.
+# Imagen de la API (api:<commit>): la base de dependencias + el código ya
+# compilado. La lanza deploy/deploy.sh (`build`) con un contexto mínimo
+# (Dockerfile.app, dist/, prisma/, prisma.config.ts), así que se sube poco y la
+# imagen nueva es una capa de pocos MB encima de la base.
 #
 # Es la única imagen: la usan el servicio brio-api y, con otro comando, los
 # jobs brio-api-migrate (`prisma migrate deploy`) y brio-api-seed.
@@ -7,7 +9,7 @@ steps:
   - id: image
     name: gcr.io/cloud-builders/docker
     env: ['DOCKER_BUILDKIT=1']
-    args: ['build', '-f', 'apps/api/Dockerfile', '--target', 'runtime', '-t', '${_IMAGE}', '.']
+    args: ['build', '--build-arg', 'DEPS_IMAGE=${_DEPS_IMAGE}', '-t', '${_IMAGE}', '.']
 images:
   - '${_IMAGE}'
 options:
