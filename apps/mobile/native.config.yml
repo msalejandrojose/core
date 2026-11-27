@@ -1,7 +1,7 @@
 # Configuración nativa de Brío (iOS + Android).
 #
 # `ios/` y `android/` no se versionan: se generan a partir de este fichero
-# (`pnpm native:prepare`, en camino). Todo lo nativo que hoy se ajusta a mano
+# (`pnpm native:prepare`, ver NATIVE.md). Todo lo nativo que hoy se ajusta a mano
 # después de `cap add` (NATIVE.md) y lo que monta `scripts/ios-live-activity.rb`
 # vive aquí. Regla: si se cambia algo a mano en Xcode o Android Studio y no se
 # pasa a este fichero, se pierde en el siguiente build.

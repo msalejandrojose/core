@@ -108,6 +108,14 @@ describe('native.config.yml', () => {
     expect(problems(() => resolveNativeConfig(http, { profile: 'device', platforms: ['android'] }))).toMatch(/allowHttp/);
   });
 
+  it('el App Group de los widgets tiene que estar también en la app', () => {
+    const noGroup = parseNativeConfig(readFileSync(CONFIG_FILE, 'utf8'));
+    noGroup.ios.entitlements['com.apple.security.application-groups'] = ['group.otro'];
+    expect(problems(() => resolveNativeConfig(noGroup, { profile: 'device', platforms: ['ios'], env: TEAM }))).toMatch(
+      /group\.es\.aj\.brio.*BrioWidgets\.entitlements/,
+    );
+  });
+
   it('comprueba que existe el código nativo y que la versión admite las OTA', () => {
     const broken = parseNativeConfig(readFileSync(CONFIG_FILE, 'utf8'));
     broken.ios.sources.push('native/ios/NoExiste');

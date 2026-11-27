@@ -15,6 +15,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import plist from 'plist';
 import { loadEnv } from 'vite';
 import { parse } from 'yaml';
 import { z } from 'zod';
@@ -266,10 +267,23 @@ export function resolveNativeConfig(config, { profile, platforms = PLATFORMS, en
     }
 
     ios.sources.forEach((s, i) => mustExist(s, `ios.sources[${i}]`));
+    const appGroups = entitlements['com.apple.security.application-groups'] ?? [];
     const extensions = ios.extensions.map((ext, i) => {
       ext.sources.forEach((s, j) => mustExist(s, `ios.extensions[${i}].sources[${j}]`));
       mustExist(ext.infoPlist, `ios.extensions[${i}].infoPlist`);
-      mustExist(ext.entitlements, `ios.extensions[${i}].entitlements`);
+      const entFile = join(root, ext.entitlements);
+      if (!existsSync(entFile)) {
+        problems.push(`ios.extensions[${i}].entitlements: no existe ${ext.entitlements}`);
+      } else {
+        // La extensión solo ve lo que deja la app si comparten App Group.
+        const extGroups = plist.parse(readFileSync(entFile, 'utf8'))['com.apple.security.application-groups'] ?? [];
+        const notInApp = extGroups.filter((g) => !appGroups.includes(g));
+        if (notInApp.length) {
+          problems.push(
+            `ios.extensions[${i}]: el App Group ${notInApp.join(', ')} de ${ext.entitlements} no está en ios.entitlements`,
+          );
+        }
+      }
       return { ...ext, bundleId: `${config.app.id}${ext.bundleIdSuffix}` };
     });
 
@@ -327,6 +341,11 @@ export function resolveNativeConfig(config, { profile, platforms = PLATFORMS, en
   return { config: out, warnings };
 }
 
+/** Variables para `${VAR}`: los `.env*` de modo production y el entorno (manda). */
+export function loadNativeEnv(root = MOBILE_ROOT) {
+  return loadEnv('production', root, '');
+}
+
 // --- CLI ---------------------------------------------------------------------
 
 const SECRET_KEYS = new Set(['keystorePassword', 'keyPassword']);
@@ -355,7 +374,7 @@ function main() {
     process.exit(1);
   }
   try {
-    const env = loadEnv('production', MOBILE_ROOT, '');
+    const env = loadNativeEnv();
     const { config, warnings } = resolveNativeConfig(loadNativeConfig(), {
       profile: values.profile,
       platforms,

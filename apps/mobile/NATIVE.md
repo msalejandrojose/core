@@ -5,22 +5,52 @@ Capacitor. Las carpetas nativas `ios/` y `android/` **no se versionan**
 (`.gitignore`): se generan en local y se regeneran cuando cambian los plugins o
 la config. Este documento describe el flujo completo.
 
-## `native.config.yml`: la configuración nativa en un solo sitio
+## `native.config.yml` + `native:prepare`: generar `ios/` y `android/`
 
 Todo lo nativo que este documento cuenta que hay que hacer a mano tras `cap add`
-(Info.plist, entitlements, iOS 15, widgets, permisos de Android…) está recogido
-en `native.config.yml`, con perfiles para cada destino: `device` (instalar en un
+(Info.plist, entitlements, iOS 15, widgets, permisos de Android…) está en
+`native.config.yml`, con perfiles para cada destino: `device` (instalar en un
 móvil), `mac` (app conectada al Mac por ZeroTier), `testflight` y `production`.
-El siguiente paso es un `pnpm native:prepare` que genere `ios/` y `android/` a
-partir de él; **hasta entonces, los pasos de abajo siguen siendo los que valen**,
-y cualquier ajuste nativo nuevo se apunta en los dos sitios.
-
-Comprobar el fichero y ver lo que sale para un perfil (dice qué variables
-faltan, p. ej. `APPLE_TEAM_ID`, que va en `.env.production.local`):
+`native:prepare` borra la plataforma y la vuelve a generar desde cero con todo
+aplicado: compila la web con las variables del perfil, `cap add`, Info.plist,
+entitlements, Podfile, proyecto de Xcode (código de `native/ios`, extensión
+`BrioWidgets`, controlador propio), manifest, strings y Gradle, iconos y splash,
+y `cap sync`.
 
 ```bash
+# ver lo que sale para un perfil y qué variables faltan (p. ej. APPLE_TEAM_ID,
+# que va en .env.production.local)
 pnpm --filter @core/mobile native:config --profile device --platform ios
+# generar
+pnpm --filter @core/mobile native:prepare --profile device --platform ios
 ```
+
+Opciones de `native:prepare`: `--platform ios|android` (por defecto las dos),
+`--build-number N` (por defecto, minutos desde el 1-1-2026, que siempre crece) y
+`--skip-web` (usa el `dist/` que haya). **No tocar `ios/` ni `android/` a mano**:
+lo que no esté en el YAML se pierde al regenerar.
+
+### Primera vez en el Mac: validarlo contra el `ios/` que ya funciona
+
+Probado en Linux (todo menos `pod install` y compilar). Hasta validarlo en el
+Mac, los pasos manuales de abajo y `ios:live-activity` siguen valiendo.
+
+1. Guardar el proyecto actual: `mv apps/mobile/ios apps/mobile/ios.bak`.
+2. `pnpm install` (compila `sharp`, que usan los iconos).
+3. En `apps/mobile/.env.production.local`, `APPLE_TEAM_ID=` con el de
+   `grep -m1 DEVELOPMENT_TEAM apps/mobile/ios.bak/App/App.xcodeproj/project.pbxproj`.
+4. `pnpm --filter @core/mobile native:prepare --profile device --platform ios`.
+5. Comparar con el que funcionaba; lo que esté en `ios.bak` y no en `ios` se
+   pasa a `native.config.yml`:
+   ```bash
+   cd apps/mobile
+   for f in App/App/Info.plist App/App/App.entitlements; do
+     diff <(plutil -convert xml1 -o - ios.bak/$f) <(plutil -convert xml1 -o - ios/$f)
+   done
+   ```
+6. Compilar e instalar en el iPhone (Xcode o Forja). Mismo bundle id y team: se
+   instala encima sin perder datos. Comprobar widgets, Live Activity y Salud.
+7. Si todo va: borrar `ios.bak`.
 
 ## Requisitos
 
