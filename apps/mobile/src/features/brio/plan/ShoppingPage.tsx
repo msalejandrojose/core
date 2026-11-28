@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
 import { isApiError } from '../api';
@@ -13,17 +14,21 @@ const SHARE = 'M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7';
 export default function ShoppingPage() {
   const [list, setList] = useState<ShoppingView | null>(null);
   const [error, setError] = useState(false);
+  // `?semana=YYYY-MM-DD`: la lista de otra semana (la que se estaba viendo en Comida).
+  const semana = new URLSearchParams(useLocation().search).get('semana');
+  const day = semana && /^\d{4}-\d{2}-\d{2}$/.test(semana) ? semana : undefined;
 
   useEffect(() => {
     let alive = true;
+    setError(false);
     menuApi
-      .shopping()
+      .shopping(day)
       .then((l) => alive && setList(l))
       .catch(() => alive && setError(true));
     return () => {
       alive = false;
     };
-  }, []);
+  }, [day]);
 
   async function toggle(code: string, checked: boolean) {
     if (!list) return;
@@ -35,7 +40,7 @@ export default function ShoppingPage() {
       sections: list.sections.map((s) => ({ ...s, items: s.items.map((i) => (i.code === code ? { ...i, checked } : i)) })),
     });
     try {
-      setList(await menuApi.check(code, checked));
+      setList(await menuApi.check(code, checked, list.from));
     } catch (e) {
       setList(before);
       toast.error('No se pudo guardar', isApiError(e) ? e.message : undefined);

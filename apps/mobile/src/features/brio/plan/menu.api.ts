@@ -71,7 +71,8 @@ export interface ShoppingView {
 }
 
 export const menuApi = {
-  week: () => call<MenuWeek>('GET', '/brio/plan/menu'),
+  /** Menú de la semana de `day` (o la actual). */
+  week: (day?: string) => call<MenuWeek>('GET', '/brio/plan/menu', { params: { query: day ? { day } : {} } }),
   swap: (day: string, meal: Meal) => call<MenuWeek>('POST', `/brio/plan/menu/${day}/${meal}/swap`),
   /** Pone algo en una comida de un día; esa comida deja de usar el plato sugerido. */
   addItem: (day: string, meal: Meal, body: AddPlannedBody) => call<MenuWeek>('POST', `/brio/plan/menu/${day}/${meal}/items`, { body }),
@@ -81,8 +82,9 @@ export const menuApi = {
   clearMeal: (day: string, meal: Meal) => call<MenuWeek>('DELETE', `/brio/plan/menu/${day}/${meal}/items`),
   /** Apunta en el diario lo que había en el menú para esa comida. */
   logMeal: (day: string, meal: Meal) => call<{ entries: unknown[] }>('POST', `/brio/plan/menu/${day}/${meal}/log`),
-  shopping: () => call<ShoppingView>('GET', '/brio/plan/shopping'),
-  check: (code: string, checked: boolean) => call<ShoppingView>('PUT', `/brio/plan/shopping/${code}`, { body: { checked } }),
+  shopping: (day?: string) => call<ShoppingView>('GET', '/brio/plan/shopping', { params: { query: day ? { day } : {} } }),
+  check: (code: string, checked: boolean, day?: string) =>
+    call<ShoppingView>('PUT', `/brio/plan/shopping/${encodeURIComponent(code)}`, { body: day ? { checked, day } : { checked } }),
 };
 
 export const MEAL_LABEL: Record<Meal, string> = { BREAKFAST: 'Desayuno', LUNCH: 'Comida', SNACK: 'Merienda', DINNER: 'Cena' };

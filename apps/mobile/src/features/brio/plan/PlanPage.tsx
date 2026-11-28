@@ -6,8 +6,9 @@ import { isApiError } from '../api';
 import { BackLink, Chevron, EmptyCard, NavRow } from '../ui/kit';
 import { GoalSheet } from './GoalSheet';
 import { planApi, usePlanWeekData, type PlanDay, type PlanTemplate } from './plan.api';
-import { LOAD_CLASS, LOAD_LABEL, titleOf, dayFull, dayLetter, dayMeta, dayNumber, dayShort, fmtMinutes, shiftDay, weekRange } from './plan-labels';
+import { LOAD_CLASS, LOAD_LABEL, titleOf, dayFull, dayLetter, dayMeta, dayNumber, dayShort, fmtMinutes } from './plan-labels';
 import { usePlanTemplates } from './usePlanTemplates';
+import { WeekNav } from './WeekNav';
 import './plan.css';
 
 const CALENDAR = 'M7 3v3M17 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z';
@@ -89,7 +90,6 @@ export default function PlanPage() {
 
   const days = data?.days ?? [];
   const sel = days.find((d) => d.day === selDay) ?? days.find((d) => d.day === data?.today) ?? days[0];
-  const isThisWeek = !!data && data.today >= data.from && data.today <= data.to;
   const empty = !!data && days.every((d) => !d.planned);
   const goal = data?.plan ?? null;
 
@@ -137,24 +137,7 @@ export default function PlanPage() {
 
           {data ? (
             <>
-              <div className="plan__weeknav">
-                <button type="button" aria-label="Semana anterior" className="rk-iconbtn" onClick={() => setAnchor(shiftDay(data.from, -7))}>
-                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 5l-7 7 7 7" />
-                  </svg>
-                </button>
-                <button type="button" className="plan__weeknav-label" disabled={isThisWeek} onClick={() => setAnchor(undefined)}>
-                  <span>
-                    Semana {data.isoWeek} · {weekRange(data.from, data.to)}
-                  </span>
-                  {!isThisWeek ? <span className="plan__weeknav-back">Volver a esta semana</span> : null}
-                </button>
-                <button type="button" aria-label="Semana siguiente" className="rk-iconbtn" onClick={() => setAnchor(shiftDay(data.from, 7))}>
-                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
+              <WeekNav from={data.from} to={data.to} today={data.today} isoWeek={data.isoWeek} onChange={setAnchor} />
 
               <div role="list" aria-label="Días de la semana" className="plan__strip">
                 {days.map((d) => {
