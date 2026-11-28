@@ -864,7 +864,8 @@ export class BrioAgentTools implements OnModuleInit {
         label: 'Ver el menú planificado de la semana',
         description:
           'Menú de la semana del día dado: por día, las kcal objetivo y cada comida (BREAKFAST, LUNCH, SNACK, DINNER). ' +
-          'source=PLANNED es lo que puso la persona (items con itemId, cantidad y kcal); source=SUGGESTED es el plato que propone Brío ajustado a las kcal del día.',
+          'source=PLANNED es lo que eligió la persona (items con itemId, cantidad y kcal); es lo único que ve en la app y lo que entra en su lista de la compra. ' +
+          'source=SUGGESTED es una comida aún sin elegir: trae una idea de plato de Brío ajustada a las kcal del día, que puedes proponerle (no está elegida). kcalPlanned suma solo lo elegido.',
         parameters: {
           type: 'object',
           properties: { day: DAY },
@@ -884,7 +885,9 @@ export class BrioAgentTools implements OnModuleInit {
               day: d.day,
               load: d.load,
               kcalTarget: d.kcalTarget,
-              kcalPlanned: d.totals.kcal,
+              kcalPlanned: d.meals
+                .filter((m) => m.source === 'PLANNED')
+                .reduce((sum, m) => sum + m.kcal, 0),
               meals: d.meals.map((m) => ({
                 meal: m.meal,
                 source: m.source,

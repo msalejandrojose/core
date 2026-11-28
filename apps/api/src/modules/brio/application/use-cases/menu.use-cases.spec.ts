@@ -182,10 +182,18 @@ describe('menú de la semana', () => {
 });
 
 describe('lista de la compra', () => {
-  it('sale del menú y recuerda lo comprado', async () => {
-    const { shopping, check } = setup();
+  it('sale solo de lo elegido y recuerda lo comprado', async () => {
+    const { shopping, check, add } = setup();
+    // Sin nada elegido no hay nada que comprar (los platos sugeridos no cuentan).
+    expect((await shopping.execute(USER)).total).toBe(0);
+    await add.execute(USER, {
+      day: '2026-11-13',
+      meal: 'LUNCH',
+      foodId: PAN,
+      quantity: 120,
+    });
     const list = await shopping.execute(USER);
-    expect(list.total).toBeGreaterThan(15);
+    expect(list.total).toBe(1);
     expect(list.done).toBe(0);
     const code = list.sections[0].items[0].code;
     const after = await check.execute(USER, undefined, code, true);

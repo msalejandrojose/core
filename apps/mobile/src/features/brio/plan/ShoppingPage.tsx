@@ -10,7 +10,7 @@ import './plan.css';
 
 const SHARE = 'M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7';
 
-/** Lista de la compra (lienzo "Lista de la compra"): los ingredientes del menú de la semana, sumados. */
+/** Lista de la compra (lienzo "Lista de la compra"): lo que has elegido para la semana, sumado. */
 export default function ShoppingPage() {
   const [list, setList] = useState<ShoppingView | null>(null);
   const [error, setError] = useState(false);
@@ -85,7 +85,7 @@ export default function ShoppingPage() {
           </header>
 
           {error ? <p className="rk-note">No se pudo cargar la lista. Vuelve a intentarlo.</p> : null}
-          {list && !list.total ? <p className="rk-note">Completa tu perfil para tener un objetivo de calorías: de ahí salen el menú y la lista.</p> : null}
+          {list && !list.total ? <p className="rk-note">Aún no has elegido qué comer esta semana. En Comida, toca un día y el «+» de cada comida: lo que elijas aparece aquí para comprarlo.</p> : null}
 
           {list?.total ? (
             <>

@@ -1078,3 +1078,43 @@
   color: var(--brio-tint);
   text-decoration: none;
 }
+
+/* Comida: hueco de una comida sin elegir y marca de días con comidas elegidas */
+.diet__meal--empty {
+  text-decoration: none;
+  color: inherit;
+}
+.diet__plus {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--brio-tint);
+  color: var(--brio-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.diet__day-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: transparent;
+}
+.diet__day-dot.is-on {
+  background: var(--brio-food-ink);
+  opacity: 0.45;
+}
+.diet__day-dot.is-full {
+  opacity: 1;
+}
+.diet__legend {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.diet__legend-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50%;
+  background: var(--brio-food-ink);
+}
