@@ -46,4 +46,7 @@ export const TOOL_NOTES: Record<string, string> = {
   brio_log_weight: 'Ha apuntado tu peso',
   brio_delete_meal: 'Ha borrado una comida',
   brio_create_recipe: 'Ha guardado una receta',
+  brio_plan_meal: 'Ha puesto algo en tu menú',
+  brio_remove_planned_meal: 'Ha quitado algo de tu menú',
+  brio_log_planned_meal: 'Ha apuntado una comida del menú',
 };

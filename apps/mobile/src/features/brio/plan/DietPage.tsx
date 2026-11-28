@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { IonContent, IonPage } from '@ionic/react';
+import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
 import { toast } from '@/lib/toast';
 import { isApiError, type BrioProfile } from '../api';
 import { useBrioStore } from '../brio.store';
@@ -9,7 +9,8 @@ import { dailyDeltaKcal, etaLabel, goalSummary } from '../progress/weight-goal';
 import { Chevron, Icon, NavRow } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { useRegisterStore } from '../register.store';
-import { MEAL_LABEL, menuApi, type Meal, type MenuWeek } from './menu.api';
+import { MEAL_LABEL, menuApi, type Meal, type MenuMeal, type MenuWeek } from './menu.api';
+import { isPlanned } from './plan-meal';
 import { usePlanWeekData, type PlanLoad } from './plan.api';
 import { LOAD_CLASS, LOAD_LABEL, dayFull, dayLetter, dayNumber, fmtMinutes } from './plan-labels';
 import { usePlanWeek } from './usePlanWeek';
@@ -85,6 +86,8 @@ export default function DietPage() {
   const { data } = usePlanWeekData();
   const [selDay, setSelDay] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuWeek | null>(null);
+  const [busy, setBusy] = useState(false);
+  const refreshDay = useBrioStore((s) => s.refreshDay);
 
   useEffect(() => {
     let alive = true;
@@ -96,6 +99,13 @@ export default function DietPage() {
       alive = false;
     };
   }, []);
+  // Al volver de «Añadir al menú» se recarga para enseñar lo que se puso.
+  useIonViewWillEnter(() => {
+    menuApi
+      .week()
+      .then(setMenu)
+      .catch(() => undefined);
+  });
   const prot = profile?.proteinTargetG ?? 150;
   const days = (data?.days ?? []).map((d, i) => {
     const diet = data?.diet?.[i];
@@ -125,13 +135,31 @@ export default function DietPage() {
   // El menú viene ajustado al objetivo guardado; si previsualizas otro objetivo, la diferencia se ve en «de X kcal».
   const meals = menu?.days?.find((d) => d.day === cur.date)?.meals ?? [];
 
-  async function swap(meal: Meal) {
+  async function act(action: () => Promise<MenuWeek | void>, fail: string, ok?: string) {
+    setBusy(true);
     try {
-      setMenu(await menuApi.swap(cur.date, meal));
+      const next = await action();
+      if (next) setMenu(next);
+      if (ok) toast.success(ok);
     } catch (e) {
-      toast.error('No se pudo cambiar', isApiError(e) ? e.message : undefined);
+      toast.error(fail, isApiError(e) ? e.message : undefined);
+    } finally {
+      setBusy(false);
     }
   }
+  const swap = (meal: Meal) => act(() => menuApi.swap(cur.date, meal), 'No se pudo cambiar');
+  const removeItem = (id: string) => act(() => menuApi.removeItem(id, cur.date), 'No se pudo quitar');
+  const clearMeal = (meal: Meal) => act(() => menuApi.clearMeal(cur.date, meal), 'No se pudo quitar', 'Vuelve el plato sugerido');
+  const logMeal = (m: MenuMeal) =>
+    act(
+      async () => {
+        await menuApi.logMeal(cur.date, m.meal);
+        if (cur.date === data?.today) await refreshDay();
+      },
+      'No se pudo apuntar',
+      `${MEAL_LABEL[m.meal]} apuntada en tu diario`,
+    );
+  const canLog = cur.date <= (data?.today ?? '');
   const total = meals.reduce((s, m) => s + m.kcal, 0);
   const t = cur.k;
   const diff = total - t;
@@ -244,25 +272,71 @@ export default function DietPage() {
             <h2>Menú del día</h2>
           </div>
           <ul aria-label="Menú del día" className="rk-list">
-            {meals.map((m) => (
-              <li key={m.meal} className="rk-row diet__meal">
-                <span className="rk-row__main">
-                  <span className="diet__meal-name">{MEAL_LABEL[m.meal]}</span>
-                  <span className="rk-row__title">{m.name}</span>
-                  <span className="rk-row__sub diet__ingredients">{m.ingredients.map((i) => `${i.name.toLowerCase()} ${i.amount}`).join(' · ')}</span>
-                  <span className="rk-row__sub">
-                    {kcal(m.kcal)} kcal · {m.proteinG} g de proteína
+            {meals.map((m) => {
+              const mine = isPlanned(m);
+              const label = MEAL_LABEL[m.meal];
+              return (
+                <li key={m.meal} className="rk-row diet__meal">
+                  <span className="rk-row__main">
+                    <span className="diet__meal-name">
+                      {label}
+                      {mine ? <span className="diet__mine">Elegido por ti</span> : null}
+                    </span>
+                    {mine ? (
+                      <ul className="diet__items" aria-label={`Lo que has puesto en ${label.toLowerCase()}`}>
+                        {m.items!.map((i) => (
+                          <li key={i.id} className="diet__item">
+                            <span className="rk-row__main">
+                              <span className="rk-row__title">{i.name}</span>
+                              <span className="rk-row__sub">
+                                {i.amount} · {kcal(i.kcal)} kcal
+                              </span>
+                            </span>
+                            <button type="button" className="diet__item-x" aria-label={`Quitar ${i.name}`} disabled={busy} onClick={() => void removeItem(i.id)}>
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <>
+                        <span className="rk-row__title">{m.name}</span>
+                        <span className="rk-row__sub diet__ingredients">{m.ingredients.map((i) => `${i.name.toLowerCase()} ${i.amount}`).join(' · ')}</span>
+                      </>
+                    )}
+                    <span className="rk-row__sub">
+                      {kcal(m.kcal)} kcal · {formatNumber(Math.round(m.proteinG))} g de proteína
+                    </span>
+                    <span className="diet__meal-actions">
+                      <Link to={`/tabs/comida/menu/${cur.date}/${m.meal}`} className="diet__action" aria-label={`Añadir algo a ${label.toLowerCase()}`}>
+                        {mine ? '+ Añadir más' : '+ Elegir plato o receta'}
+                      </Link>
+                      {mine ? (
+                        <button type="button" className="diet__action" disabled={busy} onClick={() => void clearMeal(m.meal)}>
+                          Usar sugerencia
+                        </button>
+                      ) : null}
+                      {canLog ? (
+                        <button type="button" className="diet__action" disabled={busy} onClick={() => void logMeal(m)}>
+                          Lo he comido
+                        </button>
+                      ) : null}
+                    </span>
                   </span>
-                </span>
-                <button type="button" className="diet__swap" aria-label={`Cambiar ${MEAL_LABEL[m.meal].toLowerCase()}`} onClick={() => void swap(m.meal)}>
-                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 7h13l-3-3M20 17H7l3 3" />
-                  </svg>
-                </button>
-              </li>
-            ))}
+                  {mine ? null : (
+                    <button type="button" className="diet__swap" aria-label={`Cambiar ${label.toLowerCase()}`} disabled={busy} onClick={() => void swap(m.meal)}>
+                      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 7h13l-3-3M20 17H7l3 3" />
+                      </svg>
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
-          <p className="rk-note">Las raciones están ajustadas a las calorías del día. Los valores son aproximados.</p>
+          <p className="rk-note">
+            Los platos sugeridos se ajustan a las calorías del día; lo que eliges tú va tal cual. Toca «Elegir plato o receta» para poner lo que quieras comer ese día. Los valores son aproximados.
+          </p>
 
           <Link to="/tabs/comida/compra" className="plan__btn">
             Ver la lista de la compra

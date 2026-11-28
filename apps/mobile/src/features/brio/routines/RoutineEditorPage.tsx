@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
 import { MUSCLE_NAME } from '../performance/labels';
 import { BackLink, LargeTitle, NavRow, SectionHeader, Segmented, Stepper } from '../ui/kit';
 import { ExercisePicker } from './ExercisePicker';
+import { routineForDayParams, useRoutinePick } from './routine-pick';
 import { GuideButton } from '../exercise-guide/GuideButton';
 import { useExerciseGuide } from '../exercise-guide/use-exercise-guide';
 import { REST_OPTIONS, linkedWithNext, normalizeGroups, restLabel, supersetLetter, toggleLink } from './supersets';
@@ -58,7 +59,10 @@ export default function RoutineEditorPage() {
   const { id } = useParams<{ id?: string }>();
   const isNew = !id || id === 'nueva';
   const history = useHistory();
-  const [draft, setDraft] = useState<RoutineDraft | null>(isNew ? EMPTY_ROUTINE : null);
+  // Creada desde «Editar sesión» de un día del plan: al guardar vuelve allí con ella elegida.
+  const forDay = routineForDayParams(useLocation().search);
+  const pickForDay = useRoutinePick((st) => st.set);
+  const [draft, setDraft] = useState<RoutineDraft | null>(isNew ? { ...EMPTY_ROUTINE, ...(forDay.kind ? { kind: forDay.kind } : {}) } : null);
   const [picking, setPicking] = useState(false);
   const [saving, setSaving] = useState(false);
   const starter = useStartRoutine();
@@ -122,6 +126,14 @@ export default function RoutineEditorPage() {
     setSaving(true);
     try {
       const body = routineBody(draft);
+      if (isNew && forDay.day) {
+        const created = await routinesApi.create(body);
+        pickForDay(forDay.day, created.id);
+        toast.success('Rutina creada', 'Ya está elegida para ese día del plan.');
+        if (history.length > 1) history.goBack();
+        else history.replace(`/tabs/entrenos/plan/sesion/${forDay.day}`);
+        return;
+      }
       if (isNew) await routinesApi.create(body);
       else await routinesApi.update(id, body);
       toast.success(isNew ? 'Rutina creada' : 'Rutina guardada');
@@ -165,7 +177,13 @@ export default function RoutineEditorPage() {
       <IonContent>
         <div className="rk-screen routine">
           <NavRow
-            back={<BackLink label="Rutinas" fallback="/tabs/entrenos/rutinas" />}
+            back={
+              forDay.day ? (
+                <BackLink label="Sesión" fallback={`/tabs/entrenos/plan/sesion/${forDay.day}`} />
+              ) : (
+                <BackLink label="Rutinas" fallback="/tabs/entrenos/rutinas" />
+              )
+            }
             actions={
               <button type="button" className="rk-textbtn rk-textbtn--strong" disabled={!canSave || saving} onClick={() => void save()}>
                 Guardar

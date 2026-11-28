@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../infrastructure/database/prisma/prisma.service';
-import type { Meal } from '../../domain/services/menu';
-import type { BrioMenuRepositoryPort } from '../../application/ports/menu.port';
-import { toDateOnly, toDay } from './brio.mapper';
+import type { Meal, PlannedMeal } from '../../domain/services/menu';
+import type {
+  BrioMenuRepositoryPort,
+  NewPlannedMeal,
+} from '../../application/ports/menu.port';
+import { numReq, toDateOnly, toDay } from './brio.mapper';
 
 @Injectable()
 export class PrismaBrioMenuRepository implements BrioMenuRepositoryPort {
@@ -60,4 +63,83 @@ export class PrismaBrioMenuRepository implements BrioMenuRepositoryPort {
       });
     else await this.prisma.brioShoppingCheck.deleteMany({ where: key });
   }
+
+  async plannedBetween(
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<PlannedMeal[]> {
+    const rows = await this.prisma.brioPlannedMeal.findMany({
+      where: { userId, day: { gte: toDateOnly(from), lte: toDateOnly(to) } },
+      orderBy: [{ day: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map(toPlanned);
+  }
+
+  async addPlanned(userId: string, data: NewPlannedMeal): Promise<PlannedMeal> {
+    const row = await this.prisma.brioPlannedMeal.create({
+      data: {
+        userId,
+        day: toDateOnly(data.day),
+        meal: data.meal,
+        foodId: data.foodId,
+        servingId: data.servingId,
+        servingLabel: data.servingLabel,
+        name: data.name.slice(0, 200),
+        quantity: data.quantity,
+        quantityG: data.quantityG,
+        kcal: data.kcal,
+        proteinG: data.proteinG,
+        carbsG: data.carbsG,
+        fatG: data.fatG,
+      },
+    });
+    return toPlanned(row);
+  }
+
+  async deletePlanned(userId: string, id: string): Promise<boolean> {
+    const { count } = await this.prisma.brioPlannedMeal.deleteMany({
+      where: { id, userId },
+    });
+    return count > 0;
+  }
+
+  async clearPlanned(userId: string, day: string, meal: Meal): Promise<number> {
+    const { count } = await this.prisma.brioPlannedMeal.deleteMany({
+      where: { userId, day: toDateOnly(day), meal },
+    });
+    return count;
+  }
+}
+
+function toPlanned(r: {
+  id: string;
+  day: Date;
+  meal: string;
+  foodId: string | null;
+  servingId: string | null;
+  servingLabel: string | null;
+  name: string;
+  quantity: { toString(): string };
+  quantityG: { toString(): string };
+  kcal: number;
+  proteinG: { toString(): string };
+  carbsG: { toString(): string };
+  fatG: { toString(): string };
+}): PlannedMeal {
+  return {
+    id: r.id,
+    day: toDay(r.day),
+    meal: r.meal as Meal,
+    foodId: r.foodId,
+    servingId: r.servingId,
+    servingLabel: r.servingLabel,
+    name: r.name,
+    quantity: numReq(r.quantity),
+    quantityG: numReq(r.quantityG),
+    kcal: r.kcal,
+    proteinG: numReq(r.proteinG),
+    carbsG: numReq(r.carbsG),
+    fatG: numReq(r.fatG),
+  };
 }

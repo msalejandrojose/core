@@ -10,12 +10,13 @@
 export type Meal = 'BREAKFAST' | 'LUNCH' | 'SNACK' | 'DINNER';
 export const MEALS: readonly Meal[] = ['BREAKFAST', 'LUNCH', 'SNACK', 'DINNER'];
 
-export type Aisle = 'PRODUCE' | 'PROTEIN' | 'DAIRY' | 'PANTRY';
+export type Aisle = 'PRODUCE' | 'PROTEIN' | 'DAIRY' | 'PANTRY' | 'OTHER';
 export const AISLES: readonly Aisle[] = [
   'PRODUCE',
   'PROTEIN',
   'DAIRY',
   'PANTRY',
+  'OTHER',
 ];
 
 interface Item {
@@ -512,11 +513,49 @@ export function nextDish(current: Dish): Dish {
   ];
 }
 
+/**
+ * Lo que la persona puso a mano en una comida de un día (un alimento, una
+ * receta o algo sin catálogo). Sus valores son un snapshot de cuando se puso.
+ */
+export interface PlannedMeal extends Macros {
+  id: string;
+  day: string;
+  meal: Meal;
+  foodId: string | null;
+  servingId: string | null;
+  servingLabel: string | null;
+  name: string;
+  /** Raciones si hay ración; si no, gramos. */
+  quantity: number;
+  quantityG: number;
+}
+
+/** Cantidad tal como se lee en el menú: "2 × 1 ración", "150 g". */
+export function plannedAmount(p: {
+  servingLabel: string | null;
+  quantity: number;
+  quantityG: number;
+}): string {
+  const n = (x: number) => String(Math.round(x * 100) / 100).replace('.', ',');
+  if (p.servingLabel)
+    return p.quantity === 1
+      ? p.servingLabel
+      : `${n(p.quantity)} × ${p.servingLabel}`;
+  return `${Math.round(p.quantityG)} g`;
+}
+
 export interface MenuMeal extends Macros {
   meal: Meal;
-  dishCode: string;
+  /**
+   * SUGGESTED: el plato que propone Brío, escalado a las kcal del día.
+   * PLANNED: lo que puso la persona (`items`), tal cual, sin escalar.
+   */
+  source: 'SUGGESTED' | 'PLANNED';
+  /** Plato sugerido; null si la comida está planificada a mano. */
+  dishCode: string | null;
   name: string;
   ingredients: { code: string; name: string; grams: number; amount: string }[];
+  items: (PlannedMeal & { amount: string })[];
 }
 
 export interface MenuDay {
@@ -526,18 +565,42 @@ export interface MenuDay {
   totals: Macros;
 }
 
-/** Menú de un día: un plato por comida, escalado a su parte del objetivo. */
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/**
+ * Menú de un día: un plato por comida, escalado a su parte del objetivo. Las
+ * comidas con algo planificado a mano (`planned`) llevan eso en su lugar.
+ */
 export function menuForDay(
   day: string,
   kcalTarget: number,
   chosen: Partial<Record<Meal, string>> = {},
+  planned: readonly PlannedMeal[] = [],
 ): MenuDay {
   const meals = MEALS.map((meal): MenuMeal => {
+    const mine = planned.filter((p) => p.day === day && p.meal === meal);
+    if (mine.length) {
+      const sum = (pick: (p: PlannedMeal) => number) =>
+        mine.reduce((s, p) => s + pick(p), 0);
+      return {
+        meal,
+        source: 'PLANNED',
+        dishCode: null,
+        name: mine.map((p) => p.name).join(' + '),
+        kcal: Math.round(sum((p) => p.kcal)),
+        proteinG: round1(sum((p) => p.proteinG)),
+        carbsG: round1(sum((p) => p.carbsG)),
+        fatG: round1(sum((p) => p.fatG)),
+        ingredients: [],
+        items: mine.map((p) => ({ ...p, amount: plannedAmount(p) })),
+      };
+    }
     const picked = chosen[meal] ? dishByCode(chosen[meal]) : undefined;
     const d = picked && picked.meal === meal ? picked : defaultDish(day, meal);
     const scaled = scaleDish(d, kcalTarget * MEAL_SHARE[meal]);
     return {
       meal,
+      source: 'SUGGESTED',
       dishCode: d.code,
       name: d.name,
       ...macrosOf(scaled),
@@ -547,6 +610,7 @@ export function menuForDay(
         grams,
         amount: amountLabel(code, grams),
       })),
+      items: [],
     };
   });
   const sum = (pick: (m: MenuMeal) => number) =>
@@ -556,10 +620,10 @@ export function menuForDay(
     kcalTarget,
     meals,
     totals: {
-      kcal: sum((m) => m.kcal),
-      proteinG: sum((m) => m.proteinG),
-      carbsG: sum((m) => m.carbsG),
-      fatG: sum((m) => m.fatG),
+      kcal: Math.round(sum((m) => m.kcal)),
+      proteinG: Math.round(sum((m) => m.proteinG)),
+      carbsG: Math.round(sum((m) => m.carbsG)),
+      fatG: Math.round(sum((m) => m.fatG)),
     },
   };
 }
@@ -585,25 +649,74 @@ export function quantityLabel(code: string, grams: number): string {
   return `${String(Math.ceil(rounded / 100) / 10).replace('.', ',')} ${big}`;
 }
 
-/** Lista de la compra de varios días de menú, agrupada por pasillo. */
+/** Código de la lista de la compra para un alimento o receta planificado a mano. */
+export const plannedItemCode = (foodId: string) => `food:${foodId}`;
+export const isPlannedItemCode = (code: string) =>
+  /^food:[0-9a-f-]{36}$/i.test(code);
+
+/**
+ * Lista de la compra de varios días de menú, agrupada por pasillo. Los platos
+ * sugeridos se desglosan en ingredientes; lo planificado a mano va entero en
+ * «Otros» (una receta se compra por sus raciones, no hay ingredientes guardados).
+ * Lo apuntado sin catálogo no entra: no hay nada que comprar.
+ */
 export function shoppingList(
   days: MenuDay[],
 ): { aisle: Aisle; items: ShoppingItem[] }[] {
   const grams = new Map<string, number>();
+  const own = new Map<
+    string,
+    { name: string; grams: number; label: string | null; servings: number }
+  >();
   for (const d of days)
-    for (const m of d.meals)
+    for (const m of d.meals) {
       for (const i of m.ingredients)
         grams.set(i.code, (grams.get(i.code) ?? 0) + i.grams);
+      for (const p of m.items) {
+        if (!p.foodId) continue;
+        const code = plannedItemCode(p.foodId);
+        const cur = own.get(code) ?? {
+          name: p.name,
+          grams: 0,
+          label: p.servingLabel,
+          servings: 0,
+        };
+        cur.grams += p.quantityG;
+        // Si se mezclan raciones distintas del mismo alimento, se cuenta en gramos.
+        if (cur.label !== null && p.servingLabel === cur.label)
+          cur.servings += p.quantity;
+        else cur.label = null;
+        own.set(code, cur);
+      }
+    }
+  const ownItems: ShoppingItem[] = [...own.entries()]
+    .map(([code, o]) => ({
+      code,
+      name: o.name,
+      grams: Math.round(o.grams),
+      quantity:
+        o.label !== null
+          ? plannedAmount({
+              servingLabel: o.label,
+              quantity: o.servings,
+              quantityG: o.grams,
+            })
+          : quantityLabel(code, o.grams),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   return AISLES.map((aisle) => ({
     aisle,
-    items: [...grams.entries()]
-      .filter(([code]) => ITEMS[code].aisle === aisle)
-      .map(([code, g]) => ({
-        code,
-        name: ITEMS[code].name,
-        grams: g,
-        quantity: quantityLabel(code, g),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name, 'es')),
+    items:
+      aisle === 'OTHER'
+        ? ownItems
+        : [...grams.entries()]
+            .filter(([code]) => ITEMS[code].aisle === aisle)
+            .map(([code, g]) => ({
+              code,
+              name: ITEMS[code].name,
+              grams: g,
+              quantity: quantityLabel(code, g),
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name, 'es')),
   })).filter((section) => section.items.length > 0);
 }

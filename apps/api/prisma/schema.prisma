@@ -292,6 +292,7 @@ model User {
   brioPlannedSessions  BrioPlannedSession[]
   brioRoutines         BrioRoutine[]
   brioMenuChoices      BrioMenuChoice[]
+  brioPlannedMeals     BrioPlannedMeal[]
   brioShoppingChecks   BrioShoppingCheck[]
   brioSocialProfile    BrioSocialProfile?
   brioFollowing        BrioFollow[]                 @relation("BrioFollower")
@@ -2695,9 +2696,10 @@ model BrioFood {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner       User?             @relation("BrioFoodOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  servings    BrioFoodServing[]
-  mealEntries BrioMealEntry[]
+  owner        User?             @relation("BrioFoodOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  servings     BrioFoodServing[]
+  mealEntries  BrioMealEntry[]
+  plannedMeals BrioPlannedMeal[]
 
   @@index([ownerUserId])
   @@index([name])
@@ -2715,8 +2717,9 @@ model BrioFoodServing {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  food        BrioFood        @relation(fields: [foodId], references: [id], onDelete: Cascade)
-  mealEntries BrioMealEntry[]
+  food         BrioFood          @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  mealEntries  BrioMealEntry[]
+  plannedMeals BrioPlannedMeal[]
 
   @@unique([foodId, label])
   @@map("brio_food_serving")
@@ -3312,6 +3315,44 @@ model BrioMenuChoice {
 
   @@id([userId, day, meal])
   @@map("brio_menu_choice")
+}
+
+/// Comida planificada en el menú de la semana: un alimento o receta (o algo
+/// sin catálogo, "menú del día, 700 kcal") que la persona pone en una comida de
+/// un día. Si una comida tiene alguna, sustituye al plato sugerido. Guarda un
+/// snapshot de kcal y macros, como `BrioMealEntry`, y se puede apuntar tal cual
+/// al diario cuando llega el día.
+model BrioPlannedMeal {
+  id     String   @id @default(uuid()) @db.Char(36)
+  userId String   @map("user_id") @db.Char(36)
+  day    DateTime @db.Date
+  /// BREAKFAST, LUNCH, SNACK o DINNER.
+  meal   String   @db.VarChar(16)
+
+  foodId       String? @map("food_id") @db.Char(36)
+  servingId    String? @map("serving_id") @db.Char(36)
+  /// Etiqueta de la ración elegida ("1 ración", "1 rebanada"), como snapshot.
+  servingLabel String? @map("serving_label") @db.VarChar(80)
+  name         String  @db.VarChar(200)
+  /// Lo que eligió la persona: raciones si hay ración, si no gramos.
+  quantity     Decimal @db.Decimal(7, 2)
+  quantityG    Decimal @map("quantity_g") @db.Decimal(7, 2)
+
+  kcal     Int
+  proteinG Decimal @map("protein_g") @db.Decimal(6, 2)
+  carbsG   Decimal @map("carbs_g") @db.Decimal(6, 2)
+  fatG     Decimal @map("fat_g") @db.Decimal(6, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  food    BrioFood?        @relation(fields: [foodId], references: [id], onDelete: SetNull)
+  serving BrioFoodServing? @relation(fields: [servingId], references: [id], onDelete: SetNull)
+
+  @@index([userId, day])
+  @@index([foodId])
+  @@index([servingId])
+  @@map("brio_planned_meal")
 }
 
 /// Producto de la lista de la compra de una semana ya marcado como comprado.

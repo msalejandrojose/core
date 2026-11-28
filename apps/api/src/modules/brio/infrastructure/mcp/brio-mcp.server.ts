@@ -19,7 +19,9 @@ export const MCP_INSTRUCTIONS =
   'Herramientas de Brío, la app de entreno y nutrición de la persona con la que hablas. ' +
   'Las fechas van en YYYY-MM-DD en su zona horaria; si no te dice el día, es hoy. ' +
   'Lee antes de escribir (brio_get_day, brio_get_plan_week…) y confirma con ella antes de ' +
-  'sustituir una sesión ya planificada o borrar algo.';
+  'sustituir una sesión ya planificada o borrar algo. ' +
+  'El menú de la semana se planifica por día y comida (brio_get_meal_plan, brio_plan_meal) con sus alimentos y recetas (brio_search_foods, brio_list_recipes); ' +
+  'los entrenos de cada día pueden usar sus rutinas guardadas (brio_list_routines → routineId en brio_set_plan_day).';
 
 /** Herramientas que se publican: las de Brío (el registro podría tener de otros módulos). */
 export function mcpTools(all: AgentTool[]): AgentTool[] {
