@@ -112,6 +112,7 @@ import { BrioPlanController } from './infrastructure/http/brio-plan.controller';
 import { BrioMenuController } from './infrastructure/http/brio-menu.controller';
 import { PrismaBrioMenuRepository } from './infrastructure/persistence/prisma-brio-menu.repository';
 import { BRIO_MENU_REPOSITORY } from './application/ports/menu.port';
+import { GetPlanFavoritesUseCase } from './application/use-cases/plan-favorites.use-case';
 import {
   AddPlannedMealUseCase,
   CheckShoppingItemUseCase,
@@ -331,6 +332,7 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     CompletePlannedDayUseCase,
     FillPlanWeekUseCase,
     WeekTemplateUseCase,
+    GetPlanFavoritesUseCase,
     // Menús y lista de la compra.
     GetMenuWeekUseCase,
     SwapMenuDishUseCase,

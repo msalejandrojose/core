@@ -4,26 +4,21 @@ import { IonContent, IonPage } from '@ionic/react';
 import { toast } from '@/lib/toast';
 import { isApiError } from '../api';
 import { formatNumber } from '../format';
-import { Chevron, Segmented } from '../ui/kit';
+import { CheckCircle, Chevron, Segmented } from '../ui/kit';
+import { ActivityIcon } from '../ui/activity-icons';
 import { hevyApi, hevyErrorText, useHevyStatus } from '../profile/hevy.api';
 import { routineSummary } from '../routines/routine-draft';
 import { newRoutineForDayPath, routinesForKind, sessionFromRoutine, useRoutinePick } from '../routines/routine-pick';
 import { useRoutines, type Routine } from '../routines/routines.api';
-import { planApi, usePlanWeekData, type PlanLoad } from './plan.api';
+import { planApi, usePlanWeekData, type PlanFavorite, type PlanLoad } from './plan.api';
+import { favoriteForm, favoriteMeta, hasDistance, isFavoriteSelected, selectionKey } from './session-pick';
 import { LOAD_CLASS, LOAD_LABEL, STATUS_TEXT, dayFull, dayNumber, fmtMinutes } from './plan-labels';
 import { usePlanTemplates } from './usePlanTemplates';
 import './plan.css';
 import '../performance/performance.css';
 
-type Kind = 'RUN' | 'STRENGTH' | 'CYCLE' | 'OTHER';
-const KINDS: { value: Kind; label: string }[] = [
-  { value: 'RUN', label: 'Carrera' },
-  { value: 'STRENGTH', label: 'Fuerza' },
-  { value: 'CYCLE', label: 'Bici' },
-  { value: 'OTHER', label: 'Otro' },
-];
+// El descanso se elige arriba, como una opción más; aquí solo la intensidad.
 const LOADS: { value: PlanLoad; label: string }[] = [
-  { value: 'REST', label: 'Descanso' },
   { value: 'LOW', label: 'Baja' },
   { value: 'MEDIUM', label: 'Media' },
   { value: 'HIGH', label: 'Alta' },
@@ -52,7 +47,9 @@ export default function EditSessionPage() {
   const entry = data?.days.find((d) => d.day === (day ?? data.today));
   const planned = entry?.planned ?? null;
 
-  const [kind, setKind] = useState<string>('RUN');
+  const [kind, setKind] = useState<string>('OTHER');
+  const [favorites, setFavorites] = useState<PlanFavorite[]>([]);
+  const [showAll, setShowAll] = useState(false);
   const [title, setTitle] = useState('');
   const [load, setLoad] = useState<PlanLoad>('MEDIUM');
   const [time, setTime] = useState('');
@@ -85,7 +82,7 @@ export default function EditSessionPage() {
     if (!entry || loadedFor === entry.day) return;
     setLoadedFor(entry.day);
     const p = entry.planned;
-    setKind(p?.kind ?? 'RUN');
+    setKind(p?.kind ?? 'OTHER');
     setTitle(p?.title ?? '');
     setLoad(p?.load ?? 'MEDIUM');
     setTime(p?.startTime ?? '');
@@ -97,6 +94,17 @@ export default function EditSessionPage() {
     setTemplateCode(p?.templateCode ?? null);
     setRoutineId(typeof p?.structure?.routineId === 'string' ? p.structure.routineId : null);
   }, [entry, loadedFor]);
+
+  useEffect(() => {
+    let alive = true;
+    planApi
+      .favorites()
+      .then((f) => alive && setFavorites(f))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Vuelta del editor con una rutina recién creada para este día: se recarga la lista y se elige.
   const pickedId = pick && entry && pick.day === entry.day ? pick.routineId : null;
@@ -157,6 +165,33 @@ export default function EditSessionPage() {
     setReps(typeof t.structure?.reps === 'number' ? t.structure.reps : null);
   }
 
+  /** Uno de «lo que más repites»: se rellena con lo de siempre (rutina, duración, intensidad). */
+  function chooseFavorite(f: PlanFavorite) {
+    const form = favoriteForm(f, templates);
+    setRoutineId(form.routineId);
+    setTemplateCode(form.templateCode);
+    setKind(form.kind);
+    setTitle(form.title);
+    setLoad(form.load === 'REST' ? 'MEDIUM' : form.load);
+    setMinutes(form.minutes);
+    setKm(form.km);
+    setReps(form.reps);
+  }
+
+  /** Una sesión tipo de «Otra actividad» (o el descanso): sin rutina. */
+  function chooseTemplate(code: string) {
+    applyTemplate(code);
+    setRoutineId(null);
+  }
+
+  /** Una rutina de «Otra actividad». */
+  function pickRoutine(r: Routine) {
+    chooseRoutine(r);
+    setTemplateCode(null);
+    setReps(null);
+    if (load === 'REST') setLoad('MEDIUM');
+  }
+
   function changeReps(delta: number) {
     setReps((r) => {
       const next = Math.min(20, Math.max(2, (r ?? 6) + delta));
@@ -184,7 +219,7 @@ export default function EditSessionPage() {
 
   const full = dayFull(entry.day);
   const heading = `${full[0].toUpperCase()}${full.slice(1)} ${dayNumber(entry.day)}`;
-  const isCardio = kind !== 'STRENGTH' && kind !== 'OTHER';
+  const isCardio = hasDistance(kind);
   const diet = data?.diet?.find((d) => d.day === entry.day) ?? null;
   const canCheck = !!planned && planned.load !== 'REST' && entry.day <= (data?.today ?? '');
   const done = entry.status === 'DONE';
@@ -192,6 +227,10 @@ export default function EditSessionPage() {
   const structure = routineId ? { ...(withReps ?? planned?.structure ?? {}), routineId } : withoutRoutine(withReps);
   const routine = routines?.find((r) => r.id === routineId) ?? null;
   const routineList = routinesForKind(routines ?? [], kind);
+  // «Otra actividad» se abre sola si lo elegido no está entre lo que más repites.
+  const chosen = selectionKey(routineId, templateCode) ?? (title.trim() ? 'n' : null);
+  const inFavorites = favorites.some((f) => isFavoriteSelected(f, { routineId, templateCode, title }));
+  const showMore = showAll || !favorites.length || (load !== 'REST' && !!chosen && !inFavorites);
 
   const save = () =>
     run(
@@ -286,91 +325,127 @@ export default function EditSessionPage() {
 
           <section className="rk-section" aria-labelledby="plan-s">
             <div className="rk-sechead">
-              <h2 id="plan-s">Plan del día</h2>
+              <h2 id="plan-s">{favorites.length ? 'Lo que más repites' : '¿Qué toca?'}</h2>
             </div>
-            <div className="plan__chips">
-              {templates.map((t) => (
-                <button key={t.code} type="button" aria-pressed={templateCode === t.code} className={`plan__chip${templateCode === t.code ? ' is-on' : ''}`} onClick={() => applyTemplate(t.code)}>
-                  {t.short}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <Segmented label="Tipo de sesión" options={KINDS} value={kind as Kind} onChange={(k) => setKind(k)} />
-
-          <section className="rk-section" aria-labelledby="plan-r">
-            <div className="rk-sechead">
-              <h2 id="plan-r">Rutina</h2>
-            </div>
-            <div className="plan__chips" role="group" aria-label="Rutina del día">
-              <button type="button" aria-pressed={routineId === null} className={`plan__chip${routineId === null ? ' is-on' : ''}`} onClick={() => chooseRoutine(null)}>
-                Sin rutina
+            {favorites.length ? (
+              <ul className="rk-list" aria-label="Lo que más repites">
+                {favorites.map((f) => {
+                  const on = load !== 'REST' && isFavoriteSelected(f, { routineId, templateCode, title });
+                  return (
+                    <li key={f.key}>
+                      <button type="button" className={`rk-row session__opt${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => chooseFavorite(f)}>
+                        <ActivityIcon code={f.templateCode} kind={f.kind} name={f.title} tone="soft" size={36} />
+                        <span className="rk-row__main">
+                          <span className="rk-row__title">{f.title}</span>
+                          <span className="rk-row__sub">{favoriteMeta(f)}</span>
+                        </span>
+                        <CheckCircle on={on} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            <div className="plan__chips session__quick">
+              <button type="button" aria-pressed={load === 'REST'} className={`plan__chip${load === 'REST' ? ' is-on' : ''}`} onClick={() => chooseTemplate('rest')}>
+                Descanso
               </button>
-              {routineList.map((r) => (
-                <button key={r.id} type="button" aria-pressed={routineId === r.id} className={`plan__chip${routineId === r.id ? ' is-on' : ''}`} onClick={() => chooseRoutine(r)}>
-                  {r.name}
+              {favorites.length ? (
+                <button type="button" aria-expanded={showMore} className={`plan__chip${showMore ? ' is-open' : ''}`} onClick={() => setShowAll((v) => !v)}>
+                  {showMore ? 'Ocultar otras' : 'Otra actividad…'}
                 </button>
-              ))}
-              <Link to={newRoutineForDayPath(entry.day, kind)} className="plan__chip plan__chip--new">
-                + Nueva rutina
-              </Link>
+              ) : null}
             </div>
-            {routine ? (
-              <p className="rk-note plan__routine-sub">
-                {routineSummary(routine) || 'Rutina guardada'}
-                {routine.kind === 'STRENGTH' && routine.exercises.length
-                  ? ` · ${routine.exercises
-                      .slice(0, 4)
-                      .map((e) => e.name)
-                      .join(', ')}${routine.exercises.length > 4 ? '…' : ''}`
-                  : ''}
-              </p>
-            ) : routineId && routines !== null ? (
-              <p className="rk-note plan__routine-sub">La rutina que tenía este día ya no existe.</p>
-            ) : routines !== null && routines.length === 0 ? (
-              <p className="rk-note plan__routine-sub">Aún no tienes rutinas. Crea una y quedará elegida para este día.</p>
-            ) : null}
-          </section>
-
-          <div className="rk-list">
-            <label className="rk-row perf__field">
-              <span className="rk-row__main rk-row__title">Nombre</span>
-              <input type="text" className="perf__text" value={title} maxLength={120} placeholder="Rodaje suave" onChange={(e) => setTitle(e.target.value)} />
-            </label>
-            <label className="rk-row perf__field">
-              <span className="rk-row__main rk-row__title">Hora</span>
-              <input type="time" className="perf__date" value={time} onChange={(e) => setTime(e.target.value)} />
-            </label>
-            <label className="rk-row perf__field">
-              <span className="rk-row__main rk-row__title">Duración (min)</span>
-              <input type="text" inputMode="numeric" value={minutes} placeholder="—" onChange={(e) => setMinutes(e.target.value)} />
-            </label>
-            {isCardio ? (
-              <label className="rk-row perf__field">
-                <span className="rk-row__main rk-row__title">Distancia (km)</span>
-                <input type="text" inputMode="decimal" value={km} placeholder="—" onChange={(e) => setKm(e.target.value)} />
-              </label>
-            ) : null}
-            {reps != null ? (
-              <div className="rk-row perf__field">
-                <span className="rk-row__main">
-                  <span className="rk-row__title">Series</span>
-                  <span className="rk-row__sub">{reps} repeticiones</span>
-                </span>
-                <div className="plan__pm">
-                  <button type="button" aria-label="Una serie menos" onClick={() => changeReps(-1)}>
-                    −
-                  </button>
-                  <button type="button" aria-label="Una serie más" onClick={() => changeReps(1)}>
-                    +
-                  </button>
+            {showMore ? (
+              <div className="session__more">
+                <span className="session__label">Tus rutinas</span>
+                <div className="plan__chips" role="group" aria-label="Tus rutinas">
+                  {routineList.map((r) => (
+                    <button key={r.id} type="button" aria-pressed={routineId === r.id} className={`plan__chip${routineId === r.id ? ' is-on' : ''}`} onClick={() => pickRoutine(r)}>
+                      {r.name}
+                    </button>
+                  ))}
+                  <Link to={newRoutineForDayPath(entry.day, kind)} className="plan__chip plan__chip--new">
+                    + Nueva rutina
+                  </Link>
+                </div>
+                <span className="session__label">Sesiones tipo</span>
+                <div className="plan__chips" role="group" aria-label="Sesiones tipo">
+                  {templates
+                    .filter((t) => t.code !== 'rest')
+                    .map((t) => {
+                      const on = !routineId && templateCode === t.code;
+                      return (
+                        <button key={t.code} type="button" aria-pressed={on} className={`plan__chip${on ? ' is-on' : ''}`} onClick={() => chooseTemplate(t.code)}>
+                          {t.short}
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             ) : null}
-          </div>
+            {routine && load !== 'REST' ? (
+              <p className="rk-note plan__routine-sub">
+                {routine.name}: {routineSummary(routine) || 'rutina guardada'}
+                {routine.kind === 'STRENGTH' && routine.exercises.length
+                  ? ` · ${routine.exercises
+                      .slice(0, 3)
+                      .map((e) => e.name)
+                      .join(', ')}${routine.exercises.length > 3 ? '…' : ''}`
+                  : ''}
+              </p>
+            ) : routineId && routines !== null && !routine ? (
+              <p className="rk-note plan__routine-sub">La rutina que tenía este día ya no existe.</p>
+            ) : null}
+          </section>
 
-          <Segmented label="Carga" options={LOADS} value={load} onChange={setLoad} />
+          {load !== 'REST' ? (
+            <>
+              <div className="rk-list">
+                <label className="rk-row perf__field">
+                  <span className="rk-row__main rk-row__title">Nombre</span>
+                  <input type="text" className="perf__text" value={title} maxLength={120} placeholder="Qué vas a hacer" onChange={(e) => setTitle(e.target.value)} />
+                </label>
+                <label className="rk-row perf__field">
+                  <span className="rk-row__main rk-row__title">Hora</span>
+                  <input type="time" className="perf__date" value={time} onChange={(e) => setTime(e.target.value)} />
+                </label>
+                <label className="rk-row perf__field">
+                  <span className="rk-row__main rk-row__title">Duración (min)</span>
+                  <input type="text" inputMode="numeric" value={minutes} placeholder="—" onChange={(e) => setMinutes(e.target.value)} />
+                </label>
+                {isCardio ? (
+                  <label className="rk-row perf__field">
+                    <span className="rk-row__main rk-row__title">Distancia (km)</span>
+                    <input type="text" inputMode="decimal" value={km} placeholder="—" onChange={(e) => setKm(e.target.value)} />
+                  </label>
+                ) : null}
+                {reps != null ? (
+                  <div className="rk-row perf__field">
+                    <span className="rk-row__main">
+                      <span className="rk-row__title">Series</span>
+                      <span className="rk-row__sub">{reps} repeticiones</span>
+                    </span>
+                    <div className="plan__pm">
+                      <button type="button" aria-label="Una serie menos" onClick={() => changeReps(-1)}>
+                        −
+                      </button>
+                      <button type="button" aria-label="Una serie más" onClick={() => changeReps(1)}>
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="session__load">
+                <span className="session__label">Intensidad · mueve las kcal del día</span>
+                <Segmented label="Intensidad" options={LOADS} value={load} onChange={setLoad} small />
+              </div>
+            </>
+          ) : (
+            <p className="rk-note">Día de descanso: ese día comes algo menos, porque gastas menos.</p>
+          )}
 
           <textarea
             className="perf__notes"

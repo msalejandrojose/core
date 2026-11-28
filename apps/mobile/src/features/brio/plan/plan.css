@@ -1118,3 +1118,36 @@
   border-radius: 50%;
   background: var(--brio-food-ink);
 }
+
+/* Editar sesión: lo que más repites y otras actividades */
+.session__opt {
+  width: 100%;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.session__quick {
+  margin-top: 10px;
+}
+.plan__chip.is-open {
+  border-color: var(--brio-tint);
+  color: var(--brio-tint);
+}
+.session__more {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.session__label {
+  margin: 4px 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brio-ink-muted);
+}
+.session__load {
+  display: grid;
+  gap: 6px;
+}
