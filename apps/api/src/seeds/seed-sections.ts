@@ -371,6 +371,13 @@ const BACKOFFICE_TREE: SeedNode[] = [
         route: '/ota/bundles',
         order: 0,
       },
+      {
+        code: 'ota.builds',
+        name: 'Builds',
+        icon: 'Hammer',
+        route: '/ota/builds',
+        order: 1,
+      },
     ],
   },
 ];

@@ -173,6 +173,9 @@ const AiModelsPage = lazy(() =>
 const OtaBundlesPage = lazy(() =>
   import('@/features/ota/OtaBundlesPage').then((m) => ({ default: m.OtaBundlesPage })),
 );
+const MobileBuildsPage = lazy(() =>
+  import('@/features/mobile-builds/MobileBuildsPage').then((m) => ({ default: m.MobileBuildsPage })),
+);
 const BrioFoodsPage = lazy(() =>
   import('@/features/brio/BrioFoodsPage').then((m) => ({ default: m.BrioFoodsPage })),
 );
@@ -369,6 +372,7 @@ export default function App() {
               <Route path="/ai/models" element={<AiModelsPage />} />
               <Route path="/ai/usage" element={<AiUsagePage />} />
               <Route path="/ota/bundles" element={<OtaBundlesPage />} />
+              <Route path="/ota/builds" element={<MobileBuildsPage />} />
               <Route path="/brio/foods" element={<BrioFoodsPage />} />
               <Route path="/brio/exercises" element={<BrioExercisesPage />} />
               <Route path="/brio/activity-types" element={<BrioActivityTypesPage />} />
