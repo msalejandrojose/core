@@ -34,8 +34,13 @@ export function useLaunchMobileBuild() {
       return data;
     },
     onSuccess(b) {
-      void qc.invalidateQueries({ queryKey: KEY });
-      toast.success(`Build lanzado: ${b?.platform} · ${b?.profile}`);
+      if (!b) return;
+      // Arriba de la lista al momento (y así pasa a refrescarse cada 5 s):
+      // la lista de GitHub tarda unos segundos en traerlo.
+      qc.setQueryData<MobileBuildList>(KEY, (old) =>
+        old ? { ...old, builds: [b, ...old.builds.filter((x) => x.id !== b.id)] } : old,
+      );
+      toast.success(`Build lanzado: ${b.platform === 'ios' ? 'iOS' : 'Android'} · ${b.profile}`);
     },
     onError: (e) => toast.error(getApiErrorMessage(e, 'No se pudo lanzar el build')),
   });
