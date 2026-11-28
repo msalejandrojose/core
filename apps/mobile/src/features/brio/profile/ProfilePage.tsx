@@ -11,6 +11,7 @@ import { useBrioStore } from '../brio.store';
 import { BackLink, Chevron, NavRow, SectionHeader } from '../ui/kit';
 import { activeAlerts, useAlertPrefs } from '../pages/alert-prefs';
 import { downloadMyData, profileBody, shortDate } from './profile-body';
+import { AppVersion } from './AppVersion';
 import '../sheets/sheets.css';
 import './profile.css';
 
@@ -203,7 +204,7 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <span className="profile__version">Brío 1.0 (1)</span>
+          <AppVersion />
         </div>
 
         <IonModal
