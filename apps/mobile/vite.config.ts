@@ -3,9 +3,24 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
+
+// Commit de la web que va dentro de la app (pie de Ajustes): así se ve qué OTA
+// está corriendo. En GitHub Actions viene en GITHUB_SHA; en local, de git.
+function webBuild(): string {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short=7 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch {
+    return 'dev';
+  }
+}
 
 // Dev server en el puerto que `stack.config.json` reserva para mobile (4400).
 export default defineConfig({
+  define: {
+    __BRIO_WEB_BUILD__: JSON.stringify(webBuild()),
+  },
   plugins: [
     react(),
     // PWA instalable (MOB-15): Workbox precachea el app shell para arranque

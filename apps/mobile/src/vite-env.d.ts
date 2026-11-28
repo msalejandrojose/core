@@ -13,3 +13,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Commit de la web (vite.config.ts): cambia con cada OTA. Se ve en el pie de Ajustes. */
+declare const __BRIO_WEB_BUILD__: string;
