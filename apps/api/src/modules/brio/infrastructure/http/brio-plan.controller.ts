@@ -22,6 +22,8 @@ import { Auth } from '../../../iam/infrastructure/http/decorators/auth.decorator
 import { CurrentUser } from '../../../iam/infrastructure/http/decorators/current-user.decorator';
 import type { Plan, PlannedSession } from '../../domain/entities/plan.entity';
 import { PLAN_TEMPLATES, type PlanTemplate } from '../../domain/services/plan';
+import type { PlanFavorite } from '../../domain/services/plan-favorites';
+import { GetPlanFavoritesUseCase } from '../../application/use-cases/plan-favorites.use-case';
 import {
   ArchivePlanUseCase,
   ClearPlannedDayUseCase,
@@ -68,6 +70,7 @@ export class BrioPlanController {
     private readonly completeDay: CompletePlannedDayUseCase,
     private readonly fillWeek: FillPlanWeekUseCase,
     private readonly weekTemplate: WeekTemplateUseCase,
+    private readonly getFavorites: GetPlanFavoritesUseCase,
   ) {}
 
   @Get('week')
@@ -84,6 +87,18 @@ export class BrioPlanController {
     @Query() query: DayQueryDto,
   ): Promise<PlanWeek> {
     return this.getWeek.execute(current.sub, query.day ?? null);
+  }
+
+  @Get('favorites')
+  @ApiOperation({
+    summary:
+      'Lo que más repites: rutinas y sesiones tipo que más planificas o haces.',
+  })
+  @ApiOkResponse({ description: 'Hasta 5, de más a menos veces.' })
+  favorites(
+    @CurrentUser() current: AccessTokenPayload,
+  ): Promise<PlanFavorite[]> {
+    return this.getFavorites.execute(current.sub);
   }
 
   @Get('templates')

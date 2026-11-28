@@ -111,7 +111,22 @@ export interface WeekSlot {
   routineId: string | null;
 }
 
+/** «Lo que más repites»: rutina o sesión tipo que más planifica o hace la persona. */
+export interface PlanFavorite {
+  key: string;
+  routineId: string | null;
+  templateCode: string | null;
+  title: string;
+  kind: string;
+  load: PlanLoad;
+  durationMin: number | null;
+  distanceM: number | null;
+  times: number;
+  lastDay: string | null;
+}
+
 export const planApi = {
+  favorites: () => call<PlanFavorite[]>('GET', '/brio/plan/favorites'),
   week: (day?: string) =>
     call<PlanWeek>('GET', '/brio/plan/week', { params: { query: day ? { day } : {} } }),
   templates: () => call<PlanTemplate[]>('GET', '/brio/plan/templates'),
