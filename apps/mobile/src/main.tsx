@@ -8,6 +8,7 @@ import { ThemeProvider } from './theme/ThemeProvider';
 import { installSessionReset } from './features/brio/session-reset';
 import { installSessionKeepAlive } from './lib/session';
 import { notifyAppReady } from './lib/live-update';
+import { installOtaNotices } from './lib/ota-notices';
 import './i18n';
 
 /* CSS base de Ionic (mínimo necesario para el layout y la tipografía). */
@@ -52,3 +53,5 @@ createRoot(container).render(
 
 // La web ya pinta: el plugin de actualizaciones en caliente no tiene que volver atrás.
 notifyAppReady();
+// «Hay una versión nueva» al bajarla y «Brío se ha actualizado» al abrir con ella.
+installOtaNotices();
