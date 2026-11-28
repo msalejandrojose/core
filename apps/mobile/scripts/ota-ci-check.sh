@@ -16,6 +16,8 @@
 #     web (p. ej. solo el Swift de un widget), un commit con «[ota-native-ok]»
 #     lo deja pasar.
 set -euo pipefail
+# Ojo con `pipefail`: `cmd | grep -q` falla cuando grep sale antes de leerlo
+# todo (cmd muere con SIGPIPE, 141). Aquí se usa `grep … >/dev/null`.
 
 BASE="${1:?base}"
 HEAD="${2:?head}"
@@ -31,7 +33,7 @@ result() {
   echo "$2"
 }
 
-if git log -1 --format=%B "$HEAD" | grep -qiF '[skip ota]'; then
+if git log -1 --format=%B "$HEAD" | grep -iF '[skip ota]' >/dev/null; then
   result false "No se publica: el commit lleva [skip ota]."
   exit 0
 fi
@@ -44,7 +46,7 @@ while IFS= read -r f; do
 done < <(git diff --name-only "$BASE" "$HEAD")
 # Plugins nativos añadidos, quitados o actualizados (package.json o lockfile).
 if git diff -U0 "$BASE" "$HEAD" -- "$M/package.json" pnpm-lock.yaml |
-  grep -E '^[+-][^+-]' | grep -qE '@capacitor|@capgo|capacitor-|cordova'; then
+  grep -E '^[+-][^+-]' | grep -E '@capacitor|@capgo|capacitor-|cordova' >/dev/null; then
   native+=("dependencias de Capacitor")
 fi
 
@@ -52,7 +54,7 @@ if ((${#native[@]})); then
   min() { git show "$1:$M/ota/config.json" 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).minNativeVersion)}catch{console.log("")}})'; }
   if [[ "$(min "$BASE")" != "$(min "$HEAD")" ]]; then
     echo "Cambia algo nativo, pero minNativeVersion pasa a $(min "$HEAD"): solo lo recibirán los builds nativos nuevos."
-  elif git log --format=%B "$BASE..$HEAD" | grep -qiF '[ota-native-ok]'; then
+  elif git log --format=%B "$BASE..$HEAD" | grep -iF '[ota-native-ok]' >/dev/null; then
     echo "Cambia algo nativo (${native[*]}), pero un commit lleva [ota-native-ok]."
   else
     result false "No se publica: desde la última OTA cambia algo nativo (${native[*]}) y minNativeVersion sigue en $(min "$HEAD"). Sube minNativeVersion en $M/ota/config.json y saca build nativo (o, si la web no depende de ese cambio, haz un commit con [ota-native-ok])."
