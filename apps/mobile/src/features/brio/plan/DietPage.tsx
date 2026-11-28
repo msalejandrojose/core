@@ -12,6 +12,7 @@ import { useRegisterStore } from '../register.store';
 import { MEAL_LABEL, menuApi, type Meal, type MenuMeal, type MenuWeek } from './menu.api';
 import { isPlanned } from './plan-meal';
 import { usePlanWeekData, type PlanLoad } from './plan.api';
+import { WeekNav } from './WeekNav';
 import { LOAD_CLASS, LOAD_LABEL, dayFull, dayLetter, dayNumber, fmtMinutes } from './plan-labels';
 import { usePlanWeek } from './usePlanWeek';
 import './plan.css';
@@ -83,8 +84,14 @@ function GoalCard({ profile }: { profile: BrioProfile | null }) {
  */
 export default function DietPage() {
   const { profile } = usePlanWeek();
-  const { data } = usePlanWeekData();
+  // Semana que se ve: undefined = la actual; si no, un día de la semana elegida.
+  const [anchor, setAnchor] = useState<string | undefined>(undefined);
+  const { data } = usePlanWeekData(anchor);
   const [selDay, setSelDay] = useState<string | null>(null);
+  const changeWeek = (day: string | undefined) => {
+    setAnchor(day);
+    setSelDay(day ?? null);
+  };
   const [menu, setMenu] = useState<MenuWeek | null>(null);
   const [busy, setBusy] = useState(false);
   const refreshDay = useBrioStore((s) => s.refreshDay);
@@ -92,20 +99,20 @@ export default function DietPage() {
   useEffect(() => {
     let alive = true;
     menuApi
-      .week()
+      .week(anchor)
       .then((m) => alive && setMenu(m))
       .catch(() => undefined);
     return () => {
       alive = false;
     };
-  }, []);
+  }, [anchor]);
   // Al volver de «Añadir al menú» se recarga para enseñar lo que se puso.
   useIonViewWillEnter(() => {
     menuApi
-      .week()
+      .week(anchor)
       .then(setMenu)
       .catch(() => undefined);
-  });
+  }, [anchor]);
   const prot = profile?.proteinTargetG ?? 150;
   const days = (data?.days ?? []).map((d, i) => {
     const diet = data?.diet?.[i];
@@ -134,6 +141,7 @@ export default function DietPage() {
   const min = Math.min(...days.map((d) => d.k)) - 400;
   // El menú viene ajustado al objetivo guardado; si previsualizas otro objetivo, la diferencia se ve en «de X kcal».
   const meals = menu?.days?.find((d) => d.day === cur.date)?.meals ?? [];
+  const shoppingPath = `/tabs/comida/compra${data && !(data.today >= data.from && data.today <= data.to) ? `?semana=${data.from}` : ''}`;
 
   async function act(action: () => Promise<MenuWeek | void>, fail: string, ok?: string) {
     setBusy(true);
@@ -179,7 +187,7 @@ export default function DietPage() {
           <NavRow
             actions={
               <>
-                <Link to="/tabs/comida/compra" aria-label="Lista de la compra" className="rk-iconbtn">
+                <Link to={shoppingPath} aria-label="Lista de la compra" className="rk-iconbtn">
                   <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6M10 21h.01M17 21h.01" />
                   </svg>
@@ -199,6 +207,8 @@ export default function DietPage() {
           <h2 className="food-hub__h2">Menú de la semana</h2>
 
           <GoalCard profile={profile} />
+
+          {data ? <WeekNav from={data.from} to={data.to} today={data.today} isoWeek={data.isoWeek} onChange={changeWeek} /> : null}
 
           <section aria-label="Calorías por día" className="diet__chart">
             <div role="tablist" aria-label="Días" className="diet__days">
@@ -338,7 +348,7 @@ export default function DietPage() {
             Los platos sugeridos se ajustan a las calorías del día; lo que eliges tú va tal cual. Toca «Elegir plato o receta» para poner lo que quieras comer ese día. Los valores son aproximados.
           </p>
 
-          <Link to="/tabs/comida/compra" className="plan__btn">
+          <Link to={shoppingPath} className="plan__btn">
             Ver la lista de la compra
           </Link>
         </div>
