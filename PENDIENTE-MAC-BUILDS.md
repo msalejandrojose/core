@@ -112,7 +112,7 @@ Documentación: `apps/mobile/NATIVE.md`, en las dos primeras secciones
       ```
       El nuevo pone `MARKETING_VERSION = 1.0.0` y un número de build grande
       (minutos desde el 1-1-2026); es lo que se quiere.
-- [ ] Compilar en Xcode para ver que el proyecto generado está bien antes de
+- [x] Compilar en Xcode para ver que el proyecto generado está bien antes de
       meter fastlane por medio:
       ```bash
       pnpm --filter @core/mobile exec cap open ios
@@ -153,13 +153,18 @@ Documentación: `apps/mobile/NATIVE.md`, en las dos primeras secciones
       > **28 nov:** sale «iPhone de Alejandro Jose · localNetwork» (ya estaba
       > emparejado por red), junto a los simuladores (`sameMachine`), así que
       > hay que pasar `device:"iPhone de Alejandro Jose"`.
-- [ ] Compilar e instalar en el iPhone sin cable:
+- [x] Compilar e instalar en el iPhone sin cable:
       ```bash
       bundle exec fastlane ios build profile:device
       # con varios dispositivos: … device:"iPhone de …"
       ```
       Tiene que compilar, instalar y abrir Brío. Queda
       `native-build/last-build.json` con el resultado.
+      > **28 nov:** la primera vez falló en `pod install`: dentro de
+      > `bundle exec` no se ve el `pod` del sistema. Se añadió `cocoapods` al
+      > `Gemfile`. Después compiló (Release, firma automática con la cuenta
+      > gratuita), instaló por Wi-Fi y abrió Brío 1.0.0 (476768). Se saltó la
+      > prueba en Xcode: el proyecto ya compilaba con `xcodebuild`.
 - [ ] En el iPhone: la app abre contra la API de producción y los datos siguen
       ahí (mismo bundle id y team, se instala encima). Widgets, Live Activity y
       Salud funcionan.
