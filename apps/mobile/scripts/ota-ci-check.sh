@@ -4,9 +4,10 @@
 #
 #   apps/mobile/scripts/ota-ci-check.sh <base> <head>
 #
-# <base> es el commit de la última OTA publicada (la etiqueta ota/<appId>) o, si
-# no hay, el commit anterior. Escribe `publish=true|false` en $GITHUB_OUTPUT (o
-# en stdout) y explica el motivo. No publica si:
+# <base> es el commit de la última OTA publicada (el último despliegue de GitHub
+# del entorno ota-<appId>) o, si no hay, el commit anterior. Escribe
+# `publish=true|false` en $GITHUB_OUTPUT (o en stdout) y explica el motivo. No
+# publica si:
 #   - el último commit lleva «[skip ota]» en el mensaje;
 #   - desde la última OTA cambia algo nativo (plugins de Capacitor,
 #     capacitor.config.ts, native/, parches de plugins) sin subir

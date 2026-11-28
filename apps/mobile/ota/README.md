@@ -71,8 +71,9 @@ Antes de publicar:
 - pasa los tests de la app;
 - si el mismo push despliega la API, espera a que acabe bien.
 
-Al publicar mueve la etiqueta `ota/es.aj.brio` a ese commit: es la «última
-OTA» con la que compara el siguiente push. Para no publicar un push concreto:
+Al publicar apunta ese commit como un despliegue de GitHub en el entorno
+`ota-es.aj.brio` (pestaña *Deployments* del repo): es la «última OTA» con la que
+compara el siguiente push. Para no publicar un push concreto:
 `[skip ota]` en el mensaje del commit.
 
 **La clave no está en GitHub**: está en **GCP Secret Manager**
