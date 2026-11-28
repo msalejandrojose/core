@@ -99,6 +99,10 @@ describe('widgets de iOS', () => {
     expect(parseDeepLink('brio://plan')).toEqual({ kind: 'route', path: '/tabs/entrenos/plan' });
     expect(parseDeepLink('brio://entreno?routine=r1')).toEqual({ kind: 'start-workout', routineId: 'r1' });
     expect(parseDeepLink('brio://entreno')).toEqual({ kind: 'start-workout', routineId: null });
+    expect(parseDeepLink('brio://registrar')).toEqual({ kind: 'register', sheet: 'menu' });
+    expect(parseDeepLink('brio://registrar/comida')).toEqual({ kind: 'register', sheet: 'meal' });
+    expect(parseDeepLink('brio://registrar/entreno/')).toEqual({ kind: 'register', sheet: 'activity' });
+    expect(parseDeepLink('brio://registrar/raro')).toEqual({ kind: 'register', sheet: 'menu' });
     expect(parseDeepLink('https://otra.cosa')).toBeNull();
   });
 });

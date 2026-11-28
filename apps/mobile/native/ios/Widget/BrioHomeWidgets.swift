@@ -36,6 +36,38 @@ private func sport(_ family: String?) -> (symbol: String, color: Color) {
     }
 }
 
+/// Empezar el entreno de hoy (con su rutina si la tiene) o, sin plan, registrar uno.
+private func workoutURL(_ w: BrioWidgetSnapshot.Workout?) -> URL {
+    if let w = w, w.state == "planned", let id = w.routineId,
+       let url = URL(string: "brio://entreno?routine=\(id)") {
+        return url
+    }
+    return URL(string: "brio://entreno")!
+}
+
+/// Botón de acción de los widgets: icono + texto en una cápsula.
+private struct ActionPill: View {
+    let symbol: String
+    let text: String
+    let filled: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: symbol)
+                .font(.system(size: 10, weight: .bold))
+            Text(text)
+                .font(.caption2.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .foregroundStyle(filled ? Color.white : brioTint)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity)
+        .background(Capsule().fill(filled ? brioTint : brioTint.opacity(0.12)))
+    }
+}
+
 // MARK: - Datos
 
 struct BrioEntry: TimelineEntry {
@@ -377,8 +409,7 @@ struct BrioWorkoutWidgetView: View {
 
     private var url: URL? {
         guard let w = entry.usable?.workout, w.state == "planned" else { return URL(string: "brio://hoy") }
-        if let id = w.routineId { return URL(string: "brio://entreno?routine=\(id)") }
-        return URL(string: "brio://entreno")
+        return workoutURL(w)
     }
 
     private func content(_ w: BrioWidgetSnapshot.Workout) -> some View {
@@ -525,52 +556,56 @@ struct BrioTodayWeekWidgetView: View {
 
     private func content(_ s: BrioWidgetSnapshot) -> some View {
         let trained = s.week.filter { $0.state == "done" }.count
+        let planned = s.workout.state == "planned"
         return HStack(spacing: 12) {
-            // Cada mitad abre lo suyo: el reloj, Hoy; la semana, el plan.
+            // Cada parte abre lo suyo: el reloj, Hoy; la semana, el plan; los botones, su acción.
             Link(destination: URL(string: "brio://hoy")!) {
-                TodayDial(s: s, size: 104)
+                TodayDial(s: s, size: 96)
             }
-            Link(destination: URL(string: "brio://plan")!) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Mi semana")
-                            .font(.subheadline.weight(.semibold))
-                        Spacer(minLength: 4)
-                        Text(trained == 1 ? "1 entrenado" : "\(trained) entrenados")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(moveColor)
-                            .lineLimit(1)
-                    }
-                    HStack(spacing: 0) {
-                        ForEach(s.week, id: \.day) { d in
-                            VStack(spacing: 4) {
-                                Text(d.letter)
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundStyle(d.isToday ? brioTint : .secondary)
-                                WeekDot(d: d, size: 21)
+            VStack(alignment: .leading, spacing: 8) {
+                Link(destination: URL(string: "brio://plan")!) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Mi semana")
+                                .font(.subheadline.weight(.semibold))
+                            Spacer(minLength: 4)
+                            Text(trained == 1 ? "1 entrenado" : "\(trained) entrenados")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(moveColor)
+                                .lineLimit(1)
+                        }
+                        HStack(spacing: 0) {
+                            ForEach(s.week, id: \.day) { d in
+                                VStack(spacing: 4) {
+                                    Text(d.letter)
+                                        .font(.caption2.weight(.bold))
+                                        .foregroundStyle(d.isToday ? brioTint : .secondary)
+                                    WeekDot(d: d, size: 21)
+                                }
+                                .frame(maxWidth: .infinity)
                             }
-                            .frame(maxWidth: .infinity)
                         }
                     }
-                    Spacer(minLength: 0)
-                    HStack(spacing: 10) {
-                        tag(moveColor, s.move.label)
-                        if let steps = s.steps { tag(stepsColor, steps.label) }
-                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                Spacer(minLength: 0)
+                HStack(spacing: 6) {
+                    // El entreno de hoy: empezarlo si está planificado; si no, registrar uno.
+                    Link(destination: workoutURL(s.workout)) {
+                        ActionPill(
+                            symbol: planned ? "play.fill" : sport(s.workout.family).symbol,
+                            text: planned ? (s.workout.title ?? "Empezar") : "Entreno",
+                            filled: true
+                        )
+                    }
+                    .accessibilityLabel(planned ? "Empezar \(s.workout.title ?? "el entreno de hoy")" : "Registrar un entreno de hoy")
+                    // Acción rápida: la hoja «Registrar» (comida, entreno, peso…).
+                    Link(destination: URL(string: "brio://registrar")!) {
+                        ActionPill(symbol: "plus", text: "Registrar", filled: false)
+                    }
+                    .accessibilityLabel("Registrar comida, entreno o peso")
+                }
             }
-        }
-    }
-
-    private func tag(_ color: Color, _ text: String) -> some View {
-        HStack(spacing: 4) {
-            Circle().fill(color).frame(width: 6, height: 6)
-            Text(text)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
@@ -581,7 +616,7 @@ struct BrioTodayWeekWidget: Widget {
             BrioTodayWeekWidgetView(entry: entry)
         }
         .configurationDisplayName("Hoy y semana")
-        .description("El reloj de la comida y tu semana de entrenos, juntos.")
+        .description("El reloj de la comida y tu semana de entrenos, con botones para empezar el entreno de hoy o registrar algo.")
         .supportedFamilies([.systemMedium])
     }
 }
