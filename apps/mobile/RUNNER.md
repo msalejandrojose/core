@@ -73,6 +73,11 @@ Si cambia el `PATH` (otra versión de node o ruby) o el `.env`: editar
 
 ## Lanzar un build
 
+GitHub solo deja lanzar a mano un workflow cuando el fichero está en la rama
+por defecto (`main`). Mientras `mobile-build.yml` no llegue a `main`, ni sale el
+botón ni funciona `gh workflow run` (da 404), aunque luego se elija otra rama al
+lanzarlo.
+
 Desde GitHub: Actions › Mobile build › *Run workflow*. Ahí se eligen la rama, la
 plataforma, el perfil y el móvil. Desde la terminal:
 

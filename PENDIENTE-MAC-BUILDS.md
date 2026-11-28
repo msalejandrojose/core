@@ -21,7 +21,7 @@ desde el backoffice. Plan por pasos:
 | 2. `apps/mobile/native.config.yml`: toda la config nativa en un fichero | Hecho |
 | 3. `pnpm native:prepare`: genera `ios/` y `android/` desde el YAML | Hecho, probado en Linux, **falta el Mac** |
 | 4. `apps/mobile/fastlane/Fastfile`: instalar en el móvil y subir a tiendas | Hecho, **sin probar** |
-| 5. Runner self-hosted de GitHub Actions en el Mac + `mobile-build.yml` | Workflow y `apps/mobile/RUNNER.md` hechos; **falta registrar el runner** |
+| 5. Runner self-hosted de GitHub Actions en el Mac + `mobile-build.yml` | Hecho: runner `mac-mini` en el Mac y build `ios · device` probado. **Falta que `mobile-build.yml` llegue a `main`** |
 | 6. API + página «Builds» en el backoffice | Pendiente |
 | 7. TestFlight, App Store y Google Play | Cuando haya cuentas de pago |
 
@@ -213,7 +213,24 @@ Errores probables y dónde mirar:
       desplegar la API (cambia el CORS en `apps/api/deploy/cloudrun.env.yaml`).
       Si Pages le da otra URL que `brio-backoffice.pages.dev` (nombre cogido),
       corregir el CORS con la que salga en el log del workflow.
-- [ ] Paso 5: registrar el runner en el Mac (`apps/mobile/RUNNER.md`) y lanzar un build `ios · device` desde Actions.
+- [x] Paso 5: registrar el runner en el Mac (`apps/mobile/RUNNER.md`) y lanzar un build `ios · device` desde Actions.
+      > **28 nov:** el runner `mac-mini` (etiqueta `brio-mac`) está en
+      > `~/actions-runner` como agente de launchd. Las variables van en su
+      > `.env`. En GitHub, las PRs de fuera piden aprobación siempre
+      > (`all_external_contributors`). La prueba compiló, firmó e instaló en el
+      > iPhone; antes hubo que arreglar tres cosas:
+      > - `generate:offline` no compilaba `@core/shared-types` en un checkout
+      >   limpio.
+      > - `SessionCreate` en el agente hacía fallar a codesign con
+      >   `errSecInternalComponent`.
+      > - Abrir la app con el iPhone bloqueado tumbaba el build.
+      >
+      > Como `workflow_dispatch` solo vale con el workflow en `main`, se
+      > probó con una rama temporal con trigger `push`, ya borrada.
+- [ ] Cuando `mobile-build.yml` esté en `main`: lanzar un build desde
+      Actions › Mobile build › *Run workflow*.
+- [ ] Siguiente sesión: paso 6, API + página «Builds» en el backoffice
+      (lanza `mobile-build.yml` por `workflow_dispatch`).
 
 ## Reglas
 
