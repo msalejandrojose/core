@@ -1,6 +1,8 @@
-import type { Meal } from '../../domain/services/menu';
+import type { Meal, PlannedMeal } from '../../domain/services/menu';
 
 export const BRIO_MENU_REPOSITORY = Symbol('BRIO_MENU_REPOSITORY');
+
+export type NewPlannedMeal = Omit<PlannedMeal, 'id'>;
 
 export interface BrioMenuRepositoryPort {
   /** Platos elegidos por el usuario entre dos días. */
@@ -23,4 +25,15 @@ export interface BrioMenuRepositoryPort {
     itemCode: string,
     checked: boolean,
   ): Promise<void>;
+  /** Comidas planificadas a mano entre dos días, en el orden en que se pusieron. */
+  plannedBetween(
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<PlannedMeal[]>;
+  addPlanned(userId: string, data: NewPlannedMeal): Promise<PlannedMeal>;
+  /** Borra una; false si no existe o no es suya. */
+  deletePlanned(userId: string, id: string): Promise<boolean>;
+  /** Vacía una comida de un día (vuelve el plato sugerido). Devuelve cuántas quitó. */
+  clearPlanned(userId: string, day: string, meal: Meal): Promise<number>;
 }

@@ -6,6 +6,9 @@ import { isApiError } from '../api';
 import { formatNumber } from '../format';
 import { Chevron, Segmented } from '../ui/kit';
 import { hevyApi, hevyErrorText, useHevyStatus } from '../profile/hevy.api';
+import { routineSummary } from '../routines/routine-draft';
+import { newRoutineForDayPath, routinesForKind, sessionFromRoutine, useRoutinePick } from '../routines/routine-pick';
+import { useRoutines, type Routine } from '../routines/routines.api';
 import { planApi, usePlanWeekData, type PlanLoad } from './plan.api';
 import { LOAD_CLASS, LOAD_LABEL, STATUS_TEXT, dayFull, dayNumber, fmtMinutes } from './plan-labels';
 import { usePlanTemplates } from './usePlanTemplates';
@@ -26,6 +29,13 @@ const LOADS: { value: PlanLoad; label: string }[] = [
   { value: 'HIGH', label: 'Alta' },
 ];
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** Quitar la rutina de la estructura de la sesión, sin tocar el resto (series, Hevy…). */
+function withoutRoutine(structure: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!structure || !('routineId' in structure)) return structure;
+  const rest = { ...structure };
+  delete rest.routineId;
+  return rest;
+}
 const numOrNull = (v: string) => {
   const n = Number(v.replace(',', '.'));
   return v.trim() && Number.isFinite(n) && n > 0 ? n : null;
@@ -52,8 +62,23 @@ export default function EditSessionPage() {
   const [notes, setNotes] = useState('');
   const [actualNotes, setActualNotes] = useState('');
   const [templateCode, setTemplateCode] = useState<string | null>(null);
+  const [routineId, setRoutineId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const { routines, reload: reloadRoutines } = useRoutines();
+  const pick = useRoutinePick((st) => st.pick);
+  const clearPick = useRoutinePick((st) => st.clear);
+
+  /** Elegir una rutina guardada: la sesión toma su tipo, nombre, duración y distancia. */
+  function chooseRoutine(r: Routine | null) {
+    setRoutineId(r?.id ?? null);
+    if (!r) return;
+    const from = sessionFromRoutine(r);
+    setKind(from.kind);
+    setTitle(from.title);
+    if (from.minutes) setMinutes(from.minutes);
+    if (from.km) setKm(from.km);
+  }
 
   // El formulario se rellena una vez por día cargado; después manda lo que escribes.
   useEffect(() => {
@@ -70,7 +95,21 @@ export default function EditSessionPage() {
     setNotes(p?.notes ?? '');
     setActualNotes(p?.actualNotes ?? '');
     setTemplateCode(p?.templateCode ?? null);
+    setRoutineId(typeof p?.structure?.routineId === 'string' ? p.structure.routineId : null);
   }, [entry, loadedFor]);
+
+  // Vuelta del editor con una rutina recién creada para este día: se recarga la lista y se elige.
+  const pickedId = pick && entry && pick.day === entry.day ? pick.routineId : null;
+  useEffect(() => {
+    if (pickedId) reloadRoutines();
+  }, [pickedId, reloadRoutines]);
+  useEffect(() => {
+    if (!pickedId || !entry || loadedFor !== entry.day) return;
+    const r = routines?.find((x) => x.id === pickedId);
+    if (!r) return;
+    clearPick();
+    chooseRoutine(r);
+  }, [pickedId, routines, entry, loadedFor, clearPick]);
 
   const back = () => (history.length > 1 ? history.goBack() : history.replace('/tabs/entrenos/plan'));
 
@@ -149,7 +188,10 @@ export default function EditSessionPage() {
   const diet = data?.diet?.find((d) => d.day === entry.day) ?? null;
   const canCheck = !!planned && planned.load !== 'REST' && entry.day <= (data?.today ?? '');
   const done = entry.status === 'DONE';
-  const structure = reps != null ? { ...(planned?.structure ?? templates.find((t) => t.code === templateCode)?.structure ?? {}), reps } : null;
+  const withReps = reps != null ? { ...(planned?.structure ?? templates.find((t) => t.code === templateCode)?.structure ?? {}), reps } : null;
+  const structure = routineId ? { ...(withReps ?? planned?.structure ?? {}), routineId } : withoutRoutine(withReps);
+  const routine = routines?.find((r) => r.id === routineId) ?? null;
+  const routineList = routinesForKind(routines ?? [], kind);
 
   const save = () =>
     run(
@@ -256,6 +298,40 @@ export default function EditSessionPage() {
           </section>
 
           <Segmented label="Tipo de sesión" options={KINDS} value={kind as Kind} onChange={(k) => setKind(k)} />
+
+          <section className="rk-section" aria-labelledby="plan-r">
+            <div className="rk-sechead">
+              <h2 id="plan-r">Rutina</h2>
+            </div>
+            <div className="plan__chips" role="group" aria-label="Rutina del día">
+              <button type="button" aria-pressed={routineId === null} className={`plan__chip${routineId === null ? ' is-on' : ''}`} onClick={() => chooseRoutine(null)}>
+                Sin rutina
+              </button>
+              {routineList.map((r) => (
+                <button key={r.id} type="button" aria-pressed={routineId === r.id} className={`plan__chip${routineId === r.id ? ' is-on' : ''}`} onClick={() => chooseRoutine(r)}>
+                  {r.name}
+                </button>
+              ))}
+              <Link to={newRoutineForDayPath(entry.day, kind)} className="plan__chip plan__chip--new">
+                + Nueva rutina
+              </Link>
+            </div>
+            {routine ? (
+              <p className="rk-note plan__routine-sub">
+                {routineSummary(routine) || 'Rutina guardada'}
+                {routine.kind === 'STRENGTH' && routine.exercises.length
+                  ? ` · ${routine.exercises
+                      .slice(0, 4)
+                      .map((e) => e.name)
+                      .join(', ')}${routine.exercises.length > 4 ? '…' : ''}`
+                  : ''}
+              </p>
+            ) : routineId && routines !== null ? (
+              <p className="rk-note plan__routine-sub">La rutina que tenía este día ya no existe.</p>
+            ) : routines !== null && routines.length === 0 ? (
+              <p className="rk-note plan__routine-sub">Aún no tienes rutinas. Crea una y quedará elegida para este día.</p>
+            ) : null}
+          </section>
 
           <div className="rk-list">
             <label className="rk-row perf__field">

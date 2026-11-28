@@ -30,6 +30,18 @@ import { DigestionUseCases } from '../../application/use-cases/digestion.use-cas
 import { LogWeightUseCase } from '../../application/use-cases/log-weight.use-case';
 import { DeleteMealEntryUseCase } from '../../application/use-cases/delete-meal-entry.use-case';
 import { CreateRecipeUseCase } from '../../application/use-cases/create-recipe.use-case';
+import { ListRecipesUseCase } from '../../application/use-cases/list-recipes.use-case';
+import {
+  AddPlannedMealUseCase,
+  ClearPlannedMealUseCase,
+  GetMenuWeekUseCase,
+  LogPlannedMealUseCase,
+  RemovePlannedMealUseCase,
+} from '../../application/use-cases/menu.use-cases';
+import {
+  GetRoutineUseCase,
+  ListRoutinesUseCase,
+} from '../../application/use-cases/routine.use-cases';
 import type { MealType } from '../../domain/entities/meal-entry.entity';
 import {
   PERFORMANCE_PERIODS,
@@ -73,7 +85,44 @@ export class BrioAgentTools implements OnModuleInit {
     private readonly logWeight: LogWeightUseCase,
     private readonly deleteMeal: DeleteMealEntryUseCase,
     private readonly createRecipe: CreateRecipeUseCase,
+    private readonly listRecipes: ListRecipesUseCase,
+    private readonly menuWeek: GetMenuWeekUseCase,
+    private readonly addPlannedMeal: AddPlannedMealUseCase,
+    private readonly removePlannedMeal: RemovePlannedMealUseCase,
+    private readonly clearPlannedMeal: ClearPlannedMealUseCase,
+    private readonly logPlannedMeal: LogPlannedMealUseCase,
+    private readonly listRoutines: ListRoutinesUseCase,
+    private readonly getRoutine: GetRoutineUseCase,
   ) {}
+
+  /** Errores esperables de los casos de uso (código en el mensaje) como texto para la IA. */
+  private static failure(e: unknown, fallback: string): { error: string } {
+    const code = (e as { code?: unknown } | null)?.code;
+    const msg =
+      e instanceof Error
+        ? `${typeof code === 'string' ? code : ''} ${e.message}`
+        : '';
+    const known: Record<string, string> = {
+      BRIO_FOOD_NOT_FOUND:
+        'No existe ese alimento (usa un foodId de brio_search_foods o brio_list_recipes).',
+      BRIO_SERVING_NOT_FOUND: 'Esa ración no es de ese alimento.',
+      BRIO_MENU_QUANTITY_INVALID:
+        'Cantidad fuera de rango: 0,25–20 raciones o 1–3000 g.',
+      BRIO_MENU_ITEM_INVALID:
+        'Sin foodId hacen falta customName y kcal (0–5000).',
+      BRIO_MENU_MEAL_FULL: 'Esa comida ya tiene demasiadas cosas (máx. 12).',
+      BRIO_MENU_DAY_INVALID: 'day debe ser YYYY-MM-DD.',
+      BRIO_MENU_MEAL_INVALID:
+        'mealType debe ser BREAKFAST, LUNCH, SNACK o DINNER.',
+      BRIO_PLANNED_MEAL_NOT_FOUND: 'No hay nada planificado con ese itemId.',
+      BRIO_MENU_NOT_AVAILABLE:
+        'No hay menú para ese día (¿falta el objetivo de kcal en el perfil?).',
+      BRIO_ROUTINE_NOT_FOUND:
+        'No existe esa rutina (usa un routineId de brio_list_routines).',
+    };
+    const hit = Object.keys(known).find((k) => msg.includes(k));
+    return { error: hit ? known[hit] : fallback };
+  }
 
   onModuleInit(): void {
     for (const tool of this.tools()) this.registry.register(tool);
@@ -318,7 +367,8 @@ export class BrioAgentTools implements OnModuleInit {
         description:
           'Pone la sesión de entreno de un día del plan (sustituye la que hubiera; confirma antes de pisar una ya planificada). ' +
           `Con «template» se parte de una plantilla (${PLAN_TEMPLATES.map((t) => `${t.code} = ${t.title}`).join('; ')}) y el resto de campos la ajustan; ` +
-          'sin plantilla hacen falta kind, title y load. Para un día de descanso, template «rest».',
+          'sin plantilla hacen falta kind, title y load. Para un día de descanso, template «rest». ' +
+          'Con «routineId» (de brio_list_routines) la sesión usa esa rutina guardada: si no das kind, title o duración, salen de la rutina.',
         parameters: {
           type: 'object',
           properties: {
@@ -347,6 +397,10 @@ export class BrioAgentTools implements OnModuleInit {
             notes: {
               type: 'string',
               description: 'Detalle: calentamiento, series, ejercicios…',
+            },
+            routineId: {
+              type: 'string',
+              description: 'Rutina guardada que se hará ese día.',
             },
           },
           required: ['day'],
@@ -393,19 +447,55 @@ export class BrioAgentTools implements OnModuleInit {
           if (typeof args.notes === 'string')
             changes.notes = args.notes.trim().slice(0, 500) || null;
 
+          const routineId = str(args.routineId);
+          if (routineId) {
+            let routine;
+            try {
+              routine = await this.getRoutine.execute(ctx.userId, routineId);
+            } catch (e) {
+              return BrioAgentTools.failure(e, 'No se pudo leer la rutina.');
+            }
+            if (!changes.kind) changes.kind = routine.kind;
+            if (!changes.title) changes.title = routine.name.slice(0, 120);
+            if (
+              changes.plannedDurationMin === undefined &&
+              routine.plannedDurationMin
+            )
+              changes.plannedDurationMin = routine.plannedDurationMin;
+            if (
+              changes.plannedDistanceM === undefined &&
+              routine.plannedDistanceM
+            )
+              changes.plannedDistanceM = routine.plannedDistanceM;
+            if (
+              changes.targetPaceSecPerKm === undefined &&
+              routine.targetPaceSecPerKm
+            )
+              changes.targetPaceSecPerKm = routine.targetPaceSecPerKm;
+            if (!changes.load) changes.load = 'MEDIUM';
+          }
+          const withRoutine = (d: PlannedSessionData): PlannedSessionData =>
+            routineId
+              ? { ...d, structure: { ...(d.structure ?? {}), routineId } }
+              : d;
+
           const template = str(args.template);
           let data: PlannedSessionData | null;
           if (template) {
             data = fromTemplate(template, changes);
             if (!data) return { error: 'Plantilla desconocida.' };
+            data = withRoutine(data);
           } else {
-            if (!kind || !changes.title || !load)
-              return { error: 'Sin plantilla hacen falta kind, title y load.' };
-            data = {
-              kind,
+            if (!changes.kind || !changes.title || !changes.load)
+              return {
+                error:
+                  'Sin plantilla ni rutina hacen falta kind, title y load.',
+              };
+            data = withRoutine({
+              kind: changes.kind,
               templateCode: null,
               title: changes.title,
-              load,
+              load: changes.load,
               startTime: null,
               plannedDurationMin: null,
               plannedDistanceM: null,
@@ -413,7 +503,7 @@ export class BrioAgentTools implements OnModuleInit {
               structure: null,
               notes: null,
               ...changes,
-            };
+            });
           }
           const s = await this.setPlanDay.execute(ctx.userId, day, data);
           return {
@@ -425,6 +515,10 @@ export class BrioAgentTools implements OnModuleInit {
               load: s.load,
               startTime: s.startTime,
               durationMin: s.plannedDurationMin,
+              routineId:
+                typeof s.structure?.routineId === 'string'
+                  ? s.structure.routineId
+                  : null,
             },
           };
         },
@@ -711,6 +805,231 @@ export class BrioAgentTools implements OnModuleInit {
               perServing: nutrition.perServing,
             },
           };
+        },
+      },
+
+      {
+        code: 'brio_list_routines',
+        label: 'Ver las rutinas guardadas',
+        description:
+          'Rutinas guardadas de la persona (gimnasio con sus ejercicios, o cardio con duración y distancia). Úsala para planificar un día con una rutina (routineId en brio_set_plan_day).',
+        parameters: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
+        run: async (_args, ctx) =>
+          (await this.listRoutines.execute(ctx.userId)).map((r) => ({
+            routineId: r.id,
+            name: r.name,
+            kind: r.kind,
+            durationMin: r.plannedDurationMin,
+            distanceKm: r.plannedDistanceM
+              ? Math.round(r.plannedDistanceM / 100) / 10
+              : null,
+            exercises: r.exercises.map(
+              (e) =>
+                `${e.name} ${e.sets}×${e.reps}${e.weightKg ? ` @${e.weightKg} kg` : ''}`,
+            ),
+            timesDone: r.timesDone,
+          })),
+      },
+      {
+        code: 'brio_list_recipes',
+        label: 'Ver las recetas guardadas',
+        description:
+          'Recetas guardadas de la persona, con foodId, servingId de «1 ración» y kcal por ración. Sirven para planificar el menú (brio_plan_meal) o apuntarlas (brio_log_meal).',
+        parameters: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
+        run: async (_args, ctx) =>
+          (await this.listRecipes.execute(ctx.userId)).map((f) => {
+            const serving =
+              f.servings.find((s) => s.isDefault) ?? f.servings[0];
+            return {
+              foodId: f.id,
+              servingId: serving?.id ?? null,
+              name: f.name,
+              servingGrams: serving?.grams ?? null,
+              kcalPerServing: serving
+                ? Math.round((f.kcalPer100 * serving.grams) / 100)
+                : null,
+            };
+          }),
+      },
+      {
+        code: 'brio_get_meal_plan',
+        label: 'Ver el menú planificado de la semana',
+        description:
+          'Menú de la semana del día dado: por día, las kcal objetivo y cada comida (BREAKFAST, LUNCH, SNACK, DINNER). ' +
+          'source=PLANNED es lo que puso la persona (items con itemId, cantidad y kcal); source=SUGGESTED es el plato que propone Brío ajustado a las kcal del día.',
+        parameters: {
+          type: 'object',
+          properties: { day: DAY },
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const week = await this.menuWeek.execute(ctx.userId, str(args.day));
+          if (!week.days)
+            return {
+              error: 'No hay menú: el perfil aún no tiene objetivo de kcal.',
+            };
+          return {
+            from: week.from,
+            to: week.to,
+            today: week.today,
+            days: week.days.map((d) => ({
+              day: d.day,
+              load: d.load,
+              kcalTarget: d.kcalTarget,
+              kcalPlanned: d.totals.kcal,
+              meals: d.meals.map((m) => ({
+                meal: m.meal,
+                source: m.source,
+                name: m.name,
+                kcal: m.kcal,
+                proteinG: m.proteinG,
+                items: m.items.map((i) => ({
+                  itemId: i.id,
+                  name: i.name,
+                  amount: i.amount,
+                  kcal: i.kcal,
+                })),
+              })),
+            })),
+          };
+        },
+      },
+      {
+        code: 'brio_plan_meal',
+        label: 'Poner algo en el menú de un día',
+        description:
+          'Añade al menú de un día una comida concreta: un alimento o receta (foodId de brio_search_foods o brio_list_recipes; servingId y quantity en raciones, o quantity en gramos sin servingId; sin cantidad, 1 ración por defecto) ' +
+          'o algo sin catálogo con customName y kcal. Se pueden poner varias cosas en la misma comida; en cuanto hay una, sustituye al plato sugerido. No lo apunta en el diario (para eso, brio_log_planned_meal cuando llegue el día).',
+        parameters: {
+          type: 'object',
+          properties: {
+            day: { type: 'string', description: 'Día YYYY-MM-DD.' },
+            mealType: { type: 'string', enum: MEALS },
+            foodId: { type: 'string' },
+            servingId: { type: 'string' },
+            quantity: {
+              type: 'number',
+              description: 'Raciones si hay servingId; si no, gramos.',
+            },
+            customName: { type: 'string' },
+            kcal: { type: 'number' },
+            proteinG: { type: 'number' },
+            carbsG: { type: 'number' },
+            fatG: { type: 'number' },
+          },
+          required: ['day', 'mealType'],
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const day = str(args.day);
+          if (!day) return { error: 'day debe ser YYYY-MM-DD.' };
+          const n = (v: unknown) => (typeof v === 'number' ? v : undefined);
+          try {
+            const p = await this.addPlannedMeal.execute(ctx.userId, {
+              day,
+              meal: str(args.mealType) ?? '',
+              foodId: str(args.foodId),
+              servingId: str(args.servingId),
+              quantity: n(args.quantity),
+              customName: str(args.customName),
+              kcal: n(args.kcal),
+              proteinG: n(args.proteinG),
+              carbsG: n(args.carbsG),
+              fatG: n(args.fatG),
+            });
+            return {
+              ok: true,
+              planned: {
+                itemId: p.id,
+                day: p.day,
+                meal: p.meal,
+                name: p.name,
+                kcal: p.kcal,
+                proteinG: p.proteinG,
+              },
+            };
+          } catch (e) {
+            return BrioAgentTools.failure(e, 'No se pudo poner en el menú.');
+          }
+        },
+      },
+      {
+        code: 'brio_remove_planned_meal',
+        label: 'Quitar algo del menú planificado',
+        description:
+          'Quita del menú una cosa planificada (itemId de brio_get_meal_plan), o vacía entera una comida de un día (day + mealType) para que vuelva el plato sugerido. Confirma antes de vaciar una comida con varias cosas.',
+        parameters: {
+          type: 'object',
+          properties: {
+            itemId: { type: 'string' },
+            day: { type: 'string', description: 'Día YYYY-MM-DD.' },
+            mealType: { type: 'string', enum: MEALS },
+          },
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const itemId = str(args.itemId);
+          try {
+            if (itemId) {
+              await this.removePlannedMeal.execute(ctx.userId, itemId);
+              return { ok: true, removed: 1 };
+            }
+            const day = str(args.day);
+            const meal = str(args.mealType);
+            if (!day || !meal)
+              return { error: 'Hace falta itemId, o day y mealType.' };
+            const removed = await this.clearPlannedMeal.execute(
+              ctx.userId,
+              day,
+              meal,
+            );
+            return { ok: true, removed };
+          } catch (e) {
+            return BrioAgentTools.failure(e, 'No se pudo quitar.');
+          }
+        },
+      },
+      {
+        code: 'brio_log_planned_meal',
+        label: 'Apuntar lo que había en el menú',
+        description:
+          'Apunta en el diario de comidas lo que había en el menú para una comida de un día: lo planificado, cosa por cosa, o el plato sugerido. Úsala cuando la persona diga que se ha comido lo del menú.',
+        parameters: {
+          type: 'object',
+          properties: {
+            day: DAY,
+            mealType: { type: 'string', enum: MEALS },
+          },
+          required: ['mealType'],
+          additionalProperties: false,
+        },
+        run: async (args, ctx) => {
+          const day = str(args.day) ?? dayInTimezone(new Date(), ctx.timeZone);
+          try {
+            const entries = await this.logPlannedMeal.execute(
+              ctx.userId,
+              day,
+              str(args.mealType) ?? '',
+            );
+            return {
+              ok: true,
+              logged: entries.map((e) => ({
+                entryId: e.id,
+                name: e.name,
+                kcal: e.kcal,
+              })),
+            };
+          } catch (e) {
+            return BrioAgentTools.failure(e, 'No se pudo apuntar.');
+          }
         },
       },
     ];

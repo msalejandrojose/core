@@ -58,6 +58,7 @@ import TrainingPage from '@/features/brio/training/TrainingPage';
 import WeekTemplatePage from '@/features/brio/plan/WeekTemplatePage';
 import EditSessionPage from '@/features/brio/plan/EditSessionPage';
 import DietPage from '@/features/brio/plan/DietPage';
+import PlanMealPage from '@/features/brio/plan/PlanMealPage';
 import ShoppingPage from '@/features/brio/plan/ShoppingPage';
 import FriendsPage from '@/features/brio/social/FriendsPage';
 import FriendPage from '@/features/brio/social/FriendPage';
@@ -180,6 +181,7 @@ export default function TabsShell() {
           </Route>
           <Route exact path="/tabs/entrenos/plan/sesion/:day" component={EditSessionPage} />
           <Route exact path="/tabs/comida" component={DietPage} />
+          <Route exact path="/tabs/comida/menu/:day/:meal" component={PlanMealPage} />
           <Route exact path="/tabs/comida/compra" component={ShoppingPage} />
           <Route exact path="/tabs/progress" component={ProgressPage} />
           <Route exact path="/tabs/progress/objetivos" component={GoalsPage} />

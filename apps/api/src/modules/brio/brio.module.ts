@@ -113,9 +113,13 @@ import { BrioMenuController } from './infrastructure/http/brio-menu.controller';
 import { PrismaBrioMenuRepository } from './infrastructure/persistence/prisma-brio-menu.repository';
 import { BRIO_MENU_REPOSITORY } from './application/ports/menu.port';
 import {
+  AddPlannedMealUseCase,
   CheckShoppingItemUseCase,
+  ClearPlannedMealUseCase,
   GetMenuWeekUseCase,
   GetShoppingListUseCase,
+  LogPlannedMealUseCase,
+  RemovePlannedMealUseCase,
   SwapMenuDishUseCase,
 } from './application/use-cases/menu.use-cases';
 import { BrioHevyController } from './infrastructure/http/brio-hevy.controller';
@@ -330,6 +334,10 @@ import { BrioProfileController } from './infrastructure/http/brio-profile.contro
     // Menús y lista de la compra.
     GetMenuWeekUseCase,
     SwapMenuDishUseCase,
+    AddPlannedMealUseCase,
+    RemovePlannedMealUseCase,
+    ClearPlannedMealUseCase,
+    LogPlannedMealUseCase,
     GetShoppingListUseCase,
     CheckShoppingItemUseCase,
     // Hevy.
