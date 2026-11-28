@@ -66,7 +66,7 @@ public struct BrioWidgetSnapshot: Codable, Hashable {
 }
 
 public enum BrioWidgetStore {
-    /// App Group compartido por la app y la extensión (ver scripts/ios-live-activity.rb).
+    /// App Group compartido por la app y la extensión (entitlements en native.config.yml).
     public static let appGroup = "group.es.aj.brio"
     static let key = "brio.widgets.snapshot"
 
