@@ -83,6 +83,19 @@ export function patchStoryboard(xml, { class: cls, module }) {
   );
 }
 
+/**
+ * La plantilla de Capacitor 8 con escenas crea la ventana en SceneDelegate.swift
+ * con un `CAPBridgeViewController()` a pelo y no usa el del storyboard: sin
+ * esto no se registran los plugins propios (widgets, Live Activity).
+ */
+export function patchSceneDelegate(swift, { class: cls }) {
+  if (swift.includes(`rootViewController = ${cls}()`)) return swift;
+  if (!/rootViewController = CAPBridgeViewController\(\)/.test(swift)) {
+    throw new Error('SceneDelegate.swift: no encuentro rootViewController = CAPBridgeViewController()');
+  }
+  return swift.replace(/rootViewController = CAPBridgeViewController\(\)/, `rootViewController = ${cls}()`);
+}
+
 // --- Android: transformaciones puras -----------------------------------------
 
 export function patchVariablesGradle(text, minSdk) {
@@ -153,6 +166,8 @@ function prepareIos(ios, app, build, env) {
   edit(join(appDir, 'Info.plist'), (xml) => patchInfoPlist(xml, ios));
   writeFileSync(join(appDir, 'App.entitlements'), buildEntitlements(ios.entitlements));
   edit(join(appDir, 'Base.lproj', 'Main.storyboard'), (xml) => patchStoryboard(xml, ios.rootViewController));
+  const sceneDelegate = join(appDir, 'SceneDelegate.swift');
+  if (existsSync(sceneDelegate)) edit(sceneDelegate, (t) => patchSceneDelegate(t, ios.rootViewController));
   const podfile = join(iosDir, 'App', 'Podfile');
   if (existsSync(podfile)) edit(podfile, (t) => patchPodfile(t, ios.deploymentTarget));
 

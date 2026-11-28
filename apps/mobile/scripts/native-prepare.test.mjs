@@ -7,6 +7,7 @@ import {
   patchInfoPlist,
   patchManifest,
   patchPodfile,
+  patchSceneDelegate,
   patchStoryboard,
   patchStrings,
   patchVariablesGradle,
@@ -111,6 +112,16 @@ describe('iOS', () => {
     expect(patchStoryboard(xml, { class: 'BrioBridgeViewController', module: 'App' })).toBe(
       '<viewController id="BYZ" customClass="BrioBridgeViewController" customModule="App" customModuleProvider="target" sceneMemberID="viewController"/>',
     );
+  });
+
+  it('SceneDelegate: la ventana arranca con el controlador propio', () => {
+    const swift = '        window = UIWindow(windowScene: windowScene)\n        window?.rootViewController = CAPBridgeViewController()\n';
+    const root = { class: 'BrioBridgeViewController', module: 'App' };
+    const once = patchSceneDelegate(swift, root);
+    expect(once).toContain('window?.rootViewController = BrioBridgeViewController()\n');
+    expect(once).not.toContain('CAPBridgeViewController()');
+    expect(patchSceneDelegate(once, root)).toBe(once);
+    expect(() => patchSceneDelegate('class SceneDelegate {}', root)).toThrow(/SceneDelegate/);
   });
 });
 

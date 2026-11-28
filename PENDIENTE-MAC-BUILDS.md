@@ -36,7 +36,7 @@ Documentación: `apps/mobile/NATIVE.md`, en las dos primeras secciones
 
 ## 0. Antes de empezar
 
-- [ ] Rama `claude/ios-android-deployment-plan-ptixhi` y dependencias:
+- [x] Rama `claude/ios-android-deployment-plan-ptixhi` y dependencias:
       ```bash
       git fetch origin claude/ios-android-deployment-plan-ptixhi
       git checkout claude/ios-android-deployment-plan-ptixhi
@@ -46,28 +46,32 @@ Documentación: `apps/mobile/NATIVE.md`, en las dos primeras secciones
       añadió a `onlyBuiltDependencies`). Si `native:prepare` falla luego en
       `capacitor-assets` con «Something went wrong installing the sharp
       module», ejecutar `pnpm rebuild sharp` o `pnpm install --force`.
-- [ ] Guardar el proyecto iOS que funciona (no borrarlo hasta el final):
+      > **28 nov, en el Mac:** `pnpm install` dijo «Already up to date» y no
+      > compiló nada, y `pnpm rebuild sharp` solo recompiló `sharp@0.34.5`;
+      > `@capacitor/assets` usa `sharp@0.32.6`. Lo que funcionó:
+      > `cd node_modules/.pnpm/sharp@0.32.6/node_modules/sharp && npm run install`.
+- [x] Guardar el proyecto iOS que funciona (no borrarlo hasta el final):
       ```bash
       mv apps/mobile/ios apps/mobile/ios.bak
       ```
-- [ ] El Team ID con el que se firma hoy:
+- [x] El Team ID con el que se firma hoy:
       ```bash
       grep -m1 DEVELOPMENT_TEAM apps/mobile/ios.bak/App/App.xcodeproj/project.pbxproj
       ```
       Ponerlo en `apps/mobile/.env.production.local` (no se commitea):
       `APPLE_TEAM_ID=XXXXXXXXXX`. La cuenta es la gratuita, así que **no**
       poner `APPLE_ACCOUNT=paid`.
-- [ ] Si `.env.production.local` tiene `VITE_GOOGLE_IOS_CLIENT_ID`, se usa para
+- [x] Si `.env.production.local` tiene `VITE_GOOGLE_IOS_CLIENT_ID`, se usa para
       el esquema de URL del login con Google. Si no lo tiene, sale un aviso:
       es normal.
-- [ ] La config se resuelve sin errores:
+- [x] La config se resuelve sin errores:
       ```bash
       pnpm --filter @core/mobile native:config --profile device --platform ios
       ```
 
 ## 1. `native:prepare` contra el `ios/` que funciona
 
-- [ ] Generar:
+- [x] Generar:
       ```bash
       pnpm --filter @core/mobile native:prepare --profile device --platform ios
       ```
@@ -75,7 +79,7 @@ Documentación: `apps/mobile/NATIVE.md`, en las dos primeras secciones
       falla en el script de Ruby por `xcodeproj`, se instala con
       `gem install xcodeproj` (o se ejecuta dentro de `bundle exec`, ver el
       paso 2).
-- [ ] Comparar con el que funcionaba:
+- [x] Comparar con el que funcionaba:
       ```bash
       cd apps/mobile
       for f in App/App/Info.plist App/App/App.entitlements; do
@@ -88,7 +92,19 @@ Documentación: `apps/mobile/NATIVE.md`, en las dos primeras secciones
       Diferencias esperables que no hay que copiar:
       - `NSAppTransportSecurity`: solo va en el perfil `mac` (ZeroTier por http).
       - El orden de las claves y el formato.
-- [ ] Revisar también los build settings que no salen en el diff:
+      > **28 nov, en el Mac:** Info.plist igual salvo lo esperable (ATS, orden
+      > y `CFBundleURLName`), más dos cosas:
+      > - Falta `GIDClientID`: no hace falta, `social-auth.ts` le pasa
+      >   `iOSClientId` al plugin desde `VITE_GOOGLE_IOS_CLIENT_ID`.
+      > - Aparece `UIApplicationSceneManifest`: la plantilla actual de
+      >   Capacitor 8 usa escenas y `SceneDelegate.swift` creaba la ventana con
+      >   un `CAPBridgeViewController()` a pelo, saltándose el storyboard (y con
+      >   él los plugins de widgets y Live Activity). Arreglado en
+      >   `native-prepare.mjs` (`patchSceneDelegate`, con test).
+      >
+      > Entitlements, team, bundle ids y deployment targets iguales. Compila sin
+      > firmar con `xcodebuild` (App + BrioWidgets).
+- [x] Revisar también los build settings que no salen en el diff:
       ```bash
       cd apps/mobile
       for f in ios.bak ios; do echo "== $f"; grep -E "DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER|IPHONEOS_DEPLOYMENT_TARGET|CODE_SIGN_ENTITLEMENTS|MARKETING_VERSION" $f/App/App.xcodeproj/project.pbxproj | sort | uniq -c; done
@@ -109,29 +125,34 @@ Documentación: `apps/mobile/NATIVE.md`, en las dos primeras secciones
 
 ## 2. fastlane
 
-- [ ] Ruby ≥ 3.2 (el de macOS es 2.6; fastlane 2.242 no arranca con él):
+- [x] Ruby ≥ 3.2 (el de macOS es 2.6; fastlane 2.242 no arranca con él):
       ```bash
       brew install ruby
       brew info ruby        # dice qué línea añadir al PATH (~/.zshrc)
       ruby -v               # tiene que ser ≥ 3.2 en una terminal nueva
       ```
-- [ ] Instalar fastlane con las versiones del `Gemfile.lock`:
+      > **28 nov:** ya había Ruby 3.3.0 con rbenv; no hizo falta brew.
+      > CocoaPods pide `export LANG=en_US.UTF-8` (aviso, no falla).
+- [x] Instalar fastlane con las versiones del `Gemfile.lock`:
       ```bash
       cd apps/mobile && bundle install && bundle exec fastlane lanes && cd ../..
       ```
       Tienen que salir `ios devices`, `ios build`, `android devices` y
       `android build`. El `Gemfile.lock` se generó en Linux con plataformas de
       macOS añadidas; si `bundle install` lo cambia, hacer commit del nuevo.
-- [ ] El iPhone, por Wi-Fi: conectarlo **una vez por cable**, en Xcode ›
+- [x] El iPhone, por Wi-Fi: conectarlo **una vez por cable**, en Xcode ›
       Window › Devices and Simulators seleccionarlo y marcar «Connect via
       network». Modo desarrollador activado en el iPhone. Desconectar el cable.
-- [ ] Ver que el Mac lo encuentra por la red:
+- [x] Ver que el Mac lo encuentra por la red:
       ```bash
       cd apps/mobile && bundle exec fastlane ios devices
       ```
       El iPhone tiene que salir con `localNetwork` (con `wired` si sigue el
       cable). Si no sale: misma Wi-Fi, iPhone desbloqueado, y repetir el
       emparejado.
+      > **28 nov:** sale «iPhone de Alejandro Jose · localNetwork» (ya estaba
+      > emparejado por red), junto a los simuladores (`sameMachine`), así que
+      > hay que pasar `device:"iPhone de Alejandro Jose"`.
 - [ ] Compilar e instalar en el iPhone sin cable:
       ```bash
       bundle exec fastlane ios build profile:device
