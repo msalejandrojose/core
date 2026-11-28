@@ -4,14 +4,53 @@
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev:web"],
+      "runtimeArgs": [
+        "dev:web"
+      ],
       "port": 4321
     },
     {
       "name": "backoffice",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev:backoffice"],
+      "runtimeArgs": [
+        "dev:backoffice"
+      ],
       "port": 5173
+    },
+    {
+      "name": "brio-mobile",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@core/mobile",
+        "exec",
+        "vite",
+        "--mode",
+        "production",
+        "--port",
+        "4400",
+        "--strictPort"
+      ],
+      "port": 4400
+    },
+    {
+      "name": "brio-web-zt",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@core/mobile",
+        "exec",
+        "vite",
+        "--mode",
+        "production",
+        "--host",
+        "172.28.185.230",
+        "--port",
+        "4410",
+        "--strictPort"
+      ],
+      "port": 4410,
+      "url": "http://172.28.185.230:4410"
     }
   ]
 }

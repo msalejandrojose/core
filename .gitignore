@@ -72,3 +72,6 @@ android/app/build/
 
 # Informe de `pnpm --filter @core/api hevy:coverage` (local)
 apps/api/hevy-coverage.json
+
+# Cachés del plugin de diseño impeccable (hook.cache.json); el skill está en .claude/skills/impeccable
+.impeccable/

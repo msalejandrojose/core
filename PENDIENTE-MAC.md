@@ -156,7 +156,7 @@ El despliegue de la API se dispara solo al entrar código en `brio-dev`
 3. - [x] Backoffice › Actualizaciones: la nueva sale **Sirviéndose**.
 4. - [x] iPhone: abrir la app (la baja en segundo plano), mandarla a segundo
          plano unos segundos y volver → se ve el cambio.
-5. - [ ] Vuelta atrás: desactivarla en el backoffice, cerrar y abrir la app dos
+5. - [x] Vuelta atrás *(arreglado en #279: la API contesta `builtin`)*: desactivarla en el backoffice, cerrar y abrir la app dos
          veces → vuelve a la versión del build.
 6. - [x] Revertir el cambio de prueba en el código.
 
@@ -169,14 +169,14 @@ Si no llega: consola de Xcode filtrando por `CapacitorUpdater` (petición a
 
 ## 6. Probar los widgets
 
-1. - [ ] Pantalla de inicio › mantener pulsado › «+» › **Brío**: añadir *Hoy*
+1. - [x] Pantalla de inicio › mantener pulsado › «+» › **Brío**: añadir *Hoy*
          (pequeño y mediano), *Entreno de hoy* y *Mi semana*.
-2. - [ ] Hoy: las kcal que quedan coinciden con la app; registrar una comida y
+2. - [x] Hoy: las kcal que quedan coinciden con la app; registrar una comida y
          volver a la pantalla de inicio → se actualiza.
-3. - [ ] Entreno de hoy: con algo planificado sale «Empezar»; al tocarlo se abre
+3. - [x] Entreno de hoy: con algo planificado sale «Empezar»; al tocarlo se abre
          la app y arranca el registro con la rutina del día.
-4. - [ ] Mi semana: iconos y checks como la tira de Hoy; al tocar abre el plan.
-5. - [ ] Cerrar sesión → los widgets piden «Abre Brío».
+4. - [x] Mi semana: iconos y checks como la tira de Hoy; al tocar abre el plan.
+5. - [x] Cerrar sesión → los widgets piden «Abre Brío».
 
 Siempre en «Abre Brío» → App Group mal firmado (paso 4.4) o la app no ha
 abierto Hoy desde que se instaló.
