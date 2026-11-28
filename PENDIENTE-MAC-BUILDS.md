@@ -165,7 +165,7 @@ Documentación: `apps/mobile/NATIVE.md`, en las dos primeras secciones
       > `Gemfile`. Después compiló (Release, firma automática con la cuenta
       > gratuita), instaló por Wi-Fi y abrió Brío 1.0.0 (476768). Se saltó la
       > prueba en Xcode: el proyecto ya compilaba con `xcodebuild`.
-- [ ] En el iPhone: la app abre contra la API de producción y los datos siguen
+- [x] En el iPhone: la app abre contra la API de producción y los datos siguen
       ahí (mismo bundle id y team, se instala encima). Widgets, Live Activity y
       Salud funcionan.
 
@@ -179,6 +179,9 @@ Errores probables y dónde mirar:
   `apps/mobile/fastlane/Fastfile` o en el YAML.
 
 ## 3. Android (opcional hoy, si está Android Studio)
+
+> **28 nov:** no se hizo. En el Mac no hay Android Studio y se deja para
+> otro día.
 
 - [ ] Android Studio instalado con el SDK (`~/Library/Android/sdk`). El
       Fastfile usa su JDK si `JAVA_HOME` no está definido.
@@ -194,12 +197,16 @@ Errores probables y dónde mirar:
 
 ## 4. Cerrar
 
-- [ ] Si todo va: borrar `apps/mobile/ios.bak`.
-- [ ] Pedir a Claude que quite lo que ya sobra (en la misma rama):
+- [x] Si todo va: borrar `apps/mobile/ios.bak`.
+- [x] Pedir a Claude que quite lo que ya sobra (en la misma rama):
       `scripts/ios-live-activity.rb`, el script `ios:live-activity` del
       `package.json` y los pasos manuales de iOS de `NATIVE.md` que ya hace
       `native:prepare`.
-- [ ] Commit y push de la rama con los checks marcados.
+      > **28 nov:** `ios.bak` se movió a la Papelera, no se borró del todo.
+      > Fuera el script y su entrada en `package.json`. En `NATIVE.md`, la
+      > sección de ajustes tras `cap add ios` pasa a «lo que pone
+      > `native:prepare`», y Live Activity y widgets ya no citan el script.
+- [x] Commit y push de la rama con los checks marcados.
 - [ ] Cuando terminen los cambios de infra que hay en marcha en `brio-dev`:
       PR de esta rama → **`brio-dev`**. Al fusionar se despliega el backoffice en
       Pages por primera vez (crea el proyecto `brio-backoffice`) y se vuelve a

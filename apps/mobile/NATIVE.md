@@ -30,27 +30,15 @@ Opciones de `native:prepare`: `--platform ios|android` (por defecto las dos),
 `--skip-web` (usa el `dist/` que haya). **No tocar `ios/` ni `android/` a mano**:
 lo que no esté en el YAML se pierde al regenerar.
 
-### Primera vez en el Mac: validarlo contra el `ios/` que ya funciona
+### Validado en el Mac (28 nov 2026)
 
-Probado en Linux (todo menos `pod install` y compilar). Hasta validarlo en el
-Mac, los pasos manuales de abajo y `ios:live-activity` siguen valiendo.
-
-1. Guardar el proyecto actual: `mv apps/mobile/ios apps/mobile/ios.bak`.
-2. `pnpm install` (compila `sharp`, que usan los iconos).
-3. En `apps/mobile/.env.production.local`, `APPLE_TEAM_ID=` con el de
-   `grep -m1 DEVELOPMENT_TEAM apps/mobile/ios.bak/App/App.xcodeproj/project.pbxproj`.
-4. `pnpm --filter @core/mobile native:prepare --profile device --platform ios`.
-5. Comparar con el que funcionaba; lo que esté en `ios.bak` y no en `ios` se
-   pasa a `native.config.yml`:
-   ```bash
-   cd apps/mobile
-   for f in App/App/Info.plist App/App/App.entitlements; do
-     diff <(plutil -convert xml1 -o - ios.bak/$f) <(plutil -convert xml1 -o - ios/$f)
-   done
-   ```
-6. Compilar e instalar en el iPhone (Xcode o Forja). Mismo bundle id y team: se
-   instala encima sin perder datos. Comprobar widgets, Live Activity y Salud.
-7. Si todo va: borrar `ios.bak`.
+El `ios/` generado se comparó con el que se montaba a mano (mismos
+entitlements, team, bundle ids y versiones mínimas) y `fastlane ios build
+profile:device` lo instaló por Wi-Fi encima del anterior sin perder datos:
+widgets, Live Activity, Salud y login con Google funcionan. Si
+`capacitor-assets` falla con «Something went wrong installing the sharp
+module», recompilar el `sharp` que usa (0.32.6):
+`cd node_modules/.pnpm/sharp@0.32.6/node_modules/sharp && npm run install`.
 
 ## Builds con fastlane (instalar en el móvil, TestFlight, tiendas)
 
@@ -71,9 +59,11 @@ resultado (.app, .ipa, .apk o .aab) y `last-build.json` quedan en `native-build/
 
 ### Preparar el Mac (una vez)
 
-1. **Ruby ≥ 3.2** (el de macOS es 2.6): `brew install ruby` y poner su `bin`
-   delante en el `PATH` (lo dice `brew info ruby`). Después, en `apps/mobile`:
-   `bundle install`.
+1. **Ruby ≥ 3.2** (el de macOS es 2.6): rbenv o `brew install ruby` con su
+   `bin` delante en el `PATH` (lo dice `brew info ruby`). Después, en
+   `apps/mobile`: `bundle install`. Instala fastlane y CocoaPods (van en el
+   `Gemfile`: dentro de `bundle exec` no se ve el `pod` del sistema). CocoaPods
+   pide `export LANG=en_US.UTF-8`.
 2. **iOS en el móvil**: Xcode con la cuenta de Apple iniciada (Settings ›
    Accounts) y el iPhone con el Modo desarrollador. Para instalar por **Wi-Fi**:
    conectarlo una vez por cable, y en Xcode › Window › Devices and Simulators
@@ -97,13 +87,18 @@ resultado (.app, .ipa, .apk o .aab) y `last-build.json` quedan en `native-build/
 Las variables van en `apps/mobile/.env.production.local` (no se commitea) o en
 el entorno del runner; las rutas a `.p8`, keystore y JSON, siempre fuera del repo.
 
-## Requisitos
+## A mano, sin `native:prepare`
 
-- **iOS**: macOS con Xcode + CocoaPods (`sudo gem install cocoapods`).
+Lo normal es `native:prepare` o fastlane. Los pasos sueltos siguen sirviendo
+para entender qué hacen o para tocar una sola cosa.
+
+### Requisitos
+
+- **iOS**: macOS con Xcode; CocoaPods sale del `Gemfile` (`bundle install`).
 - **Android**: Android Studio + SDK (variable `ANDROID_HOME`).
 - Node/pnpm ya instalados en el monorepo.
 
-## 1. Build de la web
+### 1. Build de la web
 
 Capacitor copia `dist/` (output de Vite) al contenedor nativo:
 
@@ -111,7 +106,7 @@ Capacitor copia `dist/` (output de Vite) al contenedor nativo:
 pnpm --filter @core/mobile build
 ```
 
-## 2. Añadir las plataformas (una vez por máquina)
+### 2. Añadir las plataformas (una vez por máquina)
 
 ```bash
 cd apps/mobile
@@ -119,7 +114,7 @@ pnpm cap:add:ios       # crea ios/     (requiere Xcode)
 pnpm cap:add:android   # crea android/ (requiere Android SDK)
 ```
 
-## 3. Generar iconos y splash
+### 3. Generar iconos y splash
 
 Las fuentes están en `resources/` (`icon.png`, `splash.png`, `splash-dark.png`).
 Ver `resources/README.md`. Tras añadir las plataformas:
@@ -131,7 +126,7 @@ pnpm assets:generate
 Genera los iconos de todas las densidades y las splash screens (claro/oscuro)
 dentro de `ios/` y `android/`.
 
-## 4. Sincronizar
+### 4. Sincronizar
 
 Copia la web y la config de `capacitor.config.ts` (plugins: SplashScreen,
 StatusBar, PushNotifications) e instala los pods/deps nativos:
@@ -143,7 +138,7 @@ pnpm cap:sync
 Reejecuta `build` + `cap:sync` cada vez que cambie el código web, y
 `assets:generate` cuando cambien los assets.
 
-## 5. Abrir y ejecutar
+### 5. Abrir y ejecutar
 
 ```bash
 pnpm exec cap open ios       # abre Xcode
@@ -152,83 +147,30 @@ pnpm exec cap open android   # abre Android Studio
 
 Desde el IDE: seleccionar dispositivo/simulador y ejecutar.
 
-## iOS: ajustes tras `cap add ios` (probado con Xcode 26)
+## iOS: lo que pone `native:prepare`
 
-`ios/` no se versiona, así que estos ajustes hay que repetirlos al regenerarla:
+Todo sale de la sección `ios` de `native.config.yml`; si hace falta otro ajuste
+nativo, va ahí (o en `native/ios/` si es Swift), nunca en `ios/` a mano:
 
-1. **Versión mínima iOS 15.** El Xcode actual no compila para simulador por
-   debajo de 15 y el plugin de login social pide 14. En `ios/App/Podfile`:
+- **iOS 15 mínimo** en el proyecto y en todos los pods (Podfile). La extensión
+  `BrioWidgets` pide 17.
+- **Info.plist**: `CFBundleName` = Brío (si no, los avisos dicen «App»), textos
+  de Salud, cámara (códigos de barras), micrófono y dictado (hablar al coach;
+  sin ellos iOS cierra la app), `LSApplicationQueriesSchemes` con `hevy`,
+  `NSSupportsLiveActivities` y los esquemas `brio://` y el de Google.
+- **Entitlements**: HealthKit y el App Group `group.es.aj.brio`.
+- **`NSAppTransportSecurity`** (http) solo en el perfil `mac` (ZeroTier). Los
+  demás van por https.
+- **Controlador propio** `BrioBridgeViewController` en Main.storyboard y en
+  `SceneDelegate.swift`: registra los plugins de widgets y Live Activity.
+- **Sign in with Apple** está en `ios.paidAccountOnly`: solo se añade con
+  `APPLE_ACCOUNT=paid` (con la cuenta gratuita la app no firma si lo lleva).
+  Además hay que activarlo en el App ID (developer.apple.com) y poner
+  `VITE_APPLE_SIGN_IN=true`. La API acepta tokens con `aud` = `APPLE_CLIENT_ID`
+  (por defecto `es.aj.brio`).
 
-   ```ruby
-   platform :ios, '15.0'
-   ...
-   post_install do |installer|
-     assertDeploymentTarget(installer)
-     installer.pods_project.targets.each do |target|
-       target.build_configurations.each do |config|
-         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-       end
-     end
-   end
-   ```
-
-   y `IPHONEOS_DEPLOYMENT_TARGET = 15.0` en `ios/App/App.xcodeproj/project.pbxproj`.
-2. **CocoaPods necesita UTF-8**: `export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`
-   antes de `cap sync ios` / `pod install`.
-3. **Backend de pruebas por `http`** (IP de ZeroTier o red local): iOS bloquea
-   `http` salvo excepción. Solo para pruebas, en `ios/App/App/Info.plist`:
-   `NSAppTransportSecurity` → `NSAllowsArbitraryLoads` = `YES`. Quitarlo antes
-   de publicar en la App Store (la API de producción irá por `https`).
-4. Usar el pnpm del repo (`packageManager`, 10.x): con otra versión mayor,
-   `pnpm add` falla por la ubicación del store. `npx pnpm@10.11.0 …` sirve.
-
-5. **Apple Salud (HealthKit).** En `ios/App/App/Info.plist`:
-
-   ```xml
-   <key>NSHealthShareUsageDescription</key>
-   <string>Brío lee tu sueño, pulso en reposo, variabilidad, pasos, peso y entrenos para ajustar tu plan y tus calorías.</string>
-   <key>NSHealthUpdateUsageDescription</key>
-   <string>Brío no escribe en Salud; el sistema pide este texto igualmente.</string>
-   ```
-
-   y el permiso de HealthKit: crea `ios/App/App/App.entitlements` con
-   `com.apple.developer.healthkit` = `true` y
-   `com.apple.developer.healthkit.access` = array vacío, y en
-   `project.pbxproj` añade `CODE_SIGN_ENTITLEMENTS = App/App.entitlements;` a
-   las dos configuraciones del target `App` (junto a `PRODUCT_BUNDLE_IDENTIFIER`).
-   Al firmar con `-allowProvisioningUpdates` (Xcode o Forja) el perfil se
-   regenera con HealthKit.
-
-6. **Abrir Hevy desde Brío** (rutinas de gimnasio). En `ios/App/App/Info.plist`,
-   `LSApplicationQueriesSchemes` (array) con `hevy`: sin él iOS no deja
-   comprobar si Hevy está instalada y Brío abre hevy.com en su lugar.
-
-7. **Login con Apple** (obligatorio en la App Store si se ofrece Google).
-   Necesita cuenta de desarrollador **de pago**: con la gratuita la app no
-   firma si lleva la capacidad. Cuando la tengas:
-   - en `ios/App/App/App.entitlements`, `com.apple.developer.applesignin` =
-     array con `Default`;
-   - en el App ID (developer.apple.com) activa «Sign in with Apple»;
-   - en `apps/mobile/.env.production.local`, `VITE_APPLE_SIGN_IN=true`.
-   La API acepta tokens con `aud` = `APPLE_CLIENT_ID` (por defecto `es.aj.brio`).
-
-8. **Escanear códigos de barras** (`@capacitor/barcode-scanner`). En
-   `ios/App/App/Info.plist`, `NSCameraUsageDescription` = «Brío usa la cámara
-   para leer el código de barras de los alimentos.» (sin ella iOS cierra la
-   app al abrir la cámara).
-
-9. **Nombre en los avisos del sistema**: en `ios/App/App/Info.plist`,
-   `CFBundleName` = `Brío` (por defecto es `$(PRODUCT_NAME)` = «App», y avisos
-   como el de iniciar sesión con Google dicen «App quiere usar…»).
-
-10. **Hablar al coach** (mantener el botón central de la barra;
-   `@capacitor-community/speech-recognition`). En `ios/App/App/Info.plist`:
-   - `NSMicrophoneUsageDescription` = «Brío usa el micrófono para que le cuentes
-     al coach lo que has comido o entrenado.»
-   - `NSSpeechRecognitionUsageDescription` = «Brío pasa a texto lo que le dices
-     al coach para apuntarlo.»
-   Sin las dos, iOS cierra la app al empezar a escuchar. Después, `cap sync ios`
-   para que CocoaPods instale el plugin.
+Usar el pnpm del repo (`packageManager`, 10.x): con otra versión mayor, `pnpm
+add` falla por la ubicación del store. `npx pnpm@10.11.0 …` sirve.
 
 ## iOS: Live Activity del entreno en vivo
 
@@ -237,19 +179,11 @@ curso (ejercicio, serie, peso, repes y descanso) con botones que funcionan sin
 desbloquear: ✓ serie hecha, ±2,5 kg, ±1 repe, ejercicio anterior/siguiente y
 saltar descanso. Requiere iOS 17 (la app sigue funcionando en 15; solo no sale).
 
-Como `ios/` no se commitea, el código nativo vive en `native/ios/` y un script
-lo engancha al proyecto de Xcode. Tras `cap add ios` (o en un proyecto que no
-lo tenga), una vez:
-
-```bash
-pnpm --filter @core/mobile ios:live-activity
-```
-
-Hace, de forma idempotente: crea el target `BrioWidgets` (extensión WidgetKit,
-bundle `es.aj.brio.widgets`), añade `native/ios/Shared` (modelo e intents) a la
-app y a la extensión, `native/ios/App` (plugin y controlador) a la app, pone
-`NSSupportsLiveActivities` en el Info.plist y apunta Main.storyboard a
-`BrioBridgeViewController`, que registra el plugin `BrioLiveActivity`.
+Como `ios/` no se commitea, el código nativo vive en `native/ios/` y
+`native:prepare` lo engancha al proyecto de Xcode (`scripts/ios-project.rb`):
+el target `BrioWidgets` (extensión WidgetKit, bundle `es.aj.brio.widgets`),
+`native/ios/Shared` (modelo e intents) en la app y en la extensión, y
+`native/ios/App` (plugins y controlador) en la app.
 
 Cómo funciona: la web manda el estado completo al plugin (`useLiveActivitySync`,
 montado en `TabsShell`); los botones son `LiveActivityIntent`, que iOS ejecuta
@@ -279,17 +213,11 @@ solos a «Abre Brío» hasta que la app vuelve a abrirse. Al tocar un widget, la
 app se abre con `brio://hoy`, `brio://entreno?routine=…` o `brio://plan`
 (`useWidgetDeepLinks`, en `TabsShell`). Al cerrar sesión se borran los datos.
 
-El mismo `pnpm --filter @core/mobile ios:live-activity` lo engancha todo:
-añade los ficheros nuevos, pone el App Group en los entitlements de la app y de
+`native:prepare` también pone el App Group en los entitlements de la app y de
 la extensión (`native/ios/Widget/BrioWidgets.entitlements`) y registra el
-esquema `brio://` en el Info.plist.
-
-**Una vez en Xcode**: en *Signing & Capabilities* de los targets `App` y
-`BrioWidgets`, comprobar que aparece **App Groups** con `group.es.aj.brio`
-marcado (si no, añadir la capacidad y marcarlo: Xcode registra el grupo en la
-cuenta de desarrollador). El App Group necesita la cuenta de desarrollador de
-pago; con la gratuita, Xcode puede negarse a firmar y entonces los widgets no
-reciben datos (la Live Activity sigue funcionando).
+esquema `brio://`. Con la cuenta gratuita firma igual (probado el 28 nov
+2026). Si alguna vez Xcode se niega a firmar el App Group, los widgets se
+quedan sin datos y la Live Activity sigue funcionando.
 
 Para añadirlos al iPhone: mantener pulsada la pantalla de inicio › «+» › Brío.
 

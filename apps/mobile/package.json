@@ -19,7 +19,6 @@
     "ota:publish": "node scripts/ota.mjs publish",
     "ios:prod": "CAP_SERVER_URL= VITE_API_URL=https://brio-api.ajly.online sh -c 'pnpm --filter @core/api-client generate:offline && tsc --noEmit && vite build && cap sync ios'",
     "cap:add:ios": "cap add ios",
-    "ios:live-activity": "ruby scripts/ios-live-activity.rb",
     "cap:add:android": "cap add android",
     "assets:generate": "capacitor-assets generate --iconBackgroundColor '#1c1c1e' --iconBackgroundColorDark '#1c1c1e' --splashBackgroundColor '#f2f2f7' --splashBackgroundColorDark '#1c1c1e'"
   },
