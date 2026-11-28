@@ -8,6 +8,7 @@ import type {
 } from '../../application/ports/build-pipeline.port';
 import type { LaunchBuild } from '../../domain/mobile-build';
 import { MobileBuildsGithubError } from '../../domain/mobile-builds.errors';
+import { readZipEntry } from './zip-entry';
 
 // Lanza y lee el workflow `.github/workflows/mobile-build.yml`, que corre en
 // el runner self-hosted del Mac Mini (etiqueta `brio-mac`, apps/mobile/RUNNER.md).
@@ -143,6 +144,25 @@ export class GithubActionsPipelineAdapter implements BuildPipelinePort {
     if (res.status !== 302 || !location)
       throw await this.fail('bajar el artefacto', res);
     return location;
+  }
+
+  async buildResult(runId: number): Promise<Record<string, unknown> | null> {
+    const artifact = (await this.artifacts(runId)).find((a) => !a.expired);
+    if (!artifact) return null;
+    const url = await this.artifactDownloadUrl(artifact.id);
+    // La URL ya va firmada: sin cabecera de autorización.
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) throw await this.fail('bajar el resultado del build', res);
+    const json = readZipEntry(
+      Buffer.from(await res.arrayBuffer()),
+      'last-build.json',
+    );
+    if (!json) return null;
+    try {
+      return JSON.parse(json.toString('utf8')) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
   }
 
   async runner(): Promise<PipelineRunner | null> {

@@ -93,8 +93,13 @@ gh run watch --repo msalejandrojose/core
   el `.ipa`, `.apk` o `.aab` si lo hay (14 días).
 - Los builds van de uno en uno (`concurrency`): si se lanzan dos, el segundo
   espera.
-- Con la cuenta gratuita, la firma dura 7 días: basta con relanzar el build
-  `device` una vez por semana.
+- **Firma con la cuenta gratuita**: el perfil dura 7 días desde que Xcode lo
+  crea, y mientras valga lo reutiliza. Compilar antes de que caduque **no** la
+  alarga. Cuando caduca, la app deja de abrir y el siguiente build `device`
+  crea un perfil nuevo para otros 7 días.
+  - Cada build apunta la caducidad en `last-build.json` (`signatureExpiresAt`).
+  - El backoffice la enseña arriba de Apps móviles › Builds: «Firma hasta …»,
+    y en rojo cuando ya ha caducado.
 
 ## Desde el backoffice
 

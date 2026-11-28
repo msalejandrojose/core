@@ -56,15 +56,22 @@ const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)} min ${String(s
  * native.config.yml, se ve cómo van y se baja el resultado.
  */
 export function MobileBuildsPage() {
-  const { data, isLoading } = useMobileBuilds();
+  const { data, isLoading, dataUpdatedAt } = useMobileBuilds();
   const builds = data?.builds ?? [];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Builds de las apps"
-        description="Compila la app en el Mac Mini: instala en el móvil por la Wi-Fi o sube a las tiendas, según el perfil. Con la cuenta gratuita de Apple la firma dura 7 días: basta con relanzar un build «Móvil» cada semana."
-        actions={data?.configured ? <RunnerBadge runner={data.runner} /> : null}
+        description="Compila la app en el Mac Mini: instala en el móvil por la Wi-Fi o sube a las tiendas, según el perfil. Con la cuenta gratuita de Apple la firma dura 7 días desde que Xcode crea el perfil, y compilar antes no la alarga: cuando caduque, un build «Móvil» crea uno nuevo."
+        actions={
+          data?.configured ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <SignatureBadge signature={data.signature} now={dataUpdatedAt} />
+              <RunnerBadge runner={data.runner} />
+            </div>
+          ) : null
+        }
       />
 
       {data && !data.configured ? (
@@ -109,6 +116,31 @@ export function MobileBuildsPage() {
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/** Hasta cuándo abre la app del iPhone (la apunta cada build «Móvil»). */
+function SignatureBadge({ signature, now }: { signature: MobileBuildList['signature']; now: number }) {
+  if (!signature) return null;
+  // `now` = cuándo se pidió la lista (se refresca cada 30 s como mucho).
+  const left = new Date(signature.expiresAt).getTime() - now;
+  const when = date(signature.expiresAt);
+  if (left <= 0) {
+    return (
+      <Badge variant="destructive" title="La app del iPhone ya no abre: lanza un build «Móvil»">
+        Firma caducada · {when}
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      variant={left < DAY ? 'default' : 'outline'}
+      title="Hasta entonces compilar no la alarga; a partir de ahí, un build «Móvil» crea un perfil nuevo"
+    >
+      Firma hasta {when}
+    </Badge>
   );
 }
 

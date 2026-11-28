@@ -57,6 +57,18 @@ export class MobileBuildRunnerDto {
   @ApiProperty() busy!: boolean;
 }
 
+export class MobileBuildSignatureDto {
+  @ApiProperty({
+    type: String,
+    format: 'date-time',
+    description:
+      'Caducidad del perfil de firma (cuenta gratuita: 7 días desde que Xcode lo crea).',
+  })
+  expiresAt!: Date;
+  @ApiProperty({ description: 'El build que la dejó apuntada.' })
+  buildId!: number;
+}
+
 export class MobileBuildArtifactDto {
   @ApiProperty() id!: number;
   @ApiProperty() name!: string;
@@ -126,6 +138,13 @@ export class MobileBuildListDto {
     description: 'El Mac; null si el token no puede verlo.',
   })
   runner!: MobileBuildRunnerDto | null;
+  @ApiProperty({
+    type: MobileBuildSignatureDto,
+    nullable: true,
+    description:
+      'Hasta cuándo vale la firma de la app del iPhone; null si el último build no la apuntó.',
+  })
+  signature!: MobileBuildSignatureDto | null;
   @ApiProperty({ type: [MobileBuildDto] }) builds!: MobileBuildDto[];
 
   static from(l: BuildListView): MobileBuildListDto {

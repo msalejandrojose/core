@@ -241,5 +241,7 @@ Errores probables y dónde mirar:
   contraseñas, el JSON de la cuenta de servicio de Play, `ota/private.pem`.
   En el YAML solo se nombran las variables; los valores van en
   `.env.production.local` o en el entorno, y los ficheros fuera del repo.
-- Con la cuenta gratuita la firma dura 7 días: cada semana hay que volver a
-  ejecutar `fastlane ios build profile:device` (no hace falta cable).
+- Con la cuenta gratuita, el perfil de firma dura 7 días desde que Xcode lo
+  crea, y compilar antes no lo alarga. Cuando caduca, un build `device` (desde
+  el backoffice o con fastlane, sin cable) crea uno nuevo. La fecha sale en
+  Apps móviles › Builds.
