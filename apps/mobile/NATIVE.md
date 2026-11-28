@@ -52,6 +52,51 @@ Mac, los pasos manuales de abajo y `ios:live-activity` siguen valiendo.
    instala encima sin perder datos. Comprobar widgets, Live Activity y Salud.
 7. Si todo va: borrar `ios.bak`.
 
+## Builds con fastlane (instalar en el móvil, TestFlight, tiendas)
+
+`fastlane/Fastfile` compila con un perfil de `native.config.yml`: regenera la
+plataforma (`native:prepare`), compila y, según el perfil, instala o sube.
+
+| Comando (desde `apps/mobile`) | Qué hace |
+|---|---|
+| `bundle exec fastlane ios devices` | Lista los iPhones emparejados (cable o Wi-Fi) |
+| `bundle exec fastlane ios build profile:device [device:"iPhone de …"]` | Compila e instala en el iPhone y abre la app |
+| `bundle exec fastlane ios build profile:testflight` | Sube a TestFlight (cuenta de pago) |
+| `bundle exec fastlane ios build profile:production` | Sube a la App Store y la envía a revisión |
+| `bundle exec fastlane android build profile:device [device:<serial>]` | APK de debug (y lo instala por adb si se le pasa `device:`) |
+| `bundle exec fastlane android build profile:testflight` / `production` | AAB firmado a la pista interna / producción de Google Play |
+
+Todos aceptan `build_number:N` (si no, `BUILD_NUMBER` o minutos desde 2026). El
+resultado (.app, .ipa, .apk o .aab) y `last-build.json` quedan en `native-build/`.
+
+### Preparar el Mac (una vez)
+
+1. **Ruby ≥ 3.2** (el de macOS es 2.6): `brew install ruby` y poner su `bin`
+   delante en el `PATH` (lo dice `brew info ruby`). Después, en `apps/mobile`:
+   `bundle install`.
+2. **iOS en el móvil**: Xcode con la cuenta de Apple iniciada (Settings ›
+   Accounts) y el iPhone con el Modo desarrollador. Para instalar por **Wi-Fi**:
+   conectarlo una vez por cable, y en Xcode › Window › Devices and Simulators
+   marcar «Connect via network». Desde entonces basta con que esté en la misma
+   red que el Mac (`fastlane ios devices` lo enseña como `localNetwork`).
+3. **TestFlight / App Store** (cuenta de pago): `APPLE_ACCOUNT=paid` y una clave
+   de la API de App Store Connect (Users and Access › Integrations › App Store
+   Connect API, rol App Manager): `ASC_KEY_ID`, `ASC_ISSUER_ID` y `ASC_KEY_PATH`
+   (ruta del `.p8`, fuera del repo). La app tiene que existir antes en App Store
+   Connect con el bundle id `es.aj.brio`.
+4. **Android**: Android Studio (el Fastfile usa su JDK y `~/Library/Android/sdk`
+   si `JAVA_HOME` / `ANDROID_HOME` no están). Para instalar por Wi-Fi: depuración
+   inalámbrica en el móvil, `adb pair` y `adb connect`, y `device:<ip:puerto>`.
+5. **Google Play**: keystore de subida (`ANDROID_KEYSTORE_PATH`,
+   `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) y la
+   cuenta de servicio de Play (`PLAY_SERVICE_ACCOUNT_JSON`). Google exige que el
+   **primer** AAB se suba a mano desde Play Console; los siguientes ya los sube
+   fastlane. Si la cuenta de Play es personal y nueva, pide una prueba cerrada
+   (12 testers, 14 días) antes de dar acceso a producción.
+
+Las variables van en `apps/mobile/.env.production.local` (no se commitea) o en
+el entorno del runner; las rutas a `.p8`, keystore y JSON, siempre fuera del repo.
+
 ## Requisitos
 
 - **iOS**: macOS con Xcode + CocoaPods (`sudo gem install cocoapods`).

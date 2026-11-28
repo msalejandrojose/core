@@ -26,3 +26,12 @@ dist-ssr
 /ota/private.pem
 /ota/*.key
 /ota/out
+
+# Builds nativos (fastlane): .app/.ipa/.apk/.aab, derived data y salidas de fastlane
+/native-build
+/fastlane/report.xml
+/fastlane/Preview.html
+/fastlane/screenshots
+/fastlane/test_output
+/.bundle
+/vendor/bundle

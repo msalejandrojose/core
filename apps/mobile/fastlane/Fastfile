@@ -1,0 +1,241 @@
+# Builds nativos de Brío a partir de native.config.yml.
+#
+# Un lane por plataforma, `build`, que hace lo que diga el perfil del YAML:
+#   device / mac   → firma de desarrollo; en iOS instala en el iPhone (cable o
+#                    misma Wi-Fi), en Android deja el APK (y lo instala por adb
+#                    si se le pasa device:).
+#   testflight     → TestFlight y la pista interna de Google Play.
+#   production     → App Store (enviado a revisión) y producción de Google Play.
+#
+# Uso (desde apps/mobile):
+#   bundle exec fastlane ios devices
+#   bundle exec fastlane ios build profile:device [device:"iPhone de …"]
+#   bundle exec fastlane ios build profile:testflight
+#   bundle exec fastlane android build profile:device [device:<serial de adb>]
+#   bundle exec fastlane android build profile:production
+# Opcional en todos: build_number:N (si no, BUILD_NUMBER o minutos desde 2026).
+#
+# Cada build regenera ios/ o android/ (pnpm native:prepare) y deja el resultado
+# en native-build/ (el .app/.ipa/.apk/.aab y last-build.json).
+
+require 'fileutils'
+require 'json'
+require 'open3'
+
+MOBILE = File.expand_path('..', __dir__)
+OUT = File.join(MOBILE, 'native-build')
+
+opt_out_usage
+skip_docs
+default_platform(:ios)
+
+before_all do
+  ENV['LANG'] ||= 'en_US.UTF-8'
+  ENV['LC_ALL'] ||= 'en_US.UTF-8'
+  FileUtils.mkdir_p(OUT)
+end
+
+# --- Comunes -----------------------------------------------------------------
+
+# Config resuelta del perfil (con las contraseñas: se queda en memoria).
+def native_config(profile, platform)
+  out, err, status = Open3.capture3(
+    'node', File.join(MOBILE, 'scripts/native-config.mjs'),
+    '--profile', profile, '--platform', platform, '--show-secrets',
+    chdir: MOBILE
+  )
+  err.each_line { |l| UI.important(l.chomp) }
+  UI.user_error!("native.config.yml no vale para el perfil #{profile}") unless status.success?
+  JSON.parse(out)
+end
+
+# Mismo criterio que native-prepare: crece siempre y cabe en versionCode.
+def build_number(options)
+  n = options[:build_number] || ENV['BUILD_NUMBER']
+  return n.to_i if n && n.to_i.positive?
+
+  [((Time.now.utc - Time.utc(2026, 1, 1)) / 60).floor, 1].max
+end
+
+def native_prepare(profile, platform, build)
+  Dir.chdir(MOBILE) do
+    sh('pnpm', 'native:prepare', '--profile', profile, '--platform', platform, '--build-number', build.to_s)
+  end
+end
+
+def write_result(result)
+  File.write(File.join(OUT, 'last-build.json'), JSON.pretty_generate(result.merge(finishedAt: Time.now.utc.iso8601)))
+  UI.success("Listo: #{result[:artifact]}#{result[:uploaded] ? " → #{result[:uploaded]}" : ''}")
+end
+
+# --- iOS ---------------------------------------------------------------------
+
+platform :ios do
+  # iPhones/iPads emparejados con el Mac. Para la Wi-Fi: emparejar una vez por
+  # cable y en Xcode › Devices marcar «Connect via network».
+  def ios_devices
+    file = File.join(OUT, 'devices.json')
+    sh('xcrun', 'devicectl', 'list', 'devices', '--json-output', file, log: false)
+    JSON.parse(File.read(file)).dig('result', 'devices').to_a.filter_map do |d|
+      next unless d.dig('hardwareProperties', 'platform') == 'iOS'
+
+      {
+        id: d['identifier'],
+        name: d.dig('deviceProperties', 'name'),
+        model: d.dig('hardwareProperties', 'marketingName'),
+        transport: d.dig('connectionProperties', 'transportType'),
+        paired: d.dig('connectionProperties', 'pairingState') == 'paired',
+      }
+    end
+  end
+
+  def pick_device(wanted)
+    devices = ios_devices.select { |d| d[:paired] }
+    UI.user_error!('No hay ningún iPhone emparejado con el Mac') if devices.empty?
+    if wanted
+      device = devices.find { |d| [d[:id], d[:name]].include?(wanted) }
+      UI.user_error!("No encuentro «#{wanted}». Hay: #{devices.map { |d| d[:name] }.join(', ')}") unless device
+      return device
+    end
+    UI.user_error!("Hay varios iPhones; elige uno con device:\"…\" (#{devices.map { |d| d[:name] }.join(', ')})") if devices.size > 1
+    devices.first
+  end
+
+  desc 'Lista los iPhones emparejados con el Mac (por cable o Wi-Fi)'
+  lane :devices do
+    list = ios_devices
+    File.write(File.join(OUT, 'ios-devices.json'), JSON.pretty_generate(list))
+    list.each { |d| UI.message("#{d[:name]} (#{d[:model]}) · #{d[:transport] || 'sin conexión'} · #{d[:id]}") }
+    UI.important('No hay ninguno') if list.empty?
+  end
+
+  desc 'Compila iOS con un perfil de native.config.yml: profile:device|mac|testflight|production [device:"…"] [build_number:N]'
+  lane :build do |options|
+    profile = (options[:profile] || 'device').to_s
+    cfg = native_config(profile, 'ios')
+    ios = cfg.fetch('ios')
+    version = cfg.dig('app', 'version')
+    build = build_number(options)
+    native_prepare(profile, 'ios', build)
+    workspace = File.join(MOBILE, 'ios/App/App.xcworkspace')
+    result = { platform: 'ios', profile: profile, version: version, build: build }
+
+    if ios['signing'] == 'development'
+      # Firma de desarrollo (sirve la cuenta gratuita, con Xcode con sesión
+      # iniciada): se compila el .app y se instala directamente en el móvil.
+      derived = File.join(OUT, 'ios-derived')
+      sh('xcodebuild', '-workspace', workspace, '-scheme', 'App', '-configuration', 'Release',
+         '-destination', 'generic/platform=iOS', '-derivedDataPath', derived,
+         '-allowProvisioningUpdates', 'build')
+      app = File.join(derived, 'Build/Products/Release-iphoneos/App.app')
+      result[:artifact] = app
+      unless options[:install] == false || options[:install].to_s == 'false'
+        device = pick_device(options[:device])
+        UI.message("Instalando en #{device[:name]} (#{device[:transport]})…")
+        sh('xcrun', 'devicectl', 'device', 'install', 'app', '--device', device[:id], app)
+        sh('xcrun', 'devicectl', 'device', 'process', 'launch', '--terminate-existing', '--device', device[:id], ios['bundleId'])
+        result[:installedOn] = device[:name]
+      end
+    else
+      asc = ios.fetch('appStoreConnect')
+      api_key = app_store_connect_api_key(key_id: asc['keyId'], issuer_id: asc['issuerId'], key_filepath: asc['keyPath'])
+      # Firma automática sin depender de la sesión de Xcode: la clave de la API
+      # deja a xcodebuild crear certificados y perfiles.
+      auth = "-allowProvisioningUpdates -authenticationKeyPath '#{asc['keyPath']}' " \
+             "-authenticationKeyID #{asc['keyId']} -authenticationKeyIssuerID #{asc['issuerId']}"
+      ipa = build_app(
+        workspace: workspace, scheme: 'App', configuration: 'Release',
+        export_method: 'app-store', export_team_id: ios['teamId'],
+        export_options: { signingStyle: 'automatic' },
+        xcargs: auth, export_xcargs: auth,
+        output_directory: OUT, output_name: "Brio-#{version}-#{build}.ipa",
+        derived_data_path: File.join(OUT, 'ios-derived'), clean: true
+      )
+      result[:artifact] = ipa
+      case ios['upload']
+      when 'testflight'
+        upload_to_testflight(api_key: api_key, ipa: ipa, skip_waiting_for_build_processing: true)
+        result[:uploaded] = 'TestFlight'
+      when 'app-store'
+        # Solo el binario y el envío a revisión: la ficha (textos, capturas) se
+        # lleva en App Store Connect.
+        upload_to_app_store(
+          api_key: api_key, ipa: ipa, app_version: version,
+          skip_metadata: true, skip_screenshots: true, force: true,
+          submit_for_review: true, automatic_release: false, run_precheck_before_submit: false,
+          submission_information: { add_id_info_uses_idfa: false }
+        )
+        result[:uploaded] = 'App Store (en revisión)'
+      end
+    end
+    write_result(result)
+  end
+end
+
+# --- Android -----------------------------------------------------------------
+
+platform :android do
+  before_all do
+    # Lo que instala Android Studio, si no está ya en el entorno.
+    studio_jdk = '/Applications/Android Studio.app/Contents/jbr/Contents/Home'
+    ENV['JAVA_HOME'] ||= studio_jdk if File.directory?(studio_jdk)
+    sdk = File.expand_path('~/Library/Android/sdk')
+    ENV['ANDROID_HOME'] ||= sdk if File.directory?(sdk)
+  end
+
+  desc 'Lista los móviles Android conectados por adb (cable o depuración inalámbrica)'
+  lane :devices do
+    sh('adb', 'devices', '-l')
+  end
+
+  desc 'Compila Android con un perfil de native.config.yml: profile:device|mac|testflight|production [device:<serial>] [build_number:N]'
+  lane :build do |options|
+    profile = (options[:profile] || 'device').to_s
+    cfg = native_config(profile, 'android')
+    android = cfg.fetch('android')
+    version = cfg.dig('app', 'version')
+    build = build_number(options)
+    native_prepare(profile, 'android', build)
+    project_dir = File.join(MOBILE, 'android')
+    release = android['buildType'] == 'release'
+    aab = android['output'] == 'aab'
+    result = { platform: 'android', profile: profile, version: version, build: build }
+
+    properties = {}
+    if release
+      s = android.fetch('signing')
+      properties = {
+        'android.injected.signing.store.file' => s['keystorePath'],
+        'android.injected.signing.store.password' => s['keystorePassword'],
+        'android.injected.signing.key.alias' => s['keyAlias'],
+        'android.injected.signing.key.password' => s['keyPassword'],
+      }
+    end
+    gradle(
+      task: aab ? 'bundle' : 'assemble', build_type: release ? 'Release' : 'Debug',
+      project_dir: project_dir, properties: properties,
+      # Las contraseñas van en las propiedades: que no salgan en el log.
+      print_command: !release, print_command_output: true
+    )
+    built = aab ? lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH] : lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+    artifact = File.join(OUT, "Brio-#{version}-#{build}.#{aab ? 'aab' : 'apk'}")
+    FileUtils.cp(built, artifact)
+    result[:artifact] = artifact
+
+    if options[:device] && !aab
+      sh('adb', '-s', options[:device].to_s, 'install', '-r', artifact)
+      result[:installedOn] = options[:device].to_s
+    end
+
+    if android['upload']
+      upload_to_play_store(
+        package_name: android['packageName'], track: android['upload'], aab: artifact,
+        json_key: android.dig('play', 'serviceAccountJson'),
+        skip_upload_metadata: true, skip_upload_images: true, skip_upload_screenshots: true,
+        skip_upload_changelogs: true
+      )
+      result[:uploaded] = "Google Play (#{android['upload']})"
+    end
+    write_result(result)
+  end
+end

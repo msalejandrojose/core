@@ -7,6 +7,7 @@
 // Uso (desde apps/mobile):
 //   node scripts/native-config.mjs --profile device --platform ios
 //   pnpm native:config --profile testflight          (las dos plataformas)
+//   … --show-secrets   sin tapar las contraseñas (lo usa fastlane)
 //
 // Las variables salen del entorno y de los `.env*` de modo production (como el
 // `vite build` de la app); las del entorno mandan.
@@ -365,6 +366,8 @@ function main() {
     options: {
       profile: { type: 'string', short: 'p', default: 'device' },
       platform: { type: 'string', multiple: true },
+      // Para fastlane, que lee la salida en memoria: sin él, las contraseñas salen como ***.
+      'show-secrets': { type: 'boolean', default: false },
     },
   });
   const platforms = values.platform?.length ? values.platform : [...PLATFORMS];
@@ -381,7 +384,7 @@ function main() {
       env,
     });
     for (const w of warnings) console.error(`aviso: ${w}`);
-    console.log(JSON.stringify(redact(config), null, 2));
+    console.log(JSON.stringify(values['show-secrets'] ? config : redact(config), null, 2));
   } catch (err) {
     console.error(err instanceof NativeConfigError ? err.message : err);
     process.exit(1);

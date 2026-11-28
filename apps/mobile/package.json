@@ -14,6 +14,7 @@
     "cap:sync": "cap sync",
     "native:config": "node scripts/native-config.mjs",
     "native:prepare": "node scripts/native-prepare.mjs",
+    "fastlane": "bundle exec fastlane",
     "ota:keygen": "node scripts/ota.mjs keygen",
     "ota:publish": "node scripts/ota.mjs publish",
     "ios:prod": "CAP_SERVER_URL= VITE_API_URL=https://brio-api.ajly.online sh -c 'pnpm --filter @core/api-client generate:offline && tsc --noEmit && vite build && cap sync ios'",

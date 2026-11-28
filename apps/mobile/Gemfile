@@ -1,0 +1,6 @@
+# fastlane para los builds nativos (fastlane/Fastfile). En el Mac:
+#   bundle install          (una vez)
+#   bundle exec fastlane ios build profile:device
+source 'https://rubygems.org'
+
+gem 'fastlane', '~> 2.242'
