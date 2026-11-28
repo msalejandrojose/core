@@ -653,6 +653,28 @@ export const ERROR_CATALOG = {
     level: 'info',
     defaultMessage: 'No existe esa actualización.',
   },
+
+  // --- mobile-builds ---
+  MOBILE_BUILD_INVALID: {
+    httpStatus: 400,
+    level: 'warn',
+    defaultMessage: 'No se puede lanzar ese build.',
+  },
+  MOBILE_BUILD_NOT_FOUND: {
+    httpStatus: 404,
+    level: 'info',
+    defaultMessage: 'No existe ese build.',
+  },
+  MOBILE_BUILDS_NOT_CONFIGURED: {
+    httpStatus: 503,
+    level: 'warn',
+    defaultMessage: 'Los builds no están configurados en la API.',
+  },
+  MOBILE_BUILDS_GITHUB_FAILED: {
+    httpStatus: 502,
+    level: 'error',
+    defaultMessage: 'GitHub no respondió bien.',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type ErrorCode = keyof typeof ERROR_CATALOG;

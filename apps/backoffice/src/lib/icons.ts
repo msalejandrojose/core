@@ -14,6 +14,7 @@ import {
   Contact,
   Files,
   Flag,
+  Hammer,
   Inbox,
   Layers,
   LayoutDashboard,
@@ -70,6 +71,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Route,
   Wrench,
   BarChart3,
+  Hammer,
   // Añadir según se creen secciones nuevas.
 };
 

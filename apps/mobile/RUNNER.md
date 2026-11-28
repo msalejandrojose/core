@@ -73,13 +73,12 @@ Si cambia el `PATH` (otra versión de node o ruby) o el `.env`: editar
 
 ## Lanzar un build
 
-GitHub solo deja lanzar a mano un workflow cuando el fichero está en la rama
-por defecto (`main`). Mientras `mobile-build.yml` no llegue a `main`, ni sale el
-botón ni funciona `gh workflow run` (da 404), aunque luego se elija otra rama al
-lanzarlo.
+Lo normal es desde el **backoffice**: Apps móviles › Builds (ver más abajo).
 
-Desde GitHub: Actions › Mobile build › *Run workflow*. Ahí se eligen la rama, la
-plataforma, el perfil y el móvil. Desde la terminal:
+GitHub solo enseña el botón *Run workflow* (Actions › Mobile build) cuando el
+fichero está en la rama por defecto (`main`). La API y `gh workflow run` sí
+funcionan con el workflow solo en `brio-dev`, porque ya ha corrido alguna vez y
+GitHub lo tiene registrado. Desde la terminal:
 
 ```bash
 gh workflow run mobile-build.yml --repo msalejandrojose/core --ref <rama> \
@@ -97,8 +96,39 @@ gh run watch --repo msalejandrojose/core
 - Con la cuenta gratuita, la firma dura 7 días: basta con relanzar el build
   `device` una vez por semana.
 
+## Desde el backoffice
+
+Apps móviles › Builds (`/ota/builds`, permiso `ota.builds`):
+- Lanza un build con plataforma, perfil, móvil y rama (por defecto `brio-dev`).
+- Enseña si el Mac está libre, compilando o desconectado.
+- Lista los últimos builds con su estado y duración, con el enlace al run, el
+  botón para cancelar y el de bajar el resultado.
+
+Por debajo, la API (`apps/api/src/modules/mobile-builds`) llama a la API de
+GitHub Actions. Necesita un token en el secreto de la API.
+
+1. **Crear el token** en GitHub › Settings › Developer settings › Fine-grained
+   tokens:
+   - Solo el repo `msalejandrojose/core`.
+   - Permisos: *Actions: Read and write* y, para ver el Mac, *Administration:
+     Read-only*.
+2. **Meterlo en el secreto** `brio-api-env` sin tocar el resto. El token se
+   escribe sin que se vea y no queda en ningún fichero:
+   ```bash
+   read -rs "T?Token de GitHub: "; echo; f=$(mktemp); gcloud secrets versions access latest --secret brio-api-env | grep -v '^GITHUB_BUILDS_TOKEN=' > "$f" && echo "GITHUB_BUILDS_TOKEN=$T" >> "$f" && gcloud secrets versions add brio-api-env --data-file "$f"; rm -f "$f"; unset T
+   ```
+3. **Revisión nueva** para que la API lea el secreto:
+   ```bash
+   gcloud run services update brio-api --region europe-west1 --revision-suffix "s$(date +%s)"
+   ```
+
+Si se usa `deploy.sh secrets` con `apps/api/.env.cloudrun`, ese fichero tiene
+que llevar también `GITHUB_BUILDS_TOKEN`: si no, sube el secreto sin él.
+
 ## Si falla
 
+- **El backoffice dice «Sin configurar»**: falta `GITHUB_BUILDS_TOKEN` en el
+  secreto o no se ha sacado la revisión nueva (pasos de arriba).
 - **El run se queda en «Waiting for a runner»**: el runner no está *Idle*. Mirar
   `./svc.sh status`, que el Mac tenga la sesión iniciada y la red.
 - **`node`, `pnpm` o `bundle`: command not found**: el `PATH` guardado no los

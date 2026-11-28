@@ -17,6 +17,7 @@ import { GeoModule } from './modules/geo/geo.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { BrioModule } from './modules/brio/brio.module';
 import { OtaModule } from './modules/ota/ota.module';
+import { MobileBuildsModule } from './modules/mobile-builds/mobile-builds.module';
 import { AgentsModule } from './modules/agents/agents.module';
 import { RacingModule } from './modules/racing/racing.module';
 import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
@@ -36,7 +37,11 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
       // las variables vendrán inyectadas por el proveedor cloud.
       // En Cloud Run los secretos llegan como un único `.env` montado desde
       // Secret Manager (ENV_FILE=/secrets/.env); si existe, manda sobre el resto.
-      envFilePath: [...(process.env.ENV_FILE ? [process.env.ENV_FILE] : []), '.env', '.env.local'],
+      envFilePath: [
+        ...(process.env.ENV_FILE ? [process.env.ENV_FILE] : []),
+        '.env',
+        '.env.local',
+      ],
     }),
     // Necesario para el script `sync:sections`, que recorre los handlers
     // buscando metadatos `@RequiresPermission`. Pesa cero en runtime.
@@ -77,6 +82,7 @@ import { AppExceptionFilter } from './shared/filters/app-exception.filter';
     RacingModule,
     BrioModule,
     OtaModule,
+    MobileBuildsModule,
     AgentsModule,
     WhatsappModule,
     ErrorLogModule,
