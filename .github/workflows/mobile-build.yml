@@ -1,0 +1,106 @@
+name: Mobile build
+
+# Build nativo de Brío (iOS / Android) en el Mac Mini, con el runner
+# self-hosted (apps/mobile/RUNNER.md). Hace lo mismo que en una terminal del Mac:
+#   cd apps/mobile && bundle exec fastlane <plataforma> build profile:<perfil>
+# con un perfil de native.config.yml: `device` instala en el móvil por la Wi-Fi,
+# `testflight` / `production` suben a las tiendas.
+#
+# - Solo se lanza a mano (Actions › Mobile build › Run workflow) o por la API
+#   (workflow_dispatch). Nunca por push ni por PR: el repo es público y el
+#   runner es el Mac de casa.
+# - Las variables (APPLE_TEAM_ID, client IDs de Google, claves de App Store
+#   Connect…) no están en GitHub: las pone el runner (~/actions-runner/.env).
+#   Los ficheros (.p8, keystore, JSON de Play) están en el Mac, fuera del repo.
+# - El resultado (last-build.json y el .ipa/.apk/.aab si lo hay) queda como
+#   artefacto del run.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Plataforma
+        type: choice
+        options: [ios, android]
+        default: ios
+      profile:
+        description: Perfil de native.config.yml
+        type: choice
+        options: [device, mac, testflight, production]
+        default: device
+      device:
+        description: 'Móvil donde instalar (device/mac). iOS: nombre o id de «fastlane ios devices»; Android: ip:puerto de adb'
+        type: string
+        default: ''
+      build_number:
+        description: Número de build (vacío = minutos desde el 1-1-2026)
+        type: string
+        default: ''
+
+run-name: ${{ inputs.platform }} · ${{ inputs.profile }}${{ inputs.device && format(' · {0}', inputs.device) || '' }}
+
+# Un solo Mac: los builds van de uno en uno y no se cancelan entre sí.
+concurrency:
+  group: mobile-build
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: [self-hosted, macOS, brio-mac]
+    timeout-minutes: 60
+    env:
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+    steps:
+      - uses: actions/checkout@v4
+
+      # node, pnpm, ruby y Xcode son los del Mac (el PATH lo fija el runner al
+      # instalarse, ver RUNNER.md): nada que descargar en cada build.
+      - name: Herramientas
+        run: |
+          node -v
+          pnpm -v
+          ruby -v
+          xcodebuild -version | head -1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install fastlane + CocoaPods
+        working-directory: apps/mobile
+        run: bundle install
+
+      - name: Build
+        working-directory: apps/mobile
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          PROFILE: ${{ inputs.profile }}
+          DEVICE: ${{ inputs.device }}
+          BUILD: ${{ inputs.build_number }}
+        run: |
+          args=("$PLATFORM" build "profile:$PROFILE")
+          [ -n "$DEVICE" ] && args+=("device:$DEVICE")
+          [ -n "$BUILD" ] && args+=("build_number:$BUILD")
+          bundle exec fastlane "${args[@]}"
+
+      - name: Resumen
+        if: always()
+        working-directory: apps/mobile
+        run: |
+          if [ -f native-build/last-build.json ]; then
+            { echo '### Resultado'; echo '```json'; cat native-build/last-build.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: brio-${{ inputs.platform }}-${{ inputs.profile }}-${{ github.run_number }}
+          path: |
+            apps/mobile/native-build/last-build.json
+            apps/mobile/native-build/*.ipa
+            apps/mobile/native-build/*.apk
+            apps/mobile/native-build/*.aab
+          if-no-files-found: ignore
+          retention-days: 14

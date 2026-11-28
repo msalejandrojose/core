@@ -87,6 +87,13 @@ resultado (.app, .ipa, .apk o .aab) y `last-build.json` quedan en `native-build/
 Las variables van en `apps/mobile/.env.production.local` (no se commitea) o en
 el entorno del runner; las rutas a `.p8`, keystore y JSON, siempre fuera del repo.
 
+### Desde GitHub Actions
+
+El workflow `Mobile build` lanza estos mismos lanes en el Mac Mini con un runner
+self-hosted: Actions › Mobile build › *Run workflow* (plataforma, perfil y
+móvil). Cómo se instala el runner, dónde van las variables y qué hacer si falla:
+`RUNNER.md`.
+
 ## A mano, sin `native:prepare`
 
 Lo normal es `native:prepare` o fastlane. Los pasos sueltos siguen sirviendo

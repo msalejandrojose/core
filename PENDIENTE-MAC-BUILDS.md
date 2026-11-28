@@ -21,7 +21,7 @@ desde el backoffice. Plan por pasos:
 | 2. `apps/mobile/native.config.yml`: toda la config nativa en un fichero | Hecho |
 | 3. `pnpm native:prepare`: genera `ios/` y `android/` desde el YAML | Hecho, probado en Linux, **falta el Mac** |
 | 4. `apps/mobile/fastlane/Fastfile`: instalar en el móvil y subir a tiendas | Hecho, **sin probar** |
-| 5. Runner self-hosted de GitHub Actions en el Mac + `mobile-build.yml` | Pendiente |
+| 5. Runner self-hosted de GitHub Actions en el Mac + `mobile-build.yml` | Workflow y `apps/mobile/RUNNER.md` hechos; **falta registrar el runner** |
 | 6. API + página «Builds» en el backoffice | Pendiente |
 | 7. TestFlight, App Store y Google Play | Cuando haya cuentas de pago |
 
@@ -213,7 +213,7 @@ Errores probables y dónde mirar:
       desplegar la API (cambia el CORS en `apps/api/deploy/cloudrun.env.yaml`).
       Si Pages le da otra URL que `brio-backoffice.pages.dev` (nombre cogido),
       corregir el CORS con la que salga en el log del workflow.
-- [ ] Siguiente sesión: paso 5, el runner self-hosted en el Mac.
+- [ ] Paso 5: registrar el runner en el Mac (`apps/mobile/RUNNER.md`) y lanzar un build `ios · device` desde Actions.
 
 ## Reglas
 
