@@ -133,8 +133,16 @@ platform :ios do
         device = pick_device(options[:device])
         UI.message("Instalando en #{device[:name]} (#{device[:transport]})…")
         sh('xcrun', 'devicectl', 'device', 'install', 'app', '--device', device[:id], app)
-        sh('xcrun', 'devicectl', 'device', 'process', 'launch', '--terminate-existing', '--device', device[:id], ios['bundleId'])
         result[:installedOn] = device[:name]
+        # Abrirla es un extra: con el iPhone bloqueado iOS no deja
+        # (FBSOpenApplicationServiceErrorDomain 1) y la app ya está instalada.
+        begin
+          sh('xcrun', 'devicectl', 'device', 'process', 'launch', '--terminate-existing', '--device', device[:id], ios['bundleId'])
+          result[:launched] = true
+        rescue StandardError => e
+          UI.important("Instalada, pero no se pudo abrir (¿iPhone bloqueado?): #{e.message.lines.first&.strip}")
+          result[:launched] = false
+        end
       end
     else
       asc = ios.fetch('appStoreConnect')

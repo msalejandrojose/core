@@ -58,10 +58,15 @@ este runner. Defensas:
    ```bash
    cd ~/actions-runner
    ./svc.sh install
+   # svc.sh pone SessionCreate: el runner abre una sesión de seguridad nueva,
+   # no ve el llavero de tu sesión y codesign falla con errSecInternalComponent.
+   plutil -remove SessionCreate ~/Library/LaunchAgents/actions.runner.msalejandrojose-core.mac-mini.plist
    ./svc.sh start
    ./svc.sh status
    ```
    En Settings › Actions › Runners tiene que salir `mac-mini` como *Idle*.
+   Cada vez que se repita `./svc.sh install` hay que volver a quitar
+   `SessionCreate`.
 
 Si cambia el `PATH` (otra versión de node o ruby) o el `.env`: editar
 `~/actions-runner/.path` o `.env` y `./svc.sh stop && ./svc.sh start`.
@@ -93,6 +98,8 @@ gh run watch --repo msalejandrojose/core
   `./svc.sh status`, que el Mac tenga la sesión iniciada y la red.
 - **`node`, `pnpm` o `bundle`: command not found**: el `PATH` guardado no los
   tiene. Corregir `~/actions-runner/.path` y reiniciar el servicio.
+- **`errSecInternalComponent` al firmar** (`CodeSign … failed`): el agente
+  tiene `SessionCreate` (ver Instalar, paso 5). Quitarlo y reiniciar el servicio.
 - **Falla firmando** (`xcodebuild`, *No Accounts* / *No profiles*): Xcode ›
   Settings › Accounts con la sesión iniciada, en el mismo usuario que el runner.
 - **No encuentra el iPhone**: `bundle exec fastlane ios devices` en una terminal
