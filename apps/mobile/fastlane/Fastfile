@@ -21,6 +21,7 @@
 require 'fileutils'
 require 'json'
 require 'open3'
+require 'time'
 
 MOBILE = File.expand_path('..', __dir__)
 OUT = File.join(MOBILE, 'native-build')
@@ -89,6 +90,17 @@ platform :ios do
     end
   end
 
+  # ExpirationDate (ISO 8601, UTC) del perfil de firma que lleva el .app.
+  def profile_expiration(app)
+    path = File.join(app, 'embedded.mobileprovision')
+    return nil unless File.exist?(path)
+
+    xml, status = Open3.capture2('security', 'cms', '-D', '-i', path)
+    return nil unless status.success?
+
+    xml[%r{<key>ExpirationDate</key>\s*<date>([^<]+)</date>}, 1]
+  end
+
   def pick_device(wanted)
     devices = ios_devices.select { |d| d[:paired] }
     UI.user_error!('No hay ningún iPhone emparejado con el Mac') if devices.empty?
@@ -129,6 +141,14 @@ platform :ios do
          '-allowProvisioningUpdates', 'build')
       app = File.join(derived, 'Build/Products/Release-iphoneos/App.app')
       result[:artifact] = app
+      # Con la cuenta gratuita el perfil dura 7 días desde que Xcode lo crea, y
+      # mientras valga lo reutiliza: compilar antes de que caduque no lo alarga.
+      # Se apunta para que el backoffice diga cuándo toca volver a compilar.
+      expires = profile_expiration(app)
+      if expires
+        result[:signatureExpiresAt] = expires
+        UI.important("La firma caduca el #{Time.parse(expires).localtime.strftime('%d/%m %H:%M')}")
+      end
       unless options[:install] == false || options[:install].to_s == 'false'
         device = pick_device(options[:device])
         UI.message("Instalando en #{device[:name]} (#{device[:transport]})…")

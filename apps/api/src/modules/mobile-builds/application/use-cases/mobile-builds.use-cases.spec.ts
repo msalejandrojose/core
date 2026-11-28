@@ -20,6 +20,8 @@ class FakePipeline implements BuildPipelinePort {
   cancelled: number[] = [];
   arts: Record<number, PipelineArtifact[]> = {};
   mac: PipelineRunner | null = { name: 'mac-mini', online: true, busy: false };
+  results: Record<number, Record<string, unknown> | null> = {};
+  resultCalls: number[] = [];
 
   isConfigured() {
     return this.configured;
@@ -57,6 +59,10 @@ class FakePipeline implements BuildPipelinePort {
   }
   artifactDownloadUrl(artifactId: number) {
     return Promise.resolve(`https://signed.example/${artifactId}`);
+  }
+  buildResult(runId: number) {
+    this.resultCalls.push(runId);
+    return Promise.resolve(this.results[runId] ?? null);
   }
   runner() {
     return Promise.resolve(this.mac);
@@ -128,6 +134,7 @@ describe('MobileBuildsUseCases', () => {
       configured: false,
       defaultRef: 'brio-dev',
       runner: null,
+      signature: null,
       builds: [],
     });
     await expect(
@@ -222,5 +229,44 @@ describe('MobileBuildsUseCases', () => {
       MobileBuildNotFoundError,
     );
     await expect(uc.get(5)).rejects.toThrow(MobileBuildNotFoundError);
+  });
+
+  describe('firma', () => {
+    it('la del último build iOS que se instaló, y no la vuelve a bajar', async () => {
+      const { pipeline, uc } = setup();
+      pipeline.runs = [
+        run(5, 'android · device', 'completed', 'success'),
+        run(4, 'ios · testflight', 'completed', 'success'),
+        run(3, 'ios · device · iPhone', 'completed', 'failure'),
+        run(2, 'ios · device · iPhone', 'completed', 'success'),
+        run(1, 'ios · device · iPhone', 'completed', 'success'),
+      ];
+      pipeline.results[2] = { signatureExpiresAt: '2026-12-03T19:17:10Z' };
+      pipeline.results[1] = { signatureExpiresAt: '2026-11-30T10:00:00Z' };
+      const first = await uc.list();
+      expect(first.signature).toEqual({
+        expiresAt: new Date('2026-12-03T19:17:10Z'),
+        buildId: 2,
+      });
+      await uc.list();
+      expect(pipeline.resultCalls).toEqual([2]);
+    });
+
+    it('null si el último build no la apuntó o no hay ninguno', async () => {
+      const { pipeline, uc } = setup();
+      expect((await uc.list()).signature).toBeNull();
+      pipeline.runs = [run(1, 'ios · device', 'completed', 'success')];
+      pipeline.results[1] = { build: 476768 };
+      expect((await uc.list()).signature).toBeNull();
+    });
+
+    it('si GitHub falla al leerla, la lista sale igual', async () => {
+      const { pipeline, uc } = setup();
+      pipeline.runs = [run(1, 'ios · device', 'completed', 'success')];
+      pipeline.buildResult = () => Promise.reject(new Error('502'));
+      const list = await uc.list();
+      expect(list.signature).toBeNull();
+      expect(list.builds).toHaveLength(1);
+    });
   });
 });

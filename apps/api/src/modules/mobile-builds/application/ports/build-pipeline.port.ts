@@ -42,6 +42,8 @@ export interface BuildPipelinePort {
   artifacts(runId: number): Promise<PipelineArtifact[]>;
   /** URL firmada y de vida corta para bajar el zip de un artefacto. */
   artifactDownloadUrl(artifactId: number): Promise<string>;
+  /** `last-build.json` del artefacto de un run (lo que deja el Fastfile); null si no hay. */
+  buildResult(runId: number): Promise<Record<string, unknown> | null>;
   /** El runner del Mac; null si el token no puede verlo. */
   runner(): Promise<PipelineRunner | null>;
 }

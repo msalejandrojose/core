@@ -40,10 +40,17 @@ export interface BuildDetailView extends BuildView {
   artifacts: PipelineArtifact[];
 }
 
+/** Hasta cuándo vale la firma de la app del iPhone (último build «Móvil» o «mac»). */
+export interface SignatureView {
+  expiresAt: Date;
+  buildId: number;
+}
+
 export interface BuildListView {
   configured: boolean;
   defaultRef: string;
   runner: PipelineRunner | null;
+  signature: SignatureView | null;
   builds: BuildView[];
 }
 
@@ -52,6 +59,8 @@ const LIST_LIMIT = 20;
 @Injectable()
 export class MobileBuildsUseCases {
   private readonly defaultRef: string;
+  /** `signatureExpiresAt` por run: un build terminado no cambia, así no se baja cada vez. */
+  private readonly signatures = new Map<number, Date | null>();
 
   constructor(
     @Inject(BUILD_PIPELINE) private readonly pipeline: BuildPipelinePort,
@@ -66,6 +75,7 @@ export class MobileBuildsUseCases {
         configured: false,
         defaultRef: this.defaultRef,
         runner: null,
+        signature: null,
         builds: [],
       };
     }
@@ -73,12 +83,45 @@ export class MobileBuildsUseCases {
       this.pipeline.listRuns(LIST_LIMIT),
       this.pipeline.runner(),
     ]);
+    const builds = runs.map(toView);
     return {
       configured: true,
       defaultRef: this.defaultRef,
       runner,
-      builds: runs.map(toView),
+      signature: await this.signature(builds),
+      builds,
     };
+  }
+
+  /**
+   * La firma de la app instalada es la del último build iOS que se instaló
+   * (perfiles device/mac). La apunta el Fastfile en last-build.json. Los builds
+   * de antes de que existiera el campo no la llevan.
+   */
+  private async signature(builds: BuildView[]): Promise<SignatureView | null> {
+    const last = builds.find(
+      (b) =>
+        b.state === 'SUCCESS' &&
+        b.platform === 'ios' &&
+        (b.profile === 'device' || b.profile === 'mac'),
+    );
+    if (!last) return null;
+    if (!this.signatures.has(last.id)) {
+      try {
+        const result = await this.pipeline.buildResult(last.id);
+        const raw = result?.signatureExpiresAt;
+        const at = typeof raw === 'string' ? new Date(raw) : null;
+        this.signatures.set(
+          last.id,
+          at && !Number.isNaN(at.getTime()) ? at : null,
+        );
+      } catch {
+        // Si GitHub falla aquí, la lista se enseña igual; se reintenta luego.
+        return null;
+      }
+    }
+    const expiresAt = this.signatures.get(last.id) ?? null;
+    return expiresAt ? { expiresAt, buildId: last.id } : null;
   }
 
   async get(id: number): Promise<BuildDetailView> {
