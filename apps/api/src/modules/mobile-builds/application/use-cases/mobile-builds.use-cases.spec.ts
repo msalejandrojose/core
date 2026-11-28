@@ -159,6 +159,27 @@ describe('MobileBuildsUseCases', () => {
     });
   });
 
+  it('al lanzar no depende del título del run (GitHub tarda en ponerlo)', async () => {
+    const { pipeline, uc } = setup();
+    const dispatch = pipeline.dispatch.bind(pipeline);
+    pipeline.dispatch = async (build) => {
+      const r = await dispatch(build);
+      pipeline.runs[0].title = 'Mobile build';
+      return r;
+    };
+    const b = await uc.launch({
+      platform: 'android',
+      profile: 'testflight',
+      ref: 'brio-dev--x',
+    });
+    expect(b).toMatchObject({
+      platform: 'android',
+      profile: 'testflight',
+      device: null,
+      ref: 'brio-dev--x',
+    });
+  });
+
   it('no lanza nada si la petición no vale', async () => {
     const { pipeline, uc } = setup();
     await expect(

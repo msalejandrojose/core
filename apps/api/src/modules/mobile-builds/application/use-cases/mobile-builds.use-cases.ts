@@ -100,7 +100,16 @@ export class MobileBuildsUseCases {
     const { runId } = await this.pipeline.dispatch(build);
     const run = await this.pipeline.getRun(runId);
     if (!run) throw new MobileBuildNotFoundError(runId);
-    return { ...toView(run), artifacts: [] };
+    // Recién creado, GitHub aún no ha puesto el `run-name` (el título sale
+    // vacío): lo que se ha lanzado se sabe, no hace falta leerlo del título.
+    return {
+      ...toView(run),
+      platform: build.platform,
+      profile: build.profile,
+      device: build.device,
+      ref: build.ref,
+      artifacts: [],
+    };
   }
 
   async cancel(id: number): Promise<BuildView> {
