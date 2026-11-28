@@ -18,6 +18,12 @@ export function useWidgetDeepLinks(): void {
         history.push(link.path);
         return;
       }
+      // Acción rápida: «Registrar» (o su hoja) encima de Hoy.
+      if (link.kind === 'register') {
+        history.push('/tabs/today');
+        useRegisterStore.getState().open(link.sheet);
+        return;
+      }
       // Con un entreno a medias, se vuelve a él; si no, se empieza el de hoy.
       if (useLiveStore.getState().workout) {
         history.push('/tabs/today/entreno');
