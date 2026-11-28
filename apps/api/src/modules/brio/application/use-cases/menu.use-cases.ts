@@ -122,7 +122,7 @@ export class SwapMenuDishUseCase {
   }
 }
 
-/** Lista de la compra de la semana: los ingredientes de su menú, sumados. */
+/** Lista de la compra de la semana: lo que la persona eligió para cada comida, sumado. */
 @Injectable()
 export class GetShoppingListUseCase {
   constructor(
@@ -134,7 +134,12 @@ export class GetShoppingListUseCase {
   async execute(userId: string, day?: string): Promise<ShoppingView> {
     const week = await this.menuWeek.execute(userId, day);
     const checked = new Set(await this.menus.checkedItems(userId, week.from));
-    const sections = shoppingList(week.days ?? []).map((s) => ({
+    // Solo lo que la persona ha elegido: los platos sugeridos no se compran.
+    const chosen = (week.days ?? []).map((d) => ({
+      ...d,
+      meals: d.meals.filter((m) => m.source === 'PLANNED'),
+    }));
+    const sections = shoppingList(chosen).map((s) => ({
       aisle: s.aisle,
       items: s.items.map((i) => ({
         code: i.code,

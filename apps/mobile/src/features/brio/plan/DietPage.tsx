@@ -9,7 +9,7 @@ import { dailyDeltaKcal, etaLabel, goalSummary } from '../progress/weight-goal';
 import { Chevron, Icon, NavRow } from '../ui/kit';
 import { PATHS } from '../ui/paths';
 import { useRegisterStore } from '../register.store';
-import { MEAL_LABEL, menuApi, type Meal, type MenuMeal, type MenuWeek } from './menu.api';
+import { MEAL_LABEL, menuApi, type MenuMeal, type MenuWeek } from './menu.api';
 import { isPlanned } from './plan-meal';
 import { usePlanWeekData, type PlanLoad } from './plan.api';
 import { WeekNav } from './WeekNav';
@@ -78,9 +78,10 @@ function GoalCard({ profile }: { profile: BrioProfile | null }) {
 }
 
 /**
- * Comida (antes «Dieta y menú»). Las calorías de cada día salen de tu objetivo
- * de peso (la tarjeta «Tu objetivo», que se cambia en Objetivos) y de la carga
- * de tu plan; el menú se ajusta a ellas.
+ * Comida (antes «Dieta y menú»). Arriba, la semana: las calorías de cada día
+ * (salen de tu objetivo de peso y de la carga de tu plan) y, al tocar un día,
+ * lo que vas a comer en cada comida. Una comida sin elegir es un hueco con «+».
+ * Debajo, los accesos (añadir comida, lo de hoy, recetas, compra) y tu objetivo.
  */
 export default function DietPage() {
   const { profile } = usePlanWeek();
@@ -141,6 +142,7 @@ export default function DietPage() {
   const min = Math.min(...days.map((d) => d.k)) - 400;
   // El menú viene ajustado al objetivo guardado; si previsualizas otro objetivo, la diferencia se ve en «de X kcal».
   const meals = menu?.days?.find((d) => d.day === cur.date)?.meals ?? [];
+  const plannedCount = (day: string) => menu?.days?.find((d) => d.day === day)?.meals.filter(isPlanned).length ?? 0;
   const shoppingPath = `/tabs/comida/compra${data && !(data.today >= data.from && data.today <= data.to) ? `?semana=${data.from}` : ''}`;
 
   async function act(action: () => Promise<MenuWeek | void>, fail: string, ok?: string) {
@@ -155,9 +157,7 @@ export default function DietPage() {
       setBusy(false);
     }
   }
-  const swap = (meal: Meal) => act(() => menuApi.swap(cur.date, meal), 'No se pudo cambiar');
   const removeItem = (id: string) => act(() => menuApi.removeItem(id, cur.date), 'No se pudo quitar');
-  const clearMeal = (meal: Meal) => act(() => menuApi.clearMeal(cur.date, meal), 'No se pudo quitar', 'Vuelve el plato sugerido');
   const logMeal = (m: MenuMeal) =>
     act(
       async () => {
@@ -168,7 +168,8 @@ export default function DietPage() {
       `${MEAL_LABEL[m.meal]} apuntada en tu diario`,
     );
   const canLog = cur.date <= (data?.today ?? '');
-  const total = meals.reduce((s, m) => s + m.kcal, 0);
+  // Solo cuenta lo que has elegido: las comidas vacías no suman nada.
+  const total = meals.filter(isPlanned).reduce((s, m) => s + m.kcal, 0);
   const t = cur.k;
   const diff = total - t;
   const fits = Math.abs(diff) <= t * 0.05;
@@ -186,27 +187,17 @@ export default function DietPage() {
         <div className="rk-screen plan">
           <NavRow
             actions={
-              <>
-                <Link to={shoppingPath} aria-label="Lista de la compra" className="rk-iconbtn">
-                  <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6M10 21h.01M17 21h.01" />
-                  </svg>
-                </Link>
-              </>
+              <Link to={shoppingPath} aria-label="Lista de la compra" className="rk-iconbtn">
+                <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6M10 21h.01M17 21h.01" />
+                </svg>
+              </Link>
             }
           />
           <header className="rk-title">
             <h1>Comida</h1>
-            <span className="rk-title__sub plan__sub">
-              Semana del {days[0].n} al {days[6].n} · calorías según tu objetivo y la carga de tu plan
-            </span>
+            <span className="rk-title__sub plan__sub">Toca un día para ver y elegir lo que vas a comer</span>
           </header>
-
-          <FoodShortcuts />
-
-          <h2 className="food-hub__h2">Menú de la semana</h2>
-
-          <GoalCard profile={profile} />
 
           {data ? <WeekNav from={data.from} to={data.to} today={data.today} isoWeek={data.isoWeek} onChange={changeWeek} /> : null}
 
@@ -215,13 +206,14 @@ export default function DietPage() {
               {days.map((d, i) => {
                 const k = d.k;
                 const on = i === sel;
+                const count = plannedCount(d.date);
                 return (
                   <button
                     key={d.date}
                     type="button"
                     role="tab"
                     aria-selected={on}
-                    aria-label={`${d.full} ${d.n}: objetivo ${kcal(k)} kcal`}
+                    aria-label={`${d.full} ${d.n}: objetivo ${kcal(k)} kcal${count ? `, ${count} de 4 comidas elegidas` : ', sin comidas elegidas'}`}
                     className={`diet__day${on ? ' is-sel' : ''}`}
                     onClick={() => setSelDay(d.date)}
                   >
@@ -232,6 +224,7 @@ export default function DietPage() {
                       style={{ height: Math.round(24 + ((k - min) / Math.max(1, max - min)) * 60), background: BAR[d.load] }}
                     />
                     <span className="diet__day-letter">{d.letter}</span>
+                    <span className={`diet__day-dot${count ? ' is-on' : ''}${count === 4 ? ' is-full' : ''}`} aria-hidden="true" />
                   </button>
                 );
               })}
@@ -248,6 +241,10 @@ export default function DietPage() {
               <span>
                 <span style={{ background: BAR.LOW }} />
                 Baja
+              </span>
+              <span>
+                <span className="diet__legend-dot" />
+                Con comidas elegidas
               </span>
             </div>
           </section>
@@ -270,7 +267,7 @@ export default function DietPage() {
                 <span className="rk-row__sub"> de {kcal(t)} kcal</span>
               </span>
               <span className={`diet__fit${fits ? ' is-ok' : ''}`}>
-                {fits ? '✓ Ajustado' : `${diff > 0 ? '+' : '−'}${kcal(Math.abs(diff))} kcal`}
+                {total === 0 ? 'Sin elegir' : fits ? '✓ Ajustado' : diff < 0 ? `Faltan ${kcal(-diff)} kcal` : `+${kcal(diff)} kcal`}
               </span>
             </div>
             <span className="rk-row__sub">
@@ -278,54 +275,52 @@ export default function DietPage() {
             </span>
           </section>
 
-          <div className="rk-sechead">
-            <h2>Menú del día</h2>
-          </div>
-          <ul aria-label="Menú del día" className="rk-list">
+          <ul aria-label="Lo que vas a comer" className="rk-list diet__meals">
             {meals.map((m) => {
               const mine = isPlanned(m);
               const label = MEAL_LABEL[m.meal];
+              const addPath = `/tabs/comida/menu/${cur.date}/${m.meal}`;
+              if (!mine) {
+                return (
+                  <li key={m.meal}>
+                    <Link to={addPath} className="rk-row diet__meal diet__meal--empty" aria-label={`Elegir qué vas a comer en ${label.toLowerCase()}`}>
+                      <span className="rk-row__main">
+                        <span className="diet__meal-name">{label}</span>
+                        <span className="rk-row__sub">Toca para elegir plato o receta</span>
+                      </span>
+                      <span className="diet__plus" aria-hidden="true">
+                        <Icon d={PATHS.plus} size={20} stroke={2.4} />
+                      </span>
+                    </Link>
+                  </li>
+                );
+              }
               return (
                 <li key={m.meal} className="rk-row diet__meal">
                   <span className="rk-row__main">
-                    <span className="diet__meal-name">
-                      {label}
-                      {mine ? <span className="diet__mine">Elegido por ti</span> : null}
-                    </span>
-                    {mine ? (
-                      <ul className="diet__items" aria-label={`Lo que has puesto en ${label.toLowerCase()}`}>
-                        {m.items!.map((i) => (
-                          <li key={i.id} className="diet__item">
-                            <span className="rk-row__main">
-                              <span className="rk-row__title">{i.name}</span>
-                              <span className="rk-row__sub">
-                                {i.amount} · {kcal(i.kcal)} kcal
-                              </span>
+                    <span className="diet__meal-name">{label}</span>
+                    <ul className="diet__items" aria-label={`Lo que has puesto en ${label.toLowerCase()}`}>
+                      {m.items!.map((i) => (
+                        <li key={i.id} className="diet__item">
+                          <span className="rk-row__main">
+                            <span className="rk-row__title">{i.name}</span>
+                            <span className="rk-row__sub">
+                              {i.amount} · {kcal(i.kcal)} kcal
                             </span>
-                            <button type="button" className="diet__item-x" aria-label={`Quitar ${i.name}`} disabled={busy} onClick={() => void removeItem(i.id)}>
-                              ×
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <>
-                        <span className="rk-row__title">{m.name}</span>
-                        <span className="rk-row__sub diet__ingredients">{m.ingredients.map((i) => `${i.name.toLowerCase()} ${i.amount}`).join(' · ')}</span>
-                      </>
-                    )}
+                          </span>
+                          <button type="button" className="diet__item-x" aria-label={`Quitar ${i.name}`} disabled={busy} onClick={() => void removeItem(i.id)}>
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                     <span className="rk-row__sub">
                       {kcal(m.kcal)} kcal · {formatNumber(Math.round(m.proteinG))} g de proteína
                     </span>
                     <span className="diet__meal-actions">
-                      <Link to={`/tabs/comida/menu/${cur.date}/${m.meal}`} className="diet__action" aria-label={`Añadir algo a ${label.toLowerCase()}`}>
-                        {mine ? '+ Añadir más' : '+ Elegir plato o receta'}
+                      <Link to={addPath} className="diet__action" aria-label={`Añadir algo más a ${label.toLowerCase()}`}>
+                        + Añadir más
                       </Link>
-                      {mine ? (
-                        <button type="button" className="diet__action" disabled={busy} onClick={() => void clearMeal(m.meal)}>
-                          Usar sugerencia
-                        </button>
-                      ) : null}
                       {canLog ? (
                         <button type="button" className="diet__action" disabled={busy} onClick={() => void logMeal(m)}>
                           Lo he comido
@@ -333,24 +328,15 @@ export default function DietPage() {
                       ) : null}
                     </span>
                   </span>
-                  {mine ? null : (
-                    <button type="button" className="diet__swap" aria-label={`Cambiar ${label.toLowerCase()}`} disabled={busy} onClick={() => void swap(m.meal)}>
-                      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 7h13l-3-3M20 17H7l3 3" />
-                      </svg>
-                    </button>
-                  )}
                 </li>
               );
             })}
           </ul>
-          <p className="rk-note">
-            Los platos sugeridos se ajustan a las calorías del día; lo que eliges tú va tal cual. Toca «Elegir plato o receta» para poner lo que quieras comer ese día. Los valores son aproximados.
-          </p>
 
-          <Link to={shoppingPath} className="plan__btn">
-            Ver la lista de la compra
-          </Link>
+          <FoodShortcuts shoppingPath={shoppingPath} />
+
+          <GoalCard profile={profile} />
+          <p className="rk-note">Las calorías de cada día salen de tu objetivo de peso y de la carga de tu plan de entrenos. Los valores son aproximados.</p>
         </div>
       </IonContent>
     </IonPage>
@@ -358,10 +344,9 @@ export default function DietPage() {
 }
 
 /**
- * Arriba de la pestaña Comida: lo de hoy, las recetas y la compra, a un toque.
- * El menú de la semana (con su objetivo por día) va debajo.
+ * Debajo del menú de la semana: añadir lo de hoy, las recetas y la compra, a un toque.
  */
-function FoodShortcuts() {
+function FoodShortcuts({ shoppingPath = '/tabs/comida/compra' }: { shoppingPath?: string }) {
   const summary = useBrioStore((s) => s.summary);
   const open = useRegisterStore((s) => s.open);
   const left = summary?.totals.kcalRemaining;
@@ -399,13 +384,13 @@ function FoodShortcuts() {
         </span>
         <Chevron />
       </Link>
-      <Link to="/tabs/comida/compra" className="rk-row">
+      <Link to={shoppingPath} className="rk-row">
         <span className="food-hub__icon" aria-hidden="true">
           <Icon d={PATHS.cart} size={20} />
         </span>
         <span className="rk-row__main">
           <span className="rk-row__title">Lista de la compra</span>
-          <span className="rk-row__sub">Sale del menú de la semana</span>
+          <span className="rk-row__sub">Lo que has elegido esta semana</span>
         </span>
         <Chevron />
       </Link>
